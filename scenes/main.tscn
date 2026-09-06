@@ -1,0 +1,230 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource path="res://scripts/main.gd" type="Script" id="1_main"]
+[ext_resource path="res://scenes/player.tscn" type="PackedScene" id="2_player"]
+[ext_resource path="res://scenes/enemy.tscn" type="PackedScene" id="3_enemy"]
+[ext_resource path="res://scenes/slot_machine.tscn" type="PackedScene" id="4_slot"]
+
+[sub_resource type="RectangleShape2D" id="GroundShape"]
+size = Vector2(2600, 80)
+
+[sub_resource type="RectangleShape2D" id="PlatformShape"]
+size = Vector2(380, 24)
+
+[sub_resource type="StyleBoxFlat" id="PanelStyle"]
+bg_color = Color(0.035, 0.04, 0.055, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.85, 0.61, 0.12, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Backdrop" type="CanvasLayer" parent="."]
+layer = -10
+
+[node name="ColorRect" type="ColorRect" parent="Backdrop"]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.025, 0.03, 0.045, 1)
+mouse_filter = 2
+
+[node name="Moon" type="ColorRect" parent="Backdrop"]
+offset_left = 950.0
+offset_top = 80.0
+offset_right = 1070.0
+offset_bottom = 200.0
+color = Color(0.18, 0.2, 0.26, 1)
+mouse_filter = 2
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(1300, 650)
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Ground"]
+polygon = PackedVector2Array(-1300, -40, 1300, -40, 1300, 40, -1300, 40)
+color = Color(0.12, 0.14, 0.18, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+shape = SubResource("GroundShape")
+
+[node name="Platform1" type="StaticBody2D" parent="."]
+position = Vector2(650, 475)
+collision_layer = 8
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Platform1"]
+polygon = PackedVector2Array(-190, -12, 190, -12, 190, 12, -190, 12)
+color = Color(0.22, 0.24, 0.29, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform1"]
+shape = SubResource("PlatformShape")
+one_way_collision = true
+one_way_collision_margin = 8.0
+
+[node name="Platform2" type="StaticBody2D" parent="."]
+position = Vector2(1250, 390)
+collision_layer = 8
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Platform2"]
+polygon = PackedVector2Array(-190, -12, 190, -12, 190, 12, -190, 12)
+color = Color(0.22, 0.24, 0.29, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform2"]
+shape = SubResource("PlatformShape")
+one_way_collision = true
+one_way_collision_margin = 8.0
+
+[node name="Platform3" type="StaticBody2D" parent="."]
+position = Vector2(1850, 485)
+collision_layer = 8
+collision_mask = 0
+
+[node name="Visual" type="Polygon2D" parent="Platform3"]
+polygon = PackedVector2Array(-190, -12, 190, -12, 190, 12, -190, 12)
+color = Color(0.22, 0.24, 0.29, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform3"]
+shape = SubResource("PlatformShape")
+one_way_collision = true
+one_way_collision_margin = 8.0
+
+[node name="Player" parent="." instance=ExtResource("2_player")]
+position = Vector2(180, 520)
+
+[node name="Enemy1" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(700, 580)
+enemy_name = "Punk"
+max_hp = 55
+xp_reward = 45
+gold_reward = 14
+
+[node name="Enemy2" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(1100, 580)
+enemy_name = "Knifer"
+max_hp = 75
+move_speed = 125.0
+xp_reward = 55
+gold_reward = 17
+
+[node name="Enemy3" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(1580, 580)
+enemy_name = "Degenerate"
+max_hp = 90
+contact_damage = 14
+xp_reward = 65
+gold_reward = 20
+
+[node name="Boss" parent="." instance=ExtResource("3_enemy")]
+position = Vector2(2220, 560)
+scale = Vector2(1.4, 1.4)
+enemy_name = "THE COLLECTOR"
+max_hp = 260
+contact_damage = 22
+move_speed = 90.0
+aggro_range = 600.0
+xp_reward = 180
+gold_reward = 80
+respawn_delay = 8.0
+is_boss = true
+
+[node name="SlotMachine" parent="." instance=ExtResource("4_slot")]
+position = Vector2(390, 555)
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Stats" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 18.0
+offset_right = 650.0
+offset_bottom = 48.0
+text = "HP 100/100   LV 1   XP 0/100   GOLD 0"
+theme_override_font_sizes/font_size = 20
+
+[node name="Build" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 48.0
+offset_right = 650.0
+offset_bottom = 76.0
+text = "DMG 22   CRIT 8%   SPEED 290"
+
+[node name="Title" type="Label" parent="HUD"]
+offset_left = 935.0
+offset_top = 18.0
+offset_right = 1255.0
+offset_bottom = 55.0
+text = "KAMIKAZE MAN"
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 26
+
+[node name="Controls" type="Label" parent="HUD"]
+offset_left = 20.0
+offset_top = 680.0
+offset_right = 1100.0
+offset_bottom = 710.0
+text = "← → MOVE     SPACE JUMP     ↓ + SPACE DROP     CTRL ATTACK     SHIFT DASH     Z INTERACT"
+
+[node name="Message" type="Label" parent="HUD"]
+offset_left = 270.0
+offset_top = 95.0
+offset_right = 1010.0
+offset_bottom = 140.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+
+[node name="LevelUp" type="Panel" parent="HUD"]
+visible = false
+offset_left = 315.0
+offset_top = 170.0
+offset_right = 965.0
+offset_bottom = 550.0
+theme_override_styles/panel = SubResource("PanelStyle")
+
+[node name="Title" type="Label" parent="HUD/LevelUp"]
+offset_left = 30.0
+offset_top = 24.0
+offset_right = 620.0
+offset_bottom = 62.0
+text = "LEVEL UP — PICK YOUR POISON"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+
+[node name="Choice1" type="Label" parent="HUD/LevelUp"]
+offset_left = 45.0
+offset_top = 90.0
+offset_right = 605.0
+offset_bottom = 155.0
+text = "1  HIGH CALIBER\n+6 attack damage"
+theme_override_font_sizes/font_size = 18
+
+[node name="Choice2" type="Label" parent="HUD/LevelUp"]
+offset_left = 45.0
+offset_top = 175.0
+offset_right = 605.0
+offset_bottom = 240.0
+text = "2  LIGHT FEET\n+25 move speed"
+theme_override_font_sizes/font_size = 18
+
+[node name="Choice3" type="Label" parent="HUD/LevelUp"]
+offset_left = 45.0
+offset_top = 260.0
+offset_right = 605.0
+offset_bottom = 325.0
+text = "3  LOADED DICE\n+6% crit chance"
+theme_override_font_sizes/font_size = 18
+
+[node name="Hint" type="Label" parent="HUD/LevelUp"]
+offset_left = 45.0
+offset_top = 335.0
+offset_right = 605.0
+offset_bottom = 365.0
+text = "Press 1, 2, or 3"
+horizontal_alignment = 1

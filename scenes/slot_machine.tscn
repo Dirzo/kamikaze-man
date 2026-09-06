@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://scripts/slot_machine.gd" type="Script" id="1_slot"]
+
+[node name="SlotMachine" type="Node2D"]
+script = ExtResource("1_slot")
+
+[node name="Body" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-32, -55, 32, -55, 32, 55, -32, 55)
+color = Color(0.76, 0.55, 0.12, 1)
+
+[node name="Screen" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(-22, -37, 22, -37, 22, -6, -22, -6)
+color = Color(0.08, 0.08, 0.1, 1)
+
+[node name="777" type="Label" parent="."]
+offset_left = -24.0
+offset_top = -34.0
+offset_right = 25.0
+offset_bottom = -8.0
+text = "7 7 7"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="."]
+offset_left = -90.0
+offset_top = -88.0
+offset_right = 90.0
+offset_bottom = -64.0
+text = "Z — SPIN (25 GOLD)"
+horizontal_alignment = 1
