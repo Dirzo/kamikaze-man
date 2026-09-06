@@ -66,6 +66,7 @@ func run():
     p._physics_process(0.016)
     check(p.position.y < 1000, "Falling beyond the level respawns the player")
     var slot = game.get_node("SlotMachine")
+    slot.break_chance = 0.0
     p.gold = 25
     p.luck = 1.0
     slot.spin()

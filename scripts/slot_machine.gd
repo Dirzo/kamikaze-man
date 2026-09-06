@@ -3,6 +3,8 @@ extends Node2D
 signal result(text)
 
 @export var spin_cost := 25
+@export_range(0.0, 1.0) var break_chance: float = 0.30
+var broken := false
 var player_in_range := false
 var player = null
 var spinning := false
@@ -19,12 +21,14 @@ func _physics_process(_delta):
     $Prompt.visible = player_in_range
 
 func _unhandled_input(event):
-    if spinning or not player_in_range:
+    if spinning or broken or not player_in_range or player.input_locked:
         return
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_Z:
         spin()
 
 func spin():
+    if spinning or broken or player == null or player.input_locked:
+        return
     spinning = true
 
     if not player.spend_gold(spin_cost):
@@ -59,8 +63,14 @@ func spin():
         text = "Adrenaline: +18 move speed"
 
     player.gambling_reward(reward)
+    if randf() < break_chance:
+        broken = true
+        $Body.color = Color(0.3, 0.28, 0.25)
+        $Screen.color = Color(0.025, 0.025, 0.025)
+        get_node("777").text = "X X X"
+        text += "  MACHINE BROKE! Out of service until restart."
     result.emit(text)
 
-    $Prompt.text = "Z — SPIN (%d GOLD)" % spin_cost
+    $Prompt.text = "BROKEN — OUT OF SERVICE" if broken else "Z — SPIN (%d GOLD)" % spin_cost
     await get_tree().create_timer(0.25).timeout
     spinning = false

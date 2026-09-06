@@ -1,5 +1,7 @@
 extends CharacterBody2D
 
+signal boss_defeated
+
 @export var enemy_name := "Punk"
 @export var max_hp := 55
 @export var contact_damage := 10
@@ -82,6 +84,9 @@ func die(attacker):
     visible = false
     $CollisionShape2D.set_deferred("disabled", true)
     velocity = Vector2.ZERO
+
+    if is_boss:
+        boss_defeated.emit()
 
     if attacker.has_method("gain_xp"):
         attacker.gain_xp(xp_reward)

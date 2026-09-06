@@ -1,0 +1,107 @@
+extends SceneTree
+
+var failures := 0
+
+func _initialize():
+    call_deferred("run")
+
+func check(ok: bool, label: String):
+    if ok:
+        print("PASS: " + label)
+    else:
+        push_error("FAIL: " + label)
+        failures += 1
+
+func run():
+    var game = load("res://scenes/main.tscn").instantiate()
+    root.add_child(game)
+    var p = game.get_node("Player")
+    var slot = game.get_node("SlotMachine")
+    var boss = game.get_node("Boss")
+    p.set_physics_process(false)
+    for name in ["Enemy1", "Enemy2", "Enemy3", "Boss"]:
+        game.get_node(name).set_physics_process(false)
+    await create_timer(0.1).timeout
+    check(is_equal_approx(slot.break_chance, 0.30), "Default breakdown chance is 30 percent")
+    slot.break_chance = 1.0
+    p.gold = 0
+    slot.spin()
+    check(not slot.broken and not slot.spinning, "Unaffordable spin does not break the machine")
+    p.gold = 25
+    p.luck = 1.0
+    slot.spin()
+    slot.spin()
+    await create_timer(0.7).timeout
+    check(slot.broken and p.gold == 100, "Breaking spin pays once before going out of service")
+    slot.spin()
+    await create_timer(0.7).timeout
+    check(p.gold == 100 and slot.get_node("Prompt").text.contains("BROKEN"), "Broken machine blocks further charges")
+
+    var e = game.get_node("Enemy1")
+    p.position = Vector2(500, 500)
+    p.crit_chance = 0.0
+    e.position = Vector2(585, 500)
+    await create_timer(0.1).timeout
+    p.attack()
+    await create_timer(0.1).timeout
+    check(e.hp == e.max_hp - p.attack_damage, "Sword hits at its extended reach")
+    p.attack_timer = 0.0
+    e.hp = e.max_hp
+    e.position = Vector2(620, 500)
+    await create_timer(0.1).timeout
+    p.attack()
+    await create_timer(0.1).timeout
+    check(e.hp == e.max_hp, "Sword does not hit outside melee range")
+    p.attack_timer = 0.0
+    p.get_node("AttackArea").position.x = -55
+    p.get_node("Body").scale.x = -1
+    e.position = Vector2(415, 500)
+    await create_timer(0.1).timeout
+    p.attack()
+    await create_timer(0.1).timeout
+    check(e.hp == e.max_hp - p.attack_damage, "Sword also hits to the left")
+    p.input_locked = true
+    p.attack_timer = 0.0
+    p.attack()
+    check(p.attack_timer == 0.0, "Menus block new sword attacks")
+    p.input_locked = false
+
+    p.xp = 90
+    boss.respawn_delay = 0.15
+    boss.take_damage(999, p)
+    check(game.choosing_class and p.input_locked, "First boss death opens class selection")
+    check(p.pending_upgrades == 2, "Boss XP queues all earned levels behind class selection")
+    check(game.get_node("HUD/LevelUp/Title").text.contains("CHOOSE A CLASS"), "Level-up signals do not overwrite class screen")
+    var event = InputEventKey.new()
+    event.keycode = KEY_1
+    event.pressed = true
+    game._unhandled_input(event)
+    check(p.class_name_display == "Knight" and p.max_hp == 150 and p.attack_damage == 28, "Key 1 applies Knight bonuses")
+    check(not game.choosing_class and p.input_locked and game.get_node("HUD/LevelUp").visible, "Class selection preserves pending upgrade screen")
+    game.choose_upgrade(0)
+    game.choose_upgrade(0)
+    check(not p.input_locked, "All queued choices return control")
+    await create_timer(0.25).timeout
+    boss.take_damage(999, p)
+    check(not game.choosing_class, "Respawned boss never repeats class selection")
+    while p.pending_upgrades > 0:
+        game.choose_upgrade(0)
+    p.die()
+    check(p.class_name_display == "Knight" and not p.select_class("duelist"), "Death preserves class and prevents stacking classes")
+
+    for id in ["berserker", "duelist"]:
+        var fighter = load("res://scenes/player.tscn").instantiate()
+        root.add_child(fighter)
+        fighter.set_physics_process(false)
+        fighter.select_class(id)
+        if id == "berserker":
+            check(fighter.attack_damage == 38 and fighter.max_hp == 80 and is_equal_approx(fighter.attack_cooldown, 0.26), "Berserker applies damage, speed, and health tradeoff")
+        else:
+            check(fighter.move_speed == 350.0 and is_equal_approx(fighter.crit_chance, 0.23) and is_equal_approx(fighter.dash_cooldown, 0.65), "Duelist applies movement, crit, and dash bonuses")
+        fighter.queue_free()
+    await create_timer(0.3).timeout
+    game.queue_free()
+    await process_frame
+    print("Feature failures: %d" % failures)
+    quit(1 if failures else 0)
+

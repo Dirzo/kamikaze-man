@@ -28,6 +28,9 @@ var dash_speed := 760.0
 var input_locked := false
 var dropping := false
 var pending_upgrades := 0
+var class_name_display := "Fighter"
+var class_selected := false
+var sword_timer := 0.0
 
 const GRAVITY := 1500.0
 
@@ -42,6 +45,9 @@ func _physics_process(delta):
     attack_timer = max(attack_timer - delta, 0.0)
     dash_cooldown_timer = max(dash_cooldown_timer - delta, 0.0)
     dash_timer = max(dash_timer - delta, 0.0)
+    sword_timer = maxf(sword_timer - delta, 0.0)
+    $Body/Sword.rotation = lerpf(-0.65, 0.55, 1.0 - sword_timer / 0.16) if sword_timer > 0.0 else -0.65
+    $Body/Slash.visible = sword_timer > 0.0
 
     if not is_on_floor():
         velocity.y += GRAVITY * delta
@@ -59,7 +65,7 @@ func _physics_process(delta):
 
     if direction != 0.0:
         facing = int(sign(direction))
-        $AttackArea.position.x = 46.0 * facing
+        $AttackArea.position.x = 55.0 * facing
         $Body.scale.x = facing
 
     if dash_timer > 0.0:
@@ -87,7 +93,11 @@ func _unhandled_input(event):
         start_dash()
 
 func attack():
+    if input_locked or attack_timer > 0.0:
+        return
     attack_timer = attack_cooldown
+    sword_timer = 0.16
+    $Body/Slash.visible = true
     $AttackArea/AttackShape.set_deferred("disabled", false)
     await get_tree().physics_frame
     # The first signal fires before physics updates the newly enabled shape.
@@ -102,6 +112,35 @@ func attack():
             body.take_damage(damage, self, is_crit)
 
     $AttackArea/AttackShape.set_deferred("disabled", true)
+
+func select_class(id: String) -> bool:
+    if class_selected:
+        return false
+    match id:
+        "knight":
+            class_name_display = "Knight"
+            max_hp += 50
+            hp += 50
+            attack_damage += 6
+            $Body.color = Color(0.35, 0.65, 1.0)
+        "berserker":
+            class_name_display = "Berserker"
+            attack_damage += 16
+            attack_cooldown = maxf(0.14, attack_cooldown - 0.06)
+            max_hp = maxi(35, max_hp - 20)
+            hp = mini(hp, max_hp)
+            $Body.color = Color(1.0, 0.35, 0.25)
+        "duelist":
+            class_name_display = "Duelist"
+            move_speed += 60.0
+            crit_chance = minf(0.70, crit_chance + 0.15)
+            dash_cooldown = maxf(0.3, dash_cooldown - 0.25)
+            $Body.color = Color(0.45, 1.0, 0.65)
+        _:
+            return false
+    class_selected = true
+    stats_changed.emit()
+    return true
 
 func start_dash():
     if dash_cooldown_timer > 0.0:

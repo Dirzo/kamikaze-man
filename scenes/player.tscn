@@ -6,7 +6,7 @@
 size = Vector2(34, 50)
 
 [sub_resource type="RectangleShape2D" id="AttackShape"]
-size = Vector2(54, 42)
+size = Vector2(72, 42)
 
 [node name="Player" type="CharacterBody2D"]
 collision_layer = 2
@@ -24,8 +24,29 @@ color = Color(0.03, 0.05, 0.07, 1)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("PlayerShape")
 
+[node name="Sword" type="Node2D" parent="Body"]
+position = Vector2(14, 4)
+rotation = -0.65
+
+[node name="Blade" type="Polygon2D" parent="Body/Sword"]
+polygon = PackedVector2Array(8, -4, 66, -4, 77, 0, 66, 4, 8, 4)
+color = Color(0.84, 0.92, 1, 1)
+
+[node name="Guard" type="Polygon2D" parent="Body/Sword"]
+polygon = PackedVector2Array(5, -10, 10, -10, 10, 10, 5, 10)
+color = Color(0.95, 0.72, 0.2, 1)
+
+[node name="Grip" type="Polygon2D" parent="Body/Sword"]
+polygon = PackedVector2Array(-5, -3, 5, -3, 5, 3, -5, 3)
+color = Color(0.35, 0.18, 0.09, 1)
+
+[node name="Slash" type="Polygon2D" parent="Body"]
+visible = false
+polygon = PackedVector2Array(19, -21, 70, -21, 91, -10, 91, 10, 70, 21, 19, 21, 60, 10, 75, 0, 60, -10)
+color = Color(0.6, 0.87, 1, 0.45)
+
 [node name="AttackArea" type="Area2D" parent="."]
-position = Vector2(46, 0)
+position = Vector2(55, 0)
 collision_layer = 0
 collision_mask = 4
 
