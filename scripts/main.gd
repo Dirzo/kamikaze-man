@@ -22,6 +22,7 @@ var death_screen := false
 var map_number := 1
 var next_map_pending := false
 var map_rng := RandomNumberGenerator.new()
+var class_playtest := false
 var class_choices = [
     {"id":"fighter", "name":"FIGHTER", "desc":"Sword • +50 HP, +6 damage • Q: Whirlwind + brief guard"},
     {"id":"mage", "name":"MAGE", "desc":"Explosive magic • +14 damage, -15 HP • Q: Arcane Nova"},
@@ -53,7 +54,11 @@ func _ready():
     generate_map()
     update_hud()
     $HUD/Controls.text = "← → MOVE   ALT JUMP   ↓ + ALT DROP   CTRL ATTACK   Q SKILL   SHIFT DASH   Z SPIN   K KAMIKAZE"
-    show_message("Alt to jump. K sacrifices your life in a massive blast.")
+    var practice_hint := Label.new()
+    practice_hint.position = Vector2(20, 78)
+    practice_hint.text = "F2 — FRESH CLASS PLAYTEST (no permanent rewards)"
+    $HUD.add_child(practice_hint)
+    show_message("F2 lets you try any class immediately. Alt jumps.")
 
 func _process(delta):
     if is_instance_valid($Player):
@@ -64,6 +69,9 @@ func _process(delta):
             $HUD/Message.text = ""
 
 func _unhandled_input(event):
+    if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2:
+        call_deferred("start_class_playtest")
+        return
     if death_screen:
         if event is InputEventKey and event.pressed and not event.echo:
             if event.keycode == KEY_ENTER:
@@ -201,9 +209,14 @@ func generate_map():
         enemy.start_position = Vector2(width - 230 if i == 3 else 750 + i * (width - 1300) / 3.0 + map_rng.randf_range(-80, 80), 560)
         enemy.max_hp = int([55, 75, 90, 260][i] * (1.0 + (map_number - 1) * 0.22))
         enemy.contact_damage = int([10, 10, 14, 22][i] * (1.0 + (map_number - 1) * 0.12))
+        if i == 3:
+            enemy.move_speed = 65.0 if map_number == 1 else 90.0
+            if map_number == 1:
+                enemy.max_hp = 160
+                enemy.contact_damage = 8
         enemy.velocity = Vector2.ZERO
         enemy.respawn()
-        enemy.ranged = i == 1 or i == 3
+        enemy.ranged = i == 1 or (i == 3 and map_number > 1)
     $Enemy2.get_node("Name").text = "GUNNER"
     $Enemy2.get_node("Body").color = Color(1, 0.65, 0.25)
     $Boss.get_node("Name").text = ["THE COLLECTOR", "ARCANE WARDEN", "IRON MARSHAL"][(map_number - 1) % 3]
@@ -246,6 +259,8 @@ func generate_map():
     update_hud()
 
 func earn_souls(amount: int):
+    if class_playtest:
+        return
     run_souls += amount
 
 func load_progress():
@@ -259,6 +274,8 @@ func load_progress():
         permanent[i] = clampi(int(config.get_value("progress", "upgrade_%d" % i, 0)), 0, 100)
 
 func save_progress() -> bool:
+    if class_playtest:
+        return true
     if save_path.is_empty():
         return true
     var config := ConfigFile.new()
@@ -288,6 +305,9 @@ func upgrade_cost(index: int) -> int:
     return 3 + permanent[index] * 2
 
 func buy_permanent(index: int):
+    if class_playtest:
+        show_message("Practice does not change permanent upgrades. Enter starts a normal run.")
+        return
     if not death_screen or index < 0 or index > 2:
         return
     var cost := upgrade_cost(index)
@@ -310,6 +330,43 @@ func refresh_death_screen():
     for i in range(3):
         get_node("HUD/LevelUp/Choice%d" % (i + 1)).text = "%d  %s\nRank %d • Cost %d souls • Permanent" % [i + 1, labels[i], permanent[i], upgrade_cost(i)]
     $HUD/LevelUp/Hint.text = "1 / 2 / 3 BUY     ENTER START NEW RUN"
+    if class_playtest:
+        $HUD/LevelUp/Title.text = "CLASS PLAYTEST COMPLETE"
+        for i in range(3):
+            get_node("HUD/LevelUp/Choice%d" % (i + 1)).text = ["F2 — Try another class with a fresh build", "ENTER — Return to a normal run", "Permanent souls and upgrades are unchanged."][i]
+        $HUD/LevelUp/Hint.text = "F2 TRY ANOTHER CLASS     ENTER NORMAL RUN"
+
+func start_class_playtest():
+    class_playtest = true
+    death_screen = false
+    choosing_class = false
+    first_boss_defeated = false
+    next_map_pending = false
+    run_souls = 0
+    map_number = 1
+    current_choices.clear()
+    var old_player = $Player
+    remove_child(old_player)
+    old_player.queue_free()
+    var player = load("res://scenes/player.tscn").instantiate()
+    player.name = "Player"
+    add_child(player)
+    player.add_to_group("player")
+    player.stats_changed.connect(update_hud)
+    player.level_up_requested.connect(show_level_up)
+    player.message_requested.connect(show_message)
+    player.died.connect(show_death)
+    player.max_hp += permanent[0] * 10
+    player.hp = player.max_hp
+    player.attack_damage += permanent[1] * 3
+    player.kamikaze_bonus = permanent[2] * 50
+    generate_map()
+    for enemy in get_tree().get_nodes_in_group("enemies"):
+        enemy.find_target()
+        enemy.set_physics_process(true)
+    show_class_selection()
+    $HUD/LevelUp/Title.text = "CLASS PLAYTEST — CHOOSE YOUR CLASS"
+    show_message("Choose 1–4. F2 starts a fresh test with another class.")
 
 func layout_choices(four: bool):
     $HUD/LevelUp/Choice4.visible = four

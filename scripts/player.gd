@@ -35,6 +35,7 @@ var skill_timer := 0.0
 var skill_cooldown := 5.0
 var skill_name := "Whirlwind"
 var guard_timer := 0.0
+var hurt_timer := 0.0
 var class_selected := false
 var sword_timer := 0.0
 var dead := false
@@ -71,6 +72,7 @@ func _physics_process(delta):
     sword_timer = maxf(sword_timer - delta, 0.0)
     skill_timer = maxf(skill_timer - delta, 0.0)
     guard_timer = maxf(guard_timer - delta, 0.0)
+    hurt_timer = maxf(hurt_timer - delta, 0.0)
     $Body/Sword.rotation = lerpf(-0.65, 0.55, 1.0 - sword_timer / 0.16) if sword_timer > 0.0 else -0.65
     $Body/Slash.visible = sword_timer > 0.0
 
@@ -257,8 +259,9 @@ func drop_through_platform():
     dropping = false
 
 func take_damage(amount: int):
-    if dead or input_locked or guard_timer > 0.0:
+    if dead or input_locked or guard_timer > 0.0 or hurt_timer > 0.0:
         return
+    hurt_timer = 0.6
     hp = max(hp - amount, 0)
     stats_changed.emit()
 

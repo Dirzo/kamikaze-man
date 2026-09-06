@@ -4,6 +4,8 @@ A keyboard-first 2D action roguelike prototype for Godot 4.
 
 ## Controls
 
+- F2 — start a fresh class playtest immediately; choose 1–4. Works from the death screen too. Replaces the current run and resets run stats, but keeps your saved upgrades. Practice earns no permanent souls and disables permanent purchases; Enter on the practice death screen returns to a normal run.
+
 - Left / Right Arrow — move
 - Alt — jump
 - Down + Alt — drop through a one-way platform
@@ -80,6 +82,12 @@ Run these from the project folder using Godot 4:
 Everything is intentionally primitive. The goal of v0.1 is to prove the movement → combat → XP → gambling loop before spending time on sprites and animation.
 
 ## Expanded encounters
+
+The first Collector is now an introductory melee boss: 160 HP, 8 damage, 65 move speed, and no projectile spread. Later bosses retain stronger stats and ranged attacks. After taking damage, the player has 0.6 seconds of protection against repeated hits.
+
+Class-playtest validation:
+
+    godot --headless --path . --script res://tests/playtest.gd
 
 Maps span 3400–4000 pixels with six platforms, randomized skyline scenery, and seven enemies initially, growing to eleven. Neon Outskirts, Hex District, and Iron Barricade cycle through colors and boss names.
 
