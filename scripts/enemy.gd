@@ -12,6 +12,8 @@ signal defeated(souls: int)
 @export var gold_reward := 12
 @export var respawn_delay := 2.5
 @export var is_boss := false
+@export var ranged := false
+var shot_timer := 1.4
 
 var hp := 55
 var target = null
@@ -30,6 +32,8 @@ func _ready():
     call_deferred("find_target")
 
 func find_target():
+    if not is_inside_tree():
+        return
     target = get_tree().get_first_node_in_group("player")
 
 func _physics_process(delta):
@@ -45,6 +49,15 @@ func _physics_process(delta):
         find_target()
         move_and_slide()
         return
+
+    if target.input_locked:
+        return
+    shot_timer -= delta
+    if ranged and global_position.distance_to(target.global_position) < 650.0:
+        $Body.modulate = Color(1.5, 1.2, 0.5) if shot_timer < 0.6 else Color.WHITE
+        if shot_timer <= 0:
+            shoot()
+            shot_timer = 2.4 if is_boss else 2.0
 
     var dx = target.global_position.x - global_position.x
     var distance = abs(dx)
@@ -63,6 +76,17 @@ func _physics_process(delta):
         velocity.x = move_toward(velocity.x, 0.0, 800.0 * delta)
 
     move_and_slide()
+
+func shoot():
+    for angle in ([-0.2, 0.0, 0.2] if is_boss else [0.0]):
+        var shot = load("res://scripts/projectile.gd").new()
+        shot.attacker = self
+        shot.hostile = true
+        shot.damage = contact_damage
+        shot.remaining = 2.4
+        shot.position = global_position
+        shot.velocity = global_position.direction_to(target.global_position).rotated(angle) * 320
+        get_parent().add_child(shot)
 
 func take_damage(amount: int, attacker, is_crit := false):
     if not alive:
@@ -106,6 +130,7 @@ func respawn():
     visible = true
     alive = true
     hit_timer = 0.0
+    shot_timer = 1.4
     $Body.modulate = Color.WHITE
     $CollisionShape2D.set_deferred("disabled", false)
     update_healthbar()

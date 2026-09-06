@@ -20,8 +20,8 @@ func run():
     var slot = game.get_node("SlotMachine")
     var boss = game.get_node("Boss")
     p.set_physics_process(false)
-    for name in ["Enemy1", "Enemy2", "Enemy3", "Boss"]:
-        game.get_node(name).set_physics_process(false)
+    for enemy in get_nodes_in_group("enemies"):
+        enemy.set_physics_process(false)
     await create_timer(0.1).timeout
     check(is_equal_approx(slot.break_chance, 0.30), "Default breakdown chance is 30 percent")
     slot.break_chance = 1.0
@@ -77,7 +77,7 @@ func run():
     event.keycode = KEY_1
     event.pressed = true
     game._unhandled_input(event)
-    check(p.class_name_display == "Knight" and p.max_hp == 150 and p.attack_damage == 28, "Key 1 applies Knight bonuses")
+    check(p.class_name_display == "Fighter" and p.max_hp == 150 and p.attack_damage == 28, "Key 1 applies Fighter bonuses")
     check(not game.choosing_class and p.input_locked and game.get_node("HUD/LevelUp").visible, "Class selection preserves pending upgrade screen")
     game.choose_upgrade(0)
     game.choose_upgrade(0)
@@ -88,17 +88,19 @@ func run():
     while p.pending_upgrades > 0:
         game.choose_upgrade(0)
     p.die()
-    check(game.death_screen and not p.select_class("duelist"), "Death opens shop and prevents stacking classes on the ended run")
+    check(game.death_screen and not p.select_class("bowman"), "Death opens shop and prevents stacking classes on the ended run")
 
-    for id in ["berserker", "duelist"]:
+    for id in ["mage", "shooter", "bowman"]:
         var fighter = load("res://scenes/player.tscn").instantiate()
         root.add_child(fighter)
         fighter.set_physics_process(false)
         fighter.select_class(id)
-        if id == "berserker":
-            check(fighter.attack_damage == 38 and fighter.max_hp == 80 and is_equal_approx(fighter.attack_cooldown, 0.26), "Berserker applies damage, speed, and health tradeoff")
+        if id == "mage":
+            check(fighter.attack_damage == 36 and fighter.max_hp == 85, "Mage applies damage and health tradeoff")
+        elif id == "shooter":
+            check(fighter.attack_damage == 14 and is_equal_approx(fighter.attack_cooldown, 0.16), "Shooter applies rapid-fire stats")
         else:
-            check(fighter.move_speed == 350.0 and is_equal_approx(fighter.crit_chance, 0.23) and is_equal_approx(fighter.dash_cooldown, 0.65), "Duelist applies movement, crit, and dash bonuses")
+            check(fighter.move_speed == 325.0 and is_equal_approx(fighter.crit_chance, 0.18), "Bowman applies movement and crit bonuses")
         fighter.queue_free()
     await create_timer(0.3).timeout
     game.queue_free()

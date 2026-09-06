@@ -23,13 +23,18 @@ var map_number := 1
 var next_map_pending := false
 var map_rng := RandomNumberGenerator.new()
 var class_choices = [
-    {"id":"knight", "name":"KNIGHT", "desc":"+50 max HP, +6 damage. A durable sword fighter."},
-    {"id":"berserker", "name":"BERSERKER", "desc":"+16 damage, faster attacks, -20 max HP."},
-    {"id":"duelist", "name":"DUELIST", "desc":"+60 speed, +15% crit chance, shorter dash cooldown."},
+    {"id":"fighter", "name":"FIGHTER", "desc":"Sword • +50 HP, +6 damage • Q: Whirlwind + brief guard"},
+    {"id":"mage", "name":"MAGE", "desc":"Explosive magic • +14 damage, -15 HP • Q: Arcane Nova"},
+    {"id":"shooter", "name":"SHOOTER", "desc":"Rapid gunfire • Fast movement • Q: Five-shot spread"},
+    {"id":"bowman", "name":"BOWMAN", "desc":"Piercing arrows • +10% crit • Q: Triple-damage arrow"},
 ]
 
 func _ready():
     randomize()
+    var fourth = $HUD/LevelUp/Choice3.duplicate()
+    fourth.name = "Choice4"
+    $HUD/LevelUp.add_child(fourth)
+    fourth.hide()
     $Player.add_to_group("player")
     $Player.stats_changed.connect(update_hud)
     $Player.level_up_requested.connect(show_level_up)
@@ -47,10 +52,12 @@ func _ready():
     map_rng.randomize()
     generate_map()
     update_hud()
-    $HUD/Controls.text = "← → MOVE   ALT JUMP   ↓ + ALT DROP   CTRL SWORD   SHIFT DASH   Z SPIN   K KAMIKAZE"
+    $HUD/Controls.text = "← → MOVE   ALT JUMP   ↓ + ALT DROP   CTRL ATTACK   Q SKILL   SHIFT DASH   Z SPIN   K KAMIKAZE"
     show_message("Alt to jump. K sacrifices your life in a massive blast.")
 
 func _process(delta):
+    if is_instance_valid($Player):
+        $HUD/Build.text = "%s  |  DMG %d  CRIT %d%%  |  Q: %s %s" % [$Player.class_name_display, $Player.attack_damage, int($Player.crit_chance * 100), $Player.skill_name, "READY" if $Player.skill_timer <= 0 else "%.1fs" % $Player.skill_timer]
     if message_timer > 0.0:
         message_timer -= delta
         if message_timer <= 0.0:
@@ -73,6 +80,8 @@ func _unhandled_input(event):
             choose_upgrade(1)
         elif event.keycode == KEY_3:
             choose_upgrade(2)
+        elif event.keycode == KEY_4 and choosing_class:
+            choose_class(3)
 
 func update_hud():
     var p = $Player
@@ -87,6 +96,7 @@ func show_level_up():
     if choosing_class or death_screen or $Player.dead:
         return
     current_choices = upgrade_pool.duplicate(true)
+    layout_choices(false)
     current_choices.shuffle()
     current_choices = current_choices.slice(0, 3)
 
@@ -116,13 +126,14 @@ func show_class_selection():
     if first_boss_defeated:
         return
     first_boss_defeated = true
+    layout_choices(true)
     choosing_class = true
     $Player.input_locked = true
     $Player.velocity = Vector2.ZERO
     $Player.dash_timer = 0.0
     $HUD/LevelUp.visible = true
     $HUD/LevelUp/Title.text = "FIRST BOSS DEFEATED — CHOOSE A CLASS"
-    for index in range(3):
+    for index in range(4):
         var choice = class_choices[index]
         get_node("HUD/LevelUp/Choice%d" % (index + 1)).text = "%d  %s\n%s" % [index + 1, choice.name, choice.desc]
 
@@ -132,6 +143,7 @@ func choose_class(index: int):
     if not $Player.select_class(class_choices[index].id):
         return
     choosing_class = false
+    layout_choices(false)
     $HUD/LevelUp.visible = false
     $Player.input_locked = $Player.pending_upgrades > 0
     if $Player.input_locked:
@@ -156,7 +168,13 @@ func try_next_map():
     show_message("MAP %d — new enemies, new ground, fresh slot machine!" % map_number)
 
 func generate_map():
-    var width: float = 2600.0 + map_rng.randi_range(0, 5) * 120.0
+    for group in ["projectiles", "combat_effects", "extra_enemies", "scenery"]:
+        for old in get_tree().get_nodes_in_group(group):
+            if old.get_parent() != self:
+                continue
+            remove_child(old)
+            old.queue_free()
+    var width: float = 3400.0 + map_rng.randi_range(0, 5) * 120.0
     var ground_shape = RectangleShape2D.new()
     ground_shape.size = Vector2(width, 80)
     $Ground.position = Vector2(width / 2.0, 650)
@@ -164,9 +182,13 @@ func generate_map():
     $Ground/Visual.polygon = PackedVector2Array([Vector2(-width/2, -40), Vector2(width/2, -40), Vector2(width/2, 40), Vector2(-width/2, 40)])
     var tint := Color.from_hsv(fmod(map_number * 0.17, 1.0), 0.35, 0.28)
     $Ground/Visual.color = tint
-    for i in range(3):
+    for i in range(6):
+        if not has_node("Platform%d" % (i + 1)):
+            var extra_platform = $Platform1.duplicate()
+            extra_platform.name = "Platform%d" % (i + 1)
+            add_child(extra_platform)
         var platform = get_node("Platform%d" % (i + 1))
-        platform.position = Vector2(650 + i * (width - 1000) / 3.0 + map_rng.randf_range(-70, 70), map_rng.randf_range(545, 565))
+        platform.position = Vector2(650 + i * (width - 1000) / 6.0 + map_rng.randf_range(-50, 50), map_rng.randf_range(545, 565))
         var span := map_rng.randf_range(260, 420)
         var shape = RectangleShape2D.new()
         shape.size = Vector2(span, 24)
@@ -181,6 +203,33 @@ func generate_map():
         enemy.contact_damage = int([10, 10, 14, 22][i] * (1.0 + (map_number - 1) * 0.12))
         enemy.velocity = Vector2.ZERO
         enemy.respawn()
+        enemy.ranged = i == 1 or i == 3
+    $Enemy2.get_node("Name").text = "GUNNER"
+    $Enemy2.get_node("Body").color = Color(1, 0.65, 0.25)
+    $Boss.get_node("Name").text = ["THE COLLECTOR", "ARCANE WARDEN", "IRON MARSHAL"][(map_number - 1) % 3]
+    for i in range(mini(3 + map_number - 1, 7)):
+        var enemy = load("res://scenes/enemy.tscn").instantiate()
+        enemy.position = Vector2(1000 + i * (width - 1400) / mini(3 + map_number - 1, 7), 580)
+        enemy.ranged = i % 2 == 0
+        enemy.enemy_name = "HEX CASTER" if enemy.ranged else "RAIDER"
+        enemy.max_hp = int((65 + i * 8) * (1 + (map_number - 1) * 0.22))
+        enemy.contact_damage = 10 + map_number * 2
+        enemy.xp_reward = 35
+        enemy.gold_reward = 12
+        enemy.add_to_group("extra_enemies")
+        add_child(enemy)
+        enemy.defeated.connect(earn_souls)
+        enemy.get_node("Body").color = Color(0.8, 0.3, 0.9) if enemy.ranged else Color(1, 0.4, 0.25)
+    for i in range(18):
+        var building = Polygon2D.new()
+        var height := map_rng.randf_range(80, 280)
+        building.polygon = PackedVector2Array([Vector2(0, 0), Vector2(130, 0), Vector2(130, -height), Vector2(0, -height)])
+        building.position = Vector2(i * width / 18, 610)
+        building.color = tint.darkened(0.55)
+        building.z_index = -2
+        building.add_to_group("scenery")
+        add_child(building)
+    $HUD/Title.text = ["NEON OUTSKIRTS", "HEX DISTRICT", "IRON BARRICADE"][(map_number - 1) % 3]
     var old_slot = $SlotMachine
     remove_child(old_slot)
     old_slot.queue_free()
@@ -192,6 +241,7 @@ func generate_map():
     $Player.global_position = Vector2(180, 520)
     $Player.velocity = Vector2.ZERO
     $Player.dash_timer = 0.0
+    $Player.skill_timer = 0.0
     $Player.get_node("Camera2D").reset_smoothing()
     update_hud()
 
@@ -221,7 +271,7 @@ func show_death():
     if death_screen:
         return
     death_screen = true
-    for enemy in [$Enemy1, $Enemy2, $Enemy3, $Boss]:
+    for enemy in get_tree().get_nodes_in_group("enemies"):
         enemy.set_physics_process(false)
     choosing_class = false
     next_map_pending = false
@@ -253,12 +303,21 @@ func buy_permanent(index: int):
     refresh_death_screen()
 
 func refresh_death_screen():
+    layout_choices(false)
     $HUD/LevelUp.visible = true
     $HUD/LevelUp/Title.text = "RUN ENDED — %d SOULS" % souls
-    var labels = ["IRON HEART: +10 starting HP", "SHARP STEEL: +3 starting sword damage", "LAST WORD: +50 kamikaze damage"]
+    var labels = ["IRON HEART: +10 starting HP", "SHARP STEEL: +3 starting weapon damage", "LAST WORD: +50 kamikaze damage"]
     for i in range(3):
         get_node("HUD/LevelUp/Choice%d" % (i + 1)).text = "%d  %s\nRank %d • Cost %d souls • Permanent" % [i + 1, labels[i], permanent[i], upgrade_cost(i)]
     $HUD/LevelUp/Hint.text = "1 / 2 / 3 BUY     ENTER START NEW RUN"
+
+func layout_choices(four: bool):
+    $HUD/LevelUp/Choice4.visible = four
+    for i in range(4):
+        var label = get_node("HUD/LevelUp/Choice%d" % (i + 1))
+        label.offset_top = 80 + i * (62 if four else 85)
+        label.offset_bottom = label.offset_top + 60
+    $HUD/LevelUp/Hint.text = "Press 1, 2, 3, or 4" if four else "Press 1, 2, or 3"
 
 func show_message(text: String):
     $HUD/Message.text = text

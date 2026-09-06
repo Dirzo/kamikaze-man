@@ -11,8 +11,8 @@ func new_game():
     game.save_path = ""
     root.add_child(game)
     game.get_node("Player").set_physics_process(false)
-    for name in ["Enemy1", "Enemy2", "Enemy3", "Boss"]:
-        game.get_node(name).set_physics_process(false)
+    for enemy in get_nodes_in_group("enemies"):
+        enemy.set_physics_process(false)
     return game
 func run():
     var game = new_game()
@@ -29,7 +29,10 @@ func run():
     check(game.map_number == 2 and boss.alive, "Boss victory generates next map")
     check(not game.get_node("SlotMachine").broken, "New map has a working slot machine")
     check(game.get_node("Platform1").position != platform_position and boss.max_hp > 260, "Map layout varies and difficulty increases")
-    check(p.class_name_display == "Knight" and p.gold == 80, "Run build and gold survive map transition")
+    check(p.class_name_display == "Fighter" and p.gold == 80, "Run build and gold survive map transition")
+    for enemy in get_nodes_in_group("extra_enemies"):
+        enemy.position = Vector2(4000, 500)
+        enemy.set_physics_process(false)
     p.position = Vector2(1000, 500)
     boss.position = Vector2(1100, 500)
     boss.hp = 1
@@ -56,7 +59,7 @@ func run():
     root.add_child(saved)
     saved.get_node("Player").set_physics_process(false)
     check(saved.get_node("Player").max_hp == 110 and saved.souls == bank - 3, "Upgrades and currency persist into a fresh run")
-    check(saved.map_number == 1 and saved.get_node("Player").class_name_display == "Fighter" and saved.get_node("Player").gold == 0, "Fresh run resets map, class, and gold")
+    check(saved.map_number == 1 and saved.get_node("Player").class_name_display == "Recruit" and saved.get_node("Player").gold == 0, "Fresh run resets map, class, and gold")
     DirAccess.remove_absolute(path)
     saved.queue_free()
     game.queue_free()
@@ -82,4 +85,3 @@ func run():
     await process_frame
     print("Run-loop failures: %d" % failures)
     quit(1 if failures else 0)
-

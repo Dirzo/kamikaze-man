@@ -19,8 +19,8 @@ func run():
     var p = game.get_node("Player")
     var e = game.get_node("Enemy1")
     p.set_physics_process(false)
-    for name in ["Enemy1", "Enemy2", "Enemy3", "Boss"]:
-        game.get_node(name).set_physics_process(false)
+    for enemy in get_nodes_in_group("enemies"):
+        enemy.set_physics_process(false)
     p.crit_chance = 0.0
     p.position = Vector2(500, 550)
     e.position = Vector2(546, 550)

@@ -29,7 +29,12 @@ var dash_speed := 760.0
 var input_locked := false
 var dropping := false
 var pending_upgrades := 0
-var class_name_display := "Fighter"
+var class_name_display := "Recruit"
+var combat_class := "fighter"
+var skill_timer := 0.0
+var skill_cooldown := 5.0
+var skill_name := "Whirlwind"
+var guard_timer := 0.0
 var class_selected := false
 var sword_timer := 0.0
 var dead := false
@@ -48,6 +53,9 @@ func _draw():
 const GRAVITY := 1500.0
 
 func _ready():
+    var weapon = load("res://scripts/weapon.gd").new()
+    weapon.name = "Weapon"
+    $Body.add_child(weapon)
     hp = max_hp
     stats_changed.emit()
 
@@ -61,6 +69,8 @@ func _physics_process(delta):
     dash_cooldown_timer = max(dash_cooldown_timer - delta, 0.0)
     dash_timer = max(dash_timer - delta, 0.0)
     sword_timer = maxf(sword_timer - delta, 0.0)
+    skill_timer = maxf(skill_timer - delta, 0.0)
+    guard_timer = maxf(guard_timer - delta, 0.0)
     $Body/Sword.rotation = lerpf(-0.65, 0.55, 1.0 - sword_timer / 0.16) if sword_timer > 0.0 else -0.65
     $Body/Slash.visible = sword_timer > 0.0
 
@@ -108,11 +118,16 @@ func _unhandled_input(event):
         start_dash()
     if event.keycode == KEY_K:
         kamikaze()
+    if event.keycode == KEY_Q:
+        use_skill()
 
 func attack():
     if input_locked or attack_timer > 0.0:
         return
     attack_timer = attack_cooldown
+    if combat_class != "fighter":
+        fire_projectile(combat_class)
+        return
     sword_timer = 0.16
     $Body/Slash.visible = true
     $AttackArea/AttackShape.set_deferred("disabled", false)
@@ -137,30 +152,92 @@ func select_class(id: String) -> bool:
     if class_selected:
         return false
     match id:
-        "knight":
-            class_name_display = "Knight"
+        "fighter":
+            class_name_display = "Fighter"
             max_hp += 50
             hp += 50
             attack_damage += 6
             $Body.color = Color(0.35, 0.65, 1.0)
-        "berserker":
-            class_name_display = "Berserker"
-            attack_damage += 16
-            attack_cooldown = maxf(0.14, attack_cooldown - 0.06)
-            max_hp = maxi(35, max_hp - 20)
+        "mage":
+            class_name_display = "Mage"
+            attack_damage += 14
+            attack_cooldown += 0.30
+            max_hp = maxi(35, max_hp - 15)
             hp = mini(hp, max_hp)
-            $Body.color = Color(1.0, 0.35, 0.25)
-        "duelist":
-            class_name_display = "Duelist"
-            move_speed += 60.0
-            crit_chance = minf(0.70, crit_chance + 0.15)
-            dash_cooldown = maxf(0.3, dash_cooldown - 0.25)
+            skill_name = "Arcane Nova"
+            skill_cooldown = 6.0
+            $Body.color = Color(0.7, 0.35, 1.0)
+        "shooter":
+            class_name_display = "Shooter"
+            attack_damage = maxi(5, attack_damage - 8)
+            attack_cooldown = maxf(0.10, attack_cooldown - 0.16)
+            move_speed += 30.0
+            skill_name = "Scattershot"
+            skill_cooldown = 3.0
+            $Body.color = Color(1.0, 0.75, 0.3)
+        "bowman":
+            class_name_display = "Bowman"
+            attack_damage += 6
+            attack_cooldown += 0.14
+            move_speed += 35.0
+            crit_chance = minf(0.70, crit_chance + 0.10)
+            skill_name = "Power Arrow"
+            skill_cooldown = 4.0
             $Body.color = Color(0.45, 1.0, 0.65)
         _:
             return false
     class_selected = true
+    combat_class = id
+    $Body/Sword.visible = id == "fighter"
+    $Body/Weapon.kind = id
+    $Body/Weapon.queue_redraw()
     stats_changed.emit()
     return true
+
+func fire_projectile(kind: String, multiplier := 1.0, angle := 0.0, empowered := false):
+    var shot = load("res://scripts/projectile.gd").new()
+    shot.attacker = self
+    shot.damage = int(attack_damage * multiplier)
+    shot.position = global_position + Vector2(28 * facing, -4)
+    var speed := 850.0
+    match kind:
+        "mage":
+            shot.kind = "orb"
+            shot.explosion_radius = 90.0
+            speed = 460.0
+        "bowman":
+            shot.kind = "arrow"
+            shot.pierce = 6 if empowered else 3
+            shot.remaining = 1.4
+            speed = 750.0
+        _:
+            shot.kind = "bullet"
+    shot.velocity = Vector2(facing, 0).rotated(angle) * speed
+    get_parent().add_child(shot)
+
+func use_skill():
+    if dead or input_locked or skill_timer > 0:
+        return
+    skill_timer = skill_cooldown
+    match combat_class:
+        "shooter":
+            for angle in [-0.22, -0.11, 0.0, 0.11, 0.22]:
+                fire_projectile("shooter", 1.6, angle)
+        "bowman":
+            fire_projectile("bowman", 3.0, 0.0, true)
+        _:
+            var radius := 220.0 if combat_class == "mage" else 140.0
+            var multiplier := 2.5 if combat_class == "mage" else 2.0
+            var effect = load("res://scripts/combat_effect.gd").new()
+            effect.position = global_position
+            effect.radius = radius
+            effect.tint = Color(0.7, 0.3, 1) if combat_class == "mage" else Color(0.5, 0.8, 1)
+            get_parent().add_child(effect)
+            if combat_class == "fighter":
+                guard_timer = 0.5
+            for enemy in get_tree().get_nodes_in_group("enemies"):
+                if enemy.alive and global_position.distance_to(enemy.global_position) <= radius:
+                    enemy.take_damage(int(attack_damage * multiplier), self)
 
 func start_dash():
     if dash_cooldown_timer > 0.0:
@@ -180,7 +257,7 @@ func drop_through_platform():
     dropping = false
 
 func take_damage(amount: int):
-    if dead or input_locked:
+    if dead or input_locked or guard_timer > 0.0:
         return
     hp = max(hp - amount, 0)
     stats_changed.emit()
