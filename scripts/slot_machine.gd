@@ -38,6 +38,9 @@ func spin():
 
     $Prompt.text = "SPINNING..."
     await get_tree().create_timer(0.35).timeout
+    if player.dead:
+        spinning = false
+        return
 
     var roll: float = randf() + player.luck
     var reward := "bust"
@@ -68,7 +71,7 @@ func spin():
         $Body.color = Color(0.3, 0.28, 0.25)
         $Screen.color = Color(0.025, 0.025, 0.025)
         get_node("777").text = "X X X"
-        text += "  MACHINE BROKE! Out of service until restart."
+        text += "  MACHINE BROKE! Defeat the boss for a fresh map."
     result.emit(text)
 
     $Prompt.text = "BROKEN — OUT OF SERVICE" if broken else "Z — SPIN (%d GOLD)" % spin_cost

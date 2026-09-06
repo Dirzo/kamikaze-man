@@ -14,6 +14,7 @@ func check(ok: bool, label: String):
 
 func run():
     var game = load("res://scenes/main.tscn").instantiate()
+    game.save_path = ""
     root.add_child(game)
     var p = game.get_node("Player")
     var slot = game.get_node("SlotMachine")
@@ -83,11 +84,11 @@ func run():
     check(not p.input_locked, "All queued choices return control")
     await create_timer(0.25).timeout
     boss.take_damage(999, p)
-    check(not game.choosing_class, "Respawned boss never repeats class selection")
+    check(not game.choosing_class, "Later-map boss never repeats class selection")
     while p.pending_upgrades > 0:
         game.choose_upgrade(0)
     p.die()
-    check(p.class_name_display == "Knight" and not p.select_class("duelist"), "Death preserves class and prevents stacking classes")
+    check(game.death_screen and not p.select_class("duelist"), "Death opens shop and prevents stacking classes on the ended run")
 
     for id in ["berserker", "duelist"]:
         var fighter = load("res://scenes/player.tscn").instantiate()
@@ -104,4 +105,3 @@ func run():
     await process_frame
     print("Feature failures: %d" % failures)
     quit(1 if failures else 0)
-

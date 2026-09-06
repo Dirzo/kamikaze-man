@@ -1,6 +1,7 @@
 extends CharacterBody2D
 
 signal boss_defeated
+signal defeated(souls: int)
 
 @export var enemy_name := "Punk"
 @export var max_hp := 55
@@ -21,6 +22,7 @@ var alive := true
 const GRAVITY := 1500.0
 
 func _ready():
+    add_to_group("enemies")
     hp = max_hp
     start_position = global_position
     $Name.text = enemy_name
@@ -85,8 +87,7 @@ func die(attacker):
     $CollisionShape2D.set_deferred("disabled", true)
     velocity = Vector2.ZERO
 
-    if is_boss:
-        boss_defeated.emit()
+    defeated.emit(5 if is_boss else 1)
 
     if attacker.has_method("gain_xp"):
         attacker.gain_xp(xp_reward)
@@ -96,8 +97,8 @@ func die(attacker):
     if is_boss and attacker.has_signal("message_requested"):
         attacker.message_requested.emit("BOSS DOWN — +%d gold" % gold_reward)
 
-    await get_tree().create_timer(respawn_delay).timeout
-    respawn()
+    if is_boss:
+        boss_defeated.emit()
 
 func respawn():
     hp = max_hp

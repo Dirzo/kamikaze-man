@@ -3,6 +3,7 @@ extends CharacterBody2D
 signal stats_changed
 signal level_up_requested
 signal message_requested(text)
+signal died
 
 @export var move_speed := 290.0
 @export var jump_velocity := -510.0
@@ -31,6 +32,18 @@ var pending_upgrades := 0
 var class_name_display := "Fighter"
 var class_selected := false
 var sword_timer := 0.0
+var dead := false
+var kamikaze_bonus := 0
+var blast_time := 0.0
+const BLAST_RADIUS := 300.0
+
+func _process(delta):
+    blast_time = maxf(0.0, blast_time - delta)
+    queue_redraw()
+
+func _draw():
+    if blast_time > 0.0:
+        draw_circle(Vector2.ZERO, BLAST_RADIUS * (1.0 - blast_time / 0.6), Color(1, 0.45, 0.12, blast_time))
 
 const GRAVITY := 1500.0
 
@@ -39,6 +52,8 @@ func _ready():
     stats_changed.emit()
 
 func _physics_process(delta):
+    if dead:
+        return
     if global_position.y > 1200.0:
         die()
         return
@@ -83,7 +98,7 @@ func _unhandled_input(event):
     if input_locked or not event is InputEventKey or not event.pressed or event.echo:
         return
 
-    if event.keycode == KEY_SPACE:
+    if event.keycode == KEY_ALT:
         if Input.is_key_pressed(KEY_DOWN) and is_on_floor():
             drop_through_platform()
         elif is_on_floor():
@@ -91,6 +106,8 @@ func _unhandled_input(event):
 
     if event.keycode == KEY_SHIFT:
         start_dash()
+    if event.keycode == KEY_K:
+        kamikaze()
 
 func attack():
     if input_locked or attack_timer > 0.0:
@@ -103,6 +120,9 @@ func attack():
     # The first signal fires before physics updates the newly enabled shape.
     await get_tree().physics_frame
 
+    if dead:
+        $AttackArea/AttackShape.set_deferred("disabled", true)
+        return
     for body in $AttackArea.get_overlapping_bodies():
         if body.has_method("take_damage"):
             var damage := attack_damage
@@ -160,6 +180,8 @@ func drop_through_platform():
     dropping = false
 
 func take_damage(amount: int):
+    if dead or input_locked:
+        return
     hp = max(hp - amount, 0)
     stats_changed.emit()
 
@@ -167,16 +189,37 @@ func take_damage(amount: int):
         die()
 
 func die():
-    var lost: int = mini(gold, int(ceil(gold * 0.25)))
-    gold -= lost
-    hp = max_hp
-    global_position = Vector2(180, 520)
+    if dead:
+        return
+    dead = true
+    finish_death()
+
+func finish_death():
+    hp = 0
+    input_locked = true
     velocity = Vector2.ZERO
     dash_timer = 0.0
-    message_requested.emit("You wiped out. Lost %d gold." % lost)
+    $Body/Slash.visible = false
+    $AttackArea/AttackShape.set_deferred("disabled", true)
     stats_changed.emit()
+    died.emit()
+
+func kamikaze():
+    if dead or input_locked:
+        return
+    # Mark death first so a blast boss kill cannot advance the map.
+    dead = true
+    input_locked = true
+    blast_time = 0.6
+    var damage: int = 150 + attack_damage * 5 + kamikaze_bonus
+    for enemy in get_tree().get_nodes_in_group("enemies"):
+        if enemy.alive and global_position.distance_to(enemy.global_position) <= BLAST_RADIUS:
+            enemy.take_damage(damage, self)
+    finish_death()
 
 func gain_xp(amount: int):
+    if dead:
+        return
     xp += amount
     var was_locked := input_locked
 

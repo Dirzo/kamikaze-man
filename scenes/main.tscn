@@ -170,7 +170,7 @@ offset_left = 20.0
 offset_top = 680.0
 offset_right = 1100.0
 offset_bottom = 710.0
-text = "← → MOVE     SPACE JUMP     ↓ + SPACE DROP     CTRL ATTACK     SHIFT DASH     Z INTERACT"
+text = "← → MOVE   ALT JUMP   ↓ + ALT DROP   CTRL SWORD   SHIFT DASH   Z SPIN   K KAMIKAZE"
 
 [node name="Message" type="Label" parent="HUD"]
 offset_left = 270.0

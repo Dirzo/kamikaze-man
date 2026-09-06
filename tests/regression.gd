@@ -14,6 +14,7 @@ func check(condition: bool, label: String):
 
 func run():
     var game = load("res://scenes/main.tscn").instantiate()
+    game.save_path = ""
     root.add_child(game)
     var p = game.get_node("Player")
     var e = game.get_node("Enemy1")
@@ -62,9 +63,6 @@ func run():
     game.choose_upgrade(0)
     check(not p.input_locked and not game.get_node("HUD/LevelUp").visible, "Final upgrade restores movement")
 
-    p.position = Vector2(-100, 2000)
-    p._physics_process(0.016)
-    check(p.position.y < 1000, "Falling beyond the level respawns the player")
     var slot = game.get_node("SlotMachine")
     slot.break_chance = 0.0
     p.gold = 25
@@ -72,6 +70,9 @@ func run():
     slot.spin()
     await create_timer(0.7).timeout
     check(p.gold == 100 and not slot.spinning, "Slot machine deducts cost and completes a jackpot spin")
+    p.position = Vector2(-100, 2000)
+    p._physics_process(0.016)
+    check(p.dead and game.death_screen, "Falling ends the run and opens permanent upgrades")
     await create_timer(3.0).timeout
     game.queue_free()
     await process_frame
