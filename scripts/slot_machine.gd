@@ -35,7 +35,7 @@ func spin():
     $Prompt.text = "SPINNING..."
     await get_tree().create_timer(0.35).timeout
 
-    var roll := randf() + player.luck
+    var roll: float = randf() + player.luck
     var reward := "bust"
     var text := "BUST — the machine ate your money."
 

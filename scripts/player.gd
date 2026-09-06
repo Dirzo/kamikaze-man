@@ -27,6 +27,7 @@ var dash_direction := 1
 var dash_speed := 760.0
 var input_locked := false
 var dropping := false
+var pending_upgrades := 0
 
 const GRAVITY := 1500.0
 
@@ -35,6 +36,9 @@ func _ready():
     stats_changed.emit()
 
 func _physics_process(delta):
+    if global_position.y > 1200.0:
+        die()
+        return
     attack_timer = max(attack_timer - delta, 0.0)
     dash_cooldown_timer = max(dash_cooldown_timer - delta, 0.0)
     dash_timer = max(dash_timer - delta, 0.0)
@@ -86,6 +90,8 @@ func attack():
     attack_timer = attack_cooldown
     $AttackArea/AttackShape.set_deferred("disabled", false)
     await get_tree().physics_frame
+    # The first signal fires before physics updates the newly enabled shape.
+    await get_tree().physics_frame
 
     for body in $AttackArea.get_overlapping_bodies():
         if body.has_method("take_damage"):
@@ -122,27 +128,28 @@ func take_damage(amount: int):
         die()
 
 func die():
-    var lost := min(gold, int(ceil(gold * 0.25)))
+    var lost: int = mini(gold, int(ceil(gold * 0.25)))
     gold -= lost
     hp = max_hp
     global_position = Vector2(180, 520)
     velocity = Vector2.ZERO
+    dash_timer = 0.0
     message_requested.emit("You wiped out. Lost %d gold." % lost)
     stats_changed.emit()
 
 func gain_xp(amount: int):
     xp += amount
-    var leveled := false
+    var was_locked := input_locked
 
-    if xp >= xp_to_next:
+    while xp >= xp_to_next:
         xp -= xp_to_next
         level += 1
         xp_to_next = int(round(xp_to_next * 1.28))
-        leveled = true
+        pending_upgrades += 1
 
     stats_changed.emit()
 
-    if leveled:
+    if pending_upgrades > 0 and not was_locked:
         input_locked = true
         level_up_requested.emit()
 
@@ -175,8 +182,11 @@ func apply_upgrade(id: String):
         "luck":
             luck += 0.08
 
-    input_locked = false
+    pending_upgrades = maxi(0, pending_upgrades - 1)
+    input_locked = pending_upgrades > 0
     stats_changed.emit()
+    if input_locked:
+        level_up_requested.emit()
 
 func gambling_reward(id: String):
     match id:

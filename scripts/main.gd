@@ -64,8 +64,8 @@ func choose_upgrade(index: int):
     if index < 0 or index >= current_choices.size():
         return
     var choice = current_choices[index]
-    $Player.apply_upgrade(choice.id)
     $HUD/LevelUp.visible = false
+    $Player.apply_upgrade(choice.id)
     show_message("%s acquired." % choice.name)
 
 func show_message(text: String):

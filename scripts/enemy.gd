@@ -44,13 +44,15 @@ func _physics_process(delta):
 
     var dx = target.global_position.x - global_position.x
     var distance = abs(dx)
+    var horizontal_reach: float = 17.0 + 19.0 * absf(global_scale.x) + 6.0
 
     if distance < aggro_range:
-        if distance > 42.0:
+        if distance > horizontal_reach:
             velocity.x = sign(dx) * move_speed
         else:
             velocity.x = 0.0
-            if hit_timer <= 0.0 and target.has_method("take_damage"):
+            var vertical_reach: float = 25.0 + 22.0 * absf(global_scale.y)
+            if absf(target.global_position.y - global_position.y) < vertical_reach and hit_timer <= 0.0 and not target.input_locked and target.has_method("take_damage"):
                 target.take_damage(contact_damage)
                 hit_timer = 0.8
     else:
@@ -64,17 +66,18 @@ func take_damage(amount: int, attacker, is_crit := false):
 
     hp -= amount
     update_healthbar()
+    if is_crit and attacker.has_signal("message_requested"):
+        attacker.message_requested.emit("CRIT! %d" % amount)
+    if hp <= 0:
+        die(attacker)
+        return
     $Body.modulate = Color(1.6, 1.6, 1.6)
     await get_tree().create_timer(0.05).timeout
     $Body.modulate = Color.WHITE
 
-    if is_crit and attacker.has_signal("message_requested"):
-        attacker.message_requested.emit("CRIT! %d" % amount)
-
-    if hp <= 0:
-        die(attacker)
-
 func die(attacker):
+    if not alive:
+        return
     alive = false
     visible = false
     $CollisionShape2D.set_deferred("disabled", true)
@@ -96,6 +99,8 @@ func respawn():
     global_position = start_position
     visible = true
     alive = true
+    hit_timer = 0.0
+    $Body.modulate = Color.WHITE
     $CollisionShape2D.set_deferred("disabled", false)
     update_healthbar()
 
