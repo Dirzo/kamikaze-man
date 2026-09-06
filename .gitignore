@@ -1,0 +1,14 @@
+# Godot 4 generated files
+.godot/
+
+# Imported resources
+.import/
+
+# Mono / C# generated files
+.mono/
+
+# OS/editor clutter
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
