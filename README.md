@@ -11,6 +11,7 @@ A keyboard-first 2D action roguelike prototype for Godot 4.
 - Down + Alt — drop through a one-way platform
 - Ctrl — attack
 - Q — class ability; cooldown shown in HUD
+- T — skill tree after choosing a class; 1 / 2 / 3 invest in a branch, T or Esc closes
 - Shift — dash
 - Z — interact with the slot machine
 - K — kamikaze: sacrifice your life for an explosion
@@ -79,7 +80,7 @@ Run these from the project folder using Godot 4:
 
 ## Current visuals
 
-Everything is intentionally primitive. The goal of v0.1 is to prove the movement → combat → XP → gambling loop before spending time on sprites and animation.
+The prototype now uses original chibi fantasy character art, a painted forest background, grassy terrain, and simple motion. Combat balance still needs playtesting.
 
 ## Expanded encounters
 
@@ -89,6 +90,33 @@ Class-playtest validation:
 
     godot --headless --path . --script res://tests/playtest.gd
 
-Maps span 3400–4000 pixels with six platforms, randomized skyline scenery, and seven enemies initially, growing to eleven. Neon Outskirts, Hex District, and Iron Barricade cycle through colors and boss names.
+Maps span 3400–4000 pixels with six platforms, woodland scenery, and seven enemies initially, growing to eleven. Sunleaf Woods, Mushroom Hollow, and Thornwood Grove cycle through boss encounters.
 
 Gunners and Hex Casters shoot dodgeable projectiles. Bosses fire three-shot spreads. Their bodies flash gold before firing. Projectiles pause during upgrade selection and are removed on map transitions. A new map resets Q's cooldown. Existing permanent-upgrade saves remain compatible and benefit all classes.
+
+## Lifesteal and fighting-style trees
+
+Every character starts with 5% lifesteal. Healing uses actual damage dealt (not overkill), carries fractional healing between hits, caps at max HP, and never revives a dead player. Green HP numbers show restored health. Vampiric Edge is a level-up option adding 3 percentage points of lifesteal. Healing works with melee, projectiles, area skills, and burns.
+
+Press T after choosing a class. Each class has three mutually exclusive branches, each with three ranks:
+
+| Class | Branch 1 | Branch 2 | Branch 3 |
+| --- | --- | --- | --- |
+| Fighter | Bloodblade: life-draining cleaves | Guardian: damage reduction, guard, slows | Cyclone: faster attacks and wide whirlwinds |
+| Mage | Pyromancer: fire and damage over time | Cryomancer: slows and larger explosions | Siphon: draining magic |
+| Shooter | Gunslinger: rapid fire and seven-shot fans | Sniper: heavy piercing precision shots | Demolitioner: exploding rounds |
+| Bowman | Ranger: multi-arrow volleys | Marksman: heavy precision arrows | Thorn Warden: slows and lifesteal |
+
+The first investment locks that branch for the current run. Ranks cost 1, 2, then 3 points. Class selection grants 3 points and each level grants 1 more. Unspent pre-class points remain available. The tree changes primary attacks, Q skills, or defenses as described in each node. Skills and status effects pause while choosing upgrades.
+
+F2 starts a fresh class/style playtest with 6 points, enough to fully rank any branch. These are run upgrades, not permanent soul upgrades; starting a new run resets them.
+
+## Fantasy art refresh
+
+Original chibi heroes, slime/mushroom/imp monsters, an armored forest boss, a painted woodland background, and grassy terrain replace the rectangle-only look. The three regions are now Sunleaf Woods, Mushroom Hollow, and Thornwood Grove. Characters use basic idle/walk bobbing and weapon swings rather than full frame-by-frame animation.
+
+Assets are in assets/characters.png and assets/forest.png. See assets/ART_NOTES.md for generation prompts and implementation notes. Existing permanent saves remain compatible.
+
+Additional validation:
+
+    godot --headless --path . --script res://tests/skill_tree.gd

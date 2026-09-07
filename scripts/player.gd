@@ -36,6 +36,16 @@ var skill_cooldown := 5.0
 var skill_name := "Whirlwind"
 var guard_timer := 0.0
 var hurt_timer := 0.0
+var lifesteal := 0.05
+var heal_fraction := 0.0
+var skill_points := 0
+var style_id := ""
+var style_rank := 0
+var style_index := -1
+var art_phase := 0.0
+var heal_popup := 0
+var heal_popup_timer := 0.0
+const SkillTree = preload("res://scripts/skill_tree.gd")
 var class_selected := false
 var sword_timer := 0.0
 var dead := false
@@ -44,19 +54,30 @@ var blast_time := 0.0
 const BLAST_RADIUS := 300.0
 
 func _process(delta):
+    art_phase += delta
+    heal_popup_timer = maxf(0.0, heal_popup_timer - delta)
+    if has_node("Body/Portrait") and not dead:
+        $Body/Portrait.position.y = -13 + sin(art_phase * (12 if absf(velocity.x) > 5 else 3)) * (1.8 if absf(velocity.x) > 5 else 0.4)
     blast_time = maxf(0.0, blast_time - delta)
     queue_redraw()
 
 func _draw():
+    if heal_popup_timer > 0:
+        draw_string(ThemeDB.fallback_font, Vector2(-18, -65 - (1.0 - heal_popup_timer) * 12), "+%d HP" % heal_popup, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.25, 1, 0.45))
     if blast_time > 0.0:
         draw_circle(Vector2.ZERO, BLAST_RADIUS * (1.0 - blast_time / 0.6), Color(1, 0.45, 0.12, blast_time))
 
 const GRAVITY := 1500.0
 
 func _ready():
+    z_index = 5
     var weapon = load("res://scripts/weapon.gd").new()
     weapon.name = "Weapon"
     $Body.add_child(weapon)
+    load("res://scripts/game_art.gd").character($Body, 0, true)
+    $Body/Face.hide()
+    $Body/Sword.z_index = 1
+    $Body/Weapon.z_index = 1
     hp = max_hp
     stats_changed.emit()
 
@@ -127,8 +148,16 @@ func attack():
     if input_locked or attack_timer > 0.0:
         return
     attack_timer = attack_cooldown
+    if style_id in ["cyclone", "gunslinger"]:
+        attack_timer *= 0.75 if style_id == "cyclone" else 0.8
+    if style_id in ["sniper", "marksman"]:
+        attack_timer *= 1.5 if style_id == "sniper" else 1.3
     if combat_class != "fighter":
-        fire_projectile(combat_class)
+        if style_id == "ranger":
+            for angle in [-0.12, 0.0, 0.12]:
+                fire_projectile(combat_class, 0.65, angle)
+        else:
+            fire_projectile(combat_class)
         return
     sword_timer = 0.16
     $Body/Slash.visible = true
@@ -147,6 +176,7 @@ func attack():
             if is_crit:
                 damage = int(round(damage * 1.8))
             body.take_damage(damage, self, is_crit)
+            apply_hit_effects(body)
 
     $AttackArea/AttackShape.set_deferred("disabled", true)
 
@@ -189,10 +219,12 @@ func select_class(id: String) -> bool:
         _:
             return false
     class_selected = true
+    skill_points += 3
     combat_class = id
     $Body/Sword.visible = id == "fighter"
     $Body/Weapon.kind = id
     $Body/Weapon.queue_redraw()
+    $Body/Portrait.frame = ["fighter", "mage", "shooter", "bowman"].find(id)
     stats_changed.emit()
     return true
 
@@ -202,25 +234,46 @@ func fire_projectile(kind: String, multiplier := 1.0, angle := 0.0, empowered :=
     shot.damage = int(attack_damage * multiplier)
     shot.position = global_position + Vector2(28 * facing, -4)
     var speed := 850.0
+    if style_id == "sniper":
+        shot.damage = int(shot.damage * 1.8)
+        shot.pierce = 2 if style_rank >= 2 else 1
+        speed = 1100
+    if style_id == "marksman":
+        shot.damage = int(shot.damage * 1.5)
     match kind:
         "mage":
             shot.kind = "orb"
             shot.explosion_radius = 90.0
+            if style_id == "cryomancer":
+                shot.explosion_radius = 140.0
             speed = 460.0
         "bowman":
             shot.kind = "arrow"
             shot.pierce = 6 if empowered else 3
+            if style_id == "ranger" and style_rank >= 3 and not empowered:
+                shot.pierce = 4
             shot.remaining = 1.4
             speed = 750.0
         _:
             shot.kind = "bullet"
+            if style_id == "demolitioner":
+                shot.explosion_radius = 90.0 if style_rank >= 2 else 60.0
+                shot.kind = "orb"
     shot.velocity = Vector2(facing, 0).rotated(angle) * speed
     get_parent().add_child(shot)
+    return shot
 
 func use_skill():
     if dead or input_locked or skill_timer > 0:
         return
     skill_timer = skill_cooldown
+    if style_rank >= 2 and style_id in ["cyclone", "gunslinger", "siphon", "marksman"]:
+        skill_timer *= 0.65 if style_id in ["cyclone", "gunslinger"] else (0.7 if style_id == "marksman" else 0.75)
+    if style_id == "cryomancer" and style_rank >= 3:
+        skill_timer *= 0.6
+    if not style_id.is_empty():
+        use_style_skill()
+        return
     match combat_class:
         "shooter":
             for angle in [-0.22, -0.11, 0.0, 0.11, 0.22]:
@@ -240,6 +293,105 @@ func use_skill():
             for enemy in get_tree().get_nodes_in_group("enemies"):
                 if enemy.alive and global_position.distance_to(enemy.global_position) <= radius:
                     enemy.take_damage(int(attack_damage * multiplier), self)
+
+func invest_style(index: int) -> bool:
+    if not class_selected or index < 0 or index > 2 or skill_points < style_rank + 1 or style_rank >= 3:
+        return false
+    if style_index >= 0 and style_index != index:
+        return false
+    var data = SkillTree.STYLES[combat_class][index]
+    style_index = index
+    style_id = data.id
+    style_rank += 1
+    skill_points -= style_rank
+    skill_name = data.skill
+    stats_changed.emit()
+    return true
+
+func lifesteal_rate() -> float:
+    var bonus := 0.0
+    if style_id == "bloodblade":
+        bonus = 0.10 if style_rank == 1 else 0.15
+    elif style_id == "siphon":
+        bonus = 0.15 if style_rank < 3 else 0.25
+    elif style_id == "thorn":
+        bonus = 0.10 if style_rank == 1 else 0.20
+    return minf(0.5, lifesteal + bonus)
+
+func on_damage_dealt(actual_damage: int):
+    if dead or actual_damage <= 0 or hp >= max_hp:
+        return
+    heal_fraction += actual_damage * lifesteal_rate()
+    var amount := int(heal_fraction)
+    heal_fraction -= amount
+    var healed := mini(amount, max_hp - hp)
+    hp += healed
+    if healed > 0:
+        heal_popup = healed
+        heal_popup_timer = 1.0
+    if hp == max_hp:
+        heal_fraction = 0.0
+    stats_changed.emit()
+
+func apply_hit_effects(enemy):
+    if not enemy.alive:
+        return
+    if style_id == "pyromancer":
+        enemy.apply_burn(maxi(1, int(attack_damage * (0.5 if style_rank >= 2 else 0.25))), self)
+    if style_id in ["cryomancer", "thorn"]:
+        enemy.apply_slow(0.5 if style_id == "cryomancer" else 0.6, 2.5)
+
+func use_style_skill():
+    if combat_class == "shooter":
+        if style_id == "sniper":
+            var shot = fire_projectile("shooter", (6.0 if style_rank >= 3 else 4.0) / 1.8)
+            shot.pierce = 8
+        else:
+            var angles = [-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3] if style_id == "gunslinger" else [-0.15, 0.0, 0.15]
+            for angle in angles:
+                var multiplier := (2.2 if style_rank >= 3 else 1.6) if style_id == "gunslinger" else (3.0 if style_rank >= 3 else 2.0)
+                fire_projectile("shooter", multiplier, angle)
+        return
+    if combat_class == "bowman":
+        var angles = [0.0]
+        if style_id == "ranger":
+            angles = [-0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3] if style_rank >= 2 else [-0.2, -0.1, 0.0, 0.1, 0.2]
+        elif style_id == "thorn" and style_rank >= 3:
+            angles = [-0.12, 0.0, 0.12]
+        for angle in angles:
+            fire_projectile("bowman", 4.0 if style_id == "marksman" and style_rank >= 3 else 3.0, angle, true)
+        return
+    var radius := 140.0
+    var multiplier := 2.0
+    match style_id:
+        "bloodblade":
+            multiplier = 4.0 if style_rank >= 3 else 3.0
+        "guardian":
+            guard_timer = 3.0 if style_rank >= 3 else 2.0
+            radius = 200.0 if style_rank >= 3 else 140.0
+        "cyclone":
+            radius = 200.0
+            multiplier = 3.5 if style_rank >= 3 else 2.0
+        "pyromancer":
+            radius = 300.0 if style_rank >= 3 else 220.0
+            multiplier = 4.0 if style_rank >= 3 else 2.5
+        "cryomancer":
+            radius = 260.0
+            multiplier = 2.5
+        "siphon":
+            radius = 280.0 if style_rank >= 3 else 220.0
+            multiplier = 3.0
+    var effect = load("res://scripts/combat_effect.gd").new()
+    effect.position = global_position
+    effect.radius = radius
+    effect.tint = Color(0.95, 0.3, 0.4) if style_id in ["bloodblade", "siphon"] else Color(0.4, 0.8, 1)
+    get_parent().add_child(effect)
+    for enemy in get_tree().get_nodes_in_group("enemies"):
+        if enemy.alive and global_position.distance_to(enemy.global_position) <= radius:
+            enemy.take_damage(int(attack_damage * multiplier), self)
+            apply_hit_effects(enemy)
+            if style_rank >= 2 and style_id in ["guardian", "cryomancer"]:
+                enemy.apply_slow(0.3 if style_id == "guardian" else 0.15, 3.0)
 
 func start_dash():
     if dash_cooldown_timer > 0.0:
@@ -262,6 +414,8 @@ func take_damage(amount: int):
     if dead or input_locked or guard_timer > 0.0 or hurt_timer > 0.0:
         return
     hurt_timer = 0.6
+    if style_id == "guardian":
+        amount = maxi(1, int(ceil(amount * 0.75)))
     hp = max(hp - amount, 0)
     stats_changed.emit()
 
@@ -306,6 +460,7 @@ func gain_xp(amount: int):
     while xp >= xp_to_next:
         xp -= xp_to_next
         level += 1
+        skill_points += 1
         xp_to_next = int(round(xp_to_next * 1.28))
         pending_upgrades += 1
 
@@ -343,6 +498,8 @@ func apply_upgrade(id: String):
             dash_cooldown = max(0.3, dash_cooldown - 0.12)
         "luck":
             luck += 0.08
+        "lifesteal":
+            lifesteal = minf(0.35, lifesteal + 0.03)
 
     pending_upgrades = maxi(0, pending_upgrades - 1)
     input_locked = pending_upgrades > 0

@@ -14,6 +14,12 @@ signal defeated(souls: int)
 @export var is_boss := false
 @export var ranged := false
 var shot_timer := 1.4
+var slow_timer := 0.0
+var slow_factor := 1.0
+var burn_timer := 0.0
+var burn_tick := 0.0
+var burn_damage := 0
+var burn_source
 
 var hp := 55
 var target = null
@@ -25,6 +31,11 @@ const GRAVITY := 1500.0
 
 func _ready():
     add_to_group("enemies")
+    load("res://scripts/game_art.gd").character($Body, 7 if is_boss else (6 if ranged else 4 + get_index() % 2))
+    $Name.add_theme_color_override("font_outline_color", Color("#193a30"))
+    $Name.add_theme_constant_override("outline_size", 5)
+    $Name.position.y -= 18
+    $HealthBar.position.y -= 12
     hp = max_hp
     start_position = global_position
     $Name.text = enemy_name
@@ -52,6 +63,17 @@ func _physics_process(delta):
 
     if target.input_locked:
         return
+    slow_timer = maxf(0.0, slow_timer - delta)
+    if slow_timer <= 0:
+        slow_factor = 1.0
+    if burn_timer > 0:
+        burn_timer -= delta
+        burn_tick -= delta
+        if burn_tick <= 0 and is_instance_valid(burn_source) and not burn_source.dead:
+            burn_tick = 1.0
+            take_damage(burn_damage, burn_source)
+            if not alive:
+                return
     shot_timer -= delta
     if ranged and global_position.distance_to(target.global_position) < 650.0:
         $Body.modulate = Color(1.5, 1.2, 0.5) if shot_timer < 0.6 else Color.WHITE
@@ -65,7 +87,7 @@ func _physics_process(delta):
 
     if distance < aggro_range:
         if distance > horizontal_reach:
-            velocity.x = sign(dx) * move_speed
+            velocity.x = sign(dx) * move_speed * slow_factor
         else:
             velocity.x = 0.0
             var vertical_reach: float = 25.0 + 22.0 * absf(global_scale.y)
@@ -92,7 +114,10 @@ func take_damage(amount: int, attacker, is_crit := false):
     if not alive:
         return
 
-    hp -= amount
+    var actual_damage := mini(hp, maxi(0, amount))
+    hp -= actual_damage
+    if is_instance_valid(attacker) and attacker.has_method("on_damage_dealt"):
+        attacker.on_damage_dealt(actual_damage)
     update_healthbar()
     if is_crit and attacker.has_signal("message_requested"):
         attacker.message_requested.emit("CRIT! %d" % amount)
@@ -125,6 +150,11 @@ func die(attacker):
         boss_defeated.emit()
 
 func respawn():
+    slow_timer = 0.0
+    slow_factor = 1.0
+    burn_timer = 0.0
+    burn_tick = 0.0
+    burn_source = null
     hp = max_hp
     global_position = start_position
     visible = true
@@ -134,6 +164,21 @@ func respawn():
     $Body.modulate = Color.WHITE
     $CollisionShape2D.set_deferred("disabled", false)
     update_healthbar()
+
+func apply_slow(factor: float, duration: float):
+    if not alive:
+        return
+    slow_factor = minf(slow_factor, factor)
+    slow_timer = maxf(slow_timer, duration)
+
+func apply_burn(amount: int, source):
+    if not alive:
+        return
+    burn_damage = amount
+    burn_source = source
+    if burn_timer <= 0:
+        burn_tick = 1.0
+    burn_timer = 3.0
 
 func update_healthbar():
     if has_node("HealthBar"):

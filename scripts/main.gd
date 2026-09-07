@@ -8,6 +8,7 @@ var upgrade_pool = [
     {"id":"crit", "name":"LOADED DICE", "desc":"+6% crit chance"},
     {"id":"dash", "name":"AFTERBURNER", "desc":"Dash cooldown reduced"},
     {"id":"luck", "name":"HOUSE EDGE", "desc":"Better gambling odds"},
+    {"id":"lifesteal", "name":"VAMPIRIC EDGE", "desc":"+3% lifesteal from actual damage"},
 ]
 
 var current_choices = []
@@ -23,6 +24,8 @@ var map_number := 1
 var next_map_pending := false
 var map_rng := RandomNumberGenerator.new()
 var class_playtest := false
+var tree_open := false
+var tree_panel
 var class_choices = [
     {"id":"fighter", "name":"FIGHTER", "desc":"Sword • +50 HP, +6 damage • Q: Whirlwind + brief guard"},
     {"id":"mage", "name":"MAGE", "desc":"Explosive magic • +14 damage, -15 HP • Q: Arcane Nova"},
@@ -36,6 +39,24 @@ func _ready():
     fourth.name = "Choice4"
     $HUD/LevelUp.add_child(fourth)
     fourth.hide()
+    tree_panel = load("res://scripts/skill_tree_ui.gd").new()
+    $HUD.add_child(tree_panel)
+    tree_panel.hide()
+    var backdrop := TextureRect.new()
+    backdrop.texture = load("res://assets/forest.png")
+    backdrop.size = Vector2(1280, 720)
+    backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+    backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+    backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    $Backdrop.add_child(backdrop)
+    backdrop.size = Vector2(1280, 720)
+    $Backdrop/Moon.hide()
+    var hud_theme := Theme.new()
+    hud_theme.set_color("font_outline_color", "Label", Color("#173b3a"))
+    hud_theme.set_constant("outline_size", "Label", 5)
+    for child in $HUD.get_children():
+        if child is Control:
+            child.theme = hud_theme
     $Player.add_to_group("player")
     $Player.stats_changed.connect(update_hud)
     $Player.level_up_requested.connect(show_level_up)
@@ -53,7 +74,7 @@ func _ready():
     map_rng.randomize()
     generate_map()
     update_hud()
-    $HUD/Controls.text = "← → MOVE   ALT JUMP   ↓ + ALT DROP   CTRL ATTACK   Q SKILL   SHIFT DASH   Z SPIN   K KAMIKAZE"
+    $HUD/Controls.text = "← → MOVE   ALT JUMP   CTRL ATTACK   Q SKILL   T SKILL TREE   SHIFT DASH   Z SPIN   K KAMIKAZE"
     var practice_hint := Label.new()
     practice_hint.position = Vector2(20, 78)
     practice_hint.text = "F2 — FRESH CLASS PLAYTEST (no permanent rewards)"
@@ -62,7 +83,7 @@ func _ready():
 
 func _process(delta):
     if is_instance_valid($Player):
-        $HUD/Build.text = "%s  |  DMG %d  CRIT %d%%  |  Q: %s %s" % [$Player.class_name_display, $Player.attack_damage, int($Player.crit_chance * 100), $Player.skill_name, "READY" if $Player.skill_timer <= 0 else "%.1fs" % $Player.skill_timer]
+        $HUD/Build.text = "%s | DMG %d | LIFESTEAL %d%% | T: %d POINTS | Q: %s %s" % [$Player.class_name_display, $Player.attack_damage, int($Player.lifesteal_rate() * 100), $Player.skill_points, $Player.skill_name, "READY" if $Player.skill_timer <= 0 else "%.1fs" % $Player.skill_timer]
     if message_timer > 0.0:
         message_timer -= delta
         if message_timer <= 0.0:
@@ -72,6 +93,24 @@ func _unhandled_input(event):
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F2:
         call_deferred("start_class_playtest")
         return
+    if event is InputEventKey and event.pressed and not event.echo:
+        if tree_open:
+            if event.keycode in [KEY_T, KEY_ESCAPE]:
+                close_skill_tree()
+            elif event.keycode in [KEY_1, KEY_2, KEY_3]:
+                if not $Player.invest_style(event.keycode - KEY_1):
+                    show_message("Need a point, an unfinished rank, and your chosen branch.")
+                tree_panel.refresh($Player)
+            return
+        if event.keycode == KEY_T and not death_screen and not $HUD/LevelUp.visible:
+            if not $Player.class_selected:
+                show_message("Defeat the first boss to unlock your skill tree, or use F2 to playtest.")
+            else:
+                tree_open = true
+                $Player.input_locked = true
+                tree_panel.refresh($Player)
+                tree_panel.show()
+            return
     if death_screen:
         if event is InputEventKey and event.pressed and not event.echo:
             if event.keycode == KEY_ENTER:
@@ -150,13 +189,15 @@ func choose_class(index: int):
         return
     if not $Player.select_class(class_choices[index].id):
         return
+    if class_playtest:
+        $Player.skill_points = 6
     choosing_class = false
     layout_choices(false)
     $HUD/LevelUp.visible = false
     $Player.input_locked = $Player.pending_upgrades > 0
     if $Player.input_locked:
         show_level_up()
-    show_message("%s chosen. Your new path begins!" % $Player.class_name_display)
+    show_message("%s chosen. Press T to choose a fighting style!" % $Player.class_name_display)
     try_next_map()
 
 func on_boss_defeated():
@@ -190,6 +231,7 @@ func generate_map():
     $Ground/Visual.polygon = PackedVector2Array([Vector2(-width/2, -40), Vector2(width/2, -40), Vector2(width/2, 40), Vector2(-width/2, 40)])
     var tint := Color.from_hsv(fmod(map_number * 0.17, 1.0), 0.35, 0.28)
     $Ground/Visual.color = tint
+    load("res://scripts/game_art.gd").terrain($Ground, width)
     for i in range(6):
         if not has_node("Platform%d" % (i + 1)):
             var extra_platform = $Platform1.duplicate()
@@ -203,6 +245,7 @@ func generate_map():
         platform.get_node("CollisionShape2D").shape = shape
         platform.get_node("Visual").polygon = PackedVector2Array([Vector2(-span/2, -12), Vector2(span/2, -12), Vector2(span/2, 12), Vector2(-span/2, 12)])
         platform.get_node("Visual").color = tint.lightened(0.2)
+        load("res://scripts/game_art.gd").terrain(platform, span, true)
     var enemies = [$Enemy1, $Enemy2, $Enemy3, $Boss]
     for i in range(4):
         var enemy = enemies[i]
@@ -233,16 +276,7 @@ func generate_map():
         add_child(enemy)
         enemy.defeated.connect(earn_souls)
         enemy.get_node("Body").color = Color(0.8, 0.3, 0.9) if enemy.ranged else Color(1, 0.4, 0.25)
-    for i in range(18):
-        var building = Polygon2D.new()
-        var height := map_rng.randf_range(80, 280)
-        building.polygon = PackedVector2Array([Vector2(0, 0), Vector2(130, 0), Vector2(130, -height), Vector2(0, -height)])
-        building.position = Vector2(i * width / 18, 610)
-        building.color = tint.darkened(0.55)
-        building.z_index = -2
-        building.add_to_group("scenery")
-        add_child(building)
-    $HUD/Title.text = ["NEON OUTSKIRTS", "HEX DISTRICT", "IRON BARRICADE"][(map_number - 1) % 3]
+    $HUD/Title.text = ["SUNLEAF WOODS", "MUSHROOM HOLLOW", "THORNWOOD GROVE"][(map_number - 1) % 3]
     var old_slot = $SlotMachine
     remove_child(old_slot)
     old_slot.queue_free()
@@ -288,6 +322,8 @@ func show_death():
     if death_screen:
         return
     death_screen = true
+    tree_open = false
+    tree_panel.hide()
     for enemy in get_tree().get_nodes_in_group("enemies"):
         enemy.set_physics_process(false)
     choosing_class = false
@@ -337,6 +373,8 @@ func refresh_death_screen():
         $HUD/LevelUp/Hint.text = "F2 TRY ANOTHER CLASS     ENTER NORMAL RUN"
 
 func start_class_playtest():
+    tree_open = false
+    tree_panel.hide()
     class_playtest = true
     death_screen = false
     choosing_class = false
@@ -379,3 +417,8 @@ func layout_choices(four: bool):
 func show_message(text: String):
     $HUD/Message.text = text
     message_timer = 2.3
+
+func close_skill_tree():
+    tree_open = false
+    tree_panel.hide()
+    $Player.input_locked = $Player.pending_upgrades > 0 or $Player.dead

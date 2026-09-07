@@ -60,6 +60,7 @@ func _physics_process(delta):
             for enemy in get_tree().get_nodes_in_group("enemies"):
                 if enemy.alive and closest.distance_to(enemy.global_position) <= explosion_radius:
                     enemy.take_damage(int(damage * 1.8) if critical else damage, attacker, critical)
+                    attacker.apply_hit_effects(enemy)
             var effect = load("res://scripts/combat_effect.gd").new()
             effect.position = closest
             effect.radius = explosion_radius
@@ -68,6 +69,7 @@ func _physics_process(delta):
         else:
             var critical: bool = randf() < attacker.crit_chance
             target.take_damage(int(damage * 1.8) if critical else damage, attacker, critical)
+            attacker.apply_hit_effects(target)
         pierce -= 1
         if pierce <= 0:
             queue_free()
