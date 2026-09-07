@@ -72,7 +72,7 @@ func run():
     key.pressed = true
     game._unhandled_input(key)
     check(p.combat_class == "bowman" and not p.input_locked, "Key 4 selects Bowman")
-    check(get_nodes_in_group("enemies").size() == 7 and game.has_node("Platform6"), "Expanded first map contains seven enemies and six platforms")
+    check(get_nodes_in_group("enemies").size() == 18 and game.has_node("Platform6"), "Expanded first map contains eighteen enemies and six platforms")
     var gunner = game.get_node("Enemy2")
     p.position = Vector2(500, 400)
     gunner.position = Vector2(650, 400)

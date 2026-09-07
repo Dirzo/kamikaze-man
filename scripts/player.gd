@@ -37,6 +37,9 @@ var skill_name := "Whirlwind"
 const Abilities = preload("res://scripts/abilities.gd")
 var ability_index := 0
 var ability_timer := 0.0
+var mob_timer := 0.0
+const CombatAudio = preload("res://scripts/combat_audio.gd")
+const MOB_NAMES = {"fighter":"Earthshatter", "mage":"Arcane Storm", "shooter":"Bullet Tempest", "bowman":"Rain of Arrows"}
 var guard_timer := 0.0
 var hurt_timer := 0.0
 var lifesteal := 0.05
@@ -113,6 +116,7 @@ func _physics_process(delta):
     skill_timer = maxf(skill_timer - delta, 0.0)
     if not input_locked:
         ability_timer = maxf(ability_timer - delta, 0.0)
+        mob_timer = maxf(mob_timer - delta, 0.0)
     guard_timer = maxf(guard_timer - delta, 0.0)
     hurt_timer = maxf(hurt_timer - delta, 0.0)
     $Body/Sword.rotation = lerpf(-0.65, 0.55, 1.0 - sword_timer / 0.16) if sword_timer > 0.0 else -0.65
@@ -166,6 +170,43 @@ func _unhandled_input(event):
         use_skill()
     if event.keycode == KEY_E:
         use_ability()
+    if event.keycode == KEY_R:
+        use_mobbing()
+
+func use_mobbing() -> bool:
+    if dead or input_locked or not class_selected or mob_timer > 0:
+        return false
+    mob_timer = 8.0
+    CombatAudio.emit_from(self, "skill_" + combat_class)
+    var radius := 260.0
+    var center := global_position
+    var multiplier := 2.5
+    var tint := Color("#ffc17b")
+    match combat_class:
+        "fighter":
+            guard_timer = maxf(guard_timer, 0.6)
+        "mage":
+            radius = 330
+            multiplier = 2.3
+            tint = Color("#caa6ff")
+        "shooter":
+            radius = 280
+            center += Vector2(facing * 170, 0)
+            multiplier = 3.5
+            tint = Color("#ffe7a0")
+        "bowman":
+            radius = 310
+            center += Vector2(facing * 160, 0)
+            multiplier = 2.4
+            tint = Color("#aee7c0")
+    Abilities.area(self, center, radius, multiplier, tint, 0.4 if combat_class == "bowman" else 1.0, 2.0 if combat_class == "bowman" else 0.0)
+    var effect = load("res://scripts/mob_effect.gd").new()
+    effect.position = center
+    effect.kind = combat_class
+    effect.radius = radius
+    get_parent().add_child(effect)
+    message_requested.emit(MOB_NAMES[combat_class])
+    return true
 
 func ability_data() -> Dictionary:
     return Abilities.OPTIONS[combat_class][ability_index]
@@ -183,6 +224,7 @@ func use_ability() -> bool:
         return false
     var data := ability_data()
     ability_timer = data.cooldown
+    CombatAudio.emit_from(self, "heal" if data.id in ["rally","ward","mend"] else "skill_" + combat_class)
     Abilities.cast(self, data.id)
     message_requested.emit(data.name)
     stats_changed.emit()
@@ -202,6 +244,7 @@ func attack():
     if input_locked or attack_timer > 0.0:
         return
     attack_timer = attack_cooldown
+    CombatAudio.emit_from(self, combat_class)
     if style_id in ["cyclone", "gunslinger"]:
         attack_timer *= 0.75 if style_id == "cyclone" else 0.8
     if style_id in ["sniper", "marksman"]:
@@ -321,6 +364,7 @@ func use_skill():
     if dead or input_locked or skill_timer > 0:
         return
     skill_timer = skill_cooldown
+    CombatAudio.emit_from(self, "skill_" + combat_class)
     if style_rank >= 2 and style_id in ["cyclone", "gunslinger", "siphon", "marksman"]:
         skill_timer *= 0.65 if style_id in ["cyclone", "gunslinger"] else (0.7 if style_id == "marksman" else 0.75)
     if style_id == "cryomancer" and style_rank >= 3:
@@ -468,6 +512,7 @@ func take_damage(amount: int):
     if dead or input_locked or guard_timer > 0.0 or hurt_timer > 0.0:
         return
     hurt_timer = 0.6
+    CombatAudio.emit_from(self, "hurt")
     if style_id == "guardian":
         amount = maxi(1, int(ceil(amount * 0.75)))
     hp = max(hp - amount, 0)

@@ -27,6 +27,8 @@ var start_position := Vector2.ZERO
 var hit_timer := 0.0
 var alive := true
 var mega := false
+var biome_index := 0
+var art_scale := 0.14
 var slam_timer := 4.0
 var slam_warning := 0.0
 
@@ -44,6 +46,9 @@ var look_direction := 1
 func _process(delta):
     if not alive or (is_instance_valid(target) and target.input_locked):
         return
+    # Large packs stay readable: bosses keep labels; damaged monsters show HP.
+    $Name.visible = is_boss
+    $HealthBar.visible = is_boss or hp < max_hp
     anim_phase += delta
     attack_anim = maxf(0, attack_anim - delta)
     hurt_anim = maxf(0, hurt_anim - delta)
@@ -55,7 +60,7 @@ func _process(delta):
     sprite.flip_h = look_direction < 0
     sprite.position = Vector2(look_direction * sin(attack_anim / 0.3 * PI) * 10, -12 - absf(step) * (4 if moving else 1.0))
     sprite.rotation = step * 0.07 if moving else step * 0.018
-    sprite.scale = Vector2(0.14 * (1.0 + step * 0.035), 0.14 * (1.0 - step * 0.035))
+    sprite.scale = Vector2(art_scale * (1.0 + step * 0.035), art_scale * (1.0 - step * 0.035))
     if attack_anim > 0:
         sprite.rotation += look_direction * sin(attack_anim / 0.3 * PI) * 0.2
     if hurt_anim > 0:
@@ -185,14 +190,19 @@ func patrol(delta: float):
 
 func shoot():
     attack_anim = 0.3
-    for angle in ([-0.4, -0.2, 0.0, 0.2, 0.4] if mega else ([-0.2, 0.0, 0.2] if is_boss else [0.0])):
+    var angles = [-0.4, -0.2, 0.0, 0.2, 0.4] if mega else ([-0.2, 0.0, 0.2] if is_boss else [0.0])
+    if not is_boss and biome_index == 1: angles = [-0.09, 0.09]
+    if not is_boss and biome_index == 3: angles = [-0.17, 0.0, 0.17]
+    for angle in angles:
         var shot = load("res://scripts/projectile.gd").new()
         shot.attacker = self
         shot.hostile = true
         shot.damage = contact_damage
         shot.remaining = 2.4
         shot.position = global_position
-        shot.velocity = global_position.direction_to(target.global_position).rotated(angle) * 320
+        shot.velocity = global_position.direction_to(target.global_position).rotated(angle) * (250 if biome_index in [2,3] else 320)
+        shot.shot_color = [Color("#ff6633"), Color("#8cddff"), Color("#ffbb45"), Color("#d08dff")][biome_index]
+        if biome_index == 2: shot.damage = int(shot.damage * 1.2)
         get_parent().add_child(shot)
 
 func take_damage(amount: int, attacker, is_crit := false):
@@ -201,6 +211,8 @@ func take_damage(amount: int, attacker, is_crit := false):
 
     var actual_damage := mini(hp, maxi(0, amount))
     hp -= actual_damage
+    if actual_damage > 0:
+        preload("res://scripts/combat_audio.gd").emit_from(self, "hit")
     if is_instance_valid(attacker) and attacker.has_method("on_damage_dealt"):
         attacker.on_damage_dealt(actual_damage)
     update_healthbar()

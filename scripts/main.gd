@@ -29,6 +29,8 @@ var tree_open := false
 var tree_panel
 var music
 var ability_hint: Label
+const Biomes = preload("res://scripts/biomes.gd")
+var biome_index := 0
 var reward_phase := false
 var shop_panel: Panel
 var shop_text: Label
@@ -47,6 +49,9 @@ var class_choices = [
 
 func _ready():
     randomize()
+    var combat_audio = preload("res://scripts/combat_audio.gd").new()
+    combat_audio.name = "CombatAudio"
+    add_child(combat_audio)
     music = load("res://scripts/forest_music.gd").new()
     music.name = "ForestMusic"
     add_child(music)
@@ -74,6 +79,7 @@ func _ready():
     shop_panel.add_child(shop_text)
     shop_panel.hide()
     var backdrop := TextureRect.new()
+    backdrop.name = "RegionBackground"
     backdrop.texture = load("res://assets/forest.png")
     backdrop.size = Vector2(1280, 720)
     backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -105,7 +111,7 @@ func _ready():
     map_rng.randomize()
     generate_map()
     update_hud()
-    $HUD/Controls.text = "← → MOVE   ALT JUMP   CTRL ATTACK   Q SKILL   E ABILITY   T BUILD   SHIFT DASH   Z SPIN   K KAMIKAZE"
+    $HUD/Controls.text = "← → MOVE   ALT JUMP   CTRL ATTACK   Q SKILL   E ABILITY   R MOBBING   T BUILD   SHIFT DASH   Z SPIN   K KAMIKAZE"
     $HUD/Controls.add_theme_font_size_override("font_size", 16)
     ability_hint = Label.new()
     ability_hint.position = Vector2(20, 648)
@@ -114,7 +120,7 @@ func _ready():
     $HUD.add_child(ability_hint)
     var practice_hint := Label.new()
     practice_hint.position = Vector2(20, 78)
-    practice_hint.text = "F2: CLASS PLAYTEST   •   T then TAB: ABILITY OPTIONS   •   M: MUSIC ON/OFF"
+    practice_hint.text = "F2: CLASS PLAYTEST   •   T then TAB: ABILITIES   •   M: MUSIC   •   N: SOUND EFFECTS"
     $HUD.add_child(practice_hint)
     if start_with_class_menu:
         show_class_selection()
@@ -125,6 +131,8 @@ func _process(delta):
         refresh_shop()
     if is_instance_valid($Player):
         ability_hint.text = "E: %s %s" % [$Player.ability_data().name, "READY" if $Player.ability_timer <= 0 else "%.1fs" % $Player.ability_timer] if $Player.class_selected else "Choose a class to begin your adventure."
+        if $Player.class_selected:
+            ability_hint.text += "     R: %s %s" % [$Player.MOB_NAMES[$Player.combat_class], "READY" if $Player.mob_timer <= 0 else "%.1fs" % $Player.mob_timer]
         $HUD/Build.text = "%s | DMG %d | LIFESTEAL %d%% | T: %d POINTS | Q: %s %s" % [$Player.class_name_display, $Player.attack_damage, int($Player.lifesteal_rate() * 100), $Player.skill_points, $Player.skill_name, "READY" if $Player.skill_timer <= 0 else "%.1fs" % $Player.skill_timer]
     if message_timer > 0.0:
         message_timer -= delta
@@ -136,6 +144,10 @@ func _unhandled_input(event):
         call_deferred("start_class_playtest")
         return
     if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == KEY_N:
+            $CombatAudio.toggle()
+            show_message("Sound effects " + ("off" if $CombatAudio.muted else "on"))
+            return
         if event.keycode == KEY_M:
             music.toggle()
             show_message("Forest music " + ("on" if not music.stream_paused else "off"))
@@ -338,6 +350,8 @@ func continue_run() -> bool:
     return true
 
 func generate_map():
+    biome_index = Biomes.index_for(map_number)
+    $Backdrop/RegionBackground.texture = Biomes.background(biome_index)
     $Player.set_process_unhandled_input(true)
     reward_phase = false
     shop_panel.hide()
@@ -356,6 +370,7 @@ func generate_map():
     var tint := Color.from_hsv(fmod(map_number * 0.17, 1.0), 0.35, 0.28)
     $Ground/Visual.color = tint
     load("res://scripts/game_art.gd").terrain($Ground, width)
+    $Ground/GrassArt.biome_index = biome_index
     for i in range(6):
         if not has_node("Platform%d" % (i + 1)):
             var extra_platform = $Platform1.duplicate()
@@ -370,6 +385,7 @@ func generate_map():
         platform.get_node("Visual").polygon = PackedVector2Array([Vector2(-span/2, -12), Vector2(span/2, -12), Vector2(span/2, 12), Vector2(-span/2, 12)])
         platform.get_node("Visual").color = tint.lightened(0.2)
         load("res://scripts/game_art.gd").terrain(platform, span, true)
+        platform.get_node("GrassArt").biome_index = biome_index
     var enemies = [$Enemy1, $Enemy2, $Enemy3, $Boss]
     for i in range(4):
         var enemy = enemies[i]
@@ -392,15 +408,14 @@ func generate_map():
         enemy.velocity = Vector2.ZERO
         enemy.respawn()
         enemy.ranged = i == 1 or (i == 3 and map_number > 1)
-    $Enemy2.get_node("Name").text = "GUNNER"
+        Biomes.enemy_art(enemy, biome_index, 3 if i == 3 else (2 if enemy.ranged else i % 2))
     $Enemy2.get_node("Body").color = Color(1, 0.65, 0.25)
-    $Boss.get_node("Name").text = ["THE COLLECTOR", "ARCANE WARDEN", "IRON MARSHAL"][(map_number - 1) % 3]
-    if $Boss.mega:
-        $Boss.get_node("Name").text = "MEGA — FOREST COLOSSUS"
-    for i in range(mini(3 + (map_number - 1) * 2, 12)):
+    if biome_index == 0 and map_number == 1:
+        $Boss.get_node("Name").text = "THE COLLECTOR"
+    for i in range(mini(14 + (map_number - 1) * 4, 36)):
         var enemy = load("res://scenes/enemy.tscn").instantiate()
-        enemy.position = Vector2(1000 + i * (width - 1400) / mini(3 + (map_number - 1) * 2, 12), 580)
-        enemy.ranged = i % 2 == 0
+        enemy.position = Vector2(850 + i * (width - 1250) / mini(14 + (map_number - 1) * 4, 36), 580)
+        enemy.ranged = i % 3 == 0
         enemy.enemy_name = "HEX CASTER" if enemy.ranged else "RAIDER"
         enemy.max_hp = int((65 + i * 8) * (1 + (map_number - 1) * 0.32))
         enemy.contact_damage = 10 + map_number * 2
@@ -408,9 +423,10 @@ func generate_map():
         enemy.gold_reward = 12 + map_number * 2
         enemy.add_to_group("extra_enemies")
         add_child(enemy)
+        Biomes.enemy_art(enemy, biome_index, 2 if enemy.ranged else i % 2)
         enemy.defeated.connect(earn_souls)
         enemy.get_node("Body").color = Color(0.8, 0.3, 0.9) if enemy.ranged else Color(1, 0.4, 0.25)
-    $HUD/Title.text = ["SUNLEAF WOODS", "MUSHROOM HOLLOW", "THORNWOOD GROVE"][(map_number - 1) % 3]
+    $HUD/Title.text = Biomes.NAMES[biome_index]
     var old_slot = $SlotMachine
     remove_child(old_slot)
     old_slot.queue_free()
@@ -425,6 +441,7 @@ func generate_map():
     $Player.velocity = Vector2.ZERO
     $Player.dash_timer = 0.0
     $Player.skill_timer = 0.0
+    $Player.mob_timer = 0.0
     $Player.get_node("Camera2D").reset_smoothing()
     update_hud()
 

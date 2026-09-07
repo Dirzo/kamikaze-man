@@ -89,5 +89,5 @@ func run():
     await process_frame
     print("Run-loop failures: %d" % failures)
     # Let the audio thread release stopped playback before engine shutdown.
-    await create_timer(0.15).timeout
+    await create_timer(0.4).timeout
     quit(1 if failures else 0)

@@ -11,6 +11,7 @@ A keyboard-first 2D action roguelike prototype for Godot 4.
 - Down + Alt — drop through a one-way platform
 - Ctrl — attack
 - Q — class ability; cooldown shown in HUD
+- R — dedicated crowd-clearing ability, independent 8-second cooldown
 - T — skill tree after choosing a class; 1 / 2 / 3 invest in a branch, T or Esc closes
 - Shift — dash
 - Z — interact with the slot machine
@@ -89,7 +90,7 @@ Class-playtest validation:
 
     godot --headless --path . --script res://tests/playtest.gd
 
-Maps span 3400–4000 pixels with six platforms, woodland scenery, and seven enemies initially, growing to sixteen. Sunleaf Woods, Mushroom Hollow, and Thornwood Grove cycle through boss encounters.
+Maps span 3400–4000 pixels with six platforms, woodland scenery, and eighteen enemies initially, growing to forty. Regions change after each mega boss: Sunleaf Woods, Frostfall Ruins, Ember Canyon, and Mooncap Grove.
 
 Gunners and Hex Casters shoot dodgeable projectiles. Bosses fire three-shot spreads. Their bodies flash gold before firing. Projectiles pause during upgrade selection and are removed on map transitions. A new map resets Q's cooldown. Existing permanent-upgrade saves remain compatible and benefit all classes.
 
@@ -181,7 +182,7 @@ body, and five-shot projectile fans. Its orange circle warns for 1.1 seconds
 before a 230-pixel ground slam. Below half health it shoots and slams more often.
 Mega bosses award twice the normal map boss gold. Normal map 1 stays introductory.
 
-Later maps add two extra enemies per map, up to sixteen total. Enemy HP and damage
+Maps start with eighteen enemies and add four per map, up to forty total. Enemy HP and damage
 increase while gold rewards rise to help fund upgrades.
 
 There is no usable or visible slot machine during combat or at run start. Each
@@ -201,3 +202,52 @@ Prices increase by 5 gold per completed-map index above map 1. These purchases
 use run gold, not permanent souls. F2 resets practice as before.
 
     godot --headless --path . --script res://tests/mega_shop.gd
+
+## Mobbing and regional journeys
+
+All four classes start with a dedicated R mobbing skill alongside Q and E. R costs
+no skill points, has an independent eight-second cooldown, and resets on map change.
+It benefits from weapon damage, lifesteal, and the chosen style's hit effects.
+
+- Fighter / Earthshatter: 250% damage in a 260-radius circle and brief guard.
+- Mage / Arcane Storm: 230% damage in a 330-radius circle.
+- Shooter / Bullet Tempest: 350% damage in a 280-radius area ahead.
+- Bowman / Rain of Arrows: 240% damage in a 310-radius area ahead, plus a two-second slow.
+
+Regions stay consistent for three maps, including their mega boss and reward shop.
+Entering the next map after that shop changes the scenery, ground palette, enemy
+portraits, enemy names, and boss appearance:
+
+| Maps | Region | Monsters |
+| --- | --- | --- |
+| 1–3 | Sunleaf Woods | Slimes, mushrooms, forest imps, Forest Colossus |
+| 4–6 | Frostfall Ruins | Snow puffs, frost wolves, ice imps, Glacier Golem |
+| 7–9 | Ember Canyon | Ember slimes, lava beetles, cinder mages, Basalt Titan |
+| 10–12 | Mooncap Grove | Mooncaps, dusk bats, spore wizards, Mushroom Monarch |
+
+The four-region cycle repeats from map 13 with continuing difficulty scaling.
+Ice casters fire paired shots; ember shots travel slower and hit harder; moon
+casters fire slow three-shot fans. Mega bosses retain their five-shot fan and slam.
+Ordinary nameplates are hidden in combat and their health bars appear when damaged
+to keep large crowds readable; bosses retain labels and bars.
+
+The new artwork was generated with the built-in image-generation tool. See
+assets/REGION_ART_NOTES.md for exact prompts and saved asset paths.
+
+    godot --headless --path . --script res://tests/regions_mobs.gd
+
+## Combat sounds and larger packs
+
+Weapon attacks have distinct original sword, magic, gun, and bow effects. Q, E,
+and R play stronger class cast sounds; recovery abilities have a healing chime.
+Hits and player damage have short impact sounds. Effects use eight pooled voices
+and repeated crowd-hit sounds are throttled to keep large fights controlled.
+
+N mutes/unmutes combat sounds independently of M (music). The choice persists
+across fresh runs until closing the game. No external sound samples are used;
+effects are synthesized and cached in memory by scripts/combat_audio.gd.
+
+Maps now contain 18 enemies initially and add four per map, capped at 40 total.
+Most additional monsters are melee; one in three is a ranged caster.
+
+    godot --headless --path . --script res://tests/combat_sounds.gd

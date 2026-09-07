@@ -8,6 +8,7 @@ var pierce := 1
 var explosion_radius := 0.0
 var remaining := 1.2
 var hostile := false
+var shot_color := Color("#ff6633")
 var hit_ids: Array[int] = []
 
 func _ready():
@@ -24,7 +25,7 @@ func _draw():
             draw_line(Vector2(-20, 0), Vector2(10, 0), Color(0.7, 0.95, 0.5), 3)
             draw_colored_polygon(PackedVector2Array([Vector2(16, 0), Vector2(6, -5), Vector2(6, 5)]), Color.WHITE)
         _:
-            draw_line(Vector2(-12, 0), Vector2(6, 0), Color(1, 0.35, 0.2) if hostile else Color(1, 0.9, 0.3), 4)
+            draw_line(Vector2(-12, 0), Vector2(6, 0), shot_color if hostile else Color(1, 0.9, 0.3), 4)
 
 func _physics_process(delta):
     if not is_instance_valid(attacker) or (not hostile and attacker.dead):

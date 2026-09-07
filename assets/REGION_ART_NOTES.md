@@ -1,0 +1,12 @@
+# New region art
+
+Generated using the built-in image-generation tool. Assets are saved in the repository as `assets/biomes.png` and `assets/biome_enemies.png`. Existing forest and hero art is preserved. Backgrounds use runtime quadrant crops; enemies use a 4-by-3 atlas with the existing magenta transparency shader. No external game assets were copied.
+
+## Background prompt
+
+Create a production game background atlas, square 2048x2048 image, exactly 2 columns x 2 rows equal quadrants without borders, labels or text. Four separate charming hand-painted 2D side-scrolling fantasy RPG landscapes, colorful whimsical storybook cartoon art, crisp silhouettes, no characters, no UI, no foreground platforms (game adds these). Upper left: sunny green woodland with giant trees and distant hills. Upper right: snowy ancient ruins, blue glacier cliffs, frosted pine trees, snowflakes, gentle daylight. Lower left: volcanic canyon with warm glowing lava rivers, dark basalt, ember sky, readable soft orange distant mountains. Lower right: dreamy moonlit mushroom grove, teal and violet giant luminous mushrooms, fireflies, crescent moon, magical ruins. Each quadrant is its own wide-view landscape with depth and ample open middle for gameplay, trees/rocks at the outer sides. Original art, polished cozy fantasy game illustration, not a screenshot. Precisely equal 1024x1024 quadrants.
+
+## Enemy prompt
+
+Production sprite atlas for a cute 2D side scrolling fantasy action RPG, exactly FOUR columns and THREE rows of equally sized cells, all on perfectly flat solid pure MAGENTA #ff00ff chroma-key background, no shadows outside characters, no text, no borders. Each cell shows ONE full-body original chibi enemy, centered with feet near same baseline and clear empty magenta margins so sprites never cross cells. Row1 ice region: snow puff slime; tiny ice-armored wolf; blue frost imp caster; large horned frost golem boss. Row2 volcanic region: round ember slime; stubby lava beetle; hooded ember mage; basalt and lava armored titan boss. Row3 moon mushroom region: little teal mushroom walker; violet bat imp; crescent-hat spore wizard; giant crowned mushroom guardian boss. All face right or three-quarter right, big readable silhouettes, charming expressive eyes, richly colored crisp hand painted cartoon fantasy sprite style, matching cozy side-scrolling storybook RPG art. Bosses fit their cells fully, no weapons or limbs cropped. Exactly twelve separate characters in uniform 4x3 grid.
+
