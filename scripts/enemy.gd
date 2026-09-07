@@ -26,6 +26,14 @@ var target = null
 var start_position := Vector2.ZERO
 var hit_timer := 0.0
 var alive := true
+var mega := false
+var slam_timer := 4.0
+var slam_warning := 0.0
+
+func _draw():
+    if mega and alive and slam_warning > 0:
+        draw_circle(Vector2.ZERO, 115, Color(1, 0.25, 0.1, 0.15))
+        draw_arc(Vector2.ZERO, 115, 0, TAU, 64, Color(1, 0.55, 0.12), 2)
 var patrol_direction := 1
 var patrol_pause := 0.0
 var anim_phase := 0.0
@@ -91,6 +99,27 @@ func _physics_process(delta):
 
     if target.input_locked:
         return
+    if mega:
+        queue_redraw()
+        if slam_warning > 0:
+            slam_warning -= delta
+            velocity.x = 0
+            if slam_warning <= 0:
+                attack_anim = 0.3
+                if global_position.distance_to(target.global_position) < 230:
+                    target.take_damage(int(contact_damage * 1.35))
+                var effect = load("res://scripts/combat_effect.gd").new()
+                effect.position = global_position
+                effect.radius = 230
+                effect.tint = Color(1, 0.4, 0.1)
+                get_parent().add_child(effect)
+                slam_timer = 3.0 if hp < max_hp / 2 else 4.5
+            move_and_slide()
+            return
+        slam_timer -= delta
+        if slam_timer <= 0 and global_position.distance_to(target.global_position) < 500:
+            slam_warning = 1.1
+            return
     slow_timer = maxf(0.0, slow_timer - delta)
     if slow_timer <= 0:
         slow_factor = 1.0
@@ -106,7 +135,7 @@ func _physics_process(delta):
     if ranged and global_position.distance_to(target.global_position) < 650.0:
         if shot_timer <= 0:
             shoot()
-            shot_timer = 2.4 if is_boss else 2.0
+            shot_timer = (1.7 if mega and hp < max_hp / 2 else 2.4) if is_boss else 2.0
 
     var dx = target.global_position.x - global_position.x
     var distance = abs(dx)
@@ -156,7 +185,7 @@ func patrol(delta: float):
 
 func shoot():
     attack_anim = 0.3
-    for angle in ([-0.2, 0.0, 0.2] if is_boss else [0.0]):
+    for angle in ([-0.4, -0.2, 0.0, 0.2, 0.4] if mega else ([-0.2, 0.0, 0.2] if is_boss else [0.0])):
         var shot = load("res://scripts/projectile.gd").new()
         shot.attacker = self
         shot.hostile = true
@@ -220,6 +249,8 @@ func drop_loot():
         get_parent().add_child(item)
 
 func respawn():
+    slam_timer = 4.0
+    slam_warning = 0.0
     attack_anim = 0.0
     hurt_anim = 0.0
     patrol_pause = 0.0

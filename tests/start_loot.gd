@@ -92,7 +92,8 @@ func run():
     while p.pending_upgrades > 0:
         game.choose_upgrade(0)
     await process_frame
-    check(game.map_number == 2 and p.gold == wallet + 5 + boss.gold_reward, "Map clear collects boss gold before transition")
+    check(game.reward_phase and game.map_number == 1 and p.gold == wallet + 5 + boss.gold_reward, "Map clear collects boss gold before the reward shop")
+    game.continue_run()
     check(get_nodes_in_group("loot").is_empty(), "Old drops do not leak into new map")
     var dead_drop = loot.new()
     game.add_child(dead_drop)

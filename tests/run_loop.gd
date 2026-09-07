@@ -29,10 +29,11 @@ func run():
     while p.pending_upgrades > 0:
         game.choose_upgrade(0)
     await process_frame
+    game.continue_run()
     check(game.map_number == 2 and boss.alive, "Boss victory generates next map")
     check(not game.get_node("SlotMachine").broken, "New map has a working slot machine")
     check(game.get_node("Platform1").position != platform_position and boss.max_hp > 260, "Map layout varies and difficulty increases")
-    check(p.class_name_display == "Fighter" and p.gold == 80, "Run build and gold survive map transition")
+    check(p.class_name_display == "Fighter" and p.gold == 95, "Run build and gold survive map transition")
     for enemy in get_nodes_in_group("extra_enemies"):
         enemy.position = Vector2(4000, 500)
         enemy.set_physics_process(false)

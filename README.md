@@ -24,7 +24,7 @@ No mouse controls are required.
 ## Sword, slot breakdowns, and classes
 
 - Fighter carries a visible sword. Hold Ctrl for repeated slashes; the hit area extends 91 pixels in the facing direction, with a 42-pixel height.
-- Each paid slot spin has an independent 30% chance to break the machine after its reward. Luck changes rewards, not breakdown odds. Every new map has a fresh machine; failed payment never breaks it.
+- Each paid slot spin has an independent 30% chance to break the machine after its reward. Luck changes rewards, not breakdown odds. Every cleared map unlocks a fresh machine in the reward area; failed payment never breaks it.
 - Choose your class with 1 / 2 / 3 / 4 before combat starts. Enemies wait during selection. Start with full class HP, three skill points, and both Q and E abilities.
 - Fighter: sword cleave; +50 HP, +6 damage. Q: Whirlwind deals double damage within 140 pixels and guards for 0.5 seconds; 5-second cooldown.
 - Mage: exploding staff orbs with 90-pixel splash; +14 damage, -15 HP, slower attacks. Q: Arcane Nova deals 2.5x damage within 220 pixels; 6-second cooldown.
@@ -35,7 +35,7 @@ No mouse controls are required.
 
 ## Maps, kamikaze, and permanent progression
 
-Defeat the boss and finish any level-up choices to move automatically to the next map. Ground length, platform positions and widths, enemy positions, and colors change. Enemy health rises 22% of base per map and damage rises 12%. Enemies do not respawn until the next map. Platforms remain reachable from the continuous ground.
+Defeat the boss and finish earned level-up choices to open the safe reward area. Buy items with 1/2/3, gamble with Z, and press Enter to start the next map. Ground length, platform positions and widths, enemy positions, and colors change. Core enemy health rises 32% of base per map and damage rises 16%. Enemies do not respawn until the next map. Platforms remain reachable from the continuous ground.
 
 K ends your current life and deals 150 + 5 times weapon damage, plus permanent blast bonuses, to enemies within 300 pixels. A visible blast marks the radius. Killing the boss with the blast earns rewards but still ends the run.
 
@@ -63,10 +63,10 @@ Run these from the project folder using Godot 4:
 1. Kill enemies.
 2. Gain XP and gold.
 3. Level up and choose one of three upgrades.
-4. Spend gold at the slot machine.
-5. Gamble for permanent run buffs, jackpots, or risky curse upgrades.
-6. Fight THE COLLECTOR at the far right side of the level.
-7. Advance to a new map, or die and spend souls to strengthen your next run.
+4. Fight the map boss at the far right. Every third map has a mega boss.
+5. Spend gold at the post-boss item shop and optional slot machine.
+6. Press Enter to enter the next, harder map.
+7. On death, spend souls to strengthen the next run.
 
 ## Open in Godot
 
@@ -89,7 +89,7 @@ Class-playtest validation:
 
     godot --headless --path . --script res://tests/playtest.gd
 
-Maps span 3400–4000 pixels with six platforms, woodland scenery, and seven enemies initially, growing to eleven. Sunleaf Woods, Mushroom Hollow, and Thornwood Grove cycle through boss encounters.
+Maps span 3400–4000 pixels with six platforms, woodland scenery, and seven enemies initially, growing to sixteen. Sunleaf Woods, Mushroom Hollow, and Thornwood Grove cycle through boss encounters.
 
 Gunners and Hex Casters shoot dodgeable projectiles. Bosses fire three-shot spreads. Their bodies flash gold before firing. Projectiles pause during upgrade selection and are removed on map transitions. A new map resets Q's cooldown. Existing permanent-upgrade saves remain compatible and benefit all classes.
 
@@ -172,3 +172,32 @@ the boss's drops. Dead players cannot collect loot. Gold, items, and their bonus
 reset on a new run or F2 practice restart; saved soul upgrades remain unchanged.
 
     godot --headless --path . --script res://tests/start_loot.gd
+
+## Mega bosses and post-boss rewards
+
+Maps 3, 6, 9, and every third map thereafter contain a Mega Forest Colossus.
+It has 1.9 times the normally scaled boss HP, 1.25 times contact damage, a larger
+body, and five-shot projectile fans. Its orange circle warns for 1.1 seconds
+before a 230-pixel ground slam. Below half health it shoots and slams more often.
+Mega bosses award twice the normal map boss gold. Normal map 1 stays introductory.
+
+Later maps add two extra enemies per map, up to sixteen total. Enemy HP and damage
+increase while gold rewards rise to help fund upgrades.
+
+There is no usable or visible slot machine during combat or at run start. Each
+boss victory unlocks one fresh slot machine and a safe item shop after earned
+level-up choices. Remaining enemies are removed without additional kill rewards.
+Combat hotkeys are disabled during this break; slots remain optional. Enter starts
+the next map and cannot interrupt a paid spin. A broken machine stays broken until
+the next map clear.
+
+Shop stock refreshes after each boss. Each item can be purchased once per visit:
+
+- 1: Forest Tonic, heal 50 HP, starts at 30 gold. Full health blocks the purchase.
+- 2: Honed Weapon, +6 damage for this run, starts at 60 gold.
+- 3: Heart Charm, +20 max HP and heal 20, starts at 50 gold.
+
+Prices increase by 5 gold per completed-map index above map 1. These purchases
+use run gold, not permanent souls. F2 resets practice as before.
+
+    godot --headless --path . --script res://tests/mega_shop.gd

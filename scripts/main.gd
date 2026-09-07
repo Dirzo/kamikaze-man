@@ -29,6 +29,15 @@ var tree_open := false
 var tree_panel
 var music
 var ability_hint: Label
+var reward_phase := false
+var shop_panel: Panel
+var shop_text: Label
+var shop_sold := [false, false, false]
+const SHOP = [
+    {"name":"FOREST TONIC", "desc":"Restore 50 HP", "cost":30},
+    {"name":"HONED WEAPON", "desc":"+6 weapon damage this run", "cost":60},
+    {"name":"HEART CHARM", "desc":"+20 max HP and heal 20", "cost":50}
+]
 var class_choices = [
     {"id":"fighter", "name":"FIGHTER", "desc":"Sword • +50 HP, +6 damage • Q: Whirlwind + brief guard"},
     {"id":"mage", "name":"MAGE", "desc":"Explosive magic • +14 damage, -15 HP • Q: Arcane Nova"},
@@ -48,6 +57,22 @@ func _ready():
     tree_panel = load("res://scripts/skill_tree_ui.gd").new()
     $HUD.add_child(tree_panel)
     tree_panel.hide()
+    shop_panel = Panel.new()
+    shop_panel.position = Vector2(190, 150)
+    shop_panel.size = Vector2(900, 250)
+    $HUD.add_child(shop_panel)
+    var shop_box := StyleBoxFlat.new()
+    shop_box.bg_color = Color("#142c3a")
+    shop_box.border_color = Color("#f5cc70")
+    shop_box.set_border_width_all(3)
+    shop_box.set_corner_radius_all(12)
+    shop_panel.add_theme_stylebox_override("panel", shop_box)
+    shop_text = Label.new()
+    shop_text.position = Vector2(24, 15)
+    shop_text.size = Vector2(852, 220)
+    shop_text.add_theme_font_size_override("font_size", 20)
+    shop_panel.add_child(shop_text)
+    shop_panel.hide()
     var backdrop := TextureRect.new()
     backdrop.texture = load("res://assets/forest.png")
     backdrop.size = Vector2(1280, 720)
@@ -96,6 +121,8 @@ func _ready():
     show_message("Choose your class with 1–4. Alt jumps; T opens your build.")
 
 func _process(delta):
+    if reward_phase:
+        refresh_shop()
     if is_instance_valid($Player):
         ability_hint.text = "E: %s %s" % [$Player.ability_data().name, "READY" if $Player.ability_timer <= 0 else "%.1fs" % $Player.ability_timer] if $Player.class_selected else "Choose a class to begin your adventure."
         $HUD/Build.text = "%s | DMG %d | LIFESTEAL %d%% | T: %d POINTS | Q: %s %s" % [$Player.class_name_display, $Player.attack_damage, int($Player.lifesteal_rate() * 100), $Player.skill_points, $Player.skill_name, "READY" if $Player.skill_timer <= 0 else "%.1fs" % $Player.skill_timer]
@@ -112,6 +139,12 @@ func _unhandled_input(event):
         if event.keycode == KEY_M:
             music.toggle()
             show_message("Forest music " + ("on" if not music.stream_paused else "off"))
+            return
+        if reward_phase and not tree_open:
+            if event.keycode in [KEY_1, KEY_2, KEY_3]:
+                buy_shop(event.keycode - KEY_1)
+            elif event.keycode == KEY_ENTER:
+                continue_run()
             return
         if tree_open:
             if event.keycode in [KEY_T, KEY_ESCAPE]:
@@ -239,11 +272,75 @@ func try_next_map():
     for drop in get_tree().get_nodes_in_group("loot"):
         if drop.get_parent() == self:
             drop.collect($Player)
+    open_rewards()
+
+func open_rewards():
+    reward_phase = true
+    shop_sold = [false, false, false]
+    for enemy in get_tree().get_nodes_in_group("enemies"):
+        enemy.set_physics_process(false)
+        enemy.velocity = Vector2.ZERO
+        enemy.alive = false
+        enemy.hide()
+        enemy.get_node("CollisionShape2D").set_deferred("disabled", true)
+    for shot in get_tree().get_nodes_in_group("projectiles"):
+        shot.queue_free()
+    $Player.input_locked = false
+    $Player.set_process_unhandled_input(false)
+    $Player.global_position = Vector2(180, 580)
+    $Player.velocity = Vector2.ZERO
+    $Player.get_node("Camera2D").reset_smoothing()
+    $SlotMachine.position = Vector2(245, 555)
+    $SlotMachine.enabled = true
+    $SlotMachine.player = $Player
+    $SlotMachine.player_in_range = true
+    $SlotMachine.show()
+    refresh_shop()
+    shop_panel.show()
+    update_hud()
+    show_message("Boss defeated! Shop, spin with Z, then ENTER for the next map.")
+
+func refresh_shop():
+    shop_text.text = "MAP %d CLEARED — ITEM SHOP  •  %d GOLD\n" % [map_number, $Player.gold]
+    for i in range(3):
+        shop_text.text += "\n%d  %s — %s  •  %s" % [i + 1, SHOP[i].name, SHOP[i].desc, "SOLD" if shop_sold[i] else str(SHOP[i].cost + (map_number - 1) * 5) + " gold"]
+    shop_text.text += "\n\n1 / 2 / 3: BUY ONCE     Z: SLOT MACHINE     ENTER: NEXT MAP"
+
+func buy_shop(index: int) -> bool:
+    if not reward_phase or $Player.dead or index < 0 or index > 2 or shop_sold[index]:
+        return false
+    if index == 0 and $Player.hp == $Player.max_hp:
+        show_message("Already at full health — keep your gold.")
+        return false
+    var cost: int = SHOP[index].cost + (map_number - 1) * 5
+    if not $Player.spend_gold(cost):
+        show_message("Not enough gold for that item.")
+        return false
+    shop_sold[index] = true
+    match index:
+        0: $Player.restore_health(50)
+        1: $Player.attack_damage += 6
+        2:
+            $Player.max_hp += 20
+            $Player.restore_health(20)
+    $Player.stats_changed.emit()
+    refresh_shop()
+    return true
+
+func continue_run() -> bool:
+    if not reward_phase or $Player.dead or $SlotMachine.spinning or tree_open:
+        return false
+    reward_phase = false
+    shop_panel.hide()
     map_number += 1
     generate_map()
-    show_message("MAP %d — new enemies, new ground, fresh slot machine!" % map_number)
+    show_message("MAP %d — %s" % [map_number, "MEGA BOSS AHEAD!" if map_number % 3 == 0 else "The forest grows more dangerous."])
+    return true
 
 func generate_map():
+    $Player.set_process_unhandled_input(true)
+    reward_phase = false
+    shop_panel.hide()
     for group in ["projectiles", "combat_effects", "extra_enemies", "scenery", "loot"]:
         for old in get_tree().get_nodes_in_group(group):
             if old.get_parent() != self:
@@ -277,10 +374,18 @@ func generate_map():
     for i in range(4):
         var enemy = enemies[i]
         enemy.start_position = Vector2(width - 230 if i == 3 else 750 + i * (width - 1300) / 3.0 + map_rng.randf_range(-80, 80), 560)
-        enemy.max_hp = int([55, 75, 90, 260][i] * (1.0 + (map_number - 1) * 0.22))
-        enemy.contact_damage = int([10, 10, 14, 22][i] * (1.0 + (map_number - 1) * 0.12))
+        enemy.max_hp = int([55, 75, 90, 260][i] * (1.0 + (map_number - 1) * 0.32))
+        enemy.contact_damage = int([10, 10, 14, 22][i] * (1.0 + (map_number - 1) * 0.16))
+        enemy.set_physics_process(true)
+        enemy.mega = i == 3 and map_number % 3 == 0
+        enemy.gold_reward = (80 + map_number * 15) if i == 3 else 12 + map_number * 2
         if i == 3:
             enemy.move_speed = 65.0 if map_number == 1 else 90.0
+            enemy.scale = Vector2.ONE * (2.0 if enemy.mega else 1.4)
+            if enemy.mega:
+                enemy.max_hp = int(enemy.max_hp * 1.9)
+                enemy.contact_damage = int(enemy.contact_damage * 1.25)
+                enemy.gold_reward *= 2
             if map_number == 1:
                 enemy.max_hp = 160
                 enemy.contact_damage = 8
@@ -290,15 +395,17 @@ func generate_map():
     $Enemy2.get_node("Name").text = "GUNNER"
     $Enemy2.get_node("Body").color = Color(1, 0.65, 0.25)
     $Boss.get_node("Name").text = ["THE COLLECTOR", "ARCANE WARDEN", "IRON MARSHAL"][(map_number - 1) % 3]
-    for i in range(mini(3 + map_number - 1, 7)):
+    if $Boss.mega:
+        $Boss.get_node("Name").text = "MEGA — FOREST COLOSSUS"
+    for i in range(mini(3 + (map_number - 1) * 2, 12)):
         var enemy = load("res://scenes/enemy.tscn").instantiate()
-        enemy.position = Vector2(1000 + i * (width - 1400) / mini(3 + map_number - 1, 7), 580)
+        enemy.position = Vector2(1000 + i * (width - 1400) / mini(3 + (map_number - 1) * 2, 12), 580)
         enemy.ranged = i % 2 == 0
         enemy.enemy_name = "HEX CASTER" if enemy.ranged else "RAIDER"
-        enemy.max_hp = int((65 + i * 8) * (1 + (map_number - 1) * 0.22))
+        enemy.max_hp = int((65 + i * 8) * (1 + (map_number - 1) * 0.32))
         enemy.contact_damage = 10 + map_number * 2
         enemy.xp_reward = 35
-        enemy.gold_reward = 12
+        enemy.gold_reward = 12 + map_number * 2
         enemy.add_to_group("extra_enemies")
         add_child(enemy)
         enemy.defeated.connect(earn_souls)
@@ -312,6 +419,8 @@ func generate_map():
     slot.position = Vector2(map_rng.randf_range(330, 430), 555)
     add_child(slot)
     slot.result.connect(show_message)
+    slot.enabled = false
+    slot.hide()
     $Player.global_position = Vector2(180, 520)
     $Player.velocity = Vector2.ZERO
     $Player.dash_timer = 0.0
@@ -349,6 +458,8 @@ func show_death():
     if death_screen:
         return
     death_screen = true
+    reward_phase = false
+    shop_panel.hide()
     tree_open = false
     tree_panel.hide()
     for enemy in get_tree().get_nodes_in_group("enemies"):

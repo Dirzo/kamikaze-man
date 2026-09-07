@@ -71,6 +71,8 @@ func run():
     check(not p.input_locked and not game.get_node("HUD/LevelUp").visible, "Final upgrade restores movement")
 
     var slot = game.get_node("SlotMachine")
+    slot.enabled = true
+    slot.player = p
     slot.break_chance = 0.0
     p.gold = 25
     p.luck = 1.0

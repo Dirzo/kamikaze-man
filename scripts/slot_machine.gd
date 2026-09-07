@@ -8,11 +8,14 @@ var broken := false
 var player_in_range := false
 var player = null
 var spinning := false
+var enabled := true
 
 func _ready():
     $Prompt.visible = false
 
 func _physics_process(_delta):
+    if not enabled:
+        return
     if player == null:
         player = get_tree().get_first_node_in_group("player")
         return
@@ -21,13 +24,13 @@ func _physics_process(_delta):
     $Prompt.visible = player_in_range
 
 func _unhandled_input(event):
-    if spinning or broken or not player_in_range or player.input_locked:
+    if not enabled or spinning or broken or not player_in_range or player.input_locked:
         return
     if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_Z:
         spin()
 
 func spin():
-    if spinning or broken or player == null or player.input_locked:
+    if not enabled or spinning or broken or player == null or player.input_locked:
         return
     spinning = true
 
@@ -71,7 +74,7 @@ func spin():
         $Body.color = Color(0.3, 0.28, 0.25)
         $Screen.color = Color(0.025, 0.025, 0.025)
         get_node("777").text = "X X X"
-        text += "  MACHINE BROKE! Defeat the boss for a fresh map."
+        text += "  MACHINE BROKE! Clear the next map for a fresh machine."
     result.emit(text)
 
     $Prompt.text = "BROKEN — OUT OF SERVICE" if broken else "Z — SPIN (%d GOLD)" % spin_cost

@@ -19,6 +19,8 @@ func run():
     root.add_child(game)
     var p = game.get_node("Player")
     var slot = game.get_node("SlotMachine")
+    slot.enabled = true
+    slot.player = p
     var boss = game.get_node("Boss")
     p.set_physics_process(false)
     for enemy in get_nodes_in_group("enemies"):
@@ -81,6 +83,7 @@ func run():
     game.choose_upgrade(0)
     check(not p.input_locked, "All queued choices return control")
     await create_timer(0.25).timeout
+    game.continue_run()
     boss.take_damage(999, p)
     check(not game.choosing_class, "Later-map boss never repeats class selection")
     while p.pending_upgrades > 0:
