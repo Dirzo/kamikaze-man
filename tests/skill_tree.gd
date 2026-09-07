@@ -9,6 +9,7 @@ func check(ok: bool, label: String):
 func setup():
     var game = load("res://scenes/main.tscn").instantiate()
     game.save_path = ""
+    game.start_with_class_menu = false
     root.add_child(game)
     game.get_node("Player").set_physics_process(false)
     for enemy in get_nodes_in_group("enemies"):
@@ -87,6 +88,6 @@ func run():
     await process_frame
     print("Skill-tree failures: %d" % failures)
     # Let the audio thread release stopped playback before engine shutdown.
-    await create_timer(0.15).timeout
+    await create_timer(0.4).timeout
     quit(1 if failures else 0)
 

@@ -11,6 +11,7 @@ func check(ok: bool, label: String):
 func setup():
     var game = load("res://scenes/main.tscn").instantiate()
     game.save_path = ""
+    game.start_with_class_menu = false
     root.add_child(game)
     game.get_node("Player").set_physics_process(false)
     for enemy in get_nodes_in_group("enemies"):
@@ -27,9 +28,9 @@ func run():
     var p = game.get_node("Player")
     check(not p.use_ability(), "Recruit cannot use class abilities")
     var music = game.music
-    check(music.stream is AudioStreamWAV and music.playing, "Forest music loaded and playing")
-    check(music.stream.loop_mode == AudioStreamWAV.LOOP_FORWARD and music.stream.get_length() > 50, "Full forest composition loops")
-    check(music.stream.loop_end == roundi(music.stream.get_length() * music.stream.mix_rate), "Loop endpoint covers the full compressed audio stream")
+    check(music.stream is AudioStreamOggVorbis and music.playing, "Forest music loaded and playing")
+    check(music.stream.loop and music.stream.get_length() > 50, "Full forest composition loops")
+    check(music.stream.loop_offset == 0, "Loop endpoint covers the full compressed audio stream")
     key(game, KEY_M)
     check(music.stream_paused, "M mutes music")
     game.queue_free()
@@ -129,4 +130,5 @@ func run():
     game.queue_free()
     await process_frame
     print("%d checks, %d failures" % [checks, failures])
+    await create_timer(0.4).timeout
     quit(1 if failures else 0)

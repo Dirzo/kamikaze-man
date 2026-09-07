@@ -15,7 +15,7 @@ A keyboard-first 2D action roguelike prototype for Godot 4.
 - Shift — dash
 - Z — interact with the slot machine
 - K — kamikaze: sacrifice your life for an explosion
-- 1 / 2 / 3 / 4 — select a class after the first boss
+- 1 / 2 / 3 / 4 — select your class at the start of every run
 - 1 / 2 / 3 — select upgrades or death-shop purchases
 - Enter — start a new run from the death screen
 
@@ -23,20 +23,19 @@ No mouse controls are required.
 
 ## Sword, slot breakdowns, and classes
 
-- The starting Recruit carries a visible sword. Hold Ctrl for repeated slashes; the hit area extends 91 pixels in the facing direction, with a 42-pixel height.
+- Fighter carries a visible sword. Hold Ctrl for repeated slashes; the hit area extends 91 pixels in the facing direction, with a 42-pixel height.
 - Each paid slot spin has an independent 30% chance to break the machine after its reward. Luck changes rewards, not breakdown odds. Every new map has a fresh machine; failed payment never breaks it.
-- Defeat THE COLLECTOR for the first time to choose a class with 1 / 2 / 3 / 4. Enemies cannot damage you during selection. Any earned level-up choices follow afterward.
+- Choose your class with 1 / 2 / 3 / 4 before combat starts. Enemies wait during selection. Start with full class HP, three skill points, and both Q and E abilities.
 - Fighter: sword cleave; +50 HP, +6 damage. Q: Whirlwind deals double damage within 140 pixels and guards for 0.5 seconds; 5-second cooldown.
 - Mage: exploding staff orbs with 90-pixel splash; +14 damage, -15 HP, slower attacks. Q: Arcane Nova deals 2.5x damage within 220 pixels; 6-second cooldown.
 - Shooter: rapid bullets stop at the first target; -8 damage, faster attacks, +30 speed. Q: Scattershot fires five bullets at 1.6x damage each; 3-second cooldown.
 - Bowman: arrows pierce three enemies; +6 damage, +35 speed, +10 percentage points of crit. Q: Power Arrow deals triple damage and pierces six enemies; 4-second cooldown.
 - Ranged weapons shoot in the facing direction and stop at solid ground. Jump to attack at different heights. No ammo or mana is required. Staff, gun, bow, and sword visuals distinguish the classes.
-- Recruits also have Whirlwind before class selection.
-- Class selection occurs after the first boss in each run. Your class and run upgrades carry between maps, but a new run starts as a Recruit.
+- Your class and run upgrades carry between maps. Every new run returns to class selection; bosses never ask you to choose again.
 
 ## Maps, kamikaze, and permanent progression
 
-Defeat the boss and finish any class/level-up choices to move automatically to the next map. Ground length, platform positions and widths, enemy positions, and colors change. Enemy health rises 22% of base per map and damage rises 12%. Enemies do not respawn until the next map. Platforms remain reachable from the continuous ground.
+Defeat the boss and finish any level-up choices to move automatically to the next map. Ground length, platform positions and widths, enemy positions, and colors change. Enemy health rises 22% of base per map and damage rises 12%. Enemies do not respawn until the next map. Platforms remain reachable from the continuous ground.
 
 K ends your current life and deals 150 + 5 times weapon damage, plus permanent blast bonuses, to enemies within 300 pixels. A visible blast marks the radius. Killing the boss with the blast earns rewards but still ends the run.
 
@@ -46,7 +45,7 @@ Each normal kill earns 1 soul; bosses earn 5. Death banks earned souls once and 
 - 2: Sharp Steel — +3 starting weapon damage per rank.
 - 3: Last Word — +50 kamikaze damage per rank.
 
-Each starts at 3 souls and costs 2 more per existing rank, up to 100 ranks. Purchases apply to the next run. Enter starts a new Recruit at map 1 with zero gold and fresh run stats.
+Each starts at 3 souls and costs 2 more per existing rank, up to 100 ranks. Purchases apply to the next run. Enter returns to class selection at map 1 with zero gold and fresh run stats.
 
 Soul balance and permanent ranks save locally to Godot's user data as `user://kamikaze_progress.cfg`. They survive closing the game; they do not sync through GitHub. In-progress runs are not saved.
 
@@ -123,11 +122,12 @@ Additional validation:
 
 ## Forest music, extra abilities, and living enemies
 
-Sunleaf Reverie is an original 53-second forest music loop: gentle flute melody,
-bell arpeggios, and warm sustained chords. It starts at a quiet volume and keeps
-playing through map changes and class practice. M mutes/resumes; mute is remembered
-across new runs until the game closes. The soundtrack contains no MapleStory music
-or samples. Rebuild the WAV with Python + numpy using tools/compose_forest.py.
+Canopy Daydream replaces the first soundtrack. It is an original 65-second stereo
+loop with soft electric-piano melody, plucked strings, rounded bass, sustained
+harmony, and light brushed percussion. It contains no MapleStory samples or copied
+melody. M mutes/resumes; mute survives fresh runs until the game closes. Music
+continues across maps and class practice. Rebuild the Ogg with Python, numpy,
+and soundfile using tools/compose_canopy.py.
 
 After choosing a class, E activates a second ability alongside the existing Q skill.
 Press T, then Tab, then 1/2/3 to equip an option. Tab returns to the style tree;
@@ -155,3 +155,20 @@ These are lightweight sprite transforms, not new frame-by-frame sprite sheets.
 Additional validation:
 
     godot --headless --path . --script res://tests/abilities_movement.gd
+
+## Ground loot
+
+Monsters drop their gold as bouncing coins instead of immediately crediting your
+wallet. Walk nearby to attract and collect them. Normal monsters have a 35% chance
+to drop one item; bosses always drop one. Items improve the current run:
+
+- Forest Tonic: restores 30 HP. Stays on the ground while your health is full.
+- Sharp Fang: +3 weapon damage.
+- Heartstone: +8 maximum HP and heals 8 HP.
+- Vampire Ruby: +1 percentage point of lifesteal (base capped at 50%).
+
+Map clears gather remaining usable loot before generating the next map, including
+the boss's drops. Dead players cannot collect loot. Gold, items, and their bonuses
+reset on a new run or F2 practice restart; saved soul upgrades remain unchanged.
+
+    godot --headless --path . --script res://tests/start_loot.gd

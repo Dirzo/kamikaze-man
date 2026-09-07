@@ -15,6 +15,7 @@ func check(condition: bool, label: String):
 func run():
     var game = load("res://scenes/main.tscn").instantiate()
     game.save_path = ""
+    game.start_with_class_menu = false
     root.add_child(game)
     var p = game.get_node("Player")
     var e = game.get_node("Enemy1")
@@ -51,7 +52,13 @@ func run():
     e.take_damage(1, p)
     e.take_damage(1, p)
     await create_timer(0.1).timeout
-    check(p.gold == e.gold_reward and p.xp == e.xp_reward, "Overlapping lethal hits award one kill")
+    var dropped_gold := 0
+    for drop in get_nodes_in_group("loot"):
+        if drop.kind == "gold":
+            dropped_gold += drop.amount
+    check(p.gold + dropped_gold == e.gold_reward and p.xp == e.xp_reward, "Overlapping lethal hits award one kill and one gold drop")
+    for drop in get_nodes_in_group("loot"):
+        drop.free()
 
     p.xp = 0
     p.level = 1

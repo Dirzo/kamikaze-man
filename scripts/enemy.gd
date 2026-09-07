@@ -194,14 +194,30 @@ func die(attacker):
 
     if attacker.has_method("gain_xp"):
         attacker.gain_xp(xp_reward)
-    if attacker.has_method("add_gold"):
-        attacker.add_gold(gold_reward)
+    drop_loot()
 
     if is_boss and attacker.has_signal("message_requested"):
-        attacker.message_requested.emit("BOSS DOWN — +%d gold" % gold_reward)
+        attacker.message_requested.emit("BOSS DOWN — gold and treasure dropped!")
 
     if is_boss:
         boss_defeated.emit()
+
+func drop_loot():
+    var pickup = preload("res://scripts/loot.gd")
+    var pieces := mini(3, gold_reward)
+    for i in range(pieces):
+        var coin = pickup.new()
+        coin.kind = "gold"
+        coin.amount = gold_reward / pieces + (1 if i < gold_reward % pieces else 0)
+        coin.position = global_position + Vector2((i - 1) * 14, -12)
+        coin.velocity = Vector2((i - 1) * 80, -160)
+        get_parent().add_child(coin)
+    if is_boss or randf() < 0.35:
+        var item = pickup.new()
+        item.kind = ["tonic", "fang", "heart", "ruby"].pick_random()
+        item.position = global_position + Vector2(0, -30)
+        item.velocity = Vector2(45, -210)
+        get_parent().add_child(item)
 
 func respawn():
     attack_anim = 0.0

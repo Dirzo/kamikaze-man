@@ -1,11 +1,10 @@
 extends AudioStreamPlayer
 
 func _ready():
-    stream = load("res://assets/audio/sunleaf_reverie.wav")
-    stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-    stream.loop_begin = 0
-    stream.loop_end = roundi(stream.get_length() * stream.mix_rate)
-    volume_db = -12.0
+    stream = load("res://assets/audio/canopy_daydream.ogg")
+    stream.loop = true
+    stream.loop_offset = 0.0
+    volume_db = -9.0
     # Remember mute across fresh runs without modifying the progression save.
     play()
     stream_paused = bool(get_tree().get_meta("forest_music_muted", false))

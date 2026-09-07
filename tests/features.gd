@@ -15,6 +15,7 @@ func check(ok: bool, label: String):
 func run():
     var game = load("res://scenes/main.tscn").instantiate()
     game.save_path = ""
+    game.start_with_class_menu = false
     root.add_child(game)
     var p = game.get_node("Player")
     var slot = game.get_node("SlotMachine")
@@ -67,18 +68,15 @@ func run():
     check(p.attack_timer == 0.0, "Menus block new sword attacks")
     p.input_locked = false
 
+    game.show_class_selection()
+    game.choose_class(0)
     p.xp = 90
     boss.respawn_delay = 0.15
     boss.take_damage(999, p)
-    check(game.choosing_class and p.input_locked, "First boss death opens class selection")
-    check(p.pending_upgrades == 2, "Boss XP queues all earned levels behind class selection")
-    check(game.get_node("HUD/LevelUp/Title").text.contains("CHOOSE A CLASS"), "Level-up signals do not overwrite class screen")
-    var event = InputEventKey.new()
-    event.keycode = KEY_1
-    event.pressed = true
-    game._unhandled_input(event)
-    check(p.class_name_display == "Fighter" and p.max_hp == 150 and p.attack_damage == 28, "Key 1 applies Fighter bonuses")
-    check(not game.choosing_class and p.input_locked and game.get_node("HUD/LevelUp").visible, "Class selection preserves pending upgrade screen")
+    check(not game.choosing_class and p.input_locked, "Boss victory opens earned upgrades, not class selection")
+    check(p.pending_upgrades == 2, "Boss XP queues all earned levels")
+    check(game.get_node("HUD/LevelUp/Title").text.contains("LEVEL UP"), "Boss victory shows level-up options")
+    check(p.class_name_display == "Fighter", "Starting class survives boss victory")
     game.choose_upgrade(0)
     game.choose_upgrade(0)
     check(not p.input_locked, "All queued choices return control")

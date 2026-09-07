@@ -9,6 +9,7 @@ func check(ok: bool, label: String):
 func run():
     var game = load("res://scenes/main.tscn").instantiate()
     game.save_path = ""
+    game.start_with_class_menu = false
     root.add_child(game)
     var p = game.get_node("Player")
     p.set_physics_process(false)

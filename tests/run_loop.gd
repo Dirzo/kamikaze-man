@@ -9,6 +9,7 @@ func check(ok: bool, label: String):
 func new_game():
     var game = load("res://scenes/main.tscn").instantiate()
     game.save_path = ""
+    game.start_with_class_menu = false
     root.add_child(game)
     game.get_node("Player").set_physics_process(false)
     for enemy in get_nodes_in_group("enemies"):
@@ -20,8 +21,10 @@ func run():
     var boss = game.get_node("Boss")
     var platform_position = game.get_node("Platform1").position
     game.get_node("SlotMachine").broken = true
+    game.show_class_selection()
+    game.choose_class(0)
     boss.take_damage(9999, p)
-    check(game.choosing_class and game.map_number == 1, "First boss waits for class selection")
+    check(not game.choosing_class and game.map_number == 1, "Boss waits for earned upgrades without repeating class selection")
     game.choose_class(0)
     while p.pending_upgrades > 0:
         game.choose_upgrade(0)

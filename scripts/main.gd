@@ -16,6 +16,7 @@ var message_timer := 0.0
 var choosing_class := false
 var first_boss_defeated := false
 @export var save_path := "user://kamikaze_progress.cfg"
+@export var start_with_class_menu := true
 var souls := 0
 var run_souls := 0
 var permanent := [0, 0, 0]
@@ -90,11 +91,13 @@ func _ready():
     practice_hint.position = Vector2(20, 78)
     practice_hint.text = "F2: CLASS PLAYTEST   •   T then TAB: ABILITY OPTIONS   •   M: MUSIC ON/OFF"
     $HUD.add_child(practice_hint)
-    show_message("F2 lets you try any class immediately. Alt jumps.")
+    if start_with_class_menu:
+        show_class_selection()
+    show_message("Choose your class with 1–4. Alt jumps; T opens your build.")
 
 func _process(delta):
     if is_instance_valid($Player):
-        ability_hint.text = "E: %s %s" % [$Player.ability_data().name, "READY" if $Player.ability_timer <= 0 else "%.1fs" % $Player.ability_timer] if $Player.class_selected else "E abilities unlock with your class after the first boss. F2 to try them now."
+        ability_hint.text = "E: %s %s" % [$Player.ability_data().name, "READY" if $Player.ability_timer <= 0 else "%.1fs" % $Player.ability_timer] if $Player.class_selected else "Choose a class to begin your adventure."
         $HUD/Build.text = "%s | DMG %d | LIFESTEAL %d%% | T: %d POINTS | Q: %s %s" % [$Player.class_name_display, $Player.attack_damage, int($Player.lifesteal_rate() * 100), $Player.skill_points, $Player.skill_name, "READY" if $Player.skill_timer <= 0 else "%.1fs" % $Player.skill_timer]
     if message_timer > 0.0:
         message_timer -= delta
@@ -125,7 +128,7 @@ func _unhandled_input(event):
             return
         if event.keycode == KEY_T and not death_screen and not $HUD/LevelUp.visible:
             if not $Player.class_selected:
-                show_message("Defeat the first boss to unlock your skill tree, or use F2 to playtest.")
+                show_message("Choose your starting class to unlock your skill tree.")
             else:
                 tree_open = true
                 $Player.input_locked = true
@@ -191,16 +194,15 @@ func choose_upgrade(index: int):
     try_next_map()
 
 func show_class_selection():
-    if first_boss_defeated:
+    if $Player.class_selected or $Player.dead:
         return
-    first_boss_defeated = true
     layout_choices(true)
     choosing_class = true
     $Player.input_locked = true
     $Player.velocity = Vector2.ZERO
     $Player.dash_timer = 0.0
     $HUD/LevelUp.visible = true
-    $HUD/LevelUp/Title.text = "FIRST BOSS DEFEATED — CHOOSE A CLASS"
+    $HUD/LevelUp/Title.text = "NEW ADVENTURE — CHOOSE A CLASS"
     for index in range(4):
         var choice = class_choices[index]
         get_node("HUD/LevelUp/Choice%d" % (index + 1)).text = "%d  %s\n%s" % [index + 1, choice.name, choice.desc]
@@ -225,7 +227,7 @@ func on_boss_defeated():
     if $Player.dead or next_map_pending:
         return
     next_map_pending = true
-    show_class_selection()
+    first_boss_defeated = true
     # Finish the lethal attack before moving any physics bodies.
     call_deferred("try_next_map")
 
@@ -233,12 +235,16 @@ func try_next_map():
     if not next_map_pending or choosing_class or $Player.pending_upgrades > 0 or $Player.dead:
         return
     next_map_pending = false
+    # Gather the cleared map's rewards before removing its drops, including boss loot.
+    for drop in get_tree().get_nodes_in_group("loot"):
+        if drop.get_parent() == self:
+            drop.collect($Player)
     map_number += 1
     generate_map()
     show_message("MAP %d — new enemies, new ground, fresh slot machine!" % map_number)
 
 func generate_map():
-    for group in ["projectiles", "combat_effects", "extra_enemies", "scenery"]:
+    for group in ["projectiles", "combat_effects", "extra_enemies", "scenery", "loot"]:
         for old in get_tree().get_nodes_in_group(group):
             if old.get_parent() != self:
                 continue
