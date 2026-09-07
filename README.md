@@ -120,3 +120,38 @@ Assets are in assets/characters.png and assets/forest.png. See assets/ART_NOTES.
 Additional validation:
 
     godot --headless --path . --script res://tests/skill_tree.gd
+
+## Forest music, extra abilities, and living enemies
+
+Sunleaf Reverie is an original 53-second forest music loop: gentle flute melody,
+bell arpeggios, and warm sustained chords. It starts at a quiet volume and keeps
+playing through map changes and class practice. M mutes/resumes; mute is remembered
+across new runs until the game closes. The soundtrack contains no MapleStory music
+or samples. Rebuild the WAV with Python + numpy using tools/compose_forest.py.
+
+After choosing a class, E activates a second ability alongside the existing Q skill.
+Press T, then Tab, then 1/2/3 to equip an option. Tab returns to the style tree;
+T or Escape returns to play. Abilities cost no points and work with any style.
+Swapping preserves the remaining E cooldown, so healing cannot be refreshed by
+opening the menu. E cooldown pauses during menus. F2 lets you test immediately.
+
+| Class | Option 1 | Option 2 | Option 3 |
+| --- | --- | --- | --- |
+| Fighter | Crescent Wave: piercing sword wave | Second Wind: heal + guard | Blood Harvest: nearby damage + drain |
+| Mage | Starfall: targeted area blast | Winter Bloom: wide damage + slow | Moonlit Ward: shield + healing |
+| Shooter | Firecracker: explosive round | Flash Powder: nearby damage + slow | Parting Shots: guarded backward dash + shots |
+| Bowman | Starling Volley: five piercing arrows | Bramble Snare: roots ahead | Forest Renewal: heal + brief guard |
+
+Enemies patrol around their spawn, pause and turn at their patrol boundaries,
+then chase when the player approaches. Ground probes prevent walking off ledges,
+and enemies can stand on raised platforms. Slows also affect patrol speed.
+Menus freeze enemy movement and animation. Existing introductory boss stats stay intact.
+
+Basic animations use the existing original portraits: idle breathing, walking
+bounce and tilt, facing direction, attack lunges, and hit reactions. The player
+also stretches during jumps, recoils during attacks, and shows a glowing guard ring.
+These are lightweight sprite transforms, not new frame-by-frame sprite sheets.
+
+Additional validation:
+
+    godot --headless --path . --script res://tests/abilities_movement.gd

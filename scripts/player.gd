@@ -34,6 +34,9 @@ var combat_class := "fighter"
 var skill_timer := 0.0
 var skill_cooldown := 5.0
 var skill_name := "Whirlwind"
+const Abilities = preload("res://scripts/abilities.gd")
+var ability_index := 0
+var ability_timer := 0.0
 var guard_timer := 0.0
 var hurt_timer := 0.0
 var lifesteal := 0.05
@@ -57,11 +60,27 @@ func _process(delta):
     art_phase += delta
     heal_popup_timer = maxf(0.0, heal_popup_timer - delta)
     if has_node("Body/Portrait") and not dead:
-        $Body/Portrait.position.y = -13 + sin(art_phase * (12 if absf(velocity.x) > 5 else 3)) * (1.8 if absf(velocity.x) > 5 else 0.4)
+        var moving := absf(velocity.x) > 5
+        var step := sin(art_phase * (12 if moving else 3))
+        var sprite = $Body/Portrait
+        sprite.position.y = -13 - absf(step) * (3 if moving else 0.6)
+        sprite.rotation = step * 0.04 if moving else 0.0
+        sprite.scale = Vector2(0.15 * (1 + step * 0.025), 0.15 * (1 - step * 0.025))
+        if not is_on_floor() and not input_locked:
+            sprite.scale = Vector2(0.14, 0.16)
+            sprite.rotation = clampf(velocity.y / 3000, -0.12, 0.12)
+        if attack_timer > attack_cooldown - 0.12:
+            sprite.rotation -= 0.12
+        if hurt_timer > 0.4:
+            sprite.position.x = sin(hurt_timer * 90) * 3
+        else:
+            sprite.position.x = 0
     blast_time = maxf(0.0, blast_time - delta)
     queue_redraw()
 
 func _draw():
+    if guard_timer > 0 and not dead:
+        draw_arc(Vector2(0, -10), 36, 0, TAU, 48, Color(0.7, 0.9, 1, 0.8), 3)
     if heal_popup_timer > 0:
         draw_string(ThemeDB.fallback_font, Vector2(-18, -65 - (1.0 - heal_popup_timer) * 12), "+%d HP" % heal_popup, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(0.25, 1, 0.45))
     if blast_time > 0.0:
@@ -92,6 +111,8 @@ func _physics_process(delta):
     dash_timer = max(dash_timer - delta, 0.0)
     sword_timer = maxf(sword_timer - delta, 0.0)
     skill_timer = maxf(skill_timer - delta, 0.0)
+    if not input_locked:
+        ability_timer = maxf(ability_timer - delta, 0.0)
     guard_timer = maxf(guard_timer - delta, 0.0)
     hurt_timer = maxf(hurt_timer - delta, 0.0)
     $Body/Sword.rotation = lerpf(-0.65, 0.55, 1.0 - sword_timer / 0.16) if sword_timer > 0.0 else -0.65
@@ -143,6 +164,39 @@ func _unhandled_input(event):
         kamikaze()
     if event.keycode == KEY_Q:
         use_skill()
+    if event.keycode == KEY_E:
+        use_ability()
+
+func ability_data() -> Dictionary:
+    return Abilities.OPTIONS[combat_class][ability_index]
+
+func equip_ability(index: int) -> bool:
+    if not class_selected or dead or index < 0 or index > 2:
+        return false
+    ability_index = index
+    # Keep the remaining cooldown so swapping cannot bypass a recovery ability's limit.
+    stats_changed.emit()
+    return true
+
+func use_ability() -> bool:
+    if dead or input_locked or not class_selected or ability_timer > 0:
+        return false
+    var data := ability_data()
+    ability_timer = data.cooldown
+    Abilities.cast(self, data.id)
+    message_requested.emit(data.name)
+    stats_changed.emit()
+    return true
+
+func restore_health(amount: int):
+    if dead or amount <= 0:
+        return
+    var restored := mini(amount, max_hp - hp)
+    hp += restored
+    if restored > 0:
+        heal_popup = restored
+        heal_popup_timer = 1.0
+    stats_changed.emit()
 
 func attack():
     if input_locked or attack_timer > 0.0:

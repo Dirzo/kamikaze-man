@@ -86,5 +86,7 @@ func run():
     game.queue_free()
     await process_frame
     print("Skill-tree failures: %d" % failures)
+    # Let the audio thread release stopped playback before engine shutdown.
+    await create_timer(0.15).timeout
     quit(1 if failures else 0)
 

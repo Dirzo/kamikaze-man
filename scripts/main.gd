@@ -26,6 +26,8 @@ var map_rng := RandomNumberGenerator.new()
 var class_playtest := false
 var tree_open := false
 var tree_panel
+var music
+var ability_hint: Label
 var class_choices = [
     {"id":"fighter", "name":"FIGHTER", "desc":"Sword • +50 HP, +6 damage • Q: Whirlwind + brief guard"},
     {"id":"mage", "name":"MAGE", "desc":"Explosive magic • +14 damage, -15 HP • Q: Arcane Nova"},
@@ -35,6 +37,9 @@ var class_choices = [
 
 func _ready():
     randomize()
+    music = load("res://scripts/forest_music.gd").new()
+    music.name = "ForestMusic"
+    add_child(music)
     var fourth = $HUD/LevelUp/Choice3.duplicate()
     fourth.name = "Choice4"
     $HUD/LevelUp.add_child(fourth)
@@ -74,15 +79,22 @@ func _ready():
     map_rng.randomize()
     generate_map()
     update_hud()
-    $HUD/Controls.text = "← → MOVE   ALT JUMP   CTRL ATTACK   Q SKILL   T SKILL TREE   SHIFT DASH   Z SPIN   K KAMIKAZE"
+    $HUD/Controls.text = "← → MOVE   ALT JUMP   CTRL ATTACK   Q SKILL   E ABILITY   T BUILD   SHIFT DASH   Z SPIN   K KAMIKAZE"
+    $HUD/Controls.add_theme_font_size_override("font_size", 16)
+    ability_hint = Label.new()
+    ability_hint.position = Vector2(20, 648)
+    ability_hint.add_theme_color_override("font_outline_color", Color("#173b3a"))
+    ability_hint.add_theme_constant_override("outline_size", 5)
+    $HUD.add_child(ability_hint)
     var practice_hint := Label.new()
     practice_hint.position = Vector2(20, 78)
-    practice_hint.text = "F2 — FRESH CLASS PLAYTEST (no permanent rewards)"
+    practice_hint.text = "F2: CLASS PLAYTEST   •   T then TAB: ABILITY OPTIONS   •   M: MUSIC ON/OFF"
     $HUD.add_child(practice_hint)
     show_message("F2 lets you try any class immediately. Alt jumps.")
 
 func _process(delta):
     if is_instance_valid($Player):
+        ability_hint.text = "E: %s %s" % [$Player.ability_data().name, "READY" if $Player.ability_timer <= 0 else "%.1fs" % $Player.ability_timer] if $Player.class_selected else "E abilities unlock with your class after the first boss. F2 to try them now."
         $HUD/Build.text = "%s | DMG %d | LIFESTEAL %d%% | T: %d POINTS | Q: %s %s" % [$Player.class_name_display, $Player.attack_damage, int($Player.lifesteal_rate() * 100), $Player.skill_points, $Player.skill_name, "READY" if $Player.skill_timer <= 0 else "%.1fs" % $Player.skill_timer]
     if message_timer > 0.0:
         message_timer -= delta
@@ -94,11 +106,20 @@ func _unhandled_input(event):
         call_deferred("start_class_playtest")
         return
     if event is InputEventKey and event.pressed and not event.echo:
+        if event.keycode == KEY_M:
+            music.toggle()
+            show_message("Forest music " + ("on" if not music.stream_paused else "off"))
+            return
         if tree_open:
             if event.keycode in [KEY_T, KEY_ESCAPE]:
                 close_skill_tree()
+            elif event.keycode == KEY_TAB:
+                tree_panel.ability_mode = not tree_panel.ability_mode
+                tree_panel.refresh($Player)
             elif event.keycode in [KEY_1, KEY_2, KEY_3]:
-                if not $Player.invest_style(event.keycode - KEY_1):
+                if tree_panel.ability_mode:
+                    $Player.equip_ability(event.keycode - KEY_1)
+                elif not $Player.invest_style(event.keycode - KEY_1):
                     show_message("Need a point, an unfinished rank, and your chosen branch.")
                 tree_panel.refresh($Player)
             return
@@ -197,7 +218,7 @@ func choose_class(index: int):
     $Player.input_locked = $Player.pending_upgrades > 0
     if $Player.input_locked:
         show_level_up()
-    show_message("%s chosen. Press T to choose a fighting style!" % $Player.class_name_display)
+    show_message("%s chosen! T: style tree. TAB in tree: E abilities." % $Player.class_name_display)
     try_next_map()
 
 func on_boss_defeated():

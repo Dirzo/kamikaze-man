@@ -26,6 +26,33 @@ var target = null
 var start_position := Vector2.ZERO
 var hit_timer := 0.0
 var alive := true
+var patrol_direction := 1
+var patrol_pause := 0.0
+var anim_phase := 0.0
+var attack_anim := 0.0
+var hurt_anim := 0.0
+var look_direction := 1
+
+func _process(delta):
+    if not alive or (is_instance_valid(target) and target.input_locked):
+        return
+    anim_phase += delta
+    attack_anim = maxf(0, attack_anim - delta)
+    hurt_anim = maxf(0, hurt_anim - delta)
+    var moving := absf(velocity.x) > 5
+    if moving:
+        look_direction = 1 if velocity.x > 0 else -1
+    var step := sin(anim_phase * (10 if moving else 2.5))
+    var sprite = $Body/Portrait
+    sprite.flip_h = look_direction < 0
+    sprite.position = Vector2(look_direction * sin(attack_anim / 0.3 * PI) * 10, -12 - absf(step) * (4 if moving else 1.0))
+    sprite.rotation = step * 0.07 if moving else step * 0.018
+    sprite.scale = Vector2(0.14 * (1.0 + step * 0.035), 0.14 * (1.0 - step * 0.035))
+    if attack_anim > 0:
+        sprite.rotation += look_direction * sin(attack_anim / 0.3 * PI) * 0.2
+    if hurt_anim > 0:
+        sprite.position.x += sin(hurt_anim * 90) * 4
+    $Body.modulate = Color(1.8, 1.45, 1.45) if hurt_anim > 0 else (Color(1.5, 1.2, 0.5) if ranged and shot_timer < 0.6 else Color.WHITE)
 
 const GRAVITY := 1500.0
 
@@ -38,6 +65,7 @@ func _ready():
     $HealthBar.position.y -= 12
     hp = max_hp
     start_position = global_position
+    patrol_direction = 1 if get_index() % 2 == 0 else -1
     $Name.text = enemy_name
     update_healthbar()
     call_deferred("find_target")
@@ -56,7 +84,7 @@ func _physics_process(delta):
     if not is_on_floor():
         velocity.y += GRAVITY * delta
 
-    if target == null:
+    if not is_instance_valid(target):
         find_target()
         move_and_slide()
         return
@@ -76,7 +104,6 @@ func _physics_process(delta):
                 return
     shot_timer -= delta
     if ranged and global_position.distance_to(target.global_position) < 650.0:
-        $Body.modulate = Color(1.5, 1.2, 0.5) if shot_timer < 0.6 else Color.WHITE
         if shot_timer <= 0:
             shoot()
             shot_timer = 2.4 if is_boss else 2.0
@@ -86,6 +113,7 @@ func _physics_process(delta):
     var horizontal_reach: float = 17.0 + 19.0 * absf(global_scale.x) + 6.0
 
     if distance < aggro_range:
+        look_direction = 1 if dx >= 0 else -1
         if distance > horizontal_reach:
             velocity.x = sign(dx) * move_speed * slow_factor
         else:
@@ -94,12 +122,40 @@ func _physics_process(delta):
             if absf(target.global_position.y - global_position.y) < vertical_reach and hit_timer <= 0.0 and not target.input_locked and target.has_method("take_damage"):
                 target.take_damage(contact_damage)
                 hit_timer = 0.8
+                attack_anim = 0.3
     else:
-        velocity.x = move_toward(velocity.x, 0.0, 800.0 * delta)
+        patrol(delta)
+
+    # Ground probes keep patrols and chases from walking off raised platforms.
+    if is_on_floor() and absf(velocity.x) > 0 and not floor_ahead(signf(velocity.x)):
+        velocity.x = 0
+        patrol_direction *= -1
+        patrol_pause = 0.35
 
     move_and_slide()
 
+func floor_ahead(direction: float) -> bool:
+    var from := global_position + Vector2(direction * (24 * absf(global_scale.x) + 10), 0)
+    var to := from + Vector2(0, 36 * absf(global_scale.y) + 28)
+    var query := PhysicsRayQueryParameters2D.create(from, to, 9)
+    query.exclude = [get_rid()]
+    return not get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+func patrol(delta: float):
+    patrol_pause = maxf(0, patrol_pause - delta)
+    if patrol_pause > 0:
+        velocity.x = 0
+        return
+    var offset: float = global_position.x - start_position.x
+    if (offset > 130 and patrol_direction > 0) or (offset < -130 and patrol_direction < 0) or is_on_wall():
+        patrol_direction *= -1
+        patrol_pause = 0.45
+        velocity.x = 0
+        return
+    velocity.x = patrol_direction * move_speed * 0.45 * slow_factor
+
 func shoot():
+    attack_anim = 0.3
     for angle in ([-0.2, 0.0, 0.2] if is_boss else [0.0]):
         var shot = load("res://scripts/projectile.gd").new()
         shot.attacker = self
@@ -124,9 +180,7 @@ func take_damage(amount: int, attacker, is_crit := false):
     if hp <= 0:
         die(attacker)
         return
-    $Body.modulate = Color(1.6, 1.6, 1.6)
-    await get_tree().create_timer(0.05).timeout
-    $Body.modulate = Color.WHITE
+    hurt_anim = 0.18
 
 func die(attacker):
     if not alive:
@@ -150,6 +204,10 @@ func die(attacker):
         boss_defeated.emit()
 
 func respawn():
+    attack_anim = 0.0
+    hurt_anim = 0.0
+    patrol_pause = 0.0
+    velocity = Vector2.ZERO
     slow_timer = 0.0
     slow_factor = 1.0
     burn_timer = 0.0
