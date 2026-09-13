@@ -16,6 +16,28 @@
   }
 
   function setStatus(text){if(U.globalStatus)U.globalStatus.textContent=text}
+  function setModeUi(mode){
+    document.querySelectorAll('.sitePill').forEach(el=>{
+      if(/LOCAL HALL OF FAME/i.test(el.textContent||''))el.textContent='GLOBAL HALL OF FAME';
+    });
+    const title=document.querySelector('.titleBest');
+    if(title){
+      for(const node of title.childNodes){
+        if(node.nodeType===3&&/LOCAL DPS CHAMPION/i.test(node.nodeValue||'')){
+          node.nodeValue=(node.nodeValue||'').replace(/LOCAL DPS CHAMPION/i,'GLOBAL DPS CHAMPION');
+          break;
+        }
+      }
+    }
+    const buildLabel=[...document.querySelectorAll('.titleControls strong')].find(el=>/OFFLINE BUILD|ONLINE BUILD|NETWORK UNAVAILABLE/i.test(el.textContent||''));
+    if(buildLabel){
+      buildLabel.textContent=mode==='online'
+        ?'ONLINE BUILD — GLOBAL DPS LEADERBOARD ACTIVE'
+        :mode==='offline'
+          ?'NETWORK UNAVAILABLE — LOCAL LEADERBOARD BACKUP ACTIVE'
+          :'ONLINE BUILD — CONNECTING TO GLOBAL DPS LEADERBOARD';
+    }
+  }
 
   renderLeaderboard=function(newId=''){
     if(!U.leaderboard)return;
@@ -33,17 +55,20 @@
   syncGlobalLeaderboard=async function(){
     try{
       setStatus('SYNCING • GLOBAL DPS');
+      setModeUi('connecting');
       const r=await fetch('/api/leaderboard?limit=10',{cache:'no-store',headers:{accept:'application/json'}});
       if(!r.ok)throw new Error('HTTP '+r.status);
       const j=await r.json();
       onlineRows=Array.isArray(j.scores)?j.scores:[];
       globalBoard=true;
       setStatus('ONLINE • GLOBAL TOP 10');
+      setModeUi('online');
       renderLeaderboard();
     }catch(e){
       console.warn('Global leaderboard unavailable',e);
       globalBoard=false;
       setStatus('OFFLINE • LOCAL BACKUP');
+      setModeUi('offline');
       renderLeaderboard();
     }
   };
@@ -69,6 +94,7 @@
       onlineRows=Array.isArray(j.scores)?j.scores:onlineRows;
       globalBoard=true;
       setStatus('ONLINE • GLOBAL TOP 10');
+      setModeUi('online');
       renderLeaderboard(j.accepted_id||'');
     }catch(_){/* normal live sync remains the fallback */}
   }
@@ -101,6 +127,7 @@
       onlineRows=Array.isArray(j.scores)?j.scores:onlineRows;
       globalBoard=true;
       setStatus(j.accepted?'ONLINE • PERSONAL BEST SAVED':'ONLINE • GLOBAL TOP 10');
+      setModeUi('online');
       const id=j.accepted_id||'';
       renderLeaderboard(id);
       if(j.accepted){
@@ -118,6 +145,7 @@
       console.warn('Global leaderboard submit failed',e);
       globalBoard=false;
       setStatus('OFFLINE • LOCAL BACKUP');
+      setModeUi('offline');
       renderLeaderboard();
       return false;
     }
@@ -139,7 +167,7 @@
     saveLeaderboard();
     renderLeaderboard(placed?rec.id:'');
     if(placed&&leaderboard[0].id===rec.id){
-      txt(pl.x+17,pl.y-82,'NEW LOCAL DPS RECORD!',w.col,true);
+      txt(pl.x+17,pl.y-82,'NEW PERSONAL DPS BEST!',w.col,true);
       ring(pl.x+17,pl.y+10,w.col,150,6);
       shake=Math.max(shake,8);
       submitGlobalWeapon(rec,w);
@@ -149,6 +177,7 @@
 
   const heading=document.querySelector('#leaderboardCard h3');
   if(heading)heading.textContent='Global DPS Hall of Fame';
+  setModeUi('connecting');
   setStatus('CONNECTING • GLOBAL DPS');
   if(U.playerName)U.playerName.addEventListener('change',saveLeaderboard);
   syncGlobalLeaderboard().then(submitStoredBest);
