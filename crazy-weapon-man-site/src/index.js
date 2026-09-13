@@ -4,7 +4,7 @@ const RARITIES = new Set([
   'Super Ultra Rare','Forbidden','Impossible','Cataclysmic','WHAT?!'
 ]);
 const TYPES = new Set(['SWORD','DAGGER','NUNCHUCKS','KATANA','BOW','SHURIKEN','WAND','STAFF','HAMMER']);
-
+const CURRENT_VERSION = 'v1.1-frenzy';
 let schemaReady = null;
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -26,6 +26,10 @@ function integer(value, min, max) {
   if (!Number.isFinite(n)) return null;
   const i = Math.round(n);
   return i >= min && i <= max ? i : null;
+}
+function cleanVersion(value) {
+  const v = cleanText(value, 32);
+  return /^[A-Za-z0-9._-]{1,32}$/.test(v) ? v : CURRENT_VERSION;
 }
 async function ensureSchema(DB) {
   if (!DB) throw new Error('D1 binding DB is unavailable');
@@ -50,8 +54,41 @@ async function ensureSchema(DB) {
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`).run();
-      await DB.prepare(`CREATE INDEX IF NOT EXISTS leaderboard_dps_idx
-        ON leaderboard (dps DESC, updated_at ASC)`).run();
+
+      await DB.prepare(`CREATE TABLE IF NOT EXISTS leaderboard_v2 (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
+        player_name TEXT NOT NULL,
+        weapon_name TEXT NOT NULL,
+        weapon_type TEXT NOT NULL,
+        rarity TEXT NOT NULL,
+        color TEXT NOT NULL DEFAULT '#ffffff',
+        dps INTEGER NOT NULL CHECK (dps > 0),
+        run_seed TEXT NOT NULL,
+        zone TEXT NOT NULL,
+        boss TEXT NOT NULL DEFAULT '',
+        level INTEGER NOT NULL DEFAULT 1,
+        kills INTEGER NOT NULL DEFAULT 0,
+        slaughter_score INTEGER NOT NULL DEFAULT 0,
+        game_version TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (client_id, game_version)
+      )`).run();
+      await DB.prepare(`CREATE INDEX IF NOT EXISTS leaderboard_v2_dps_idx
+        ON leaderboard_v2 (game_version, dps DESC, updated_at ASC)`).run();
+      await DB.prepare(`CREATE INDEX IF NOT EXISTS leaderboard_v2_client_idx
+        ON leaderboard_v2 (client_id, dps DESC)`).run();
+
+      await DB.prepare(`
+        INSERT OR IGNORE INTO leaderboard_v2 (
+          id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
+          run_seed, zone, boss, level, kills, slaughter_score, game_version, created_at, updated_at
+        )
+        SELECT id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
+               run_seed, zone, boss, level, kills, slaughter_score, game_version, created_at, updated_at
+        FROM leaderboard
+      `).run();
       return true;
     })().catch(error => {
       schemaReady = null;
@@ -79,22 +116,66 @@ function publicScore(row) {
     when: row.updated_at
   };
 }
-async function topScores(DB, limit = 10) {
+const SCORE_FIELDS = `id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
+  run_seed, zone, boss, level, kills, slaughter_score, game_version, updated_at`;
+
+async function topScores(DB, limit = 10, view = 'current', version = CURRENT_VERSION) {
   const safeLimit = Math.max(1, Math.min(50, Number(limit) || 10));
-  const { results = [] } = await DB.prepare(`
-    SELECT id, player_name, weapon_name, weapon_type, rarity, color, dps,
-           run_seed, zone, boss, level, kills, slaughter_score, game_version, updated_at
-    FROM leaderboard
-    ORDER BY dps DESC, updated_at ASC
-    LIMIT ?
-  `).bind(safeLimit).all();
+  const safeView = ['current','all','legacy'].includes(view) ? view : 'current';
+  let results = [];
+
+  if (safeView === 'current') {
+    ({ results = [] } = await DB.prepare(`
+      SELECT ${SCORE_FIELDS}
+      FROM leaderboard_v2
+      WHERE game_version = ?
+      ORDER BY dps DESC, updated_at ASC
+      LIMIT ?
+    `).bind(version, safeLimit).all());
+  } else if (safeView === 'legacy') {
+    ({ results = [] } = await DB.prepare(`
+      SELECT ${SCORE_FIELDS}
+      FROM leaderboard_v2 AS l
+      WHERE l.game_version <> ?
+        AND NOT EXISTS (
+          SELECT 1 FROM leaderboard_v2 AS better
+          WHERE better.client_id = l.client_id
+            AND better.game_version <> ?
+            AND (
+              better.dps > l.dps OR
+              (better.dps = l.dps AND better.updated_at < l.updated_at) OR
+              (better.dps = l.dps AND better.updated_at = l.updated_at AND better.id < l.id)
+            )
+        )
+      ORDER BY l.dps DESC, l.updated_at ASC
+      LIMIT ?
+    `).bind(version, version, safeLimit).all());
+  } else {
+    ({ results = [] } = await DB.prepare(`
+      SELECT ${SCORE_FIELDS}
+      FROM leaderboard_v2 AS l
+      WHERE NOT EXISTS (
+        SELECT 1 FROM leaderboard_v2 AS better
+        WHERE better.client_id = l.client_id
+          AND (
+            better.dps > l.dps OR
+            (better.dps = l.dps AND better.updated_at < l.updated_at) OR
+            (better.dps = l.dps AND better.updated_at = l.updated_at AND better.id < l.id)
+          )
+      )
+      ORDER BY l.dps DESC, l.updated_at ASC
+      LIMIT ?
+    `).bind(safeLimit).all());
+  }
   return results.map(publicScore);
 }
 async function leaderboardGet(request, env) {
   await ensureSchema(env.DB);
   const url = new URL(request.url);
   const limit = integer(url.searchParams.get('limit') || 10, 1, 50) || 10;
-  return json({ scores: await topScores(env.DB, limit), live: true });
+  const view = cleanText(url.searchParams.get('view') || 'current', 12).toLowerCase();
+  const version = cleanVersion(url.searchParams.get('version') || CURRENT_VERSION);
+  return json({ scores: await topScores(env.DB, limit, view, version), live: true, view, version });
 }
 async function leaderboardPost(request, env) {
   await ensureSchema(env.DB);
@@ -115,7 +196,7 @@ async function leaderboardPost(request, env) {
   const level = integer(body.level, 1, 999) ?? 1;
   const kills = integer(body.kills, 0, 10_000_000) ?? 0;
   const slaughterScore = integer(body.slaughter_score, 0, 2_000_000_000) ?? 0;
-  const gameVersion = cleanText(body.game_version, 32) || 'unknown';
+  const gameVersion = cleanVersion(body.game_version || CURRENT_VERSION);
 
   const problems = [];
   if (!/^[A-Za-z0-9_-]{8,80}$/.test(clientId)) problems.push('invalid client_id');
@@ -127,18 +208,20 @@ async function leaderboardPost(request, env) {
   if (!/^[A-Za-z0-9_-]{4,32}$/.test(runSeed)) problems.push('invalid run_seed');
   if (problems.length) return json({ error: 'Score rejected.', problems }, 400);
 
-  const existing = await env.DB.prepare('SELECT dps FROM leaderboard WHERE client_id = ?').bind(clientId).first();
+  const existing = await env.DB.prepare(
+    'SELECT dps FROM leaderboard_v2 WHERE client_id = ? AND game_version = ?'
+  ).bind(clientId, gameVersion).first();
   const improved = !existing || dps > Number(existing.dps || 0);
   let acceptedId = null;
 
   if (improved) {
     acceptedId = crypto.randomUUID();
     await env.DB.prepare(`
-      INSERT INTO leaderboard (
+      INSERT INTO leaderboard_v2 (
         id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
         run_seed, zone, boss, level, kills, slaughter_score, game_version, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      ON CONFLICT(client_id) DO UPDATE SET
+      ON CONFLICT(client_id, game_version) DO UPDATE SET
         id = excluded.id,
         player_name = excluded.player_name,
         weapon_name = excluded.weapon_name,
@@ -152,9 +235,8 @@ async function leaderboardPost(request, env) {
         level = excluded.level,
         kills = excluded.kills,
         slaughter_score = excluded.slaughter_score,
-        game_version = excluded.game_version,
         updated_at = datetime('now')
-      WHERE excluded.dps > leaderboard.dps
+      WHERE excluded.dps > leaderboard_v2.dps
     `).bind(
       acceptedId, clientId, playerName, weaponName, weaponType, rarity, color, dps,
       runSeed, zone, boss, level, kills, slaughterScore, gameVersion
@@ -164,7 +246,9 @@ async function leaderboardPost(request, env) {
   return json({
     accepted: improved,
     accepted_id: improved ? acceptedId : null,
-    scores: await topScores(env.DB, 10)
+    scores: await topScores(env.DB, 10, 'current', gameVersion),
+    view: 'current',
+    version: gameVersion
   }, improved ? 201 : 200);
 }
 
@@ -174,7 +258,13 @@ export default {
     try {
       if (url.pathname === '/api/health' && request.method === 'GET') {
         await ensureSchema(env.DB);
-        return json({ ok: true, service: 'crazy-weapon-man', leaderboard: 'ready' });
+        return json({
+          ok: true,
+          service: 'crazy-weapon-man',
+          leaderboard: 'ready',
+          schema: 'versioned-v2',
+          current_version: CURRENT_VERSION
+        });
       }
       if (url.pathname === '/api/leaderboard') {
         if (request.method === 'GET') return leaderboardGet(request, env);
