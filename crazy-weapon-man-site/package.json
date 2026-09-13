@@ -4,9 +4,10 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "check": "node --check functions/api/leaderboard.js"
+    "check": "node --check src/index.js",
+    "deploy": "wrangler deploy"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0"
+    "wrangler": "^4.68.0"
   }
 }
