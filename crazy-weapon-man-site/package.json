@@ -1,0 +1,12 @@
+{
+  "name": "crazy-weapon-man-web",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "check": "node --check functions/api/leaderboard.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
