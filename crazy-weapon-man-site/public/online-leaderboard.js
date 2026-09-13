@@ -48,6 +48,31 @@
     }
   };
 
+  async function submitStoredBest(){
+    const rec=leaderboard[0];
+    if(!rec||!Number(rec.dps)||rec.rar==='Training')return;
+    try{
+      const type=String(rec.type||'').toUpperCase();
+      if(!['SWORD','DAGGER','NUNCHUCKS','KATANA','BOW','SHURIKEN','WAND','STAFF','HAMMER'].includes(type))return;
+      const r=await fetch('/api/leaderboard',{
+        method:'POST',
+        headers:{'content-type':'application/json',accept:'application/json'},
+        body:JSON.stringify({
+          client_id:getClientId(),player_name:playerName(),weapon_name:rec.name,weapon_type:type,
+          rarity:rec.rar,color:/^#[0-9A-Fa-f]{6}$/.test(rec.col||'')?rec.col:'#ffffff',dps:Math.round(rec.dps),
+          run_seed:String(rec.seed||runSeed),zone:rec.zone||'Unknown',boss:rec.boss||'',level:Number(rec.level||1),
+          kills:Number(rec.kills||0),slaughter_score:0,game_version:GAME_VERSION
+        })
+      });
+      if(!r.ok)return;
+      const j=await r.json();
+      onlineRows=Array.isArray(j.scores)?j.scores:onlineRows;
+      globalBoard=true;
+      setStatus('ONLINE • GLOBAL TOP 10');
+      renderLeaderboard(j.accepted_id||'');
+    }catch(_){/* normal live sync remains the fallback */}
+  }
+
   submitGlobalWeapon=async function(rec,w){
     try{
       setStatus('UPLOADING • PERSONAL BEST');
@@ -126,6 +151,6 @@
   if(heading)heading.textContent='Global DPS Hall of Fame';
   setStatus('CONNECTING • GLOBAL DPS');
   if(U.playerName)U.playerName.addEventListener('change',saveLeaderboard);
-  syncGlobalLeaderboard();
+  syncGlobalLeaderboard().then(submitStoredBest);
   if(!globalThis.__CWM_LB_TIMER)globalThis.__CWM_LB_TIMER=setInterval(syncGlobalLeaderboard,15000);
 })();
