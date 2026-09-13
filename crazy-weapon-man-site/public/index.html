@@ -10,23 +10,27 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
 </head>
 <body><div class="boot"><div class="box"><div class="title">CRAZY<br>WEAPON MAN</div><div class="sub" id="bootText">Compressing several workplace violations into your browser...</div><div class="bar"><i></i></div></div></div>
 <script>globalThis.__CWM_PACKED=[];</script>
-<script src="game/chunk-00.js"></script>
-<script src="game/chunk-01.js"></script>
-<script src="game/chunk-02.js"></script>
-<script src="game/chunk-03.js"></script>
-<script src="game/chunk-04.js"></script>
-<script src="game/chunk-05.js"></script>
-<script src="game/chunk-06.js"></script>
-<script src="game/chunk-07.js"></script>
-<script src="game/chunk-08.js"></script>
+<script src="/game/chunk-00.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-01.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-02.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-03.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-04.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-05.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-06.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-07.js?v=cwm100-web-20260913c"></script>
+<script src="/game/chunk-08.js?v=cwm100-web-20260913c"></script>
 <script>
 (async()=>{
+  if(globalThis.__CWM_PACKED.length!==9) throw new Error('Game bundle incomplete: loaded '+globalThis.__CWM_PACKED.length+' of 9 chunks.');
   const b64=globalThis.__CWM_PACKED.join('');
+  if(!b64||b64.length%4!==0) throw new Error('Game bundle is malformed.');
   const bin=atob(b64),bytes=new Uint8Array(bin.length);
   for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  if(bytes[0]!==0x1f||bytes[1]!==0x8b) throw new Error('Game bundle is not valid gzip data.');
   if(!('DecompressionStream' in globalThis)) throw new Error('This browser needs DecompressionStream support. Please use a current Chrome, Edge, Firefox, or Safari.');
   const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   const html=await new Response(stream).text();
+  if(!html.includes('CRAZY WEAPON MAN')&&!html.includes('Crazy Weapon Man')) throw new Error('Game bundle decoded but did not contain the game.');
   document.open();document.write(html);document.close();
 })().catch(err=>{const el=document.getElementById('bootText');if(el)el.textContent='LOAD FAILED: '+err.message;console.error(err)});
 </script></body></html>
