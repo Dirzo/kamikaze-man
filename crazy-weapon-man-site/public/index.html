@@ -37,6 +37,8 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     html=await new Response(stream).text();
   }catch(e){throw new Error('Game bundle decompression failed.');}
   if(!html.includes('CRAZY WEAPON MAN')&&!html.includes('Crazy Weapon Man')) throw new Error('Game bundle decoded but did not contain the game.');
+  const onlinePatch='<script src="/online-leaderboard.js?v=cwm-online-20260913a"><\/script>';
+  html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,onlinePatch+'</body>'):html+onlinePatch;
   document.open();document.write(html);document.close();
 })().catch(err=>{const el=document.getElementById('bootText');if(el)el.textContent='LOAD FAILED: '+err.message;console.error(err)});
 </script></body></html>
