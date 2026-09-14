@@ -11,7 +11,8 @@
   .cwmMobileFab{display:none;position:absolute;z-index:42;top:max(8px,env(safe-area-inset-top));width:36px;height:36px;border-radius:11px;border:1px solid #ffffff4a;background:#07101be6;color:#fff;font:900 16px system-ui;box-shadow:0 5px 18px #0009;touch-action:manipulation}.cwmMobileFab.lb{right:max(8px,env(safe-area-inset-right))}.cwmMobileFab.pause{right:calc(max(8px,env(safe-area-inset-right)) + 44px)}
   .cwmMobileDrawer{display:none;position:absolute;z-index:45;top:50px;right:8px;width:min(88vw,340px);max-height:62%;overflow:auto;padding:10px;border:1px solid #3b4e68;border-radius:14px;background:#08101af2;box-shadow:0 16px 40px #000c}.cwmMobileDrawer.show{display:block}.cwmMobileDrawer h3{margin:0 0 8px;font-size:14px}.cwmMobileDrawer .leaderboard{display:block!important}.cwmMobileDrawer .lbrow{font-size:10px!important;padding:6px!important}.cwmMobileDrawer .lbname{font-size:10px!important}.cwmMobileDrawer .lbmeta{font-size:8px!important}.cwmMobileDrawer .lbdps{font-size:10px!important}
   @media (max-width:900px),(pointer:coarse){
-    body.touchDevice.playing .stage{width:min(100vw,calc(100dvh * 1.7777778))!important;max-height:100dvh!important;border-radius:0!important;border:0!important}
+    body.touchDevice.playing .stage{width:min(100vw,calc(100dvh * 1.7777778))!important;max-height:100dvh!important;border-radius:0!important;border:0!important;overflow:hidden!important;background:#02050a!important}
+    body.touchDevice.playing canvas#game{--cwm-mobile-zoom:1.5;transform:scale(var(--cwm-mobile-zoom))!important;transform-origin:var(--cwm-cam-x,50%) var(--cwm-cam-y,73%)!important;will-change:transform,transform-origin;image-rendering:auto}
     body.touchDevice.playing .fsTop{height:72px!important;min-height:72px!important;display:grid!important;grid-template-columns:minmax(0,1fr) 122px!important;gap:5px!important;padding:4px!important;background:linear-gradient(#050a12e8,#050a12a8,transparent)!important}
     body.touchDevice.playing .fsWeapon{grid-template-columns:1fr!important;padding:4px 6px!important;gap:2px!important;background:#07101bc4!important;border-radius:8px!important}
     body.touchDevice.playing .fsWeapon canvas{display:none!important}
@@ -27,7 +28,9 @@
     body.touchDevice.playing .thumbHint{display:none!important}
     body.touchDevice.playing .cwmMobileFab{display:block}
   }
+  @media (orientation:portrait) and (max-width:900px){body.touchDevice.playing canvas#game{--cwm-mobile-zoom:1.28}}
   @media (max-height:500px) and (orientation:landscape){
+    body.touchDevice.playing canvas#game{--cwm-mobile-zoom:1.62}
     body.touchDevice.playing .fsTop{height:58px!important;min-height:58px!important;grid-template-columns:minmax(0,1fr) 105px!important}.fsDps{font-size:16px!important}.fsZone{top:61px!important}.cwmMobileFab{width:32px;height:32px;font-size:14px}.cwmMobileDrawer{top:42px;max-height:72%}
   }`;
   document.head.appendChild(style);
@@ -71,5 +74,27 @@
     const sync=()=>{if(src&&dst)dst.innerHTML=src.innerHTML};sync();if(src)new MutationObserver(sync).observe(src,{subtree:true,childList:true,characterData:true,attributes:true});
   }
 
-  installColorPicker();installMobileControls();
+  function startMobileCamera(){
+    const stage=document.getElementById('gameStage');
+    if(!stage||globalThis.__CWM_MOBILE_CAMERA)return;
+    globalThis.__CWM_MOBILE_CAMERA=true;
+    let camX=50,camY=73;
+    const clampCam=(n,a,b)=>Math.max(a,Math.min(b,n));
+    const frame=()=>{
+      if(document.body.classList.contains('touchDevice')&&document.body.classList.contains('playing')&&typeof pl!=='undefined'&&typeof W!=='undefined'&&typeof H!=='undefined'){
+        const px=((pl.x+(pl.w||34)/2)/W)*100;
+        const py=((pl.y+(pl.h||58)*.58)/H)*100;
+        const targetX=clampCam(px,34,66);
+        const targetY=clampCam(py,66,76);
+        camX+=(targetX-camX)*.12;
+        camY+=(targetY-camY)*.10;
+        stage.style.setProperty('--cwm-cam-x',camX.toFixed(2)+'%');
+        stage.style.setProperty('--cwm-cam-y',camY.toFixed(2)+'%');
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  }
+
+  installColorPicker();installMobileControls();startMobileCamera();
 })();
