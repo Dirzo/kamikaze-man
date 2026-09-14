@@ -4,6 +4,7 @@
 
   const css=document.createElement('style');
   css.textContent=`
+    /* Gameplay clarity pass */
     .waveIntro,.killChainHud{display:none!important}
     #fsDps,.fsVRow>span:last-child,.cwmMiniHud,.cwmDpsCalc,.cwmPauseStats{font-family:${MONO};font-variant-numeric:tabular-nums slashed-zero;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
     #fsDps,.fsVRow>span:last-child{letter-spacing:-.025em;text-shadow:0 1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 -1px 0 #000!important}
@@ -86,13 +87,21 @@
 
   function installMiniHud(){
     const stage=document.getElementById('gameStage');
-    if(!stage||document.getElementById('cwmMiniHud'))return;
-    const el=document.createElement('div');el.id='cwmMiniHud';el.className='cwmMiniHud';
+    if(!stage)return;
+    let el=document.getElementById('cwmMiniHud');
+    if(!el){el=document.createElement('div');el.id='cwmMiniHud';el.className='cwmMiniHud';stage.appendChild(el)}
+    if(el.dataset.clarityReady)return;
+    el.dataset.clarityReady='1';
     el.innerHTML='<div class="main"><span class="dps">0 DPS</span> <span class="weapon"></span></div><div class="sub"></div><div class="calc"></div>';
-    stage.appendChild(el);
   }
 
   function installPausePanel(){
+    const existing=document.getElementById('cwmPauseOverlay');
+    if(existing){
+      const meta=document.getElementById('cwmPauseWeaponMeta');
+      if(meta&&!document.getElementById('cwmPauseFormula')){const f=document.createElement('div');f.id='cwmPauseFormula';f.className='cwmPauseStats';f.style.marginTop='7px';meta.insertAdjacentElement('afterend',f)}
+      return;
+    }
     const stage=document.getElementById('gameStage');
     if(!stage||document.getElementById('cwmPausePanel'))return;
     const p=document.createElement('div');p.id='cwmPausePanel';p.className='cwmPausePanel';
@@ -102,15 +111,11 @@
   }
 
   function syncPauseButton(){
+    if(document.getElementById('cwmPauseOverlay'))return;
     const btn=document.getElementById('cwmMobilePauseBtn');
     if(!btn||btn.dataset.clarityBound)return;
     btn.dataset.clarityBound='1';
-    btn.onclick=e=>{
-      e.preventDefault();e.stopPropagation();
-      paused=!paused;
-      btn.textContent=paused?'▶':'Ⅱ';
-      const p=document.getElementById('cwmPausePanel');if(p)p.classList.toggle('show',paused&&!over);
-    };
+    btn.onclick=e=>{e.preventDefault();e.stopPropagation();paused=!paused;btn.textContent=paused?'▶':'Ⅱ';const p=document.getElementById('cwmPausePanel');if(p)p.classList.toggle('show',paused&&!over)};
   }
 
   function updateClarityUi(){
@@ -119,12 +124,15 @@
     const calc=document.getElementById('cwmDpsCalc');
     if(calc)calc.innerHTML=`DPS = <b>${nf(b.hit)}</b> hit × <b>${b.aps.toFixed(2)}</b>/s × <b>${factor(b.crit)}</b> crit × <b>${factor(b.proc)}</b> FX = <b>${nf(b.dps)}</b>`;
     const mini=document.getElementById('cwmMiniHud');
-    if(mini){
-      mini.querySelector('.dps').textContent=`${nf(b.dps)} DPS`;
-      mini.querySelector('.weapon').textContent=`• ${b.w.rar} ${WM[b.w.type]?.label||b.w.type}`;
-      mini.querySelector('.sub').textContent=`HP ${Math.ceil(pl.hp)}/${pl.max} • LV ${pl.lv} • KILLS ${kills} • ${Z[zoneI]?.name||''}`;
-      mini.querySelector('.calc').textContent=formulaText(b,false);
+    if(mini&&mini.dataset.clarityReady){
+      const d=mini.querySelector('.dps'),w=mini.querySelector('.weapon'),sub=mini.querySelector('.sub'),mc=mini.querySelector('.calc');
+      if(d)d.textContent=`${nf(b.dps)} DPS`;
+      if(w)w.textContent=`• ${b.w.rar} ${WM[b.w.type]?.label||b.w.type}`;
+      if(sub)sub.textContent=`HP ${Math.ceil(pl.hp)}/${pl.max} • LV ${pl.lv} • KILLS ${kills} • ${Z[zoneI]?.name||''}`;
+      if(mc)mc.textContent=formulaText(b,false);
     }
+    const formula=document.getElementById('cwmPauseFormula');
+    if(formula)formula.innerHTML=`<b>DPS FORMULA</b><br>${formulaText(b,true)}<br>Crit chance ${(b.cc*100).toFixed(0)}%`;
     const panel=document.getElementById('cwmPausePanel');
     if(panel){
       panel.classList.toggle('show',!!paused&&!over&&document.body.classList.contains('touchDevice'));
@@ -136,6 +144,7 @@
     syncPauseButton();
   }
 
+  /* Remove the two explanatory systems that compete with the action. */
   try{
     showWaveIntro=function(){waveIntroT=0;if(U.waveIntro)U.waveIntro.classList.remove('show')};
     killChainAdd=function(){killChainCount=0;killChainT=0;killChainBonusTotal=0;if(U.killChainHud)U.killChainHud.classList.remove('show','pulse')};
@@ -146,6 +155,7 @@
     if(U.killChainHud)U.killChainHud.classList.remove('show','pulse');
   }catch(e){console.warn('Clarity cleanup hook unavailable',e)}
 
+  /* Make the selected character color part of the actual body render. */
   if(typeof playerDraw==='function'&&!globalThis.__CWM_TRUE_CHARACTER_COLOR){
     globalThis.__CWM_TRUE_CHARACTER_COLOR=true;
     const basePlayerDraw=playerDraw;
@@ -166,6 +176,7 @@
     };
   }
 
+  /* Replace fuzzy combat damage text with a smaller, hard-edged numeric layer. */
   if(typeof draw==='function'&&!globalThis.__CWM_CRISP_DAMAGE){
     globalThis.__CWM_CRISP_DAMAGE=true;
     const baseDraw=draw;
