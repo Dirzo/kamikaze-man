@@ -6,12 +6,12 @@
       const h=await fetch('/api/health',{cache:'no-store',headers:{accept:'application/json'}});
       const hj=await h.json();
       result.health=!!(h.ok&&hj?.ok&&hj?.leaderboard==='ready');
-      result.serverVersion=hj?.current_version||'';
+      result.serverDefaultVersion=hj?.current_version||'';
       const r=await fetch(`/api/leaderboard?limit=1&view=current&version=${encodeURIComponent(VERSION)}`,{cache:'no-store',headers:{accept:'application/json'}});
       const j=await r.json();
-      result.read=!!(r.ok&&Array.isArray(j?.scores));
+      result.read=!!(r.ok&&Array.isArray(j?.scores)&&j?.version===VERSION);
       result.reportingPath=typeof submitGlobalWeapon==='function'&&typeof recordWeapon==='function';
-      result.ok=result.health&&result.read&&result.reportingPath&&result.serverVersion===VERSION;
+      result.ok=result.health&&result.read&&result.reportingPath;
     }catch(e){result.error=String(e?.message||e)}
     globalThis.__CWM_LEADERBOARD_CHECK=result;
     if(result.ok)console.info('CWM leaderboard self-check: PASS',result);
