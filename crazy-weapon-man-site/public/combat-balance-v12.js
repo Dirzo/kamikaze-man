@@ -15,14 +15,14 @@
     const before=pl.hp;
     const projectileLike=!source?.type&&!source?.boss&&!source?.dmg;
     const boss=!!source?.boss;
-    let mult=projectileLike?1.65:(boss?1.25:1.45);
+    let mult=projectileLike ? 1.65 : (boss ? 1.25 : 1.45);
     mult*=1+Math.min(.40,zone()*.035+wave()*.045);
     if(source?.elite)mult*=1.08;
     if(source?.rareMutator)mult*=1.08;
     if(pl.max>0&&pl.hp/pl.max<.22)mult*=.94;
     const r=baseHurt(Number(amount)*mult,source||{x:pl.x});
     if(pl.hp<before&&!over){
-      pl.inv=Math.min(pl.inv,projectileLike?.32:(boss?.42:.38));
+      pl.inv=Math.min(pl.inv,projectileLike ? .32 : (boss ? .42 : .38));
       flash=Math.max(flash,.13);
       chroma=Math.max(chroma,.07);
     }
@@ -54,8 +54,8 @@
     lastKills=kills;
     if(!e.dead)return;
 
-    const basePct=e.elite?.026:.008;
-    const rushPct=Math.min(.024,Math.max(0,rush-1)*.0035)*(e.elite?.72:1);
+    const basePct=e.elite ? .026 : .008;
+    const rushPct=Math.min(.024,Math.max(0,rush-1)*.0035)*(e.elite ? .72 : 1);
     let mult=Math.max(.25,Number(pl.healMult)||1);
     try{if(typeof augmentVal==='function')mult*=Math.max(.25,Number(augmentVal('heal',1))||1)}catch(_){ }
     if(pl.max>0&&hpBefore/pl.max<.30)mult*=1.22;
@@ -71,12 +71,6 @@
       if(rush>=5)ring(pl.x+pl.w/2,pl.y+pl.h/2,col,38+rush*4,2+Math.floor(rush/3));
     }
   };
-
-  const css=document.createElement('style');
-  css.textContent=`
-    .cwmDangerPulse{position:absolute;inset:0;z-index:34;pointer-events:none;border:0 solid #ff526b;opacity:0;box-shadow:inset 0 0 0 transparent;transition:opacity .08s}
-  `;
-  document.head.appendChild(css);
 
   globalThis.CWM_BALANCE_INFO={
     patch:'v1.2-danger',
