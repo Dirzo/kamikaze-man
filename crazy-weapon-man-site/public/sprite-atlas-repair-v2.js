@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWM_V2_ATLAS_REPAIR)return;
   globalThis.__CWM_V2_ATLAS_REPAIR=true;
-  const BUILD='atlas-fetch-repair-20260914b';
+  const BUILD='atlas-fetch-repair-20260914c';
   const PLAYER=['/sprite-player-data-00.js?v=cwm-v2-art-20260914d','/sprite-player-data-01.js?v=cwm-v2-art-20260914d','/sprite-player-data-02.js?v=cwm-v2-art-20260914d'];
   const ENEMY=['/sprite-enemy-data-00.js?v=cwm-v2-art-20260914d','/sprite-enemy-data-01.js?v=cwm-v2-art-20260914d','/sprite-enemy-data-02.js?v=cwm-v2-art-20260914d'];
   const EXPECT_BYTES={player:44190,enemy:40998};
@@ -18,14 +18,21 @@
     for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
     return bytes;
   }
+  function concatBytes(parts){
+    let total=0;
+    for(const p of parts)total+=p.length;
+    const out=new Uint8Array(total);
+    let off=0;
+    for(const p of parts){out.set(p,off);off+=p.length}
+    return out;
+  }
   function toB64(bytes){
     let out='';
     const step=0x8000;
     for(let i=0;i<bytes.length;i+=step)out+=String.fromCharCode(...bytes.subarray(i,Math.min(bytes.length,i+step)));
     return btoa(out);
   }
-  function canonicalizeWebP(b64,label){
-    const bytes=fromB64(b64,label);
+  function canonicalizeWebP(bytes,label){
     if(bytes.length<12)throw new Error(label+' atlas too small ('+bytes.length+' bytes)');
     const sig=String.fromCharCode(bytes[0],bytes[1],bytes[2],bytes[3]);
     const webp=String.fromCharCode(bytes[8],bytes[9],bytes[10],bytes[11]);
@@ -39,13 +46,17 @@
     return {b64:toB64(trimmed),rawBytes:bytes.length,bytes:trimmed.length,trimmedBytes:bytes.length-trimmed.length};
   }
   async function group(urls,label){
-    const parts=[];
+    const payloads=[];
     for(let i=0;i<urls.length;i++){
       const r=await fetch(urls[i],{cache:'no-store'});
       if(!r.ok)throw new Error(label+' chunk '+i+' HTTP '+r.status);
-      parts.push(extract(await r.text(),label+' chunk '+i));
+      payloads.push(extract(await r.text(),label+' chunk '+i));
     }
-    return canonicalizeWebP(parts.join(''),label);
+    const independentlyEncoded=payloads.slice(0,-1).some(p=>/=+$/.test(p));
+    const bytes=independentlyEncoded
+      ? concatBytes(payloads.map((p,i)=>fromB64(p,label+' chunk '+i)))
+      : fromB64(payloads.join(''),label);
+    return canonicalizeWebP(bytes,label);
   }
   async function run(){
     status({build:'v2-illustrated-sprites-repairing',loading:true,playerReady:false,enemyReady:false,playerError:null,enemyError:null});
@@ -54,10 +65,10 @@
     try{e=await group(ENEMY,'enemy')}catch(err){status({loading:false,enemyError:String(err?.message||err)});console.error('CWM enemy atlas repair failed',err);return}
     globalThis.__CWM_V2_PLAYER_B64=p.b64;
     globalThis.__CWM_V2_ENEMY_B64=e.b64;
-    status({playerBytes:p.bytes,enemyBytes:e.bytes,playerRawBytes:p.rawBytes,enemyRawBytes:e.rawBytes,playerTrimmedBytes:p.trimmedBytes,enemyTrimmedBytes:e.trimmedBytes,loading:true});
+    status({playerBytes:p.bytes,enemyBytes:e.bytes,playerRawBytes:p.rawBytes,enemyRawBytes:e.rawBytes,playerTrimmedBytes:p.trimmedBytes,enemyTrimmedBytes:e.trimmedBytes,loading:true,playerError:null,enemyError:null});
     globalThis.__CWM_V2_SPRITE_RENDERER=false;
     const s=document.createElement('script');
-    s.src='/sprite-renderer-v2.js?v=cwm-v2-sprites-retry-20260914b';
+    s.src='/sprite-renderer-v2.js?v=cwm-v2-sprites-retry-20260914c';
     s.onload=()=>{status({repairLoaded:true});console.info('CWM illustrated atlas repair loaded',BUILD,p,e)};
     s.onerror=()=>status({loading:false,playerError:'sprite renderer reload HTTP failure'});
     document.body.appendChild(s);
