@@ -2,7 +2,7 @@
   if(globalThis.__CWM_TESTER_SHORTCUTS)return;
   globalThis.__CWM_TESTER_SHORTCUTS=true;
 
-  const BUILD='tester-warp-20260914c';
+  const BUILD='tester-warp-20260914d';
   let panel=null,zoneText=null,rendererText=null,bridgeText=null,drawText=null,spriteText=null;
   let cornerTaps=[];
 
@@ -18,7 +18,7 @@
     if(zoneText)zoneText.textContent=`AREA ${i+1}/${Math.max(1,zones.length)} • ${zoneName(i)}`;
     if(rendererText)rendererText.textContent=render?`RENDERER: ${render.build}`:'RENDERER: NOT LOADED';
     if(bridgeText)bridgeText.textContent=`NATIVE BRIDGE: ${globalThis.__CWM_NATIVE_RENDER_BRIDGE||'MISSING'}`;
-    if(spriteText){const ready=!!sprites?.ready;spriteText.textContent=sprites?`ILLUSTRATED SPRITES: ${ready?'READY':'LOADING'} • P:${sprites.playerReady?'OK':'…'} E:${sprites.enemyReady?'OK':'…'} • ${sprites.build||''}`:'ILLUSTRATED SPRITES: NOT LOADED';spriteText.style.color=ready?'#79ff9c':'#ffb86b'}
+    if(spriteText){const ready=!!sprites?.ready,err=sprites?.playerError||sprites?.enemyError;const lens=sprites?` • ${Math.round((sprites.playerBytes||0)/1024)}k/${Math.round((sprites.enemyBytes||0)/1024)}k`:'';spriteText.textContent=sprites?`ILLUSTRATED SPRITES: ${ready?'READY':err?'ERROR':'LOADING'} • P:${sprites.playerReady?'OK':'…'} E:${sprites.enemyReady?'OK':'…'}${lens} • ${sprites.build||''}${err?' • '+err:''}`:'ILLUSTRATED SPRITES: NOT LOADED';spriteText.style.color=ready?'#79ff9c':err?'#ff667a':'#ffb86b'}
     const active=!!last&&last.zone===i&&(Date.now()-Number(last.at||0)<1500);
     if(drawText){drawText.textContent=`VISUAL DRAW: ${active?'ACTIVE':'WAITING'}${last?` • zone ${Number(last.zone)+1}`:''}`;drawText.style.color=active?'#79ff9c':'#ffb86b'}
   }
