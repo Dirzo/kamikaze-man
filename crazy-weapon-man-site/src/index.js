@@ -5,6 +5,7 @@ const RARITIES = new Set([
 ]);
 const TYPES = new Set(['SWORD','DAGGER','NUNCHUCKS','KATANA','BOW','SHURIKEN','WAND','STAFF','HAMMER']);
 const CURRENT_VERSION = 'v1.1-frenzy';
+const MAX_BUILD_JSON = 7000;
 let schemaReady = null;
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -31,10 +32,31 @@ function cleanVersion(value) {
   const v = cleanText(value, 32);
   return /^[A-Za-z0-9._-]{1,32}$/.test(v) ? v : CURRENT_VERSION;
 }
+function cleanBuild(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return '{}';
+  try {
+    const raw = JSON.stringify(value);
+    if (raw.length > MAX_BUILD_JSON) return '{}';
+    return raw;
+  } catch {
+    return '{}';
+  }
+}
+function parsedBuild(raw) {
+  if (!raw || raw === '{}') return null;
+  try {
+    const v = JSON.parse(raw);
+    return v && typeof v === 'object' && !Array.isArray(v) ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 async function ensureSchema(DB) {
   if (!DB) throw new Error('D1 binding DB is unavailable');
   if (!schemaReady) {
     schemaReady = (async () => {
+      // Original table retained permanently so no historical data is ever destroyed by a deploy.
       await DB.prepare(`CREATE TABLE IF NOT EXISTS leaderboard (
         id TEXT PRIMARY KEY,
         client_id TEXT NOT NULL UNIQUE,
@@ -55,6 +77,7 @@ async function ensureSchema(DB) {
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`).run();
 
+      // v2 introduced one best score per player/browser per patch.
       await DB.prepare(`CREATE TABLE IF NOT EXISTS leaderboard_v2 (
         id TEXT PRIMARY KEY,
         client_id TEXT NOT NULL,
@@ -75,19 +98,43 @@ async function ensureSchema(DB) {
         updated_at TEXT NOT NULL DEFAULT (datetime('now')),
         UNIQUE (client_id, game_version)
       )`).run();
-      await DB.prepare(`CREATE INDEX IF NOT EXISTS leaderboard_v2_dps_idx
-        ON leaderboard_v2 (game_version, dps DESC, updated_at ASC)`).run();
-      await DB.prepare(`CREATE INDEX IF NOT EXISTS leaderboard_v2_client_idx
-        ON leaderboard_v2 (client_id, dps DESC)`).run();
 
+      // v3 keeps the exact same score rules and adds a compact weapon/build snapshot for inspection.
+      await DB.prepare(`CREATE TABLE IF NOT EXISTS leaderboard_v3 (
+        id TEXT PRIMARY KEY,
+        client_id TEXT NOT NULL,
+        player_name TEXT NOT NULL,
+        weapon_name TEXT NOT NULL,
+        weapon_type TEXT NOT NULL,
+        rarity TEXT NOT NULL,
+        color TEXT NOT NULL DEFAULT '#ffffff',
+        dps INTEGER NOT NULL CHECK (dps > 0),
+        run_seed TEXT NOT NULL,
+        zone TEXT NOT NULL,
+        boss TEXT NOT NULL DEFAULT '',
+        level INTEGER NOT NULL DEFAULT 1,
+        kills INTEGER NOT NULL DEFAULT 0,
+        slaughter_score INTEGER NOT NULL DEFAULT 0,
+        game_version TEXT NOT NULL,
+        build_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (client_id, game_version)
+      )`).run();
+      await DB.prepare(`CREATE INDEX IF NOT EXISTS leaderboard_v3_dps_idx
+        ON leaderboard_v3 (game_version, dps DESC, updated_at ASC)`).run();
+      await DB.prepare(`CREATE INDEX IF NOT EXISTS leaderboard_v3_client_idx
+        ON leaderboard_v3 (client_id, dps DESC)`).run();
+
+      // Preserve every historical v2 record. Existing rows simply have no detailed build snapshot.
       await DB.prepare(`
-        INSERT OR IGNORE INTO leaderboard_v2 (
+        INSERT OR IGNORE INTO leaderboard_v3 (
           id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
-          run_seed, zone, boss, level, kills, slaughter_score, game_version, created_at, updated_at
+          run_seed, zone, boss, level, kills, slaughter_score, game_version, build_json, created_at, updated_at
         )
         SELECT id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
-               run_seed, zone, boss, level, kills, slaughter_score, game_version, created_at, updated_at
-        FROM leaderboard
+               run_seed, zone, boss, level, kills, slaughter_score, game_version, '{}', created_at, updated_at
+        FROM leaderboard_v2
       `).run();
       return true;
     })().catch(error => {
@@ -97,6 +144,7 @@ async function ensureSchema(DB) {
   }
   return schemaReady;
 }
+
 function publicScore(row) {
   return {
     id: row.id,
@@ -113,11 +161,12 @@ function publicScore(row) {
     kills: row.kills,
     slaughter: row.slaughter_score,
     version: row.game_version,
-    when: row.updated_at
+    when: row.updated_at,
+    build: parsedBuild(row.build_json)
   };
 }
 const SCORE_FIELDS = `id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
-  run_seed, zone, boss, level, kills, slaughter_score, game_version, updated_at`;
+  run_seed, zone, boss, level, kills, slaughter_score, game_version, build_json, updated_at`;
 
 async function topScores(DB, limit = 10, view = 'current', version = CURRENT_VERSION) {
   const safeLimit = Math.max(1, Math.min(50, Number(limit) || 10));
@@ -127,7 +176,7 @@ async function topScores(DB, limit = 10, view = 'current', version = CURRENT_VER
   if (safeView === 'current') {
     ({ results = [] } = await DB.prepare(`
       SELECT ${SCORE_FIELDS}
-      FROM leaderboard_v2
+      FROM leaderboard_v3
       WHERE game_version = ?
       ORDER BY dps DESC, updated_at ASC
       LIMIT ?
@@ -135,10 +184,10 @@ async function topScores(DB, limit = 10, view = 'current', version = CURRENT_VER
   } else if (safeView === 'legacy') {
     ({ results = [] } = await DB.prepare(`
       SELECT ${SCORE_FIELDS}
-      FROM leaderboard_v2 AS l
+      FROM leaderboard_v3 AS l
       WHERE l.game_version <> ?
         AND NOT EXISTS (
-          SELECT 1 FROM leaderboard_v2 AS better
+          SELECT 1 FROM leaderboard_v3 AS better
           WHERE better.client_id = l.client_id
             AND better.game_version <> ?
             AND (
@@ -153,9 +202,9 @@ async function topScores(DB, limit = 10, view = 'current', version = CURRENT_VER
   } else {
     ({ results = [] } = await DB.prepare(`
       SELECT ${SCORE_FIELDS}
-      FROM leaderboard_v2 AS l
+      FROM leaderboard_v3 AS l
       WHERE NOT EXISTS (
-        SELECT 1 FROM leaderboard_v2 AS better
+        SELECT 1 FROM leaderboard_v3 AS better
         WHERE better.client_id = l.client_id
           AND (
             better.dps > l.dps OR
@@ -169,6 +218,7 @@ async function topScores(DB, limit = 10, view = 'current', version = CURRENT_VER
   }
   return results.map(publicScore);
 }
+
 async function leaderboardGet(request, env) {
   await ensureSchema(env.DB);
   const url = new URL(request.url);
@@ -177,6 +227,7 @@ async function leaderboardGet(request, env) {
   const version = cleanVersion(url.searchParams.get('version') || CURRENT_VERSION);
   return json({ scores: await topScores(env.DB, limit, view, version), live: true, view, version });
 }
+
 async function leaderboardPost(request, env) {
   await ensureSchema(env.DB);
   let body;
@@ -197,6 +248,7 @@ async function leaderboardPost(request, env) {
   const kills = integer(body.kills, 0, 10_000_000) ?? 0;
   const slaughterScore = integer(body.slaughter_score, 0, 2_000_000_000) ?? 0;
   const gameVersion = cleanVersion(body.game_version || CURRENT_VERSION);
+  const buildJson = cleanBuild(body.weapon_build);
 
   const problems = [];
   if (!/^[A-Za-z0-9_-]{8,80}$/.test(clientId)) problems.push('invalid client_id');
@@ -209,18 +261,20 @@ async function leaderboardPost(request, env) {
   if (problems.length) return json({ error: 'Score rejected.', problems }, 400);
 
   const existing = await env.DB.prepare(
-    'SELECT dps FROM leaderboard_v2 WHERE client_id = ? AND game_version = ?'
+    'SELECT id, dps, build_json FROM leaderboard_v3 WHERE client_id = ? AND game_version = ?'
   ).bind(clientId, gameVersion).first();
   const improved = !existing || dps > Number(existing.dps || 0);
+  const enrichOnly = !!existing && dps === Number(existing.dps || 0) &&
+    (!existing.build_json || existing.build_json === '{}') && buildJson !== '{}';
   let acceptedId = null;
 
   if (improved) {
     acceptedId = crypto.randomUUID();
     await env.DB.prepare(`
-      INSERT INTO leaderboard_v2 (
+      INSERT INTO leaderboard_v3 (
         id, client_id, player_name, weapon_name, weapon_type, rarity, color, dps,
-        run_seed, zone, boss, level, kills, slaughter_score, game_version, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        run_seed, zone, boss, level, kills, slaughter_score, game_version, build_json, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
       ON CONFLICT(client_id, game_version) DO UPDATE SET
         id = excluded.id,
         player_name = excluded.player_name,
@@ -235,17 +289,31 @@ async function leaderboardPost(request, env) {
         level = excluded.level,
         kills = excluded.kills,
         slaughter_score = excluded.slaughter_score,
+        build_json = excluded.build_json,
         updated_at = datetime('now')
-      WHERE excluded.dps > leaderboard_v2.dps
+      WHERE excluded.dps > leaderboard_v3.dps
     `).bind(
       acceptedId, clientId, playerName, weaponName, weaponType, rarity, color, dps,
-      runSeed, zone, boss, level, kills, slaughterScore, gameVersion
+      runSeed, zone, boss, level, kills, slaughterScore, gameVersion, buildJson
+    ).run();
+  } else if (enrichOnly) {
+    acceptedId = existing.id;
+    await env.DB.prepare(`
+      UPDATE leaderboard_v3
+      SET build_json = ?, player_name = ?, weapon_name = ?, weapon_type = ?, rarity = ?, color = ?,
+          zone = ?, boss = ?, level = ?, kills = ?, slaughter_score = ?
+      WHERE client_id = ? AND game_version = ? AND dps = ?
+    `).bind(
+      buildJson, playerName, weaponName, weaponType, rarity, color,
+      zone, boss, level, kills, slaughterScore,
+      clientId, gameVersion, dps
     ).run();
   }
 
   return json({
     accepted: improved,
-    accepted_id: improved ? acceptedId : null,
+    enriched: enrichOnly,
+    accepted_id: acceptedId,
     scores: await topScores(env.DB, 10, 'current', gameVersion),
     view: 'current',
     version: gameVersion
@@ -262,7 +330,7 @@ export default {
           ok: true,
           service: 'crazy-weapon-man',
           leaderboard: 'ready',
-          schema: 'versioned-v2',
+          schema: 'versioned-v3-builds',
           current_version: CURRENT_VERSION
         });
       }
