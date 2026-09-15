@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_BROWSER_SMOKE_V1)return;
   globalThis.__CWL_BROWSER_SMOKE_V1=true;
-  const BUILD='cwl-browser-smoke-v2-20260915a';
+  const BUILD='cwl-browser-smoke-v2-20260915b';
   if(new URLSearchParams(location.search).get('cwlSmoke')!=='1'){globalThis.CWL_BROWSER_SMOKE={build:BUILD,active:false};return}
   const report={build:BUILD,active:true,ok:false,error:null,at:0};
   function settle(){setTimeout(()=>{try{globalThis.requestAnimationFrame=()=>0;document.documentElement.dataset.cwlSmokeSettled='yes'}catch(_){ }},40)}
@@ -14,11 +14,12 @@
       const first=d.state(),wave0=[...new Set((first.enemies||[]).map(e=>e.type))];
       d.clearPack();d.spawnPack();
       const second=d.state(),wave1=[...new Set((second.enemies||[]).map(e=>e.type))];
+      /* Render while the mixed pack is definitely alive. This validates the actual live enemy wrapper chain. */
+      try{d.draw?.()}catch(_){ }
       const combatState=api.state(),target=(combatState.E||[]).find(e=>!e.dead&&!e.boss);
       if(target){const chip=Math.max(1,(Number(target.max)||100)*.035);for(let i=0;i<4&&!target.dead;i++)api.hit(target,chip,{col:'#fff176',sourceType:'hammer'})}
       try{d.skill?.()}catch(_){ }
       try{d.spawn?.('crawler',false);const ns=api.state(),victim=(ns.E||[]).filter(e=>!e.dead&&!e.boss).at(-1);if(victim)api.hit(victim,(Number(victim.max)||100)*20,{col:'#fff',ignoreCap:true,sourceType:'hammer'})}catch(_){ }
-      try{d.draw?.()}catch(_){ }
       setTimeout(()=>{
         try{
           const root=document.documentElement,body=document.body,hud=document.getElementById('cwlDesktopCombatHud');
