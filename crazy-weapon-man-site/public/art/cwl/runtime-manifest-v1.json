@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v1-20260915o",
+  "version": "cwl-runtime-v1-20260915p",
   "modules": [
     {
       "id": "heavy-body-priority",
@@ -53,7 +53,7 @@
     },
     {
       "id": "browser-smoke",
-      "src": "/cwl-browser-smoke-v1.js?v=cwl-browser-smoke-20260915a",
+      "src": "/cwl-browser-smoke-v1.js?v=cwl-browser-smoke-20260915b",
       "required": true
     },
     {
