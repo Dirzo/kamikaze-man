@@ -64,7 +64,9 @@ jobs:
             'data-cwl-wave0-roles="1"' \
             'data-cwl-wave1-roles="2"' \
             'data-cwl-wave2-roles="3"' \
-            'data-cwl-wave1-mode="cross-training"'; do
+            'data-cwl-wave1-mode="cross-training"' \
+            'data-cwl-enemy-variation="ready"' \
+            'data-cwl-heavy-silhouette="ready"'; do
             if ! grep -q "$proof" /tmp/cwl-dom.html; then
               echo "CWL runtime proof missing: $proof"
               grep -o 'data-cwl-heavy-[^ >]*' /tmp/cwl-dom.html || true
@@ -74,6 +76,8 @@ jobs:
               grep -o 'data-cwl-compact-hud="[^"]*"' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-director="[^"]*"' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-wave[^ >]*' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-enemy-variation="[^"]*"' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-heavy-silhouette="[^"]*"' /tmp/cwl-dom.html || true
               grep -o '<div id="cwlSmokeProof"[^>]*>[^<]*' /tmp/cwl-dom.html || true
               echo "--- Chrome stderr ---"
               tail -120 /tmp/cwl-chrome.log || true
@@ -95,3 +99,5 @@ jobs:
           grep -o 'data-cwl-director="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-wave[012]-roles="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-wave1-mode="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-enemy-variation="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-heavy-silhouette="[^"]*"' /tmp/cwl-dom.html
