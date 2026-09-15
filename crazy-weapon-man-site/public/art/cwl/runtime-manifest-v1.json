@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v1-20260915g",
+  "version": "cwl-runtime-v1-20260915h",
   "modules": [
     {
       "id": "heavy-body-priority",
@@ -29,6 +29,11 @@
     {
       "id": "enemy-telegraphs",
       "src": "/cwl-enemy-telegraphs-v1.js?v=cwl-telegraphs-20260915a",
+      "required": true
+    },
+    {
+      "id": "heavy-selfcheck",
+      "src": "/cwl-heavy-selfcheck-v1.js?v=cwl-heavy-selfcheck-20260915a",
       "required": true
     }
   ]
