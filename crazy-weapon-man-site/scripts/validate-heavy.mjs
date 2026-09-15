@@ -9,7 +9,7 @@ const root=path.resolve(here,'..');
 const publicDir=path.join(root,'public');
 
 function fail(message,extra){
-  console.error('\nCWL HEAVY VALIDATION FAILED:',message);
+  console.error('\nCWL VALIDATION FAILED:',message);
   if(extra)console.error(extra);
   process.exit(1);
 }
@@ -41,13 +41,13 @@ try{
 }catch(e){fail('packed game could not be decoded/gunzipped',e)}
 if(!html.includes('Crazy Weapon Man')&&!html.includes('CRAZY WEAPON MAN'))fail('decoded payload does not look like the game');
 
-const transformPath=pathToFileURL(path.join(publicDir,'cwl-native-transform-v2.js')).href+`?t=${Date.now()}`;
-await import(transformPath);
-const transform=globalThis.CWL_NATIVE_TRANSFORM_V2?.transform;
-if(typeof transform!=='function')fail('native Heavy transform did not register');
+const heavyPath=pathToFileURL(path.join(publicDir,'cwl-native-transform-v2.js')).href+`?t=${Date.now()}`;
+await import(heavyPath);
+const heavyTransform=globalThis.CWL_NATIVE_TRANSFORM_V2?.transform;
+if(typeof heavyTransform!=='function')fail('native Heavy transform did not register');
 
 let output;
-try{output=transform(html)}catch(e){fail('native Heavy transform threw',e)}
+try{output=heavyTransform(html)}catch(e){fail('native Heavy transform threw',e)}
 const report=globalThis.__CWL_NATIVE_TRANSFORM_LAST;
 if(!report?.ok){
   console.error('\n--- ACTUAL PRODUCTION makeW CONTEXT ---\n'+contextAround(html,'function makeW'));
@@ -64,7 +64,7 @@ const required={
   spawnDropGuard:report.patches?.['spawnDrop-guard'],
   trainingFallback:report.patches?.['training-fallback']
 };
-for(const [key,value] of Object.entries(required))if(!value)fail(`required patch missing: ${key}`,report);
+for(const [key,value] of Object.entries(required))if(!value)fail(`required Heavy patch missing: ${key}`,report);
 
 const makeWContext=functionSlice(output,'makeW');
 if(!makeWContext)fail('transformed makeW function could not be isolated');
@@ -80,8 +80,21 @@ if(output.includes("type:'sword',name:'Training Sword'"))fail('legacy Training S
 const ids=['industrial_maul','siege_hammer','pile_driver','welded_cleaver','junk_cannon','scrap_mortar','rotary_reclaimer','landfill_lobber','pressure_propeller','siege_toaster'];
 for(const id of ids)if(!output.includes(id))fail(`Heavy base missing from transformed source: ${id}`);
 
+const directorPath=pathToFileURL(path.join(publicDir,'cwl-director-transform-v1.js')).href+`?t=${Date.now()}`;
+await import(directorPath);
+const directorTransform=globalThis.CWL_DIRECTOR_TRANSFORM_V1?.transform;
+if(typeof directorTransform!=='function')fail('director transform did not register');
+try{output=directorTransform(output)}catch(e){fail('director transform threw',e)}
+const directorReport=globalThis.__CWL_DIRECTOR_TRANSFORM_LAST;
+if(!directorReport?.ok)fail('director transform reported degraded state',directorReport);
+const waveContext=functionSlice(output,'wavePlan');
+if(!waveContext.includes('__CWL_DYNAMIC_EARLY_WAVES'))fail('dynamic early-wave marker missing',waveContext);
+if(!waveContext.includes("id:'cross-training'"))fail('wave 1 cross-training mode missing',waveContext);
+if(!waveContext.includes("role:'RECALL'"))fail('wave 1 recall support missing',waveContext);
+if(!waveContext.includes("role:index===2?'FLANK PREVIEW':'FLANK'"))fail('wave 2 flank preview missing',waveContext);
+
 const scripts=[...output.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(Boolean);
-if(!scripts.length)fail('no inline game script found after transform');
+if(!scripts.length)fail('no inline game script found after transforms');
 for(let i=0;i<scripts.length;i++){
   try{new vm.Script(scripts[i],{filename:`transformed-inline-${i}.js`})}
   catch(e){fail(`transformed inline script ${i} has invalid JavaScript`,e)}
@@ -94,6 +107,7 @@ console.log(JSON.stringify({
   transformedBytes:Buffer.byteLength(output),
   patches:report.patches,
   heavyBases:ids.length,
+  director:directorReport,
   inlineScriptsParsed:scripts.length,
   build:report.build
 },null,2));
