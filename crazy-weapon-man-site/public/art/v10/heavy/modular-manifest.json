@@ -1,0 +1,103 @@
+{
+  "version": "v10-heavy-modular-20260915a",
+  "family": "heavy",
+  "mode": "heavy-only-art-production",
+  "coreGameplayType": "hammer",
+  "body": {
+    "atlas": "/art/v10/heavy/heavy-body-atlas-v10.webp",
+    "metadata": "/art/v10/heavy/heavy-body-atlas-v10.json",
+    "bodyOnly": true,
+    "background": "transparent",
+    "facing": "right",
+    "frameBox": [192, 192],
+    "requiredAnchors": ["feet", "center", "head", "hand_primary", "hand_support", "weapon_socket", "fx_origin", "muzzle", "impact_origin"],
+    "clips": {
+      "idle": {"frames": 6, "fps": 7, "loop": true},
+      "run": {"frames": 8, "fps": 12, "loop": true},
+      "jump": {"frames": 3, "fps": 10, "loop": false},
+      "fall": {"frames": 2, "fps": 8, "loop": true},
+      "land": {"frames": 3, "fps": 12, "loop": false},
+      "attack_a": {"frames": 7, "fps": 18, "loop": false},
+      "attack_b": {"frames": 7, "fps": 18, "loop": false},
+      "air_attack": {"frames": 6, "fps": 17, "loop": false},
+      "skill": {"frames": 8, "fps": 18, "loop": false},
+      "hit": {"frames": 3, "fps": 14, "loop": false},
+      "death": {"frames": 7, "fps": 11, "loop": false},
+      "victory": {"frames": 6, "fps": 9, "loop": true}
+    },
+    "normalizedSocketDefaults": {
+      "idle": {"x": 0.62, "y": 0.48, "angle": -0.12, "layer": "front"},
+      "run": {"x": 0.63, "y": 0.49, "angle": -0.05, "layer": "front"},
+      "jump": {"x": 0.60, "y": 0.45, "angle": -0.30, "layer": "front"},
+      "fall": {"x": 0.60, "y": 0.47, "angle": 0.06, "layer": "front"},
+      "attack_a_windup": {"x": 0.55, "y": 0.46, "angle": -1.02, "layer": "back"},
+      "attack_a_strike": {"x": 0.69, "y": 0.42, "angle": 0.42, "layer": "front"},
+      "attack_b_windup": {"x": 0.60, "y": 0.43, "angle": 0.70, "layer": "front"},
+      "attack_b_strike": {"x": 0.50, "y": 0.40, "angle": -0.76, "layer": "front"},
+      "skill": {"x": 0.67, "y": 0.43, "angle": -0.04, "layer": "front"}
+    }
+  },
+  "weapons": {
+    "atlas": "/art/v10/heavy/heavy-weapon-atlas-v10.webp",
+    "metadata": "/art/v10/heavy/heavy-weapon-atlas-v10.json",
+    "background": "transparent",
+    "origin": "grip",
+    "bases": [
+      {"id":"industrial_maul","label":"Industrial Maul","subclass":"heavy_melee","renderer":"industrial_maul","grip":[0.10,0.64],"supportGrip":[0.29,0.50],"impact":[0.88,0.20]},
+      {"id":"siege_hammer","label":"Siege Hammer","subclass":"heavy_melee","renderer":"siege_hammer","grip":[0.09,0.68],"supportGrip":[0.28,0.51],"impact":[0.86,0.18]},
+      {"id":"pile_driver","label":"Pile Driver","subclass":"heavy_melee","renderer":"pile_driver","grip":[0.16,0.72],"supportGrip":[0.37,0.53],"impact":[0.69,0.04]},
+      {"id":"welded_cleaver","label":"Welded Cleaver","subclass":"heavy_melee","renderer":"welded_cleaver","grip":[0.08,0.67],"supportGrip":[0.25,0.52],"impact":[0.96,0.40]},
+      {"id":"junk_cannon","label":"Junk Cannon","subclass":"heavy_ballistic","renderer":"junk_cannon","grip":[0.13,0.63],"supportGrip":[0.36,0.54],"muzzle":[0.96,0.43]},
+      {"id":"scrap_mortar","label":"Scrap Mortar","subclass":"heavy_ballistic","renderer":"scrap_mortar","grip":[0.14,0.68],"supportGrip":[0.38,0.57],"muzzle":[0.84,0.13]},
+      {"id":"rotary_reclaimer","label":"Rotary Reclaimer","subclass":"heavy_ballistic","renderer":"rotary_reclaimer","grip":[0.12,0.64],"supportGrip":[0.34,0.54],"muzzle":[0.97,0.45]},
+      {"id":"landfill_lobber","label":"Landfill Lobber","subclass":"heavy_ballistic","renderer":"landfill_lobber","grip":[0.13,0.65],"supportGrip":[0.34,0.54],"muzzle":[0.94,0.39]},
+      {"id":"pressure_propeller","label":"Pressure Propeller","subclass":"heavy_weird","renderer":"pressure_propeller","grip":[0.13,0.65],"supportGrip":[0.35,0.54],"muzzle":[0.94,0.44]},
+      {"id":"siege_toaster","label":"Siege Toaster","subclass":"heavy_weird","renderer":"siege_toaster","grip":[0.15,0.68],"supportGrip":[0.37,0.55],"muzzle":[0.86,0.41]}
+    ],
+    "aliases": {
+      "rotary_heavy_gun": "rotary_reclaimer",
+      "trash_compactor": "siege_hammer"
+    }
+  },
+  "nameSystem": {
+    "inherit": "/art/v8/weapon-style-manifest.json",
+    "preserveAllExistingPrefixes": true,
+    "preserveAllChaosPrefixes": true,
+    "preserveAllSuffixes": true,
+    "preserveIntensity": true,
+    "preserveMaterials": true,
+    "preserveTraits": true,
+    "preserveMetaTraits": true,
+    "preserveElements": true,
+    "preserveRarity": true,
+    "heavyBaseReplacementOnly": true,
+    "renderLayers": ["base_heavy_silhouette", "material", "rarity_trim", "name_attachments", "trait_overlays", "element_overlay", "capstone_overlay", "emissive_highlights"]
+  },
+  "sceneIntegration": {
+    "drawOrder": ["contact_shadow", "rear_weapon", "body", "front_weapon", "attack_fx", "status_fx", "foreground_atmosphere"],
+    "contactShadow": {"enabled": true, "blur": 1.6, "alpha": 0.24, "heavyScale": 1.12},
+    "toxicBounce": {"enabled": true, "color": "#9eff46", "lowerBodyOnly": true},
+    "ambientFill": {"enabled": true, "color": "#65b9d6", "alpha": 0.07},
+    "elementRim": {"enabled": true, "source": "weapon.element.col"},
+    "genericClipMask": false,
+    "hitboxIndependent": true
+  },
+  "temporaryRestrictions": {
+    "enabledFamilies": ["heavy"],
+    "disabledTypes": ["sword", "dagger", "katana", "bow", "wand", "staff", "nunchucks", "shuriken"],
+    "coreTypeForAllDrops": "hammer",
+    "convertExistingNonHeavy": true,
+    "preserveModifiersOnConversion": true
+  },
+  "acceptance": {
+    "bodyAndWeaponSeparate": true,
+    "anyHeavyBaseCanUseAnyHeavyBodyFrame": true,
+    "noBakedWeaponInBodyAtlas": true,
+    "noRectangularCrop": true,
+    "noWeaponTipClipping": true,
+    "twoHandedSockets": true,
+    "allCurrentAdjectivesSupported": true,
+    "allCurrentElementsSupported": true,
+    "mobileReadable": true
+  }
+}
