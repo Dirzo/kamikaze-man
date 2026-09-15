@@ -1,5 +1,5 @@
 (()=>{
-  const BUILD='v3-small-chunks-20260914e';
+  const BUILD='v3-small-chunks-20260914f';
   if(globalThis.__CWM_V3_FINALIZER)return;
   globalThis.__CWM_V3_FINALIZER=true;
 
@@ -40,14 +40,21 @@
     console.info('CWM v3 verified illustrated atlas transport loaded',BUILD,pr.length,er.length);
 
     const integration=document.createElement('script');
-    integration.src='/sprite-integration-v6.js?v=cwm-integration-20260914a';
-    integration.onload=()=>console.info('CWM v6 synchronized basic attack + weapon integration loaded');
-    integration.onerror=()=>console.warn('CWM v6 integration HTTP failure');
+    integration.src='/sprite-integration-v7.js?v=cwm-content-v7-20260914a';
+    integration.onload=()=>console.info('CWM v7 clean cast + weapon-family runtime loaded');
+    integration.onerror=()=>console.warn('CWM v7 integration HTTP failure');
     document.body.appendChild(integration);
 
     const layers=document.createElement('script');
     layers.src='/sewer-layers-v3.js?v=cwm-sewer-layers-20260914a';
-    layers.onload=()=>console.info('CWM v3 sewer depth layers loaded');
+    layers.onload=()=>{
+      console.info('CWM v3 sewer depth layers loaded');
+      const concept=document.createElement('script');
+      concept.src='/sewer-concept-v4.js?v=cwm-sewer-concept-20260914a';
+      concept.onload=()=>console.info('CWM v4 concept sewer polish loaded');
+      concept.onerror=()=>console.warn('CWM v4 concept sewer polish HTTP failure');
+      document.body.appendChild(concept);
+    };
     layers.onerror=()=>console.warn('CWM v3 sewer depth layers HTTP failure');
     document.body.appendChild(layers);
   };
