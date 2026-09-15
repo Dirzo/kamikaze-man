@@ -1,5 +1,5 @@
 (()=>{
-  const BUILD='v3-small-chunks-20260914c';
+  const BUILD='v3-small-chunks-20260914d';
   if(globalThis.__CWM_V3_FINALIZER)return;
   globalThis.__CWM_V3_FINALIZER=true;
 
@@ -40,9 +40,9 @@
     console.info('CWM v3 verified illustrated atlas transport loaded',BUILD,pr.length,er.length);
 
     const integration=document.createElement('script');
-    integration.src='/sprite-integration-v4.js?v=cwm-silhouette-20260914a';
-    integration.onload=()=>console.info('CWM v4 silhouette integration loaded');
-    integration.onerror=()=>console.warn('CWM v4 silhouette integration HTTP failure');
+    integration.src='/sprite-integration-v5.js?v=cwm-integration-20260914a';
+    integration.onload=()=>console.info('CWM v5 cast + weapon integration loaded');
+    integration.onerror=()=>console.warn('CWM v5 integration HTTP failure');
     document.body.appendChild(integration);
 
     const layers=document.createElement('script');
