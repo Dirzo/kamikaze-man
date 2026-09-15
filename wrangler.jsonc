@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "crazyweaponman",
-  "main": "crazy-weapon-man-site/src/index.js",
+  "main": "crazy-weapon-man-site/src/entry.js",
   "compatibility_date": "2026-09-13",
   "assets": {
     "directory": "./crazy-weapon-man-site/public",
