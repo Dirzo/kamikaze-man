@@ -13,6 +13,11 @@ function fail(message,extra){
   if(extra)console.error(extra);
   process.exit(1);
 }
+function contextAround(text,needle,before=300,after=2400){
+  const i=text.indexOf(needle);
+  if(i<0)return `NOT FOUND: ${needle}`;
+  return text.slice(Math.max(0,i-before),Math.min(text.length,i+after));
+}
 
 const sandbox={__CWM_PACKED:[]};
 for(let i=0;i<9;i++){
@@ -38,7 +43,11 @@ if(typeof transform!=='function')fail('native Heavy transform did not register')
 let output;
 try{output=transform(html)}catch(e){fail('native Heavy transform threw',e)}
 const report=globalThis.__CWL_NATIVE_TRANSFORM_LAST;
-if(!report?.ok)fail('native Heavy transform reported degraded state',report);
+if(!report?.ok){
+  console.error('\n--- ACTUAL PRODUCTION makeW CONTEXT ---\n'+contextAround(html,'function makeW'));
+  console.error('\n--- ACTUAL PRODUCTION equip CONTEXT ---\n'+contextAround(html,'function equip'));
+  fail('native Heavy transform reported degraded state',report);
+}
 
 const required={
   helper:report.patches?.helper,
