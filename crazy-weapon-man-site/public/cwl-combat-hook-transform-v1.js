@@ -1,9 +1,14 @@
 (()=>{
   if(globalThis.CWL_COMBAT_HOOK_TRANSFORM_V1)return;
-  const BUILD='cwl-combat-hook-transform-v1-20260915b';
+  const BUILD='cwl-combat-hook-transform-v1-20260915c';
   const helper=`
 const __CWL_COMBAT_HOOK_BUILD='${BUILD}';
 const __CWL_COMBAT_HOOKS={hit:[],kill:[],skill:[]};
+if(new URLSearchParams(location.search).get('cwlSmoke')==='1'&&!globalThis.__CWL_SMOKE_RAF_LIMIT){
+  globalThis.__CWL_SMOKE_RAF_LIMIT=true;
+  const __cwlSmokeRAF=globalThis.requestAnimationFrame.bind(globalThis);let __cwlSmokeFrameCount=0;
+  globalThis.requestAnimationFrame=fn=>__cwlSmokeFrameCount++<5?__cwlSmokeRAF(fn):0;
+}
 function __cwlCombatOn(kind,fn){if(!__CWL_COMBAT_HOOKS[kind]||typeof fn!=='function')return()=>{};__CWL_COMBAT_HOOKS[kind].push(fn);return()=>{let a=__CWL_COMBAT_HOOKS[kind],i=a.indexOf(fn);if(i>=0)a.splice(i,1)}}
 function __cwlCombatEmit(kind,payload){let a=__CWL_COMBAT_HOOKS[kind];if(!a)return;for(const fn of [...a]){try{fn(payload)}catch(e){console.warn('CWL native combat hook failed',kind,e)}}}
 function __cwlCombatState(){let w=curW();return{pl,E,weapon:w,time,W,H,G,stageClears,bossMode,gameStarted,paused,over,dps:estimateDPS(w)}}
