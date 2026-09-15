@@ -1,6 +1,6 @@
 (()=>{
   if(globalThis.CWL_COMBAT_HOOK_TRANSFORM_V1)return;
-  const BUILD='cwl-combat-hook-transform-v1-20260915c';
+  const BUILD='cwl-combat-hook-transform-v1-20260915d';
   const helper=`
 const __CWL_COMBAT_HOOK_BUILD='${BUILD}';
 const __CWL_COMBAT_HOOKS={hit:[],kill:[],skill:[]};
@@ -11,7 +11,17 @@ if(new URLSearchParams(location.search).get('cwlSmoke')==='1'&&!globalThis.__CWL
 }
 function __cwlCombatOn(kind,fn){if(!__CWL_COMBAT_HOOKS[kind]||typeof fn!=='function')return()=>{};__CWL_COMBAT_HOOKS[kind].push(fn);return()=>{let a=__CWL_COMBAT_HOOKS[kind],i=a.indexOf(fn);if(i>=0)a.splice(i,1)}}
 function __cwlCombatEmit(kind,payload){let a=__CWL_COMBAT_HOOKS[kind];if(!a)return;for(const fn of [...a]){try{fn(payload)}catch(e){console.warn('CWL native combat hook failed',kind,e)}}}
-function __cwlCombatState(){let w=curW();return{pl,E,weapon:w,time,W,H,G,stageClears,bossMode,gameStarted,paused,over,dps:estimateDPS(w)}}
+function __cwlCombatState(){
+  let w=curW(),z=Z[zoneI]||{};
+  return{
+    pl,E,weapon:w,time,W,H,G,gameStarted,paused,over,bossMode,
+    zoneI,zoneName:z.name||'',zoneLevel:z.lv||1,nextBoss:z.nextBoss||z.boss||null,
+    stageClears,stageGoal:stageGoal(),riftReady,kills,ones,
+    weaponShards,shardUnlock:SHARD_UNLOCK,shardCap:SHARD_CAP,
+    styleScore,killChainBest,tempAugment,directorEvent,chaosEvent,terrainMode,
+    dps:estimateDPS(w),damage:wdmg(),crit:cchance()
+  }
+}
 globalThis.CWL_NATIVE_COMBAT={
   build:__CWL_COMBAT_HOOK_BUILD,
   on:__cwlCombatOn,
@@ -21,6 +31,7 @@ globalThis.CWL_NATIVE_COMBAT={
   ao:w=>weaponAoe(w||curW()),
   damage:()=>wdmg(),
   addStyle:(points,label='SLAUGHTER')=>styleAdd(Math.max(0,Math.round(Number(points)||0)),label),
+  openShardForge:()=>openShardForge(),
   fx:{
     ring:(...a)=>ring(...a),part:(...a)=>part(...a),txt:(...a)=>txt(...a),beam:(...a)=>beam(...a),boom:(...a)=>boom(...a),
     shake:n=>{shake=Math.max(shake,Number(n)||0);return shake},
