@@ -1,5 +1,5 @@
 (()=>{
-  const BUILD='v3-small-chunks-20260915j';
+  const BUILD='v3-small-chunks-20260915k';
   if(globalThis.__CWM_V3_FINALIZER)return;
   globalThis.__CWM_V3_FINALIZER=true;
 
@@ -39,6 +39,22 @@
   s.onload=()=>{
     console.info('CWM v3 verified illustrated atlas transport loaded',BUILD,pr.length,er.length);
 
+    const loadIntegration=()=>{
+      const integration=document.createElement('script');
+      integration.src='/sprite-integration-v9.js?v=cwm-content-v9-20260914a';
+      integration.onload=()=>console.info('CWM v9 heavy artillery + cast integration loaded');
+      integration.onerror=()=>console.warn('CWM v9 integration HTTP failure');
+      document.body.appendChild(integration);
+    };
+
+    const loadHeavyAtlas=()=>{
+      const atlas=document.createElement('script');
+      atlas.src='/heavy-runtime-atlas-v10.js?v=cwm-heavy-atlas-20260915a';
+      atlas.onload=()=>{console.info('CWM v10 dynamic heavy runtime atlas loaded');loadIntegration()};
+      atlas.onerror=()=>{console.warn('CWM v10 heavy runtime atlas HTTP failure');loadIntegration()};
+      document.body.appendChild(atlas);
+    };
+
     const loadVisualStack=()=>{
       const weapons=document.createElement('script');
       weapons.src='/weapon-visual-system-v8.js?v=cwm-weapon-art-20260914b';
@@ -50,26 +66,14 @@
           console.info('CWM v9 heavy artillery art loaded');
           const lock=document.createElement('script');
           lock.src='/heavy-base-lock-v10.js?v=cwm-heavy-lock-20260915a';
-          lock.onload=()=>{
-            console.info('CWM v10 heavy base lock loaded');
-            const integration=document.createElement('script');
-            integration.src='/sprite-integration-v9.js?v=cwm-content-v9-20260914a';
-            integration.onload=()=>console.info('CWM v9 heavy artillery + cast integration loaded');
-            integration.onerror=()=>console.warn('CWM v9 integration HTTP failure');
-            document.body.appendChild(integration);
-          };
-          lock.onerror=()=>{
-            console.warn('CWM v10 heavy base lock HTTP failure');
-            const integration=document.createElement('script');
-            integration.src='/sprite-integration-v9.js?v=cwm-content-v9-20260914a';
-            document.body.appendChild(integration);
-          };
+          lock.onload=()=>{console.info('CWM v10 heavy base lock loaded');loadHeavyAtlas()};
+          lock.onerror=()=>{console.warn('CWM v10 heavy base lock HTTP failure');loadHeavyAtlas()};
           document.body.appendChild(lock);
         };
-        heavy.onerror=()=>console.warn('CWM v9 heavy artillery HTTP failure');
+        heavy.onerror=()=>{console.warn('CWM v9 heavy artillery HTTP failure');loadIntegration()};
         document.body.appendChild(heavy);
       };
-      weapons.onerror=()=>console.warn('CWM v8 weapon visual system HTTP failure');
+      weapons.onerror=()=>{console.warn('CWM v8 weapon visual system HTTP failure');loadIntegration()};
       document.body.appendChild(weapons);
     };
 
