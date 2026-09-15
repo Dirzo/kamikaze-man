@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_HEAVY_BODY_V1)return;
   globalThis.__CWL_HEAVY_BODY_V1=true;
-  const BUILD='cwl-heavy-body-v1-20260915b';
+  const BUILD='cwl-heavy-body-v1-20260915c';
   const SHEET=320,GRID=4,CELL=SHEET/GRID;
   const FRAME_NAMES=['idle_0','idle_1','run_0','run_1','run_2','heavy_ready','jump_0','air_attack_0','attack_a_1','attack_a_2','victory_0','attack_b_0','death_0'];
   const FRAME_INDEX=Object.fromEntries(FRAME_NAMES.map((n,i)=>[n,i]));
@@ -11,7 +11,7 @@
     victory_0:[10,-12],attack_b_0:[12,-9],death_0:[6,-4]
   };
   const prev=globalThis.__CWM_RENDER_HOOK||{};
-  const state={build:BUILD,ready:false,error:null,image:null,bounds:{},frame:null,transportChunks:0};
+  const state={build:BUILD,ready:false,error:null,image:null,bounds:{},frame:null,transportChunks:0,priority:false,priorityAt:0};
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const fallback=ctx=>typeof prev.drawPlayer==='function'?prev.drawPlayer(ctx):false;
   const attackT=pl=>(pl?.at||0)>0?1-clamp((pl.at||0)/Math.max(.01,pl.atMax||.2),0,1):0;
@@ -112,7 +112,14 @@
     }catch(e){state.error=String(e?.message||e);console.warn('CWL Heavy player render failed; using legacy player renderer',e);return fallback(ctx)}
   }
 
+  function installPriority(){
+    const current=globalThis.__CWM_RENDER_HOOK||{};
+    globalThis.__CWM_RENDER_HOOK={...current,__cwlHeavyBodyPriority:true,drawPlayer};
+    state.priority=true;state.priorityAt=Date.now();
+    return true;
+  }
+
   globalThis.__CWM_RENDER_HOOK={...prev,drawPlayer};
-  globalThis.CWL_HEAVY_BODY={build:BUILD,state,frames:[...FRAME_NAMES],frameIndex:FRAME_INDEX,chooseFrame,ready:()=>state.ready};
+  globalThis.CWL_HEAVY_BODY={build:BUILD,state,frames:[...FRAME_NAMES],frameIndex:FRAME_INDEX,chooseFrame,drawPlayer,installPriority,ready:()=>state.ready};
   initImage();
 })();
