@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_COMBAT_PRESENTATION_V1)return;
   globalThis.__CWL_COMBAT_PRESENTATION_V1=true;
-  const BUILD='cwl-combat-presentation-v1-20260915c';
+  const BUILD='cwl-combat-presentation-v1-20260915d';
   const DESKTOP_SCALE=1.26;
   const nf=n=>Math.max(0,Math.round(Number(n)||0)).toLocaleString();
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -16,22 +16,24 @@
     .cwlCombatVitals{width:min(340px,30vw);padding:8px 10px}.cwlVital{display:grid;grid-template-columns:34px 1fr 66px;gap:6px;align-items:center;margin:3px 0;font:900 9px/1 system-ui;color:#dbe8f5}.cwlVital b{font-size:8px;color:#a9bad0}.cwlVitalTrack{height:6px;border-radius:99px;background:#000b;overflow:hidden}.cwlVitalTrack i{display:block;height:100%;width:0;border-radius:inherit}.cwlVital.hp i{background:linear-gradient(90deg,#ff465b,#ff8190)}.cwlVital.mp i{background:linear-gradient(90deg,#5578ff,#78c8ff)}.cwlVital.xp i{background:linear-gradient(90deg,#e5a73f,#ffe17a)}.cwlVital.lv .cwlVitalTrack{background:linear-gradient(90deg,#69e8ff22,#ff72d622)}.cwlVital.lv i{background:linear-gradient(90deg,#69e8ff,#ff72d6)}
     @media (min-width:981px){
       body.cwlDesktopCombat .fsTop{display:none!important}
-      body.cwlDesktopCombat .fsBottom{top:8px!important;right:10px!important;bottom:auto!important;left:auto!important;transform:scale(.72)!important;transform-origin:top right!important;gap:5px!important;padding:5px 7px!important;opacity:.62!important;border-radius:10px!important;background:#050b13c7!important}
-      body.cwlDesktopCombat .fsKey{min-width:48px!important;padding:4px 6px!important;font-size:8px!important}.fsKey b{font-size:11px!important}
-      body.cwlDesktopCombat .fsZone{top:8px!important;left:10px!important;right:auto!important;bottom:auto!important;transform:scale(.9)!important;transform-origin:top left!important;font-size:10px!important;padding:5px 7px!important;opacity:.88!important}
-      body.cwlDesktopCombat .styleHud{display:none!important}
-      body.cwlDesktopCombat .shardHud{top:118px!important;left:12px!important;width:205px!important;padding:6px 8px!important;border-radius:10px!important;transform:scale(.92)!important;transform-origin:top left!important;box-shadow:0 7px 22px #0008!important;background:#050a12cc!important}
-      body.cwlDesktopCombat .shardHud:not(.ready) .shardDesc{display:none!important}
-      body.cwlDesktopCombat .shardTag{font-size:7px!important}.shardCount{font-size:11px!important}.shardName{font-size:14px!important}.shardDesc{font-size:8px!important}.shardBar{height:4px!important;margin-top:5px!important}.shardBtn{font-size:8px!important;padding:5px!important}
-      body.cwlDesktopCombat .augmentHud{top:118px!important;right:12px!important;width:230px!important;padding:7px 9px!important;transform-origin:top right!important}.augmentName{font-size:16px!important}.augmentDesc{font-size:8px!important}
-      body.cwlDesktopCombat #cwlSpecialHud{top:58px!important;left:10px!important;opacity:.78!important;transform:scale(.92);transform-origin:top left}
-      body.cwlDesktopCombat #cwlThreatTag{top:7px!important;right:248px!important;opacity:.62!important}
-      body.cwlDesktopCombat #cwlSlayerHud{top:60px!important;font-size:9px!important;padding:5px 8px!important}
-      body.cwlDesktopCombat .bossHud{top:56px!important;width:min(680px,58%)!important}.bossName{font-size:17px!important}.bossSub{font-size:9px!important}.bossBar{height:11px!important}
-      body.cwlDesktopCombat .banner{top:94px!important;transform:translateX(-50%) scale(.82)!important;transform-origin:top center!important}
-      body.cwlDesktopCombat .fsUpgrade{top:29%!important;max-width:64%!important}.fsUpgrade .u1{font-size:11px!important}.fsUpgrade .u2{font-size:clamp(25px,3.4vw,46px)!important}.fsUpgrade .u3{font-size:14px!important}
+      body.cwlDesktopCombat .styleHud,body.cwlDesktopCombat .killChainHud{display:none!important}
+      body.cwlDesktopCombat .fsBottom{top:7px!important;right:8px!important;bottom:auto!important;left:auto!important;transform:scale(.62)!important;transform-origin:top right!important;gap:4px!important;padding:4px 6px!important;opacity:.54!important;border-radius:9px!important;background:#050b13b8!important}
+      body.cwlDesktopCombat .fsKey{min-width:45px!important;padding:4px 5px!important;font-size:7px!important}.fsKey b{font-size:10px!important}
+      body.cwlDesktopCombat .fsZone{top:7px!important;left:8px!important;right:auto!important;bottom:auto!important;transform:scale(.82)!important;transform-origin:top left!important;font-size:9px!important;padding:4px 6px!important;opacity:.76!important}
+      body.cwlDesktopCombat .shardHud{top:86px!important;left:9px!important;width:178px!important;padding:5px 7px!important;border-radius:9px!important;transform:scale(.86)!important;transform-origin:top left!important;box-shadow:0 6px 18px #0007!important;background:#050a12bd!important;opacity:.82!important}
+      body.cwlDesktopCombat .shardHud:not(.ready){width:162px!important;padding:4px 6px!important}
+      body.cwlDesktopCombat .shardHud:not(.ready) .shardDesc,body.cwlDesktopCombat .shardHud:not(.ready) .shardBar,body.cwlDesktopCombat .shardHud:not(.ready) .shardBtn{display:none!important}
+      body.cwlDesktopCombat .shardHud:not(.ready) .shardName{font-size:10px!important;margin-top:2px!important;opacity:.82!important}
+      body.cwlDesktopCombat .shardTag{font-size:6px!important}.shardCount{font-size:10px!important}.shardName{font-size:12px!important}.shardDesc{font-size:7px!important}.shardBar{height:3px!important;margin-top:4px!important}.shardBtn{font-size:7px!important;padding:4px!important}
+      body.cwlDesktopCombat .augmentHud{top:88px!important;right:9px!important;width:205px!important;padding:6px 8px!important;transform:scale(.9)!important;transform-origin:top right!important}.augmentName{font-size:14px!important}.augmentDesc{font-size:7px!important}
+      body.cwlDesktopCombat #cwlSpecialHud{top:48px!important;left:8px!important;opacity:.72!important;transform:scale(.86);transform-origin:top left}
+      body.cwlDesktopCombat #cwlThreatTag{top:6px!important;right:207px!important;opacity:.48!important;transform:scale(.88);transform-origin:top right}
+      body.cwlDesktopCombat #cwlSlayerHud{top:48px!important;font-size:8px!important;padding:4px 7px!important}
+      body.cwlDesktopCombat .bossHud{top:50px!important;width:min(650px,56%)!important}.bossName{font-size:16px!important}.bossSub{font-size:8px!important}.bossBar{height:10px!important}
+      body.cwlDesktopCombat .banner{top:88px!important;transform:translateX(-50%) scale(.76)!important;transform-origin:top center!important}
+      body.cwlDesktopCombat .fsUpgrade{top:27%!important;max-width:60%!important}.fsUpgrade .u1{font-size:10px!important}.fsUpgrade .u2{font-size:clamp(23px,3vw,40px)!important}.fsUpgrade .u3{font-size:12px!important}
     }
-    @media (min-width:981px) and (max-height:760px){#cwlDesktopCombatHud{bottom:7px}.cwlCombatWeapon{width:310px;padding:6px 9px}.cwlCombatName{font-size:13px}.cwlCombatDps{font-size:19px}.cwlCombatVitals{width:300px;padding:6px 8px}.cwlVital{margin:2px 0}.cwlVitalTrack{height:5px}}
+    @media (min-width:981px) and (max-height:760px){#cwlDesktopCombatHud{bottom:7px}.cwlCombatWeapon{width:310px;padding:6px 9px}.cwlCombatName{font-size:13px}.cwlCombatDps{font-size:19px}.cwlCombatVitals{width:300px;padding:6px 8px}.cwlVital{margin:2px 0}.cwlVitalTrack{height:5px}body.cwlDesktopCombat .shardHud{top:74px!important}}
   `;
   document.head.appendChild(style);
 
