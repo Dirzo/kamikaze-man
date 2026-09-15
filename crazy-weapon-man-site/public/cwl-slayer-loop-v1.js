@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_SLAYER_LOOP_V1)return;
   globalThis.__CWL_SLAYER_LOOP_V1=true;
-  const BUILD='cwl-slayer-loop-v1-20260915c';
+  const BUILD='cwl-slayer-loop-v2-20260915a';
   const CHAIN_WINDOW=1.55,MAX_ENEMIES=58;
   let chain=0,best=0,lastKill=-99,lastWave=null,waveExtra=0,waveRank=0,lastBonus=0,totalBonus=0,installed=false;
   const api=()=>globalThis.CWL_NATIVE_COMBAT;
@@ -10,11 +10,6 @@
   const rank=()=>Math.max(0,Number(api()?.rank?.(native()?.weapon))||0);
   const nf=n=>Math.max(0,Math.floor(Number(n)||0)).toLocaleString();
 
-  const style=document.createElement('style');
-  style.textContent=`#cwlSlayerHud{position:absolute;z-index:44;left:50%;top:max(9px,env(safe-area-inset-top));transform:translateX(-50%) translateY(-8px) scale(.92);opacity:0;pointer-events:none;transition:opacity .12s ease,transform .12s ease;border:1px solid #ffffff2d;border-radius:999px;background:#070c14d9;box-shadow:0 8px 25px #0009;padding:6px 11px;color:#f3f7ff;font:1000 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.035em;text-shadow:0 1px 0 #000;white-space:nowrap}#cwlSlayerHud.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}#cwlSlayerHud .chain{color:#fff176}#cwlSlayerHud .score{color:#73efff}#cwlSlayerHud.hot{border-color:#ff72d688;box-shadow:0 0 24px #ff72d633,0 8px 25px #0009}#cwlThreatTag{position:absolute;z-index:43;right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));padding:5px 8px;border-radius:8px;background:#08111bd0;border:1px solid #ffffff20;color:#9eb5cb;font:900 8px/1.2 ui-monospace,monospace;pointer-events:none;text-align:right}@media(max-width:900px),(pointer:coarse){#cwlSlayerHud{top:max(8px,env(safe-area-inset-top));font-size:9px;padding:5px 8px}#cwlThreatTag{top:auto;right:max(7px,env(safe-area-inset-right));bottom:max(8px,env(safe-area-inset-bottom));font-size:7px;opacity:.8}}`;
-  document.head.appendChild(style);
-  function stage(){return document.getElementById('gameStage')||document.body}
-  function ensureHud(){let h=document.getElementById('cwlSlayerHud');if(!h){h=document.createElement('div');h.id='cwlSlayerHud';stage().appendChild(h)}let t=document.getElementById('cwlThreatTag');if(!t){t=document.createElement('div');t.id='cwlThreatTag';stage().appendChild(t)}return{h,t}}
   function addStyle(points){const n=Math.max(0,Math.floor(points||0));if(!n)return 0;totalBonus+=n;try{api()?.addStyle?.(n,'SLAUGHTER')}catch(_){ }return n}
   function chainBonus(c,r){const base=7+c*2.2+Math.pow(c,1.23),rarity=1+Math.min(.8,r*.038),milestone=c%10===0?1+c/20:1;return Math.round(base*rarity*milestone)}
   function flashMilestone(c,bonus){if(c<10||c%5!==0)return;const s=native(),pl=s?.pl,f=api()?.fx;if(!pl||!f)return;const col=c>=30?'#ff72d6':c>=20?'#ff9270':'#fff176';f.txt(pl.x+pl.w/2,pl.y-58,`SLAUGHTER x${c}  +${nf(bonus)}`,col,true);f.ring(pl.x+pl.w/2,pl.y+pl.h/2,col,55+Math.min(90,c*2),Math.min(7,2+Math.floor(c/10)));if(c%10===0){f.part(pl.x+pl.w/2,pl.y+10,col,Math.min(24,10+c/2),145+c*3,5);f.shake(Math.min(10,3+c*.16))}}
@@ -23,8 +18,8 @@
   function safeSpawnPack(){const s=native();if(!s?.gameStarted||s.over||s.bossMode||(s.E?.length||0)>=MAX_ENEMIES)return false;const fn=globalThis.__KM_DEBUG?.spawnPack;if(typeof fn!=='function')return false;fn();return true}
   function scheduleReinforcements(wave,r,extra){if(!extra)return;for(let i=0;i<extra;i++)setTimeout(()=>{const s=native();if(Number(s?.stageClears||0)!==wave)return;if(safeSpawnPack()&&i===0){const f=api()?.fx,col=r>=18?'#ff72d6':r>=14?'#ff9270':'#fff176';f?.txt((s.W||1200)/2,78,`WEAPON THREAT +${extra} PACK${extra===1?'':'S'}`,col,false)}},500+i*520)}
   function watchWave(){const s=native();if(!s?.gameStarted||s.over)return;const wave=Number(s.stageClears)||0;if(wave===lastWave)return;lastWave=wave;if(s.bossMode){waveExtra=0;return}waveRank=rank();waveExtra=extraPacksForRank(waveRank);scheduleReinforcements(wave,waveRank,waveExtra)}
-  function updateHud(){const {h,t}=ensureHud(),age=now()-lastKill,active=chain>1&&age<CHAIN_WINDOW;if(age>=CHAIN_WINDOW&&chain){chain=0;lastBonus=0}h.classList.toggle('show',active);h.classList.toggle('hot',chain>=15);h.innerHTML=`<span class="chain">SLAUGHTER x${Math.max(1,chain)}</span> &nbsp; <span class="score">${nf(totalBonus)}</span>${lastBonus?` &nbsp;+${nf(lastBonus)}`:''}`;const w=native()?.weapon,base=w?.heavyLabel||w?.heavyBaseId||'HEAVY',sig=globalThis.CWL_HEAVY_SIGNATURES?.current?.()?.short||'';t.textContent=`${String(base).toUpperCase()}${sig?' • '+sig:''} • THREAT +${waveExtra} • CHAIN BEST ${best}`}
+  function decayChain(){if(chain&&now()-lastKill>=CHAIN_WINDOW){chain=0;lastBonus=0}}
   function install(){const a=api();if(!a?.on){setTimeout(install,80);return}if(installed)return;a.on('kill',onKill);installed=true;document.documentElement.dataset.cwlSlayer='ready';console.info('Crazy Weapon Lady slayer loop armed',BUILD)}
-  install();setInterval(watchWave,220);setInterval(updateHud,80);
+  install();setInterval(()=>{watchWave();decayChain()},120);
   globalThis.CWL_SLAYER_LOOP={build:BUILD,state:()=>({installed,chain,best,lastKill,lastBonus,totalBonus,wave:lastWave,waveRank,waveExtra,maxEnemies:MAX_ENEMIES}),extraPacksForRank};
 })();
