@@ -1,5 +1,5 @@
 {
-  "version": "cwl-heavy-v1-20260915a",
+  "version": "cwl-heavy-v1-20260915b",
   "character": "Crazy Weapon Lady",
   "family": "heavy",
   "mode": "heavy-only",
@@ -13,12 +13,21 @@
     "noBakedBasicAttackFx": true
   },
   "runtime": {
-    "bodyAtlas": "/art/cwl/heavy/cwl-heavy-body-atlas-v1.webp",
-    "bodyTransport": "pending-runtime-pack",
-    "femaleRenderer": "/cwl-heavy-body-v1.js",
-    "legacyFallback": "sprite-integration-v9",
+    "bodyAtlas": "embedded-webp-320x320",
+    "bodyTransport": [
+      "/art/cwl/heavy/cwl-heavy-lite-00.js",
+      "/art/cwl/heavy/cwl-heavy-lite-01.js",
+      "/art/cwl/heavy/cwl-heavy-lite-02.js"
+    ],
+    "bodyRenderer": "/cwl-heavy-body-v1.js",
+    "legacyFallback": "entity-renderer-v2",
     "weaponRenderer": "/heavy-runtime-atlas-v10.js",
-    "heavyOnlyMode": "/heavy-only-v10.js"
+    "heavyOnlyMode": "/heavy-only-v10.js",
+    "grid": {
+      "columns": 4,
+      "rows": 4,
+      "cell": 80
+    }
   },
   "mvpFrames": [
     "idle_0",
@@ -92,6 +101,8 @@
     "elementRim": true,
     "liveMuzzleFlash": true,
     "genericRectangleMask": false,
-    "hitboxIndependent": true
+    "hitboxIndependent": true,
+    "alphaBoundsAutoCrop": true,
+    "legacyRendererFallback": true
   }
 }
