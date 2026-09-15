@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_COMBAT_PRESENTATION_V1)return;
   globalThis.__CWL_COMBAT_PRESENTATION_V1=true;
-  const BUILD='cwl-combat-presentation-v1-20260915a';
+  const BUILD='cwl-combat-presentation-v1-20260915b';
   const DESKTOP_SCALE=1.26;
   const nf=n=>Math.max(0,Math.round(Number(n)||0)).toLocaleString();
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -46,12 +46,14 @@
   const setW=(id,p)=>{const e=document.getElementById(id);if(e)e.style.width=clamp(p,0,100)+'%'};
   const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
   function modalOpen(){return !!document.querySelector('.boonScreen.show,.deathOffer.show,.shardForge.show,.bossIntro.show,.lockScreen.show')}
+  function nativeState(){try{return globalThis.CWL_NATIVE_COMBAT?.state?.()||null}catch(_){return null}}
   function updateHud(){
-    const h=ensureHud();let started=false,isPaused=false,isOver=false,w=null,p=null,dps=0;
-    try{started=!!gameStarted;isPaused=!!paused;isOver=!!over;p=pl;w=curW();dps=Math.round(estimateDPS(w)||0)}catch(_){ }
+    const h=ensureHud(),s=nativeState();
+    const p=s?.pl,w=s?.weapon,started=!!s?.gameStarted,isPaused=!!s?.paused,isOver=!!s?.over,dps=Math.round(Number(s?.dps)||0);
     const use=desktop()&&started&&!isOver;
     document.body.classList.toggle('cwlDesktopCombat',use);
     h.style.visibility=use&&!isPaused&&!modalOpen()?'visible':'hidden';
+    document.documentElement.dataset.cwlCompactHud=use?'ready':'waiting';
     if(!use||!p||!w)return;
     const base=w.heavyLabel||String(w.heavyBaseId||'HEAVY').replaceAll('_',' ');
     const sig=globalThis.CWL_HEAVY_SIGNATURES?.current?.();
@@ -94,7 +96,7 @@
 
   let lastWidth=innerWidth;
   addEventListener('resize',()=>{if(lastWidth!==innerWidth){lastWidth=innerWidth;scaledWrapper=null;scaledBase=null}});
-  setInterval(()=>{try{installPlayerScale();updateHud()}catch(e){console.warn('CWL presentation tick skipped',e)}},180);
+  setInterval(()=>{try{installPlayerScale();updateHud()}catch(e){console.warn('CWL presentation tick skipped',e)}},120);
   setTimeout(()=>{installPlayerScale();updateHud()},80);
-  globalThis.CWL_COMBAT_PRESENTATION={build:BUILD,desktopScale:DESKTOP_SCALE,update:updateHud,reinstallPlayerScale:installPlayerScale,state:()=>({desktop:desktop(),hud:!!hud,scale:DESKTOP_SCALE})};
+  globalThis.CWL_COMBAT_PRESENTATION={build:BUILD,desktopScale:DESKTOP_SCALE,update:updateHud,reinstallPlayerScale:installPlayerScale,state:()=>({desktop:desktop(),hud:!!hud,scale:DESKTOP_SCALE,native:!!globalThis.CWL_NATIVE_COMBAT})};
 })();
