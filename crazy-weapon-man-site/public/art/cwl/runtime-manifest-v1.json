@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v1-20260915r",
+  "version": "cwl-runtime-v1-20260915s",
   "modules": [
     {"id":"heavy-body-priority","src":"/cwl-heavy-body-priority-v1.js?v=cwl-body-priority-20260915d","required":true},
     {"id":"slayer-loop","src":"/cwl-slayer-loop-v1.js?v=cwl-slayer-20260915c","required":true},
@@ -11,7 +11,7 @@
     {"id":"visual-cleanup","src":"/cwl-visual-cleanup-v1.js?v=cwl-visual-cleanup-20260915a","required":true},
     {"id":"enemy-variation","src":"/cwl-enemy-variation-v1.js?v=cwl-enemy-variation-20260915b","required":true},
     {"id":"enemy-telegraphs","src":"/cwl-enemy-telegraphs-v1.js?v=cwl-telegraphs-20260915a","required":true},
-    {"id":"browser-smoke","src":"/cwl-browser-smoke-v1.js?v=cwl-browser-smoke-20260915c","required":true},
+    {"id":"browser-smoke","src":"/cwl-browser-smoke-v1.js?v=cwl-browser-smoke-20260915d","required":true},
     {"id":"heavy-selfcheck-v2","src":"/cwl-heavy-selfcheck-v2.js?v=cwl-heavy-selfcheck-20260915d","required":true}
   ]
 }
