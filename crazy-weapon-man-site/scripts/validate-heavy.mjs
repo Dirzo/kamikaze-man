@@ -62,7 +62,7 @@ if(!skillContext.includes("__cwlCombatEmit('skill'"))fail('skill event emission 
 const bodySource=fs.readFileSync(path.join(publicDir,'cwl-heavy-body-v1.js'),'utf8');
 if(!bodySource.includes("phase==='windup')return'attack_a_2'"))fail('hammer wind-up frame order is not corrected');
 if(!bodySource.includes("phase==='impact')return'attack_a_1'"))fail('hammer impact frame order is not corrected');
-if(!bodySource.includes("phase==='recovery'"))fail('hammer recovery phase missing');
+if(!bodySource.includes("if(a<.69)return'impact';\n    return'recovery'"))fail('hammer recovery phase missing');
 if(!bodySource.includes('weaponBehind=!artillery&&phase===\'windup\''))fail('hammer wind-up layer ordering missing');
 
 const scripts=[...output.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(Boolean);
