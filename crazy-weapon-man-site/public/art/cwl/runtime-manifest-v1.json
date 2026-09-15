@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v1-20260915d",
+  "version": "cwl-runtime-v1-20260915e",
   "modules": [
     {
       "id": "heavy-body-priority",
@@ -14,6 +14,11 @@
     {
       "id": "heavy-signatures",
       "src": "/cwl-heavy-signatures-v1.js?v=cwl-signatures-20260915a",
+      "required": true
+    },
+    {
+      "id": "heavy-specials",
+      "src": "/cwl-heavy-specials-v1.js?v=cwl-specials-20260915a",
       "required": true
     },
     {
