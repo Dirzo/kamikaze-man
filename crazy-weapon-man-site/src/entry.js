@@ -1,12 +1,10 @@
 import app from './index.js';
 
-const BUILD = 'cwl-heavy-live-20260915g';
-const HEAD = '9be058085c6ddf236514f87737dc49b9810c9e95';
+const BUILD = 'cwl-heavy-live-20260915h';
 
 function withHeaders(headers = new Headers()) {
   const h = new Headers(headers);
   h.set('x-cwl-build', BUILD);
-  h.set('x-cwl-head', HEAD);
   h.set('cache-control', 'no-store, no-cache, must-revalidate, max-age=0');
   h.set('pragma', 'no-cache');
   h.set('expires', '0');
@@ -18,7 +16,6 @@ function buildInfo() {
     ok: true,
     service: 'crazyweaponman',
     build: BUILD,
-    head: HEAD,
     game_version: 'v1.4-cwl-heavy'
   }), {
     headers: withHeaders(new Headers({ 'content-type': 'application/json; charset=utf-8' }))
