@@ -1,6 +1,7 @@
 {
-  "version": "cwl-runtime-v2-20260915e",
+  "version": "cwl-runtime-v2-20260915f",
   "modules": [
+    {"id":"heavy-proportions","src":"/cwl-heavy-proportions-v1.js?v=cwl-heavy-proportions-20260915a","required":true},
     {"id":"heavy-body-priority","src":"/cwl-heavy-body-priority-v1.js?v=cwl-body-priority-v2-20260915a","required":true},
     {"id":"slayer-loop","src":"/cwl-slayer-loop-v1.js?v=cwl-slayer-v2-20260915a","required":true},
     {"id":"heavy-signatures","src":"/cwl-heavy-signatures-v1.js?v=cwl-signatures-20260915b","required":true},
@@ -10,6 +11,7 @@
     {"id":"enemy-variation","src":"/cwl-enemy-variation-v1.js?v=cwl-enemy-variation-20260915b","required":true},
     {"id":"enemy-telegraphs","src":"/cwl-enemy-telegraphs-v1.js?v=cwl-telegraphs-v2-20260915a","required":true},
     {"id":"desktop-shell","src":"/cwl-desktop-shell-v1.js?v=cwl-desktop-shell-20260915a","required":true},
+    {"id":"ui-polish","src":"/cwl-ui-polish-v1.js?v=cwl-ui-polish-20260915a","required":true},
     {"id":"browser-smoke","src":"/cwl-browser-smoke-v1.js?v=cwl-browser-smoke-v2-20260915c","required":true},
     {"id":"heavy-selfcheck-v2","src":"/cwl-heavy-selfcheck-v2.js?v=cwl-heavy-selfcheck-20260915d","required":true}
   ]
