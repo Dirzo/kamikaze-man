@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v1-20260915m",
+  "version": "cwl-runtime-v1-20260915n",
   "modules": [
     {
       "id": "heavy-body-priority",
@@ -28,7 +28,7 @@
     },
     {
       "id": "heavy-silhouette",
-      "src": "/cwl-heavy-silhouette-v1.js?v=cwl-heavy-silhouette-20260915a",
+      "src": "/cwl-heavy-silhouette-v1.js?v=cwl-heavy-silhouette-20260915b",
       "required": true
     },
     {
@@ -38,7 +38,7 @@
     },
     {
       "id": "enemy-variation",
-      "src": "/cwl-enemy-variation-v1.js?v=cwl-enemy-variation-20260915a",
+      "src": "/cwl-enemy-variation-v1.js?v=cwl-enemy-variation-20260915b",
       "required": true
     },
     {
