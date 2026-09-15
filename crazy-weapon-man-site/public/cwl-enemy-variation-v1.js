@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_ENEMY_VARIATION_V1)return;
   globalThis.__CWL_ENEMY_VARIATION_V1=true;
-  const BUILD='cwl-enemy-variation-v1-20260915a';
+  const BUILD='cwl-enemy-variation-v1-20260915b';
   const state={build:BUILD,installed:false,draws:0,last:null,error:null};
   const hash=n=>{let x=(Number(n)||1)>>>0;x^=x>>>16;x=Math.imul(x,0x7feb352d);x^=x>>>15;x=Math.imul(x,0x846ca68b);x^=x>>>16;return x>>>0};
   function variant(e){
@@ -20,7 +20,7 @@
       X.save();X.translate(cx,foot);X.rotate(v.tilt);X.scale(v.scale*v.wide,v.scale);X.translate(-cx,-foot);
       let handled=false;
       try{handled=base(ctx)}finally{X.restore()}
-      if(handled){state.draws++;state.last={id:e.id,type:e.type,scale:Number(v.scale.toFixed(3)),wide:Number(v.wide.toFixed(3))}}
+      if(handled){state.draws++;state.last={id:e.id,type:e.type,scale:Number(v.scale.toFixed(3)),wide:Number(v.wide.toFixed(3))};document.documentElement.dataset.cwlEnemyVariationDraw='pass'}
       return handled;
     }
     varied.__cwlEnemyVariation=true;varied.__cwlEnemyVariationBase=base;
