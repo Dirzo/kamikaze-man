@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_HEAVY_SILHOUETTE_V1)return;
   globalThis.__CWL_HEAVY_SILHOUETTE_V1=true;
-  const BUILD='cwl-heavy-silhouette-v1-20260915a';
+  const BUILD='cwl-heavy-silhouette-v1-20260915b';
   const state={build:BUILD,installed:false,draws:0,last:null,error:null};
   const TAU=Math.PI*2;
   function line(X,a,b,c,d,col,w=3){X.strokeStyle=col;X.lineWidth=w;X.lineCap='round';X.beginPath();X.moveTo(a,b);X.lineTo(c,d);X.stroke()}
@@ -17,14 +17,11 @@
       line(X,7,-54,57,-54,'#1a2029',6);line(X,10,1,57,1,'#1a2029',6);bolt(X,58,-39);bolt(X,58,-14);
       X.globalAlpha=.58;X.strokeStyle=c;X.lineWidth=2;X.beginPath();X.moveTo(18,-46);X.lineTo(45,-9);X.moveTo(28,-49);X.lineTo(55,-12);X.stroke();X.globalAlpha=1;
     }else if(s==='siege_hammer'){
-      poly(X,[[61,-54],[82,-47],[91,-34],[84,-20],[65,-9],[59,-15]],'#272e38','#071019',4);bolt(X,64,-41);bolt(X,67,-21);
-      X.fillStyle=c;X.fillRect(74,-38,8,14);
+      poly(X,[[61,-54],[82,-47],[91,-34],[84,-20],[65,-9],[59,-15]],'#272e38','#071019',4);bolt(X,64,-41);bolt(X,67,-21);X.fillStyle=c;X.fillRect(74,-38,8,14);
     }else if(s==='pile_driver'){
-      poly(X,[[18,-58],[36,-51],[39,31],[31,48],[18,45]],'#252c36','#071019',4);line(X,29,-43,29,29,c,3);bolt(X,29,-35);bolt(X,29,-5);bolt(X,29,24);
-      X.globalAlpha=.5;X.fillStyle=c;X.fillRect(21,35,16,7);X.globalAlpha=1;
+      poly(X,[[18,-58],[36,-51],[39,31],[31,48],[18,45]],'#252c36','#071019',4);line(X,29,-43,29,29,c,3);bolt(X,29,-35);bolt(X,29,-5);bolt(X,29,24);X.globalAlpha=.5;X.fillStyle=c;X.fillRect(21,35,16,7);X.globalAlpha=1;
     }else if(s==='welded_cleaver'){
-      X.fillStyle='#202630';X.strokeStyle='#071019';X.lineWidth=2;for(let x=50;x<92;x+=12)poly(X,[[x,16],[x+6,31],[x+12,14]],'#252c35','#071019',2);
-      line(X,31,-10,84,-22,c,2);bolt(X,47,-5);bolt(X,68,-11);
+      X.fillStyle='#202630';X.strokeStyle='#071019';X.lineWidth=2;for(let x=50;x<92;x+=12)poly(X,[[x,16],[x+6,31],[x+12,14]],'#252c35','#071019',2);line(X,31,-10,84,-22,c,2);bolt(X,47,-5);bolt(X,68,-11);
     }else if(s==='junk_cannon'){
       poly(X,[[88,-14],[108,-9],[116,0],[108,9],[88,14]],'#202731','#071019',3);X.fillStyle=c;X.fillRect(103,-4,10,8);
     }else if(s==='scrap_mortar'){
@@ -38,7 +35,7 @@
     }else if(s==='siege_toaster'){
       poly(X,[[56,-27],[75,-21],[82,-7],[80,17],[62,25],[57,17]],'#272e37','#071019',3);X.fillStyle=c;X.fillRect(66,2,8,10);
     }
-    X.restore();state.draws++;state.last=s;
+    X.restore();state.draws++;state.last=s;document.documentElement.dataset.cwlHeavySilhouetteDraw='pass';
   }
   function install(){
     const VF=globalThis.CWM_WEAPON_VISUAL,HA=globalThis.CWM_HEAVY_ART;
