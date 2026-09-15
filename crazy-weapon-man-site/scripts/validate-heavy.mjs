@@ -18,6 +18,12 @@ function contextAround(text,needle,before=300,after=2400){
   if(i<0)return `NOT FOUND: ${needle}`;
   return text.slice(Math.max(0,i-before),Math.min(text.length,i+after));
 }
+function functionSlice(text,name){
+  const start=text.indexOf(`function ${name}`);
+  if(start<0)return '';
+  const next=text.indexOf('\nfunction ',start+(`function ${name}`).length);
+  return text.slice(start,next<0?text.length:next);
+}
 
 const sandbox={__CWM_PACKED:[]};
 for(let i=0;i<9;i++){
@@ -60,11 +66,12 @@ const required={
 };
 for(const [key,value] of Object.entries(required))if(!value)fail(`required patch missing: ${key}`,report);
 
-const makeWContext=contextAround(output,'function makeW',0,2200);
-if(/type\s*=\s*chooseWeaponType\s*\(\s*\)/.test(makeWContext))fail('makeW still calls chooseWeaponType after transform');
-if(/type\s*=\s*pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\)/.test(makeWContext))fail('multi-family weapon type roll still exists after transform');
-if(!makeWContext.includes("type='hammer'"))fail('forced hammer type is missing from makeW');
-if(!makeWContext.includes('return __cwlNativeHeavy(w)'))fail('makeW does not return through Heavy normalizer');
+const makeWContext=functionSlice(output,'makeW');
+if(!makeWContext)fail('transformed makeW function could not be isolated');
+if(/type\s*=\s*chooseWeaponType\s*\(\s*\)/.test(makeWContext))fail('makeW still calls chooseWeaponType after transform',makeWContext);
+if(/type\s*=\s*pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\)/.test(makeWContext))fail('multi-family weapon type roll still exists after transform',makeWContext);
+if(!makeWContext.includes("type='hammer'"))fail('forced hammer type is missing from makeW',makeWContext);
+if(!makeWContext.includes('return __cwlNativeHeavy(w)'))fail('makeW does not return through Heavy normalizer',makeWContext);
 if(!/function\s+equip\s*\(\s*w\s*\)\s*\{\s*w\s*=\s*__cwlNativeHeavy\(w\)/.test(output))fail('equip Heavy guard is missing');
 if(!/function\s+spawnDrop\s*\([^)]*\)\s*\{\s*if\(item&&item\.kind!==['"]armor['"]\)item=__cwlNativeHeavy\(item\)/.test(output))fail('spawnDrop Heavy guard is missing');
 if(!output.includes("heavyBaseId:'industrial_maul'"))fail('training Heavy fallback is missing');
