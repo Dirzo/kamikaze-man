@@ -1,0 +1,97 @@
+{
+  "version": "cwl-heavy-v1-20260915a",
+  "character": "Crazy Weapon Lady",
+  "family": "heavy",
+  "mode": "heavy-only",
+  "design": {
+    "hair": "white",
+    "style": "feminine neon-gothic action heroine",
+    "weaponObsessed": true,
+    "coreGameplayUnchanged": true,
+    "bodyOnlyFrames": true,
+    "noBakedWeapon": true,
+    "noBakedBasicAttackFx": true
+  },
+  "runtime": {
+    "bodyAtlas": "/art/cwl/heavy/cwl-heavy-body-atlas-v1.webp",
+    "bodyTransport": "pending-runtime-pack",
+    "femaleRenderer": "/cwl-heavy-body-v1.js",
+    "legacyFallback": "sprite-integration-v9",
+    "weaponRenderer": "/heavy-runtime-atlas-v10.js",
+    "heavyOnlyMode": "/heavy-only-v10.js"
+  },
+  "mvpFrames": [
+    "idle_0",
+    "idle_1",
+    "run_0",
+    "run_1",
+    "run_2",
+    "heavy_ready",
+    "jump_0",
+    "air_attack_0",
+    "attack_a_1",
+    "attack_a_2",
+    "victory_0",
+    "attack_b_0",
+    "death_0"
+  ],
+  "targetClips": {
+    "idle": 6,
+    "run": 8,
+    "jump": 3,
+    "fall": 2,
+    "land": 3,
+    "attackA": 7,
+    "attackB": 7,
+    "airAttack": 6,
+    "skill": 8,
+    "hit": 3,
+    "death": 7,
+    "victory": 6
+  },
+  "socketContract": {
+    "required": [
+      "feet",
+      "handPrimary",
+      "handSupport",
+      "weaponLayer",
+      "fxOrigin",
+      "muzzleOrImpact"
+    ],
+    "weaponFacing": "right",
+    "flipWholeCompositeForLeft": true,
+    "twoHandedHeavy": true
+  },
+  "heavyBases": [
+    "industrial_maul",
+    "siege_hammer",
+    "pile_driver",
+    "welded_cleaver",
+    "junk_cannon",
+    "scrap_mortar",
+    "rotary_reclaimer",
+    "landfill_lobber",
+    "pressure_propeller",
+    "siege_toaster"
+  ],
+  "preserve": [
+    "rarity",
+    "materials",
+    "prefixes",
+    "suffixes",
+    "traits",
+    "metaTraits",
+    "positiveElements",
+    "negativeElements",
+    "intensity",
+    "capstone"
+  ],
+  "integration": {
+    "contactShadow": true,
+    "toxicBounceLight": true,
+    "elementRim": true,
+    "liveMuzzleFlash": true,
+    "genericRectangleMask": false,
+    "hitboxIndependent": true
+  }
+}
