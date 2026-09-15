@@ -1,6 +1,6 @@
 (()=>{
   if(globalThis.CWL_NATIVE_TRANSFORM_V2)return;
-  const BUILD='cwl-native-heavy-transform-v2-20260915a';
+  const BUILD='cwl-native-heavy-transform-v3-20260915a';
   const BASES=[
     ['industrial_maul','Industrial Maul','heavy_melee'],
     ['siege_hammer','Siege Hammer','heavy_melee'],
@@ -28,13 +28,16 @@ function __cwlNativeHeavy(w){
   w.name=__cwlHeavyName(w,b);
   if(originalType!=='hammer'){w.mod='none';if('cap' in w)w.cap=null;if('capName' in w)w.capName='';if('capText' in w)w.capText=''}
   w.__cwlNativeHeavyBuild=__CWL_NATIVE_HEAVY_BUILD;
-  try{w.text=proceduralText(w)}catch(_){ }
+  try{if(typeof proceduralText==='function')w.text=proceduralText(w)}catch(_){ }
   return w
 }
 function __cwlTrainingHeavy(){return __cwlNativeHeavy({id:0,type:'hammer',name:'Training Industrial Maul',mod:'none',text:'A deliberate two-handed training maul.',rar:'Training',col:'#dfe5ed',p:.8,lv:10,m:1,crit:0,material:null,traits:[],intensity:'',cap:null,capName:'',capText:'',killStacks:0,heavyBaseId:'industrial_maul'})}
 function __cwlNativeHeavySelfTest(n=40){
-  n=Math.max(8,Math.min(80,Number(n)||40));let samples=[],failures=[];
-  for(let i=0;i<n;i++){let w=makeW(10+(i%8),i%2===0),r={type:w&&w.type,base:w&&w.heavyBaseId,name:w&&w.name};samples.push(r);if(r.type!=='hammer'||!__CWL_NATIVE_HEAVY_BASES.some(b=>b[0]===r.base))failures.push(r)}
+  n=Math.max(8,Math.min(80,Number(n)||40));let failures=[];
+  for(let i=0;i<n;i++){
+    let w=makeW(10+(i%8),i%2===0),r={type:w&&w.type,base:w&&w.heavyBaseId,name:w&&w.name};
+    if(r.type!=='hammer'||!__CWL_NATIVE_HEAVY_BASES.some(b=>b[0]===r.base))failures.push(r)
+  }
   let foreign=__cwlNativeHeavy({id:-991,type:'shuriken',name:'QA Foreign Shuriken',rar:'Rare',col:'#fff',p:1,lv:10,m:1,crit:0,material:null,traits:[],killStacks:0});
   if(foreign.type!=='hammer'||!foreign.heavyBaseId)failures.push({foreign});
   let current=curW(),currentOK=!!current&&current.type==='hammer'&&!!current.heavyBaseId;
@@ -45,29 +48,41 @@ globalThis.__CWL_NATIVE_HEAVY_LOCK=__CWL_NATIVE_HEAVY_BUILD;
 globalThis.CWL_NATIVE_HEAVY_API={build:__CWL_NATIVE_HEAVY_BUILD,bases:__CWL_NATIVE_HEAVY_BASES.map(b=>({id:b[0],label:b[1],subclass:b[2]})),ensure:__cwlNativeHeavy,training:__cwlTrainingHeavy,state:()=>({weapon:curW(),history:['hammer']}),selfTest:__cwlNativeHeavySelfTest};
 `;
 
-  function one(html,needle,replacement,label){
-    const count=html.split(needle).length-1;
-    if(count!==1)throw new Error(`CWL native transform expected 1 ${label} signature, found ${count}`);
-    return html.replace(needle,replacement);
-  }
-
   function transform(input){
     let html=String(input||'');
-    if(!html)throw new Error('CWL native transform received empty game HTML');
+    const report={build:BUILD,ok:false,critical:false,patches:{},warnings:[],at:Date.now()};
+    if(!html){report.warnings.push('empty game html');globalThis.__CWL_NATIVE_TRANSFORM_LAST=report;return html}
 
-    const makeStart='function makeW(l,elite=false){';
-    html=one(html,makeStart,nativeHelper+makeStart,'makeW');
+    function patchRegex(id,re,replacer,{critical=false,all=false}={}){
+      let count=0;
+      if(all){
+        html=html.replace(re,(...args)=>{count++;return typeof replacer==='function'?replacer(...args):replacer});
+      }else{
+        const m=html.match(re);count=m?1:0;if(count)html=html.replace(re,replacer);
+      }
+      report.patches[id]=count;
+      if(!count){report.warnings.push('missing '+id);if(critical)report.critical=false}
+      return count;
+    }
 
-    const typeNeedle="function makeW(l,elite=false){let r=rr(elite),rank=RANKS.indexOf(r.n),type=pick(['sword','dagger','bow','wand','staff','hammer']);";
-    const typeReplacement="function makeW(l,elite=false){let r=rr(elite),rank=RANKS.indexOf(r.n),type='hammer';";
-    html=one(html,typeNeedle,typeReplacement,'weapon type roll');
+    report.critical=true;
+    patchRegex('helper',/function\s+makeW\s*\(\s*l\s*,\s*elite\s*=\s*false\s*\)\s*\{/,m=>nativeHelper+m,{critical:true});
 
-    html=one(html,'w.text=proceduralText(w);return w}','w.text=proceduralText(w);return __cwlNativeHeavy(w)}','makeW return');
-    html=one(html,"function curW(){return pl.weapon||{type:'sword',name:'Training Sword',mod:'none',text:'A clean three-hit training combo: forehand, backhand, then an overhead finisher.',rar:'Training',col:'#dfe5ed',p:.8,lv:10,m:1,crit:0,material:null,traits:[],killStacks:0}}","function curW(){return pl.weapon||__cwlTrainingHeavy()}",'training weapon');
-    html=one(html,'function equip(w){let old=pl.weapon','function equip(w){w=__cwlNativeHeavy(w);let old=pl.weapon','equip guard');
-    html=one(html,"});U.banner.style.display='none';","});pl.weapon=__cwlTrainingHeavy();U.banner.style.display='none';",'reset heavy weapon');
+    patchRegex('type-roll',/type\s*=\s*pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\)/,"type='hammer'",{critical:true});
 
-    globalThis.__CWL_NATIVE_TRANSFORM_LAST={build:BUILD,ok:true,at:Date.now()};
+    patchRegex('makeW-return',/(w\.text\s*=\s*proceduralText\(w\)\s*;\s*)return\s+w\s*}/,(m,p1)=>p1+'return __cwlNativeHeavy(w)}',{critical:true});
+
+    patchRegex('equip-guard',/function\s+equip\s*\(\s*w\s*\)\s*\{/,'function equip(w){w=__cwlNativeHeavy(w);',{critical:true});
+
+    patchRegex('training-fallback',/type\s*:\s*['"]sword['"]\s*,\s*name\s*:\s*['"]Training Sword['"]/g,"type:'hammer',name:'Training Industrial Maul',heavyBaseId:'industrial_maul',heavyLabel:'Industrial Maul',heavySubclass:'heavy_melee'",{all:true});
+
+    patchRegex('null-weapons',/weapon\s*:\s*null/g,'weapon:__cwlTrainingHeavy()',{all:true});
+
+    if(!report.patches.helper||!report.patches['type-roll']||!report.patches['makeW-return']||!report.patches['equip-guard'])report.critical=false;
+    report.ok=report.critical;
+    globalThis.__CWL_NATIVE_TRANSFORM_LAST=report;
+    if(report.ok)console.info('CWL native Heavy transform applied',report);
+    else console.warn('CWL native Heavy transform degraded; base game will still boot',report);
     return html;
   }
 
