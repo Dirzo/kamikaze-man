@@ -11,6 +11,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
 <body><div class="boot"><div class="box"><div class="title">CRAZY<br>WEAPON LADY</div><div class="sub" id="bootText">Locking the armory to irresponsibly heavy objects...</div><div class="bar"><i></i></div></div></div>
 <script src="/cwl-native-transform-v2.js?v=cwl-native-heavy-20260915e"></script>
 <script src="/cwl-director-transform-v1.js?v=cwl-director-20260915a"></script>
+<script src="/cwl-combat-hook-transform-v1.js?v=cwl-combat-hooks-20260915a"></script>
 <script>globalThis.__CWM_PACKED=[];</script>
 <script src="/game/chunk-00.js?v=cwm100-web-20260913g"></script>
 <script src="/game/chunk-01.js?v=cwm100-web-20260913g"></script>
@@ -45,6 +46,10 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     if(globalThis.CWL_DIRECTOR_TRANSFORM_V1?.transform)html=globalThis.CWL_DIRECTOR_TRANSFORM_V1.transform(html);
     else console.warn('CWL director transform unavailable; continuing with base wave plan');
   }catch(e){console.error('CWL director transform failed safely',e)}
+  try{
+    if(globalThis.CWL_COMBAT_HOOK_TRANSFORM_V1?.transform)html=globalThis.CWL_COMBAT_HOOK_TRANSFORM_V1.transform(html);
+    else console.warn('CWL combat hook transform unavailable; Heavy runtime events disabled');
+  }catch(e){console.error('CWL combat hook transform failed safely',e)}
 
   function bridge(needle,replacement,label){
     if(!html.includes(needle)){console.warn('CWL optional bridge unavailable:',label);return false}
