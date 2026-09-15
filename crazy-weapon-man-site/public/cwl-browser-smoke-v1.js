@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_BROWSER_SMOKE_V1)return;
   globalThis.__CWL_BROWSER_SMOKE_V1=true;
-  const BUILD='cwl-browser-smoke-v1-20260915d';
+  const BUILD='cwl-browser-smoke-v1-20260915e';
   if(new URLSearchParams(location.search).get('cwlSmoke')!=='1'){globalThis.CWL_BROWSER_SMOKE={build:BUILD,active:false};return}
   const report={build:BUILD,active:true,ok:false,error:null,at:0};
   function settle(){setTimeout(()=>{try{globalThis.requestAnimationFrame=()=>0;document.documentElement.dataset.cwlSmokeSettled='yes'}catch(_){ }},40)}
@@ -20,8 +20,9 @@
       try{d.draw?.()}catch(_){ }
       setTimeout(()=>{
         try{
-          const root=document.documentElement,body=document.body,hud=document.getElementById('cwlDesktopCombatHud'),old=document.querySelector('.fsTop');
+          const root=document.documentElement,body=document.body,hud=document.getElementById('cwlDesktopCombatHud'),old=document.querySelector('.fsTop'),styleHud=document.querySelector('.styleHud'),killChain=document.querySelector('.killChainHud');
           const combat=body.classList.contains('cwlDesktopCombat'),hudVisible=!!hud&&getComputedStyle(hud).display!=='none'&&getComputedStyle(hud).visibility!=='hidden',oldHidden=!!old&&getComputedStyle(old).display==='none';
+          const comboHidden=(!styleHud||getComputedStyle(styleHud).display==='none')&&(!killChain||getComputedStyle(killChain).display==='none');
           const mixed=wave0.length===1&&wave1.length>=2&&wave1.includes('crawler')&&wave1.includes('wizard');
           const impact=root.dataset.cwlHeavyImpactDraw==='pass',enemyVariation=root.dataset.cwlEnemyVariationDraw==='pass',silhouette=root.dataset.cwlHeavySilhouetteDraw==='pass';
           const sigState=globalThis.CWL_HEAVY_SIGNATURES?.state?.(),signatures=!!sigState?.installed&&Number(sigState?.hitCount||0)>=1;
@@ -30,9 +31,9 @@
           const nativeHooks=!!globalThis.CWL_NATIVE_COMBAT?.on&&String(globalThis.CWL_NATIVE_COMBAT?.build||'').includes('combat-hook');
           const hb=globalThis.CWL_HEAVY_BODY,wind=hb?.meleePhase?.(.12),strike=hb?.meleePhase?.(.48),recover=hb?.meleePhase?.(.84),wa=Number(hb?.meleeAngle?.(.25)),sa=Number(hb?.meleeAngle?.(.65)),ra=Number(hb?.meleeAngle?.(.92));
           const swing=wind==='windup'&&strike==='impact'&&recover==='recovery'&&wa<-1.5&&sa>.05&&ra<.05&&ra>-.9;
-          report.ok=combat&&hudVisible&&oldHidden&&mixed&&impact&&enemyVariation&&silhouette&&signatures&&specials&&slayer&&specialHud&&nativeHooks&&swing;
-          Object.assign(report,{wave0,wave1,combat,hudVisible,oldHudHidden:oldHidden,impact,enemyVariation,silhouette,signatures,specials,slayer,specialHud,nativeHooks,swing,angles:[wa,sa,ra],enemyCount:(second.enemies||[]).length,at:Date.now()});
-          root.dataset.cwlBrowserSmoke=report.ok?'pass':'fail';root.dataset.cwlCombatActive=combat?'pass':'fail';root.dataset.cwlCombatHud=hudVisible?'pass':'fail';root.dataset.cwlLegacyBottomHud=oldHidden?'hidden':'visible';root.dataset.cwlLiveWave0Types=String(wave0.length);root.dataset.cwlLiveWave1Types=String(wave1.length);root.dataset.cwlLiveWave1Enemies=String(report.enemyCount);root.dataset.cwlNativeHooks=nativeHooks?'pass':'fail';root.dataset.cwlHeavySignaturesLive=signatures?'pass':'fail';root.dataset.cwlHeavySpecialsLive=specials?'pass':'fail';root.dataset.cwlSlayerLive=slayer?'pass':'fail';root.dataset.cwlHammerSwing=swing?'pass':'fail';root.dataset.cwlHammerAngles=`${wa.toFixed(2)},${sa.toFixed(2)},${ra.toFixed(2)}`;
+          report.ok=combat&&hudVisible&&oldHidden&&comboHidden&&mixed&&impact&&enemyVariation&&silhouette&&signatures&&specials&&slayer&&specialHud&&nativeHooks&&swing;
+          Object.assign(report,{wave0,wave1,combat,hudVisible,oldHudHidden:oldHidden,comboHidden,impact,enemyVariation,silhouette,signatures,specials,slayer,specialHud,nativeHooks,swing,angles:[wa,sa,ra],enemyCount:(second.enemies||[]).length,at:Date.now()});
+          root.dataset.cwlBrowserSmoke=report.ok?'pass':'fail';root.dataset.cwlCombatActive=combat?'pass':'fail';root.dataset.cwlCombatHud=hudVisible?'pass':'fail';root.dataset.cwlLegacyBottomHud=oldHidden?'hidden':'visible';root.dataset.cwlRedundantComboHud=comboHidden?'hidden':'visible';root.dataset.cwlLiveWave0Types=String(wave0.length);root.dataset.cwlLiveWave1Types=String(wave1.length);root.dataset.cwlLiveWave1Enemies=String(report.enemyCount);root.dataset.cwlNativeHooks=nativeHooks?'pass':'fail';root.dataset.cwlHeavySignaturesLive=signatures?'pass':'fail';root.dataset.cwlHeavySpecialsLive=specials?'pass':'fail';root.dataset.cwlSlayerLive=slayer?'pass':'fail';root.dataset.cwlHammerSwing=swing?'pass':'fail';root.dataset.cwlHammerAngles=`${wa.toFixed(2)},${sa.toFixed(2)},${ra.toFixed(2)}`;
           globalThis.__CWL_BROWSER_SMOKE_REPORT=report;settle();
         }catch(e){report.error=String(e?.message||e);document.documentElement.dataset.cwlBrowserSmoke='fail';settle()}
       },900);
