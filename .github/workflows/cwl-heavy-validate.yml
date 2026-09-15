@@ -66,7 +66,9 @@ jobs:
             'data-cwl-wave2-roles="3"' \
             'data-cwl-wave1-mode="cross-training"' \
             'data-cwl-enemy-variation="ready"' \
+            'data-cwl-enemy-variation-draw="pass"' \
             'data-cwl-heavy-silhouette="ready"' \
+            'data-cwl-heavy-silhouette-draw="pass"' \
             'data-cwl-browser-smoke="pass"' \
             'data-cwl-combat-active="pass"' \
             'data-cwl-combat-hud="pass"' \
@@ -82,8 +84,8 @@ jobs:
               grep -o 'data-cwl-compact-hud="[^"]*"' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-director="[^"]*"' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-wave[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-enemy-variation="[^"]*"' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-heavy-silhouette="[^"]*"' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-enemy-variation[^ >]*' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-heavy-silhouette[^ >]*' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-browser-smoke="[^"]*"' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-combat-[^ >]*' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-legacy-bottom-hud="[^"]*"' /tmp/cwl-dom.html || true
@@ -110,7 +112,9 @@ jobs:
           grep -o 'data-cwl-wave[012]-roles="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-wave1-mode="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-enemy-variation="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-enemy-variation-draw="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-silhouette="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-heavy-silhouette-draw="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-browser-smoke="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-combat-active="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-combat-hud="[^"]*"' /tmp/cwl-dom.html
