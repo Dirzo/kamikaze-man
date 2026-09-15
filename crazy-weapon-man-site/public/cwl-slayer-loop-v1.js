@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_SLAYER_LOOP_V1)return;
   globalThis.__CWL_SLAYER_LOOP_V1=true;
-  const BUILD='cwl-slayer-loop-v1-20260915a';
+  const BUILD='cwl-slayer-loop-v1-20260915b';
   const CHAIN_WINDOW=1.55,MAX_ENEMIES=58;
   let chain=0,best=0,lastKill=-99,lastWave=null,waveExtra=0,waveRank=0,lastBonus=0,totalBonus=0;
   const now=()=>typeof time!=='undefined'?Number(time)||0:performance.now()/1000;
@@ -59,9 +59,9 @@
   }
 
   function extraPacksForRank(r){
-    if(r<3)return 0;
-    if(r<7)return 1;
-    if(r<13)return 2;
+    if(r<4)return 0;
+    if(r<8)return 1;
+    if(r<14)return 2;
     if(r<18)return 3;
     return 4;
   }
@@ -81,7 +81,7 @@
       try{
         const same=Number(stageClears||0)===wave;if(!same)return;
         if(safeSpawnPack()&&i===0){
-          const col=r>=18?'#ff72d6':r>=13?'#ff9270':'#fff176';
+          const col=r>=18?'#ff72d6':r>=14?'#ff9270':'#fff176';
           txt(W/2,78,`WEAPON THREAT +${extra} PACK${extra===1?'':'S'}`,col,false);
         }
       }catch(_){ }
@@ -101,8 +101,9 @@
     let score=totalBonus;try{score=Number(styleScore)||score}catch(_){ }
     h.classList.toggle('show',active);h.classList.toggle('hot',chain>=15);
     h.innerHTML=`<span class="chain">SLAUGHTER x${Math.max(1,chain)}</span> &nbsp; <span class="score">${nf(score)}</span>${lastBonus?` &nbsp;+${nf(lastBonus)}`:''}`;
-    let base='HEAVY';try{base=curW()?.heavyLabel||curW()?.heavyBaseId||base}catch(_){ }
-    t.textContent=`${String(base).toUpperCase()} • THREAT +${waveExtra} • CHAIN BEST ${best}`;
+    let base='HEAVY',sig='';
+    try{base=curW()?.heavyLabel||curW()?.heavyBaseId||base;sig=globalThis.CWL_HEAVY_SIGNATURES?.current?.()?.short||''}catch(_){ }
+    t.textContent=`${String(base).toUpperCase()}${sig?' • '+sig:''} • THREAT +${waveExtra} • CHAIN BEST ${best}`;
   }
 
   let attempts=0;const hookTimer=setInterval(()=>{if(installKillHook()||++attempts>80)clearInterval(hookTimer)},75);
