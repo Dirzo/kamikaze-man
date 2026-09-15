@@ -1,65 +1,17 @@
 {
-  "version": "cwl-runtime-v1-20260915p",
+  "version": "cwl-runtime-v1-20260915q",
   "modules": [
-    {
-      "id": "heavy-body-priority",
-      "src": "/cwl-heavy-body-priority-v1.js?v=cwl-body-priority-20260915c",
-      "required": true
-    },
-    {
-      "id": "slayer-loop",
-      "src": "/cwl-slayer-loop-v1.js?v=cwl-slayer-20260915b",
-      "required": true
-    },
-    {
-      "id": "heavy-signatures",
-      "src": "/cwl-heavy-signatures-v1.js?v=cwl-signatures-20260915a",
-      "required": true
-    },
-    {
-      "id": "heavy-impact",
-      "src": "/cwl-heavy-impact-v1.js?v=cwl-heavy-impact-20260915a",
-      "required": true
-    },
-    {
-      "id": "heavy-specials",
-      "src": "/cwl-heavy-specials-v1.js?v=cwl-specials-20260915a",
-      "required": true
-    },
-    {
-      "id": "special-hud",
-      "src": "/cwl-special-hud-v1.js?v=cwl-special-hud-20260915a",
-      "required": true
-    },
-    {
-      "id": "heavy-silhouette",
-      "src": "/cwl-heavy-silhouette-v1.js?v=cwl-heavy-silhouette-20260915b",
-      "required": true
-    },
-    {
-      "id": "visual-cleanup",
-      "src": "/cwl-visual-cleanup-v1.js?v=cwl-visual-cleanup-20260915a",
-      "required": true
-    },
-    {
-      "id": "enemy-variation",
-      "src": "/cwl-enemy-variation-v1.js?v=cwl-enemy-variation-20260915b",
-      "required": true
-    },
-    {
-      "id": "enemy-telegraphs",
-      "src": "/cwl-enemy-telegraphs-v1.js?v=cwl-telegraphs-20260915a",
-      "required": true
-    },
-    {
-      "id": "browser-smoke",
-      "src": "/cwl-browser-smoke-v1.js?v=cwl-browser-smoke-20260915b",
-      "required": true
-    },
-    {
-      "id": "heavy-selfcheck-v2",
-      "src": "/cwl-heavy-selfcheck-v2.js?v=cwl-heavy-selfcheck-20260915c",
-      "required": true
-    }
+    {"id":"heavy-body-priority","src":"/cwl-heavy-body-priority-v1.js?v=cwl-body-priority-20260915d","required":true},
+    {"id":"slayer-loop","src":"/cwl-slayer-loop-v1.js?v=cwl-slayer-20260915c","required":true},
+    {"id":"heavy-signatures","src":"/cwl-heavy-signatures-v1.js?v=cwl-signatures-20260915b","required":true},
+    {"id":"heavy-impact","src":"/cwl-heavy-impact-v1.js?v=cwl-heavy-impact-20260915b","required":true},
+    {"id":"heavy-specials","src":"/cwl-heavy-specials-v1.js?v=cwl-specials-20260915b","required":true},
+    {"id":"special-hud","src":"/cwl-special-hud-v1.js?v=cwl-special-hud-20260915b","required":true},
+    {"id":"heavy-silhouette","src":"/cwl-heavy-silhouette-v1.js?v=cwl-heavy-silhouette-20260915b","required":true},
+    {"id":"visual-cleanup","src":"/cwl-visual-cleanup-v1.js?v=cwl-visual-cleanup-20260915a","required":true},
+    {"id":"enemy-variation","src":"/cwl-enemy-variation-v1.js?v=cwl-enemy-variation-20260915b","required":true},
+    {"id":"enemy-telegraphs","src":"/cwl-enemy-telegraphs-v1.js?v=cwl-telegraphs-20260915a","required":true},
+    {"id":"browser-smoke","src":"/cwl-browser-smoke-v1.js?v=cwl-browser-smoke-20260915b","required":true},
+    {"id":"heavy-selfcheck-v2","src":"/cwl-heavy-selfcheck-v2.js?v=cwl-heavy-selfcheck-20260915c","required":true}
   ]
 }
