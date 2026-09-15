@@ -1,6 +1,6 @@
 (()=>{
   if(globalThis.CWL_NATIVE_TRANSFORM_V2)return;
-  const BUILD='cwl-native-heavy-transform-v4-20260915a';
+  const BUILD='cwl-native-heavy-transform-v4-20260915b';
   const BASES=[
     ['industrial_maul','Industrial Maul','heavy_melee'],
     ['siege_hammer','Siege Hammer','heavy_melee'],
@@ -29,7 +29,7 @@ function __cwlNativeHeavy(w){
   if(originalType!=='hammer'){w.mod='none';if('cap' in w)w.cap=null;if('capName' in w)w.capName='';if('capText' in w)w.capText=''}
   w.__cwlNativeHeavyBuild=__CWL_NATIVE_HEAVY_BUILD;
   try{if(typeof detectSynergy==='function')w.synergy=detectSynergy(w)}catch(_){ }
-  try{if(typeof proceduralText==='function')w.text=proceduralText(w)+(w.synergy?` SYNERGY: ${w.synergy.name} — ${w.synergy.desc}`:'')}catch(_){ }
+  try{if(typeof proceduralText==='function')w.text=proceduralText(w)+(w.synergy?(' SYNERGY: '+w.synergy.name+' — '+w.synergy.desc):'')}catch(_){ }
   return w
 }
 function __cwlTrainingHeavy(){return __cwlNativeHeavy({id:0,type:'hammer',name:'Training Industrial Maul',mod:'none',text:'A deliberate two-handed training maul.',rar:'Training',col:'#dfe5ed',p:.8,lv:10,m:1,crit:0,material:null,traits:[],intensity:'',cap:null,capName:'',capText:'',killStacks:0,heavyBaseId:'industrial_maul'})}
