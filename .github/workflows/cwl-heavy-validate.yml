@@ -1,0 +1,25 @@
+name: CWL Heavy Validation
+
+on:
+  push:
+    branches:
+      - crazy-weapon-man-web
+    paths:
+      - 'crazy-weapon-man-site/**'
+      - '.github/workflows/cwl-heavy-validate.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-heavy-bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate production packed bundle
+        working-directory: crazy-weapon-man-site
+        run: node scripts/validate-heavy.mjs
