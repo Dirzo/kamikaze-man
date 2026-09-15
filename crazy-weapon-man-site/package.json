@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "check": "node --check src/index.js",
+    "check": "node --check src/index.js && node --check src/entry.js && node scripts/validate-heavy.mjs",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {
