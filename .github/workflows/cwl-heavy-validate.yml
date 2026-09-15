@@ -49,17 +49,29 @@ jobs:
             cat /tmp/cwl-chrome.log
             exit $CHROME_RC
           fi
-          if ! grep -q 'data-cwl-heavy-proof="pass"' /tmp/cwl-dom.html; then
-            echo "CWL runtime proof did not pass"
-            grep -o 'data-cwl-heavy-[^ >]*' /tmp/cwl-dom.html || true
-            grep -o '<div id="cwlSmokeProof"[^>]*>[^<]*' /tmp/cwl-dom.html || true
-            echo "--- Chrome stderr ---"
-            tail -120 /tmp/cwl-chrome.log || true
-            exit 1
-          fi
+          for proof in \
+            'data-cwl-heavy-proof="pass"' \
+            'data-cwl-heavy-weapon="hammer"' \
+            'data-cwl-heavy-rolls="48/48"' \
+            'data-cwl-heavy-visuals="10/10"' \
+            'data-cwl-lady-render="pass"' \
+            'data-cwl-lady-priority="pass"'; do
+            if ! grep -q "$proof" /tmp/cwl-dom.html; then
+              echo "CWL runtime proof missing: $proof"
+              grep -o 'data-cwl-heavy-[^ >]*' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-lady-[^ >]*' /tmp/cwl-dom.html || true
+              grep -o '<div id="cwlSmokeProof"[^>]*>[^<]*' /tmp/cwl-dom.html || true
+              echo "--- Chrome stderr ---"
+              tail -120 /tmp/cwl-chrome.log || true
+              exit 1
+            fi
+          done
           grep -o 'data-cwl-heavy-proof="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-rolls="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-visuals="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-weapon="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-base="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-lady-body="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-lady-frame="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-lady-render="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-lady-priority="[^"]*"' /tmp/cwl-dom.html
