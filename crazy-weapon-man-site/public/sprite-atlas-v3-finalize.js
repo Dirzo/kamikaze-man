@@ -1,5 +1,5 @@
 (()=>{
-  const BUILD='v3-small-chunks-20260914f';
+  const BUILD='v3-small-chunks-20260914g';
   if(globalThis.__CWM_V3_FINALIZER)return;
   globalThis.__CWM_V3_FINALIZER=true;
 
@@ -39,11 +39,18 @@
   s.onload=()=>{
     console.info('CWM v3 verified illustrated atlas transport loaded',BUILD,pr.length,er.length);
 
-    const integration=document.createElement('script');
-    integration.src='/sprite-integration-v7.js?v=cwm-content-v7-20260914a';
-    integration.onload=()=>console.info('CWM v7 clean cast + weapon-family runtime loaded');
-    integration.onerror=()=>console.warn('CWM v7 integration HTTP failure');
-    document.body.appendChild(integration);
+    const weapons=document.createElement('script');
+    weapons.src='/weapon-visual-system-v8.js?v=cwm-weapon-art-20260914a';
+    weapons.onload=()=>{
+      console.info('CWM v8 weapon visual system loaded');
+      const integration=document.createElement('script');
+      integration.src='/sprite-integration-v8.js?v=cwm-content-v8-20260914a';
+      integration.onload=()=>console.info('CWM v8 name-aware cast + weapon integration loaded');
+      integration.onerror=()=>console.warn('CWM v8 integration HTTP failure');
+      document.body.appendChild(integration);
+    };
+    weapons.onerror=()=>console.warn('CWM v8 weapon visual system HTTP failure');
+    document.body.appendChild(weapons);
 
     const layers=document.createElement('script');
     layers.src='/sewer-layers-v3.js?v=cwm-sewer-layers-20260914a';
