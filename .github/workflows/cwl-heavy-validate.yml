@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate-heavy-bundle:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
       - name: Validate production packed bundle
         working-directory: crazy-weapon-man-site
         run: node scripts/validate-heavy.mjs
-      - name: Headless browser Heavy runtime smoke test
+      - name: Headless desktop runtime smoke test
         working-directory: crazy-weapon-man-site
         shell: bash
         run: |
@@ -54,6 +54,8 @@ jobs:
             exit $CHROME_RC
           fi
           proofs=(
+            'data-cwl-desktop-only="pass"'
+            'data-cwl-boot="ready"'
             'data-cwl-heavy-proof="pass"'
             'data-cwl-heavy-weapon="hammer"'
             'data-cwl-heavy-rolls="48/48"'
@@ -66,6 +68,11 @@ jobs:
             'data-cwl-presentation-desktop="yes"'
             'data-cwl-player-scale="1.26"'
             'data-cwl-compact-hud="ready"'
+            'data-cwl-interface-source="native"'
+            'data-cwl-legacy-hud="hidden"'
+            'data-cwl-unified-interface="pass"'
+            'data-cwl-boot-clean="pass"'
+            'data-cwl-legacy-sprites="removed"'
             'data-cwl-director="pass"'
             'data-cwl-wave0-roles="1"'
             'data-cwl-wave1-roles="2"'
@@ -80,13 +87,12 @@ jobs:
             'data-cwl-heavy-signatures-live="pass"'
             'data-cwl-heavy-specials-live="pass"'
             'data-cwl-slayer-live="pass"'
-            'data-cwl-special-hud="ready"'
             'data-cwl-native-hooks="pass"'
             'data-cwl-hammer-swing="pass"'
             'data-cwl-browser-smoke="pass"'
             'data-cwl-combat-active="pass"'
             'data-cwl-combat-hud="pass"'
-            'data-cwl-legacy-bottom-hud="hidden"'
+            'data-cwl-legacy-hud-proof="hidden"'
             'data-cwl-live-wave0-types="1"'
             'data-cwl-live-wave1-types="2"'
           )
@@ -100,14 +106,23 @@ jobs:
               exit 1
             fi
           done
+          grep -o 'data-cwl-unified-interface="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-boot-clean="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-legacy-sprites="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-proof="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-native-combat="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-hammer-swing-proof="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-impact-draw="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-signatures-live="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-specials-live="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-slayer-live="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-hammer-swing="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-hammer-angles="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-combat-hud="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-live-wave[01]-types="[^"]*"' /tmp/cwl-dom.html
+
+      - name: Mobile is intentionally blocked
+        working-directory: crazy-weapon-man-site
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          UA='Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=390,844 --user-agent="$UA" --virtual-time-budget=1200 --dump-dom 'http://127.0.0.1:8788/' >/tmp/cwl-mobile.html 2>/tmp/cwl-mobile-chrome.log
+          grep -q 'data-cwl-desktop-only="blocked"' /tmp/cwl-mobile.html
+          grep -q 'Mobile support is temporarily disabled' /tmp/cwl-mobile.html
+          if grep -q 'id="gameStage"' /tmp/cwl-mobile.html; then
+            echo 'Mobile unexpectedly booted the packed game'
+            exit 1
+          fi
