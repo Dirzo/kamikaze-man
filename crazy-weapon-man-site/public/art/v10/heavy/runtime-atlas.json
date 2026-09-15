@@ -1,0 +1,38 @@
+{
+  "version": "v10-heavy-runtime-atlas-20260915a",
+  "family": "heavy",
+  "mode": "dynamic-transparent-runtime-atlas",
+  "tile": [256, 128],
+  "atlas": [2048, 1024],
+  "capacity": 64,
+  "origin": [48, 64],
+  "cacheKey": ["heavyBaseId", "name", "rarity", "material", "element", "traits", "intensity", "cap"],
+  "preserves": [
+    "heavy base silhouette",
+    "all current name adjectives/prefixes/suffixes",
+    "materials",
+    "traits and meta-traits",
+    "rarity ornamentation",
+    "positive and negative elements"
+  ],
+  "temporaryRestrictions": {
+    "heavyOnly": true,
+    "coreGameplayType": "hammer",
+    "nonHeavyGeneration": false,
+    "convertExistingNonHeavy": true
+  },
+  "render": {
+    "transparentTiles": true,
+    "weaponOrigin": "grip",
+    "socketOwner": "sprite-integration-v9",
+    "muzzleFlash": "uncached live overlay",
+    "contactShadow": "character integration layer",
+    "toxicBounce": "character integration layer"
+  },
+  "authoredAtlasRoadmap": {
+    "status": "in progress",
+    "bodyAtlas": "white-haired source character must remain canonical",
+    "weaponAtlas": "runtime cache is active bridge until final authored transparent base atlas is committed",
+    "doNotUse": "poster/mockup character sheets as runtime sprites"
+  }
+}
