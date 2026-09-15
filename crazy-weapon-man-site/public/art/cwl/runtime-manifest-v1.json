@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v2-20260915f",
+  "version": "cwl-runtime-v2-20260915g",
   "modules": [
     {"id":"heavy-proportions","src":"/cwl-heavy-proportions-v1.js?v=cwl-heavy-proportions-20260915a","required":true},
     {"id":"heavy-body-priority","src":"/cwl-heavy-body-priority-v1.js?v=cwl-body-priority-v2-20260915a","required":true},
@@ -8,6 +8,7 @@
     {"id":"heavy-impact","src":"/cwl-heavy-impact-v1.js?v=cwl-heavy-impact-20260915b","required":true},
     {"id":"heavy-specials","src":"/cwl-heavy-specials-v1.js?v=cwl-specials-20260915b","required":true},
     {"id":"heavy-silhouette","src":"/cwl-heavy-silhouette-v1.js?v=cwl-heavy-silhouette-20260915b","required":true},
+    {"id":"parking-renderer","src":"/renderer-v2-parking.js?v=cwl-parking-20260915a","required":true},
     {"id":"enemy-variation","src":"/cwl-enemy-variation-v1.js?v=cwl-enemy-variation-20260915b","required":true},
     {"id":"enemy-telegraphs","src":"/cwl-enemy-telegraphs-v1.js?v=cwl-telegraphs-v2-20260915a","required":true},
     {"id":"desktop-shell","src":"/cwl-desktop-shell-v1.js?v=cwl-desktop-shell-20260915a","required":true},
