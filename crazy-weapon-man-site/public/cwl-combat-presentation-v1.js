@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_COMBAT_PRESENTATION_V1)return;
   globalThis.__CWL_COMBAT_PRESENTATION_V1=true;
-  const BUILD='cwl-combat-presentation-v1-20260915b';
+  const BUILD='cwl-combat-presentation-v1-20260915c';
   const DESKTOP_SCALE=1.26;
   const nf=n=>Math.max(0,Math.round(Number(n)||0)).toLocaleString();
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -14,7 +14,7 @@
     .cwlCombatCard{border:1px solid #ffffff2b;border-radius:12px;background:linear-gradient(145deg,#06101be8,#09111ad2);box-shadow:0 9px 28px #0008;backdrop-filter:blur(8px);color:#eff7ff}
     .cwlCombatWeapon{width:min(360px,32vw);padding:8px 11px}.cwlCombatKicker{font:1000 8px/1 system-ui;letter-spacing:.18em;color:#8fc5db}.cwlCombatName{font:1000 15px/.98 system-ui;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}.cwlCombatRow{display:flex;align-items:baseline;gap:9px;margin-top:3px}.cwlCombatDps{font:1000 22px/1 system-ui;color:#fff176}.cwlCombatMeta{font:900 9px/1.15 system-ui;color:#b7c9dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cwlCombatFlavor{font:850 8px/1.18 system-ui;color:#7feaff;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .cwlCombatVitals{width:min(340px,30vw);padding:8px 10px}.cwlVital{display:grid;grid-template-columns:34px 1fr 66px;gap:6px;align-items:center;margin:3px 0;font:900 9px/1 system-ui;color:#dbe8f5}.cwlVital b{font-size:8px;color:#a9bad0}.cwlVitalTrack{height:6px;border-radius:99px;background:#000b;overflow:hidden}.cwlVitalTrack i{display:block;height:100%;width:0;border-radius:inherit}.cwlVital.hp i{background:linear-gradient(90deg,#ff465b,#ff8190)}.cwlVital.mp i{background:linear-gradient(90deg,#5578ff,#78c8ff)}.cwlVital.xp i{background:linear-gradient(90deg,#e5a73f,#ffe17a)}.cwlVital.lv .cwlVitalTrack{background:linear-gradient(90deg,#69e8ff22,#ff72d622)}.cwlVital.lv i{background:linear-gradient(90deg,#69e8ff,#ff72d6)}
-    @media (min-width:981px) and (pointer:fine){
+    @media (min-width:981px){
       body.cwlDesktopCombat .fsTop{display:none!important}
       body.cwlDesktopCombat .fsBottom{top:8px!important;right:10px!important;bottom:auto!important;left:auto!important;transform:scale(.72)!important;transform-origin:top right!important;gap:5px!important;padding:5px 7px!important;opacity:.62!important;border-radius:10px!important;background:#050b13c7!important}
       body.cwlDesktopCombat .fsKey{min-width:48px!important;padding:4px 6px!important;font-size:8px!important}.fsKey b{font-size:11px!important}
@@ -31,7 +31,7 @@
       body.cwlDesktopCombat .banner{top:94px!important;transform:translateX(-50%) scale(.82)!important;transform-origin:top center!important}
       body.cwlDesktopCombat .fsUpgrade{top:29%!important;max-width:64%!important}.fsUpgrade .u1{font-size:11px!important}.fsUpgrade .u2{font-size:clamp(25px,3.4vw,46px)!important}.fsUpgrade .u3{font-size:14px!important}
     }
-    @media (min-width:981px) and (max-height:760px) and (pointer:fine){#cwlDesktopCombatHud{bottom:7px}.cwlCombatWeapon{width:310px;padding:6px 9px}.cwlCombatName{font-size:13px}.cwlCombatDps{font-size:19px}.cwlCombatVitals{width:300px;padding:6px 8px}.cwlVital{margin:2px 0}.cwlVitalTrack{height:5px}}
+    @media (min-width:981px) and (max-height:760px){#cwlDesktopCombatHud{bottom:7px}.cwlCombatWeapon{width:310px;padding:6px 9px}.cwlCombatName{font-size:13px}.cwlCombatDps{font-size:19px}.cwlCombatVitals{width:300px;padding:6px 8px}.cwlVital{margin:2px 0}.cwlVitalTrack{height:5px}}
   `;
   document.head.appendChild(style);
 
