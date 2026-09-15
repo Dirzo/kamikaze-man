@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_HEAVY_BODY_V1)return;
   globalThis.__CWL_HEAVY_BODY_V1=true;
-  const BUILD='cwl-heavy-body-v1-20260915d';
+  const BUILD='cwl-heavy-body-v1-20260915e';
   const SHEET=320,GRID=4,CELL=SHEET/GRID;
   const FRAME_NAMES=['idle_0','idle_1','run_0','run_1','run_2','heavy_ready','jump_0','air_attack_0','attack_a_1','attack_a_2','victory_0','attack_b_0','death_0'];
   const FRAME_INDEX=Object.fromEntries(FRAME_NAMES.map((n,i)=>[n,i]));
@@ -11,10 +11,26 @@
     victory_0:[10,-12],attack_b_0:[12,-9],death_0:[6,-4]
   };
   const prev=globalThis.__CWM_RENDER_HOOK||{};
-  const state={build:BUILD,ready:false,error:null,image:null,bounds:{},frame:null,transportChunks:0,priority:false,priorityAt:0,source:'loading'};
+  const state={build:BUILD,ready:false,error:null,image:null,bounds:{},frame:null,transportChunks:0,priority:false,priorityAt:0,source:'loading',swingPhase:'idle',swingAngle:0};
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+  const lerp=(a,b,t)=>a+(b-a)*clamp(t,0,1);
+  const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t)};
   const fallback=ctx=>typeof prev.drawPlayer==='function'?prev.drawPlayer(ctx):false;
   const attackT=pl=>(pl?.at||0)>0?1-clamp((pl.at||0)/Math.max(.01,pl.atMax||.2),0,1):0;
+
+  function meleePhase(a){
+    if(a<=.04)return'idle';
+    if(a<.27)return'windup';
+    if(a<.69)return'impact';
+    return'recovery';
+  }
+  function meleeAngle(a){
+    const phase=meleePhase(a);
+    if(phase==='idle')return-.64;
+    if(phase==='windup')return lerp(-.64,-1.78,smooth((a-.04)/.23));
+    if(phase==='impact')return lerp(-1.78,.30,smooth((a-.27)/.42));
+    return lerp(.30,-.64,smooth((a-.69)/.31));
+  }
 
   function chooseFrame(ctx){
     const p=ctx.pl,t=Number(ctx.time)||performance.now()/1000,a=attackT(p),speed=Math.abs(p.vx||0);
@@ -24,7 +40,10 @@
     if(a>.04){
       const artillery=globalThis.CWM_HEAVY_ART?.isArtillery?.(ctx.w);
       if(artillery)return a<.62?'heavy_ready':'attack_b_0';
-      return a<.48?'attack_a_1':'attack_a_2';
+      const phase=meleePhase(a);
+      if(phase==='windup')return'attack_a_2';
+      if(phase==='impact')return'attack_a_1';
+      return'heavy_ready';
     }
     if(speed>28)return ['run_0','run_1','run_2'][Math.floor(t*10)%3];
     return Math.floor(t*2.4)%2?'idle_1':'idle_0';
@@ -133,9 +152,8 @@
     if(!w||!VF?.draw||VF.family?.(w)!=='heavy')return;
     const artillery=globalThis.CWM_HEAVY_ART?.isArtillery?.(w),socket=SOCKETS[frame]||SOCKETS.idle_0;
     let ang=artillery?-.05:-.64;
-    if(frame==='heavy_ready')ang=artillery?-.12:-.95;
-    else if(frame==='attack_a_1')ang=-1.72+a*.75;
-    else if(frame==='attack_a_2')ang=-.94+a*1.32;
+    if(!artillery&&a>.04)ang=meleeAngle(a);
+    else if(frame==='heavy_ready')ang=artillery?-.12:-.95;
     else if(frame==='air_attack_0')ang=artillery?-.08:-1.18;
     else if(frame==='attack_b_0')ang=artillery?-.02:-.58;
     else if(frame==='victory_0')ang=-1.05;
@@ -144,6 +162,7 @@
     X.save();X.translate(socket[0],socket[1]);X.rotate(ang);
     VF.draw(X,w,{scale:sc,time:ctx.time,glow:true,attacking:a>.04,attackT:a});
     X.restore();
+    state.swingPhase=artillery?(a>.04?'fire':'idle'):meleePhase(a);state.swingAngle=Number(ang.toFixed(3));
   }
 
   function drawPlayer(ctx){
@@ -156,14 +175,16 @@
       const a=attackT(pl),speed=Math.abs(pl.vx||0),run=pl.on?clamp(speed/240,0,1):0;
       const bodyH=clamp((pl.h||58)*1.43,74,92),bob=pl.on?Math.abs(Math.sin((ctx.time||0)*11))*1.5*run:0;
       const d=VF?.describe?.(ctx.w),elementColor=d?.elementVisual?.c||d?.emissive,rarityColor=d?.rarityColor;
+      const artillery=globalThis.CWM_HEAVY_ART?.isArtillery?.(ctx.w),phase=artillery?'fire':meleePhase(a),weaponBehind=!artillery&&phase==='windup';
       drawContactShadow(X,pl,bodyH/82);
       X.save();X.translate(pl.x+pl.w/2,pl.y+pl.h+bob);X.scale(pl.dir||1,1);
       if(pl.inv>0&&Math.floor((ctx.time||0)*18)%2===0)X.globalAlpha=.52;
+      if(weaponBehind)drawWeapon(ctx,frame,a,bodyH);
       drawBody(X,state.image,b,frame,bodyH,elementColor,rarityColor);
-      drawWeapon(ctx,frame,a,bodyH);
-      if(a>.12){X.save();X.globalCompositeOperation='screen';X.globalAlpha=.12+.18*Math.sin(a*Math.PI);X.strokeStyle=elementColor||'#fff176';X.lineWidth=2.5;X.beginPath();X.arc(8,-bodyH*.48,28+a*16,-1.7,-1.7+Math.PI*1.25);X.stroke();X.restore()}
+      if(!weaponBehind)drawWeapon(ctx,frame,a,bodyH);
+      if(a>.12){X.save();X.globalCompositeOperation='screen';X.globalAlpha=.10+.18*Math.sin(Math.min(1,a)*Math.PI);X.strokeStyle=elementColor||'#fff176';X.lineWidth=2.5;const sweep=artillery?-1.3:meleeAngle(a)-.42;X.beginPath();X.arc(8,-bodyH*.48,30+a*18,sweep,sweep+Math.PI*.72);X.stroke();X.restore()}
       X.restore();
-      state.frame=frame;globalThis.__CWM_V2_ENTITY_LAST={kind:'player-cwl-heavy',zone:ctx.zoneI,at:Date.now(),frame,source:state.source};
+      state.frame=frame;globalThis.__CWM_V2_ENTITY_LAST={kind:'player-cwl-heavy',zone:ctx.zoneI,at:Date.now(),frame,source:state.source,swingPhase:state.swingPhase,swingAngle:state.swingAngle};
       return true;
     }catch(e){state.error=String(e?.message||e);console.warn('CWL Heavy player render failed; using legacy player renderer',e);return fallback(ctx)}
   }
@@ -176,6 +197,6 @@
   }
 
   globalThis.__CWM_RENDER_HOOK={...prev,drawPlayer};
-  globalThis.CWL_HEAVY_BODY={build:BUILD,state,frames:[...FRAME_NAMES],frameIndex:FRAME_INDEX,chooseFrame,drawPlayer,installPriority,ready:()=>state.ready};
+  globalThis.CWL_HEAVY_BODY={build:BUILD,state,frames:[...FRAME_NAMES],frameIndex:FRAME_INDEX,chooseFrame,drawPlayer,installPriority,ready:()=>state.ready,meleePhase,meleeAngle};
   initImage();
 })();
