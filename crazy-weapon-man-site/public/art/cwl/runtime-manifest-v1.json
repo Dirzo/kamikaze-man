@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v1-20260915i",
+  "version": "cwl-runtime-v1-20260915j",
   "modules": [
     {
       "id": "heavy-body-priority",
@@ -37,8 +37,8 @@
       "required": true
     },
     {
-      "id": "heavy-selfcheck",
-      "src": "/cwl-heavy-selfcheck-v1.js?v=cwl-heavy-selfcheck-20260915a",
+      "id": "heavy-selfcheck-v2",
+      "src": "/cwl-heavy-selfcheck-v2.js?v=cwl-heavy-selfcheck-20260915b",
       "required": true
     }
   ]
