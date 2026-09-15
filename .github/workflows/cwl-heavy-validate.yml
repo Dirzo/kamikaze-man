@@ -100,6 +100,7 @@ jobs:
             'data-cwl-live-wave1-types="2"'
             'data-cwl-parking-proof="pass"'
             'data-cwl-parking-playable="pass"'
+            'data-cwl-parking-zone-match="pass"'
             'data-cwl-parking-damage="pass"'
             'data-cwl-parking-skill="pass"'
             'data-cwl-parking-kill="pass"'
@@ -123,6 +124,7 @@ jobs:
           grep -o 'data-cwl-heavy-proof="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-hammer-angles="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-parking-playable="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-parking-zone-match="[^"]*"' /tmp/cwl-dom.html
 
           "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=3000 --run-all-compositor-stages-before-draw --screenshot=/tmp/cwl-title.png 'http://127.0.0.1:8788/' >/tmp/cwl-title.log 2>&1
           "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=4200 --run-all-compositor-stages-before-draw --screenshot=/tmp/cwl-combat.png 'http://127.0.0.1:8788/?cwlSmoke=1' >/tmp/cwl-combat.log 2>&1
