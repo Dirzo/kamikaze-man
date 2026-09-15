@@ -1,6 +1,6 @@
 (()=>{
   if(globalThis.CWL_DIRECTOR_TRANSFORM_V1)return;
-  const BUILD='cwl-director-transform-v1-20260915a';
+  const BUILD='cwl-director-transform-v2-20260915a';
   const replacement=`function wavePlan(index=stageClears){
     const __CWL_DYNAMIC_EARLY_WAVES=true;
     let po=pool(),goal=stageGoal(),final=index>=goal-1;
@@ -21,14 +21,24 @@
 
   function transform(input){
     let html=String(input||'');
-    const report={build:BUILD,ok:false,patched:0,warnings:[],at:Date.now()};
+    const report={build:BUILD,ok:false,patched:0,quieted:0,warnings:[],at:Date.now()};
     const start=html.indexOf('function wavePlan(index=stageClears)');
     const end=start>=0?html.indexOf('function showWaveIntro',start):-1;
     if(start<0||end<0||end<=start){report.warnings.push('wavePlan boundary not found');globalThis.__CWL_DIRECTOR_TRANSFORM_LAST=report;console.warn('CWL director transform degraded',report);return html}
     const original=html.slice(start,end);
     if(!original.includes('rarityWavePressure')||!original.includes('parts.push')){report.warnings.push('wavePlan shape changed');globalThis.__CWL_DIRECTOR_TRANSFORM_LAST=report;console.warn('CWL director transform degraded',report);return html}
-    html=html.slice(0,start)+replacement+'\n'+html.slice(end);
-    report.patched=1;report.ok=true;globalThis.__CWL_DIRECTOR_TRANSFORM_LAST=report;console.info('CWL director transform applied',report);return html;
+    html=html.slice(0,start)+replacement+'\n'+html.slice(end);report.patched=1;
+
+    const quietPairs=[
+      ["txt(W/2,196,directorEvent.name,'#ffd981',true);",''],
+      ["txt(W/2,175,t.name,'#9eefff',true);",''],
+      ["txt(pl.x+17,pl.y-52,`PACK ${stageClears}/${stageGoal()} CLEAR`,'#c7f6ff',true);","txt(pl.x+17,pl.y-52,`PACK ${stageClears}/${stageGoal()} CLEAR`,'#c7f6ff',false);"]
+    ];
+    for(const [needle,repl] of quietPairs){if(html.includes(needle)){html=html.replace(needle,repl);report.quieted++}else report.warnings.push('visual announcement signature changed')}
+    report.ok=report.patched===1&&report.quieted===3;
+    globalThis.__CWL_DIRECTOR_TRANSFORM_LAST=report;
+    if(report.ok)console.info('CWL director transform applied',report);else console.warn('CWL director transform degraded',report);
+    return html;
   }
   globalThis.CWL_DIRECTOR_TRANSFORM_V1={build:BUILD,transform};
 })();
