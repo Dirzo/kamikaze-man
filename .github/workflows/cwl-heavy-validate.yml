@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
           set +e
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=18000 --run-all-compositor-stages-before-draw --dump-dom 'http://127.0.0.1:8788/?cwlSmoke=1' >/tmp/cwl-dom.html 2>/tmp/cwl-chrome.log
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=5500 --run-all-compositor-stages-before-draw --dump-dom 'http://127.0.0.1:8788/?cwlSmoke=1' >/tmp/cwl-dom.html 2>/tmp/cwl-chrome.log
           CHROME_RC=$?
           set -e
           if [ $CHROME_RC -ne 0 ]; then
