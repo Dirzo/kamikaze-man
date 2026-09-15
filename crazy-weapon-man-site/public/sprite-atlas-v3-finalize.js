@@ -1,5 +1,5 @@
 (()=>{
-  const BUILD='v3-small-chunks-20260914a';
+  const BUILD='v3-small-chunks-20260914b';
   if(globalThis.__CWM_V3_FINALIZER)return;
   globalThis.__CWM_V3_FINALIZER=true;
 
@@ -36,7 +36,14 @@
   globalThis.__CWM_V2_SPRITE_RENDERER=false;
   const s=document.createElement('script');
   s.src='/sprite-renderer-v2.js?v=cwm-v3-sprites-20260914a';
-  s.onload=()=>console.info('CWM v3 verified illustrated atlas transport loaded',BUILD,pr.length,er.length);
+  s.onload=()=>{
+    console.info('CWM v3 verified illustrated atlas transport loaded',BUILD,pr.length,er.length);
+    const layers=document.createElement('script');
+    layers.src='/sewer-layers-v3.js?v=cwm-sewer-layers-20260914a';
+    layers.onload=()=>console.info('CWM v3 sewer depth layers loaded');
+    layers.onerror=()=>console.warn('CWM v3 sewer depth layers HTTP failure');
+    document.body.appendChild(layers);
+  };
   s.onerror=()=>{globalThis.CWM_V2_SPRITES={...(globalThis.CWM_V2_SPRITES||{}),loading:false,playerError:'v3 sprite renderer HTTP failure'}};
   document.body.appendChild(s);
 })();
