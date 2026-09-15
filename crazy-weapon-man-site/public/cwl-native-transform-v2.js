@@ -1,6 +1,6 @@
 (()=>{
   if(globalThis.CWL_NATIVE_TRANSFORM_V2)return;
-  const BUILD='cwl-native-heavy-transform-v3-20260915b';
+  const BUILD='cwl-native-heavy-transform-v4-20260915a';
   const BASES=[
     ['industrial_maul','Industrial Maul','heavy_melee'],
     ['siege_hammer','Siege Hammer','heavy_melee'],
@@ -28,7 +28,8 @@ function __cwlNativeHeavy(w){
   w.name=__cwlHeavyName(w,b);
   if(originalType!=='hammer'){w.mod='none';if('cap' in w)w.cap=null;if('capName' in w)w.capName='';if('capText' in w)w.capText=''}
   w.__cwlNativeHeavyBuild=__CWL_NATIVE_HEAVY_BUILD;
-  try{if(typeof proceduralText==='function')w.text=proceduralText(w)}catch(_){ }
+  try{if(typeof detectSynergy==='function')w.synergy=detectSynergy(w)}catch(_){ }
+  try{if(typeof proceduralText==='function')w.text=proceduralText(w)+(w.synergy?` SYNERGY: ${w.synergy.name} — ${w.synergy.desc}`:'')}catch(_){ }
   return w
 }
 function __cwlTrainingHeavy(){return __cwlNativeHeavy({id:0,type:'hammer',name:'Training Industrial Maul',mod:'none',text:'A deliberate two-handed training maul.',rar:'Training',col:'#dfe5ed',p:.8,lv:10,m:1,crit:0,material:null,traits:[],intensity:'',cap:null,capName:'',capText:'',killStacks:0,heavyBaseId:'industrial_maul'})}
@@ -55,11 +56,8 @@ globalThis.CWL_NATIVE_HEAVY_API={build:__CWL_NATIVE_HEAVY_BUILD,bases:__CWL_NATI
 
     function patchRegex(id,re,replacer,{critical=false,all=false}={}){
       let count=0;
-      if(all){
-        html=html.replace(re,(...args)=>{count++;return typeof replacer==='function'?replacer(...args):replacer});
-      }else{
-        const m=html.match(re);count=m?1:0;if(count)html=html.replace(re,replacer);
-      }
+      if(all){html=html.replace(re,(...args)=>{count++;return typeof replacer==='function'?replacer(...args):replacer})}
+      else{const m=html.match(re);count=m?1:0;if(count)html=html.replace(re,replacer)}
       report.patches[id]=count;
       if(!count){report.warnings.push('missing '+id);if(critical)report.critical=false}
       return count;
@@ -67,12 +65,13 @@ globalThis.CWL_NATIVE_HEAVY_API={build:__CWL_NATIVE_HEAVY_BUILD,bases:__CWL_NATI
 
     report.critical=true;
     patchRegex('helper',/function\s+makeW\s*\(\s*l\s*,\s*elite\s*=\s*false\s*\)\s*\{/,m=>nativeHelper+m,{critical:true});
-    patchRegex('type-roll',/type\s*=\s*pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\)/,"type='hammer'",{critical:true});
-    patchRegex('makeW-return',/(w\.text\s*=\s*proceduralText\(w\)\s*;\s*)return\s+w\s*}/,(m,p1)=>p1+'return __cwlNativeHeavy(w)}',{critical:true});
+    patchRegex('type-roll',/type\s*=\s*(?:chooseWeaponType\s*\(\s*\)|pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\))/,"type='hammer'",{critical:true});
+    patchRegex('makeW-return',/(w\.text\s*=\s*proceduralText\(w\)[^;]*;\s*)return\s+w\s*}/,(m,p1)=>p1+'return __cwlNativeHeavy(w)}',{critical:true});
     patchRegex('equip-guard',/function\s+equip\s*\(\s*w\s*\)\s*\{/,'function equip(w){w=__cwlNativeHeavy(w);',{critical:true});
+    patchRegex('spawnDrop-guard',/function\s+spawnDrop\s*\(\s*x\s*,\s*y\s*,\s*item\s*,\s*cache\s*=\s*false\s*\)\s*\{/,'function spawnDrop(x,y,item,cache=false){if(item&&item.kind!==\'armor\')item=__cwlNativeHeavy(item);',{critical:true});
     patchRegex('training-fallback',/type\s*:\s*['"]sword['"]\s*,\s*name\s*:\s*['"]Training Sword['"]/g,"type:'hammer',name:'Training Industrial Maul',heavyBaseId:'industrial_maul',heavyLabel:'Industrial Maul',heavySubclass:'heavy_melee'",{all:true});
 
-    if(!report.patches.helper||!report.patches['type-roll']||!report.patches['makeW-return']||!report.patches['equip-guard'])report.critical=false;
+    for(const id of ['helper','type-roll','makeW-return','equip-guard','spawnDrop-guard'])if(!report.patches[id])report.critical=false;
     report.ok=report.critical;
     globalThis.__CWL_NATIVE_TRANSFORM_LAST=report;
     if(report.ok)console.info('CWL native Heavy transform applied',report);
