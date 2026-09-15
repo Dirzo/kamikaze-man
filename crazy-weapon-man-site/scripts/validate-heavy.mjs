@@ -9,7 +9,7 @@ const root=path.resolve(here,'..');
 const publicDir=path.join(root,'public');
 function fail(message,extra){console.error('\nCWL VALIDATION FAILED:',message);if(extra)console.error(extra);process.exit(1)}
 function contextAround(text,needle,before=300,after=2400){const i=text.indexOf(needle);if(i<0)return `NOT FOUND: ${needle}`;return text.slice(Math.max(0,i-before),Math.min(text.length,i+after))}
-function functionSlice(text,name){const start=text.indexOf(`function ${name}`);if(start<0)return '';const next=text.indexOf('\nfunction ',start+(`function ${name}`).length);return text.slice(start,next<0?text.length:next)}
+function functionSlice(text,name){const needle=`function ${name}(`,start=text.indexOf(needle);if(start<0)return '';const next=text.indexOf('\nfunction ',start+needle.length);return text.slice(start,next<0?text.length:next)}
 
 const sandbox={__CWM_PACKED:[]};
 for(let i=0;i<9;i++){const file=path.join(publicDir,'game',`chunk-${String(i).padStart(2,'0')}.js`);const code=fs.readFileSync(file,'utf8');try{vm.runInNewContext(code,sandbox,{filename:file,timeout:1000})}catch(e){fail(`could not execute ${path.basename(file)}`,e)}}
