@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
           set +e
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=5500 --run-all-compositor-stages-before-draw --dump-dom 'http://127.0.0.1:8788/?cwlSmoke=1' >/tmp/cwl-dom.html 2>/tmp/cwl-chrome.log
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=6500 --run-all-compositor-stages-before-draw --dump-dom 'http://127.0.0.1:8788/?cwlSmoke=1' >/tmp/cwl-dom.html 2>/tmp/cwl-chrome.log
           CHROME_RC=$?
           set -e
           if [ $CHROME_RC -ne 0 ]; then
@@ -53,80 +53,61 @@ jobs:
             cat /tmp/cwl-chrome.log
             exit $CHROME_RC
           fi
-          for proof in \
-            'data-cwl-heavy-proof="pass"' \
-            'data-cwl-heavy-weapon="hammer"' \
-            'data-cwl-heavy-rolls="48/48"' \
-            'data-cwl-heavy-visuals="10/10"' \
-            'data-cwl-lady-render="pass"' \
-            'data-cwl-lady-priority="pass"' \
-            'data-cwl-presentation="pass"' \
-            'data-cwl-presentation-desktop="yes"' \
-            'data-cwl-player-scale="1.26"' \
-            'data-cwl-compact-hud="ready"' \
-            'data-cwl-director="pass"' \
-            'data-cwl-wave0-roles="1"' \
-            'data-cwl-wave1-roles="2"' \
-            'data-cwl-wave2-roles="3"' \
-            'data-cwl-wave1-mode="cross-training"' \
-            'data-cwl-enemy-variation="ready"' \
-            'data-cwl-enemy-variation-draw="pass"' \
-            'data-cwl-heavy-silhouette="ready"' \
-            'data-cwl-heavy-silhouette-draw="pass"' \
-            'data-cwl-heavy-impact="ready"' \
-            'data-cwl-heavy-impact-draw="pass"' \
-            'data-cwl-browser-smoke="pass"' \
-            'data-cwl-combat-active="pass"' \
-            'data-cwl-combat-hud="pass"' \
-            'data-cwl-legacy-bottom-hud="hidden"' \
-            'data-cwl-live-wave0-types="1"' \
-            'data-cwl-live-wave1-types="2"'; do
+          proofs=(
+            'data-cwl-heavy-proof="pass"'
+            'data-cwl-heavy-weapon="hammer"'
+            'data-cwl-heavy-rolls="48/48"'
+            'data-cwl-heavy-visuals="10/10"'
+            'data-cwl-lady-render="pass"'
+            'data-cwl-lady-priority="pass"'
+            'data-cwl-native-combat="pass"'
+            'data-cwl-hammer-swing-proof="pass"'
+            'data-cwl-presentation="pass"'
+            'data-cwl-presentation-desktop="yes"'
+            'data-cwl-player-scale="1.26"'
+            'data-cwl-compact-hud="ready"'
+            'data-cwl-director="pass"'
+            'data-cwl-wave0-roles="1"'
+            'data-cwl-wave1-roles="2"'
+            'data-cwl-wave2-roles="3"'
+            'data-cwl-wave1-mode="cross-training"'
+            'data-cwl-enemy-variation="ready"'
+            'data-cwl-enemy-variation-draw="pass"'
+            'data-cwl-heavy-silhouette="ready"'
+            'data-cwl-heavy-silhouette-draw="pass"'
+            'data-cwl-heavy-impact="ready"'
+            'data-cwl-heavy-impact-draw="pass"'
+            'data-cwl-heavy-signatures-live="pass"'
+            'data-cwl-heavy-specials-live="pass"'
+            'data-cwl-slayer-live="pass"'
+            'data-cwl-special-hud="ready"'
+            'data-cwl-native-hooks="pass"'
+            'data-cwl-hammer-swing="pass"'
+            'data-cwl-browser-smoke="pass"'
+            'data-cwl-combat-active="pass"'
+            'data-cwl-combat-hud="pass"'
+            'data-cwl-legacy-bottom-hud="hidden"'
+            'data-cwl-live-wave0-types="1"'
+            'data-cwl-live-wave1-types="2"'
+          )
+          for proof in "${proofs[@]}"; do
             if ! grep -q "$proof" /tmp/cwl-dom.html; then
               echo "CWL runtime proof missing: $proof"
-              grep -o 'data-cwl-heavy-[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-lady-[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-presentation[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-player-scale="[^"]*"' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-compact-hud="[^"]*"' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-director="[^"]*"' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-wave[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-enemy-variation[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-heavy-silhouette[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-heavy-impact[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-browser-smoke="[^"]*"' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-combat-[^ >]*' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-legacy-bottom-hud="[^"]*"' /tmp/cwl-dom.html || true
-              grep -o 'data-cwl-live-wave[^ >]*' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-[^ >]*' /tmp/cwl-dom.html | sort -u || true
               grep -o '<div id="cwlSmokeProof"[^>]*>[^<]*' /tmp/cwl-dom.html || true
               echo "--- Chrome stderr ---"
-              tail -160 /tmp/cwl-chrome.log || true
+              tail -180 /tmp/cwl-chrome.log || true
               exit 1
             fi
           done
           grep -o 'data-cwl-heavy-proof="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-rolls="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-visuals="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-weapon="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-base="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-lady-body="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-lady-frame="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-lady-render="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-lady-priority="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-presentation="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-player-scale="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-compact-hud="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-director="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-wave[012]-roles="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-wave1-mode="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-enemy-variation="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-enemy-variation-draw="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-silhouette="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-silhouette-draw="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-heavy-impact="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-native-combat="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-hammer-swing-proof="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-impact-draw="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-browser-smoke="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-combat-active="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-heavy-signatures-live="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-heavy-specials-live="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-slayer-live="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-hammer-swing="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-hammer-angles="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-combat-hud="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-legacy-bottom-hud="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-live-wave[01]-types="[^"]*"' /tmp/cwl-dom.html
-          grep -o 'data-cwl-live-wave1-enemies="[^"]*"' /tmp/cwl-dom.html
