@@ -1,5 +1,5 @@
 {
-  "version": "cwl-runtime-v1-20260915k",
+  "version": "cwl-runtime-v1-20260915l",
   "modules": [
     {
       "id": "heavy-body-priority",
@@ -24,6 +24,11 @@
     {
       "id": "special-hud",
       "src": "/cwl-special-hud-v1.js?v=cwl-special-hud-20260915a",
+      "required": true
+    },
+    {
+      "id": "heavy-silhouette",
+      "src": "/cwl-heavy-silhouette-v1.js?v=cwl-heavy-silhouette-20260915a",
       "required": true
     },
     {
