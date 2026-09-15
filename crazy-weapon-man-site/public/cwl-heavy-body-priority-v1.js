@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_HEAVY_BODY_PRIORITY_V1)return;
   globalThis.__CWL_HEAVY_BODY_PRIORITY_V1=true;
-  const BUILD='cwl-heavy-body-priority-v1-20260915c',BODY_BUILD='cwl-heavy-body-v1-20260915d';
+  const BUILD='cwl-heavy-body-priority-v1-20260915d',BODY_BUILD='cwl-heavy-body-v1-20260915e';
   const state={build:BUILD,bodyBuild:'',applied:false,applyCount:0,refreshCount:0,refreshing:false,waitingFor:'body+integration',lastHook:'',startedAt:Date.now(),appliedAt:0};
   let stableTicks=0,ticks=0,refreshStarted=false;
   function hookName(fn){return fn===globalThis.CWL_HEAVY_BODY?.drawPlayer?'cwl-heavy-body':fn?.name||'anonymous'}
@@ -9,7 +9,7 @@
     if(refreshStarted)return;refreshStarted=true;state.refreshing=true;state.refreshCount++;
     try{globalThis.__CWL_HEAVY_BODY_V1=false}catch(_){ }
     const s=document.createElement('script');
-    s.src='/cwl-heavy-body-v1.js?v=cwl-heavy-20260915d';s.async=false;
+    s.src='/cwl-heavy-body-v1.js?v=cwl-heavy-20260915e';s.async=false;
     s.onload=()=>{state.refreshing=false;state.bodyBuild=globalThis.CWL_HEAVY_BODY?.build||'';console.info('CWL Heavy body refreshed for priority handoff',state.bodyBuild)};
     s.onerror=()=>{state.refreshing=false;state.waitingFor='heavy body refresh failed';console.warn('CWL Heavy body refresh HTTP failure')};
     document.body.appendChild(s);
