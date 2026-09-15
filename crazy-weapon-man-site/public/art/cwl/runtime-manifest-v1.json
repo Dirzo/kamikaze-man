@@ -1,9 +1,14 @@
 {
-  "version": "cwl-runtime-v1-20260915a",
+  "version": "cwl-runtime-v1-20260915b",
   "modules": [
     {
       "id": "slayer-loop",
-      "src": "/cwl-slayer-loop-v1.js?v=cwl-slayer-20260915a",
+      "src": "/cwl-slayer-loop-v1.js?v=cwl-slayer-20260915b",
+      "required": true
+    },
+    {
+      "id": "heavy-signatures",
+      "src": "/cwl-heavy-signatures-v1.js?v=cwl-signatures-20260915a",
       "required": true
     }
   ]
