@@ -1,6 +1,6 @@
 import app from './index.js';
 
-const BUILD = 'cwl-heavy-live-20260915t';
+const BUILD = 'cwl-heavy-live-20260915u';
 
 function withHeaders(headers = new Headers()) {
   const h = new Headers(headers);
@@ -19,7 +19,8 @@ function buildInfo() {
     game_version: 'v1.4-cwl-heavy',
     target: 'desktop-only',
     ui: 'unified-desktop-shell',
-    sprites: 'procedural-lady-v2-enemies'
+    sprites: 'procedural-lady-v2-enemies',
+    parking: 'concept-playable'
   }), {
     headers: withHeaders(new Headers({ 'content-type': 'application/json; charset=utf-8' }))
   });
