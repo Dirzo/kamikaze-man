@@ -41,7 +41,7 @@ jobs:
             exit 1
           fi
           set +e
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=15000 --run-all-compositor-stages-before-draw --dump-dom http://127.0.0.1:8788/ >/tmp/cwl-dom.html 2>/tmp/cwl-chrome.log
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --autoplay-policy=no-user-gesture-required --virtual-time-budget=18000 --run-all-compositor-stages-before-draw --dump-dom 'http://127.0.0.1:8788/?cwlSmoke=1' >/tmp/cwl-dom.html 2>/tmp/cwl-chrome.log
           CHROME_RC=$?
           set -e
           if [ $CHROME_RC -ne 0 ]; then
@@ -66,7 +66,13 @@ jobs:
             'data-cwl-wave2-roles="3"' \
             'data-cwl-wave1-mode="cross-training"' \
             'data-cwl-enemy-variation="ready"' \
-            'data-cwl-heavy-silhouette="ready"'; do
+            'data-cwl-heavy-silhouette="ready"' \
+            'data-cwl-browser-smoke="pass"' \
+            'data-cwl-combat-active="pass"' \
+            'data-cwl-combat-hud="pass"' \
+            'data-cwl-legacy-bottom-hud="hidden"' \
+            'data-cwl-live-wave0-types="1"' \
+            'data-cwl-live-wave1-types="2"'; do
             if ! grep -q "$proof" /tmp/cwl-dom.html; then
               echo "CWL runtime proof missing: $proof"
               grep -o 'data-cwl-heavy-[^ >]*' /tmp/cwl-dom.html || true
@@ -78,9 +84,13 @@ jobs:
               grep -o 'data-cwl-wave[^ >]*' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-enemy-variation="[^"]*"' /tmp/cwl-dom.html || true
               grep -o 'data-cwl-heavy-silhouette="[^"]*"' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-browser-smoke="[^"]*"' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-combat-[^ >]*' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-legacy-bottom-hud="[^"]*"' /tmp/cwl-dom.html || true
+              grep -o 'data-cwl-live-wave[^ >]*' /tmp/cwl-dom.html || true
               grep -o '<div id="cwlSmokeProof"[^>]*>[^<]*' /tmp/cwl-dom.html || true
               echo "--- Chrome stderr ---"
-              tail -120 /tmp/cwl-chrome.log || true
+              tail -160 /tmp/cwl-chrome.log || true
               exit 1
             fi
           done
@@ -101,3 +111,9 @@ jobs:
           grep -o 'data-cwl-wave1-mode="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-enemy-variation="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-heavy-silhouette="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-browser-smoke="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-combat-active="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-combat-hud="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-legacy-bottom-hud="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-live-wave[01]-types="[^"]*"' /tmp/cwl-dom.html
+          grep -o 'data-cwl-live-wave1-enemies="[^"]*"' /tmp/cwl-dom.html
