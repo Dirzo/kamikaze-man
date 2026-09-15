@@ -9,10 +9,14 @@ on:
       - '.github/workflows/cwl-heavy-validate.yml'
   workflow_dispatch:
 
+concurrency:
+  group: cwl-heavy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-heavy-bundle:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 3
     steps:
       - name: Checkout
         uses: actions/checkout@v4
