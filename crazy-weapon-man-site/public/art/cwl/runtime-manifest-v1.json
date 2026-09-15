@@ -1,0 +1,10 @@
+{
+  "version": "cwl-runtime-v1-20260915a",
+  "modules": [
+    {
+      "id": "slayer-loop",
+      "src": "/cwl-slayer-loop-v1.js?v=cwl-slayer-20260915a",
+      "required": true
+    }
+  ]
+}
