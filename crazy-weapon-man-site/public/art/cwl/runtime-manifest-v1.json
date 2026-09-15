@@ -1,9 +1,9 @@
 {
-  "version": "cwl-runtime-v1-20260915f",
+  "version": "cwl-runtime-v1-20260915g",
   "modules": [
     {
       "id": "heavy-body-priority",
-      "src": "/cwl-heavy-body-priority-v1.js?v=cwl-body-priority-20260915b",
+      "src": "/cwl-heavy-body-priority-v1.js?v=cwl-body-priority-20260915c",
       "required": true
     },
     {
