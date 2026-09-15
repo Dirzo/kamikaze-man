@@ -1,7 +1,7 @@
 (()=>{
   if(globalThis.__CWL_HEAVY_SELFCHECK_V2)return;
   globalThis.__CWL_HEAVY_SELFCHECK_V2=true;
-  const BUILD='cwl-heavy-selfcheck-v2-20260915a';
+  const BUILD='cwl-heavy-selfcheck-v2-20260915b';
   const state={build:BUILD,report:null,runs:0,lastAt:0};
   function read(){
     const api=globalThis.CWL_NATIVE_HEAVY_API;
@@ -36,8 +36,26 @@
     const atlas=r.atlas?`${r.atlas.entries}/${r.atlas.capacity}`:'—';
     return `NATIVE HEAVY: ${verdict} • ${rolls} • ${visuals} • ${r.weapon?.type?.toUpperCase()||'NO WEAPON'} • ${base} • ${source} • FRAME ${frame} • ATLAS ${atlas}`;
   }
+  function expose(r){
+    const root=document.documentElement;
+    if(root){
+      root.dataset.cwlHeavyProof=r.ok?'pass':'fail';
+      root.dataset.cwlHeavyWeapon=r.weapon?.type||'none';
+      root.dataset.cwlHeavyBase=r.weapon?.base||'none';
+      root.dataset.cwlHeavyVisuals=`${r.visualPassed}/${r.visuals}`;
+      root.dataset.cwlHeavyRolls=`${r.passed}/${r.rolls}`;
+      root.dataset.cwlLadyBody=r.body?.source||'none';
+    }
+    if(document.body){
+      let el=document.getElementById('cwlSmokeProof');
+      if(!el){el=document.createElement('div');el.id='cwlSmokeProof';el.hidden=true;document.body.appendChild(el)}
+      el.dataset.status=r.ok?'pass':'fail';
+      el.textContent=statusText(r);
+    }
+  }
   function paint(){
-    const r=read(),panel=document.getElementById('cwmTesterPanel');
+    const r=read();expose(r);
+    const panel=document.getElementById('cwmTesterPanel');
     if(panel){
       let el=document.getElementById('cwlNativeHeavyProof');
       if(!el){el=document.createElement('div');el.id='cwlNativeHeavyProof';el.className='tStatus';document.getElementById('cwmTesterHeavy')?.after(el)}
