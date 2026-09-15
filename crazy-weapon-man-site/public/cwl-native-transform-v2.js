@@ -1,6 +1,6 @@
 (()=>{
   if(globalThis.CWL_NATIVE_TRANSFORM_V2)return;
-  const BUILD='cwl-native-heavy-transform-v4-20260915b';
+  const BUILD='cwl-native-heavy-transform-v5-20260915a';
   const BASES=[
     ['industrial_maul','Industrial Maul','heavy_melee'],
     ['siege_hammer','Siege Hammer','heavy_melee'],
@@ -54,25 +54,42 @@ globalThis.CWL_NATIVE_HEAVY_API={build:__CWL_NATIVE_HEAVY_BUILD,bases:__CWL_NATI
     const report={build:BUILD,ok:false,critical:false,patches:{},warnings:[],at:Date.now()};
     if(!html){report.warnings.push('empty game html');globalThis.__CWL_NATIVE_TRANSFORM_LAST=report;return html}
 
-    function patchRegex(id,re,replacer,{critical=false,all=false}={}){
+    function patchRegex(id,re,replacer,{all=false}={}){
       let count=0;
       if(all){html=html.replace(re,(...args)=>{count++;return typeof replacer==='function'?replacer(...args):replacer})}
       else{const m=html.match(re);count=m?1:0;if(count)html=html.replace(re,replacer)}
       report.patches[id]=count;
-      if(!count){report.warnings.push('missing '+id);if(critical)report.critical=false}
+      if(!count)report.warnings.push('missing '+id);
       return count;
     }
 
-    report.critical=true;
-    patchRegex('helper',/function\s+makeW\s*\(\s*l\s*,\s*elite\s*=\s*false\s*\)\s*\{/,m=>nativeHelper+m,{critical:true});
-    patchRegex('type-roll',/type\s*=\s*(?:chooseWeaponType\s*\(\s*\)|pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\))/,"type='hammer'",{critical:true});
-    patchRegex('makeW-return',/(w\.text\s*=\s*proceduralText\(w\)[^;]*;\s*)return\s+w\s*}/,(m,p1)=>p1+'return __cwlNativeHeavy(w)}',{critical:true});
-    patchRegex('equip-guard',/function\s+equip\s*\(\s*w\s*\)\s*\{/,'function equip(w){w=__cwlNativeHeavy(w);',{critical:true});
-    patchRegex('spawnDrop-guard',/function\s+spawnDrop\s*\(\s*x\s*,\s*y\s*,\s*item\s*,\s*cache\s*=\s*false\s*\)\s*\{/,'function spawnDrop(x,y,item,cache=false){if(item&&item.kind!==\'armor\')item=__cwlNativeHeavy(item);',{critical:true});
+    // Patch the actual makeW function in isolation so similarly-shaped code elsewhere cannot produce a false success.
+    const makeStart=html.indexOf('function makeW(');
+    const makeEnd=makeStart>=0?html.indexOf('\nfunction ',makeStart+14):-1;
+    if(makeStart>=0){
+      const end=makeEnd>=0?makeEnd:html.length;
+      let seg=html.slice(makeStart,end);
+      const beforeType=seg;
+      seg=seg.replace(/type\s*=\s*(?:chooseWeaponType\s*\(\s*\)|pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\))/,"type='hammer'");
+      report.patches['type-roll']=seg!==beforeType?1:0;
+      const beforeReturn=seg;
+      seg=seg.replace(/return\s+w\s*}\s*$/,'return __cwlNativeHeavy(w)}');
+      report.patches['makeW-return']=seg!==beforeReturn?1:0;
+      html=html.slice(0,makeStart)+seg+html.slice(end);
+    }else{
+      report.patches['type-roll']=0;report.patches['makeW-return']=0;report.warnings.push('missing makeW');
+    }
+
+    // Inject helpers only after makeW itself has been patched.
+    patchRegex('helper',/function\s+makeW\s*\(\s*l\s*,\s*elite\s*=\s*false\s*\)\s*\{/,m=>nativeHelper+m);
+    patchRegex('equip-guard',/function\s+equip\s*\(\s*w\s*\)\s*\{/,'function equip(w){w=__cwlNativeHeavy(w);');
+    patchRegex('spawnDrop-guard',/function\s+spawnDrop\s*\(\s*x\s*,\s*y\s*,\s*item\s*,\s*cache\s*=\s*false\s*\)\s*\{/,'function spawnDrop(x,y,item,cache=false){if(item&&item.kind!==\'armor\')item=__cwlNativeHeavy(item);');
     patchRegex('training-fallback',/type\s*:\s*['"]sword['"]\s*,\s*name\s*:\s*['"]Training Sword['"]/g,"type:'hammer',name:'Training Industrial Maul',heavyBaseId:'industrial_maul',heavyLabel:'Industrial Maul',heavySubclass:'heavy_melee'",{all:true});
 
-    for(const id of ['helper','type-roll','makeW-return','equip-guard','spawnDrop-guard'])if(!report.patches[id])report.critical=false;
+    const critical=['helper','type-roll','makeW-return','equip-guard','spawnDrop-guard'];
+    report.critical=critical.every(id=>report.patches[id]===1);
     report.ok=report.critical;
+    for(const id of critical)if(!report.patches[id]&&!report.warnings.includes('missing '+id))report.warnings.push('missing '+id);
     globalThis.__CWL_NATIVE_TRANSFORM_LAST=report;
     if(report.ok)console.info('CWL native Heavy transform applied',report);
     else console.warn('CWL native Heavy transform degraded; base game will still boot',report);
