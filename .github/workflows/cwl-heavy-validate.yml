@@ -56,6 +56,9 @@ jobs:
           proofs=(
             'data-cwl-desktop-only="pass"'
             'data-cwl-boot="ready"'
+            'data-cwl-title-shell="ready"'
+            'data-cwl-utility-shell="ready"'
+            'data-cwl-title-lady="rendered"'
             'data-cwl-heavy-proof="pass"'
             'data-cwl-heavy-weapon="hammer"'
             'data-cwl-heavy-rolls="48/48"'
@@ -106,6 +109,7 @@ jobs:
               exit 1
             fi
           done
+          grep -o 'data-cwl-title-shell="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-unified-interface="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-boot-clean="[^"]*"' /tmp/cwl-dom.html
           grep -o 'data-cwl-legacy-sprites="[^"]*"' /tmp/cwl-dom.html
