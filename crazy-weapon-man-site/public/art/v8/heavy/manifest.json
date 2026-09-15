@@ -1,0 +1,92 @@
+{
+  "version": "v8-heavy-family-1",
+  "family": "heavy",
+  "heroAtlas": "/art/v8/heavy/hero-heavy-atlas-v8.webp",
+  "heroMeta": "/art/v8/heavy/hero-heavy-atlas-v8.json",
+  "sourceFrameBox": [320, 320],
+  "runtimeHeroHeight": [84, 102],
+  "clips": {
+    "idle_heavy": 6,
+    "run_heavy": 8,
+    "jump_heavy": 3,
+    "fall_heavy": 2,
+    "land_heavy": 3,
+    "attack_heavy_a": 7,
+    "attack_heavy_b": 7,
+    "attack_heavy_air": 6,
+    "skill_heavy": 8,
+    "hit_heavy": 3,
+    "death_heavy": 7,
+    "victory_heavy": 6
+  },
+  "requiredAnchors": [
+    "feet",
+    "center",
+    "head",
+    "hand_primary",
+    "hand_support",
+    "weapon_socket",
+    "fx_origin",
+    "muzzle",
+    "impact_origin"
+  ],
+  "baseSilhouettes": [
+    {"id":"industrial_maul","role":"melee_heavy"},
+    {"id":"pile_driver","role":"melee_heavy"},
+    {"id":"junk_cannon","role":"artillery"},
+    {"id":"scrap_mortar","role":"artillery"},
+    {"id":"rotary_heavy_gun","role":"artillery"},
+    {"id":"welded_cleaver","role":"melee_heavy"},
+    {"id":"landfill_lobber","role":"launcher"},
+    {"id":"pressure_propeller","role":"industrial"},
+    {"id":"siege_toaster","role":"appliance"},
+    {"id":"trash_compactor","role":"melee_heavy"}
+  ],
+  "modifierOverlays": [
+    "duct_tape",
+    "microwave_coil",
+    "receipt_tags",
+    "paystub_tags",
+    "hazard_tape",
+    "night_glow",
+    "office_hardware",
+    "eye",
+    "teeth",
+    "extra_barrels",
+    "organic_growth",
+    "ghost_flame",
+    "floating_segments",
+    "wide_chassis",
+    "compressed_chassis",
+    "extended_barrel"
+  ],
+  "elements": [
+    "fire",
+    "poison",
+    "lightning",
+    "water",
+    "earth",
+    "backfire",
+    "toxic-leak",
+    "backfeed",
+    "undertow",
+    "faultline"
+  ],
+  "runtime": {
+    "basicMeleeFx": "small_edge_trail",
+    "defaultGreenStrike": false,
+    "shadowLayer": "separate",
+    "bounceLight": "sewer_toxic",
+    "muzzleLight": true,
+    "genericClipMask": false,
+    "hitboxIndependent": true
+  },
+  "acceptance": {
+    "noRectangularCrop": true,
+    "noWeaponTipClipping": true,
+    "twoHandedBrace": true,
+    "mobileReadable": true,
+    "allElementsSupported": true,
+    "rarityBeyondGlow": true
+  }
+}
