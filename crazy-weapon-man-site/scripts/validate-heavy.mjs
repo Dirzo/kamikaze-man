@@ -45,6 +45,7 @@ try{output=transform(html)}catch(e){fail('native Heavy transform threw',e)}
 const report=globalThis.__CWL_NATIVE_TRANSFORM_LAST;
 if(!report?.ok){
   console.error('\n--- ACTUAL PRODUCTION makeW CONTEXT ---\n'+contextAround(html,'function makeW'));
+  console.error('\n--- ACTUAL PRODUCTION spawnDrop CONTEXT ---\n'+contextAround(html,'function spawnDrop'));
   console.error('\n--- ACTUAL PRODUCTION equip CONTEXT ---\n'+contextAround(html,'function equip'));
   fail('native Heavy transform reported degraded state',report);
 }
@@ -54,14 +55,18 @@ const required={
   typeRoll:report.patches?.['type-roll'],
   makeWReturn:report.patches?.['makeW-return'],
   equipGuard:report.patches?.['equip-guard'],
+  spawnDropGuard:report.patches?.['spawnDrop-guard'],
   trainingFallback:report.patches?.['training-fallback']
 };
 for(const [key,value] of Object.entries(required))if(!value)fail(`required patch missing: ${key}`,report);
 
-if(/type\s*=\s*pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\)/.test(output))fail('multi-family weapon type roll still exists after transform');
-if(!output.includes("type='hammer'"))fail('forced hammer type is missing');
-if(!output.includes('return __cwlNativeHeavy(w)'))fail('makeW does not return through Heavy normalizer');
+const makeWContext=contextAround(output,'function makeW',0,2200);
+if(/type\s*=\s*chooseWeaponType\s*\(\s*\)/.test(makeWContext))fail('makeW still calls chooseWeaponType after transform');
+if(/type\s*=\s*pick\(\s*\[[^\]]*['"]hammer['"][^\]]*\]\s*\)/.test(makeWContext))fail('multi-family weapon type roll still exists after transform');
+if(!makeWContext.includes("type='hammer'"))fail('forced hammer type is missing from makeW');
+if(!makeWContext.includes('return __cwlNativeHeavy(w)'))fail('makeW does not return through Heavy normalizer');
 if(!/function\s+equip\s*\(\s*w\s*\)\s*\{\s*w\s*=\s*__cwlNativeHeavy\(w\)/.test(output))fail('equip Heavy guard is missing');
+if(!/function\s+spawnDrop\s*\([^)]*\)\s*\{\s*if\(item&&item\.kind!==['"]armor['"]\)item=__cwlNativeHeavy\(item\)/.test(output))fail('spawnDrop Heavy guard is missing');
 if(!output.includes("heavyBaseId:'industrial_maul'"))fail('training Heavy fallback is missing');
 if(output.includes("type:'sword',name:'Training Sword'"))fail('legacy Training Sword fallback survived');
 
