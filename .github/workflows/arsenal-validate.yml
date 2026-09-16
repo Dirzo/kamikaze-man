@@ -26,6 +26,9 @@ jobs:
           node --check crazy-weapon-man-site/public/arsenal-expansion-v14.js
           node --check crazy-weapon-man-site/public/arsenal-visual-v14.js
           node --check crazy-weapon-man-site/public/weapon-specials-v15.js
+          node --check crazy-weapon-man-site/public/horde-combat-v16.js
+          node --check crazy-weapon-man-site/public/elemental-overdrive-v16.js
+          node --check crazy-weapon-man-site/public/horde-selfcheck-v16.js
           node --check crazy-weapon-man-site/public/arsenal-selfcheck-v14.js
           node --check crazy-weapon-man-site/public/arsenal-presentation-v14.js
           node --check crazy-weapon-man-site/public/arsenal-hud-v16.js
@@ -33,7 +36,7 @@ jobs:
           node --check crazy-weapon-man-site/public/patch-version-v14.js
           node --check crazy-weapon-man-site/public/leaderboard-selfcheck-v14.js
 
-      - name: Headless browser mixed-arsenal and controls proof
+      - name: Headless browser mixed-arsenal controls and horde proof
         shell: bash
         run: |
           set -euo pipefail
@@ -46,7 +49,7 @@ jobs:
           done
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
           test -n "$CHROME"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=8000 --dump-dom 'http://127.0.0.1:8788/?arsenalSmoke=1&rolls=2200' >/tmp/arsenal-dom.html 2>/tmp/chrome.log
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=9000 --dump-dom 'http://127.0.0.1:8788/?arsenalSmoke=1&hordeSmoke=1&rolls=2200' >/tmp/arsenal-dom.html 2>/tmp/chrome.log
           for proof in \
             'data-cwm-arsenal-proof="pass"' \
             'data-cwm-arsenal-types="9/9"' \
@@ -58,31 +61,40 @@ jobs:
             'data-cwm-special-key="space"' \
             'data-cwm-mana-mechanic="off"' \
             'data-cwm-a-combat-key="retired"' \
-            'data-cwm-space-special="pass"'; do
+            'data-cwm-space-special="pass"' \
+            'data-cwm-horde-proof="pass"' \
+            'data-cwm-element-reaction-proof="pass"' \
+            'data-cwm-element-families="10"' \
+            'data-cwm-horde-cap="28"' \
+            'data-cwm-projectile-cap="72"'; do
             if ! grep -q "$proof" /tmp/arsenal-dom.html; then
               echo "Missing proof: $proof"
               grep -o 'data-cwm-arsenal-[^ >]*' /tmp/arsenal-dom.html || true
               grep -o 'data-cwm-special[^ >]*' /tmp/arsenal-dom.html || true
-              grep -o 'data-cwm-mana-mechanic="[^"]*"' /tmp/arsenal-dom.html || true
-              grep -o 'data-cwm-a-combat-key="[^"]*"' /tmp/arsenal-dom.html || true
-              grep -o 'data-cwm-space-special="[^"]*"' /tmp/arsenal-dom.html || true
-              grep -o '<div id="cwmArsenalProof"[^>]*>[^<]*' /tmp/arsenal-dom.html || true
-              tail -120 /tmp/chrome.log || true
+              grep -o 'data-cwm-horde[^ >]*' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-element[^ >]*' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-projectile-cap="[^"]*"' /tmp/arsenal-dom.html || true
+              tail -140 /tmp/chrome.log || true
               exit 1
             fi
           done
+          HORDE_COUNT=$(grep -o 'data-cwm-horde-count="[0-9]*"' /tmp/arsenal-dom.html | head -1 | grep -o '[0-9]*')
+          CROWD_HITS=$(grep -o 'data-cwm-horde-crowd-hits="[0-9]*"' /tmp/arsenal-dom.html | head -1 | grep -o '[0-9]*')
+          test "${HORDE_COUNT:-0}" -ge 10
+          test "${HORDE_COUNT:-99}" -le 28
+          test "${CROWD_HITS:-0}" -ge 2
           if grep -q '>MANA<' /tmp/arsenal-dom.html; then
             echo 'Visible MANA label remains in HUD DOM'
             exit 1
           fi
           grep -q '>SPECIAL<' /tmp/arsenal-dom.html
           grep -q 'SPACE //' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-arsenal-proof="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-arsenal-types="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-specials-proof="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-space-special="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-horde-proof="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-horde-count="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-horde-crowd-hits="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-element-families="[^"]*"' /tmp/arsenal-dom.html
 
-      - name: Audit and capture live arsenal showcase
+      - name: Audit and capture horde elemental showcase
         shell: bash
         run: |
           set -euo pipefail
@@ -91,16 +103,10 @@ jobs:
           trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
           sleep 0.5
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
-          URL='http://127.0.0.1:8789/?arsenalShowcase=1&rolls=1800'
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=4200 --dump-dom "$URL" >/tmp/showcase-dom.html 2>/tmp/showcase-dom-chrome.log
-          echo '--- LARGE VISIBLE STAGE ELEMENTS ---'
-          python3 - <<'PY'
-          import html,re
-          s=open('/tmp/showcase-dom.html',encoding='utf-8').read()
-          m=re.search(r'<pre id="cwmStageAudit"[^>]*>(.*?)</pre>',s,re.S)
-          print(html.unescape(m.group(1)) if m else 'NO AUDIT FOUND')
-          PY
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5000 --screenshot=/tmp/arsenal-showcase.png "$URL" 2>/tmp/showcase-chrome.log
+          URL='http://127.0.0.1:8789/?hordeShowcase=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5200 --dump-dom "$URL" >/tmp/showcase-dom.html 2>/tmp/showcase-dom-chrome.log
+          grep -q 'data-cwm-horde-showcase="ready"' /tmp/showcase-dom.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5600 --screenshot=/tmp/arsenal-showcase.png "$URL" 2>/tmp/showcase-chrome.log
           test -s /tmp/arsenal-showcase.png
 
       - name: Upload arsenal QA screenshot
