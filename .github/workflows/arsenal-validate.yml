@@ -26,6 +26,7 @@ jobs:
           node --check crazy-weapon-man-site/public/arsenal-expansion-v14.js
           node --check crazy-weapon-man-site/public/arsenal-visual-v14.js
           node --check crazy-weapon-man-site/public/weapon-specials-v15.js
+          node --check crazy-weapon-man-site/public/no-mana-compat-v17.js
           node --check crazy-weapon-man-site/public/horde-combat-v16.js
           node --check crazy-weapon-man-site/public/elemental-overdrive-v16.js
           node --check crazy-weapon-man-site/public/horde-clarity-v16.js
@@ -63,6 +64,7 @@ jobs:
             'data-cwm-specials-types="9/9"' \
             'data-cwm-special-key="space"' \
             'data-cwm-mana-mechanic="off"' \
+            'data-cwm-no-mana-legacy="pass"' \
             'data-cwm-a-combat-key="retired"' \
             'data-cwm-space-special="pass"' \
             'data-cwm-horde-proof="pass"' \
@@ -74,6 +76,7 @@ jobs:
               echo "Missing proof: $proof"
               grep -o 'data-cwm-arsenal-[^ >]*' /tmp/arsenal-dom.html || true
               grep -o 'data-cwm-special[^ >]*' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-no-mana-legacy="[^"]*"' /tmp/arsenal-dom.html || true
               grep -o 'data-cwm-horde[^ >]*' /tmp/arsenal-dom.html || true
               grep -o 'data-cwm-element[^ >]*' /tmp/arsenal-dom.html || true
               grep -o 'data-cwm-projectile-cap="[^"]*"' /tmp/arsenal-dom.html || true
