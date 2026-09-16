@@ -17,6 +17,7 @@
 
   function run(){
     const out={ok:false,count:0,crowdHits:0,hardCap:0,projectileCap:0,elementFamilies:0,elementOk:false,error:null,at:Date.now()};
+    const oldHistory=Array.isArray(equipTypeHistory)?[...equipTypeHistory]:null;
     try{
       const d=globalThis.__KM_DEBUG,h=globalThis.CWM_HORDE_V16,el=globalThis.CWM_ELEMENTAL_OVERDRIVE_V16,ars=globalThis.CWM_ARSENAL_V14;
       if(!d||!h||!el||!ars)throw new Error('horde/elemental APIs unavailable');
@@ -30,6 +31,10 @@
       out.crowdHits=E.filter(e=>before.has(e.id)&&e.hp<before.get(e.id)).length;
       out.ok=spawned>=10&&out.count>=10&&out.count<=h.hardCap&&out.crowdHits>=2&&out.elementOk&&h.projectileCap<=80;
     }catch(e){out.error=String(e?.message||e)}
+    finally{
+      if(oldHistory&&oldHistory.length) equipTypeHistory=oldHistory;
+      if(equipTypeHistory.length>=2&&equipTypeHistory.at(-1)===equipTypeHistory.at(-2))equipTypeHistory=['sword','bow'];
+    }
     expose(out);out.ok?console.info('CWM horde self-check: PASS',out):console.error('CWM horde self-check: FAIL',out);return out;
   }
 
