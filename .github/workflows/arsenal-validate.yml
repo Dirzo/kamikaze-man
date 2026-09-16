@@ -48,7 +48,7 @@ jobs:
             'data-cwm-arsenal-types="9/9"' \
             'data-cwm-arsenal-new-elements="10/10"' \
             'data-cwm-arsenal-models="54"' \
-            'data-cwm-heavy-only="no"; do
+            'data-cwm-heavy-only="no"'; do
             if ! grep -q "$proof" /tmp/arsenal-dom.html; then
               echo "Missing proof: $proof"
               grep -o 'data-cwm-arsenal-[^ >]*' /tmp/arsenal-dom.html || true
