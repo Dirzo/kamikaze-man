@@ -18,13 +18,14 @@
     return false;
   }
   function shouldDemoteBig(label){
-    return /(?:FALLING|TACTICAL|CHAOS DIRECTOR|FLOOR|AUDIT|OUTBREAK|FESTIVAL|EMERGENCY|PRESSURE|TEAM BUILDING|SLOWLY TURNING|MUNICIPAL SIGNAGE)/i.test(label);
+    return /(?:FALLING|TACTICAL|CHAOS DIRECTOR|FLOOR|AUDIT|OUTBREAK|FESTIVAL|EMERGENCY|PRESSURE|TEAM BUILDING|SLOWLY TURNING|MUNICIPAL SIGNAGE|MANDATORY|EXPLOSIVE PERSONALITY)/i.test(label);
   }
 
   const txt0=txt;
   txt=function(x,y,s,col='#fff',big=false){
     const label=normalize(s);
     if(isLegacyNoise(label))return;
+    if(document.body?.classList.contains('cwmLevelMoment')&&big)return;
     return txt0(x,y,label,col,big&&!shouldDemoteBig(label));
   };
 
@@ -47,7 +48,10 @@
 
   const draw0=draw;
   draw=function(){
-    if(Array.isArray(T)&&T.length)T=T.filter(t=>!isLegacyNoise(t?.s));
+    if(Array.isArray(T)&&T.length){
+      const levelMoment=document.body?.classList.contains('cwmLevelMoment');
+      T=T.filter(t=>!isLegacyNoise(t?.s)&&(!levelMoment||t?.kind==='damage'));
+    }
     const compact=D.length>=3||density()>=8;
     const names=[];
     if(compact){
@@ -65,5 +69,5 @@
     try{return draw0()}finally{for(const [item,name] of names)item.name=name}
   };
 
-  globalThis.CWM_FEEDBACK_CLARITY_V17={version:'v17-single-channel-feedback-c',ok:true,isLegacyNoise};
+  globalThis.CWM_FEEDBACK_CLARITY_V17={version:'v17-single-channel-feedback-d',ok:true,isLegacyNoise};
 })();
