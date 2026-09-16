@@ -29,18 +29,11 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
   const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
   let html=await new Response(stream).text();
   if(!html.includes('CRAZY WEAPON MAN')&&!html.includes('Crazy Weapon Man'))throw new Error('Decoded bundle did not contain the game.');
-
-  const nativeUrls=[
-    '/elemental-weapons-v13.js?v=cwm-elements-20260914a',
-    '/arsenal-expansion-v14.js?v=cwm-arsenal-expansion-20260915c',
-    '/arsenal-visual-v14.js?v=cwm-arsenal-visual-20260915c',
-    '/arsenal-native-cleanup-v14.js?v=cwm-arsenal-cleanup-20260915a'
-  ];
+  const nativeUrls=['/elemental-weapons-v13.js?v=cwm-elements-20260914a','/arsenal-expansion-v14.js?v=cwm-arsenal-expansion-20260915c','/arsenal-visual-v14.js?v=cwm-arsenal-visual-20260915c','/arsenal-native-cleanup-v14.js?v=cwm-arsenal-cleanup-20260915a'];
   const nativeParts=await Promise.all(nativeUrls.map(async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('Native arsenal module failed: '+url+' HTTP '+r.status);return r.text()}));
   const nativeMarker='window.__KM_DEBUG=';
   if(!html.includes(nativeMarker))throw new Error('Native arsenal injection point missing.');
   html=html.replace(nativeMarker,nativeParts.join('\n;\n')+'\n'+nativeMarker);
-
   const patches='<script src="/patch-version-v14.js?v=cwm-version-20260915b"><\/script>'+
     '<script src="/leaderboard-inspector.js?v=cwm-lbinspect-20260914a"><\/script>'+
     '<script src="/online-leaderboard.js?v=cwm-online-20260913d"><\/script>'+
@@ -50,7 +43,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '<script src="/graphics-overhaul-v12.js?v=cwm-gfx-20260914b"><\/script>'+
     '<script src="/leaderboard-browser-v2.js?v=cwm-lb-browser-20260914a"><\/script>'+
     '<script src="/combat-balance-v12.js?v=cwm-danger-20260914b"><\/script>'+
-    '<script src="/arsenal-presentation-v14.js?v=cwm-arsenal-presentation-20260915c"><\/script>'+
+    '<script src="/arsenal-presentation-v14.js?v=cwm-arsenal-presentation-20260915d"><\/script>'+
     '<script src="/leaderboard-selfcheck-v14.js?v=cwm-lbcheck-20260915b"><\/script>'+
     '<script src="/arsenal-selfcheck-v14.js?v=cwm-arsenal-check-20260915c"><\/script>';
   html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,patches+'</body>'):html+patches;
