@@ -1,0 +1,73 @@
+name: Readability V22 Validation
+
+on:
+  push:
+    branches:
+      - crazy-weapon-man-web
+    paths:
+      - 'crazy-weapon-man-site/public/combat-readability-v22.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/readability-v22.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: readability-v22-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-readability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax check readability module
+        run: node --check crazy-weapon-man-site/public/combat-readability-v22.js
+
+      - name: Browser readability and balance proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8796 --directory crazy-weapon-man-site/public >/tmp/cwm-readability-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8796/?readabilitySmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5200 --dump-dom "$URL" >/tmp/readability-dom.html 2>/tmp/readability-chrome.log
+          for proof in \
+            'data-cwm-readability-proof="pass"' \
+            'data-cwm-screen-shake="off"' \
+            'data-cwm-enemy-hp-bars="pass"' \
+            'data-cwm-enemy-visuals="pass"'; do
+            if ! grep -q "$proof" /tmp/readability-dom.html; then
+              echo "Missing readability proof: $proof"
+              grep -o 'data-cwm-[^ >]*' /tmp/readability-dom.html | tail -80 || true
+              tail -180 /tmp/readability-chrome.log || true
+              exit 1
+            fi
+          done
+          HITS=$(grep -o 'data-cwm-readability-hits="[0-9.]*"' /tmp/readability-dom.html | head -1 | cut -d'"' -f2)
+          VOID=$(grep -o 'data-cwm-void-range="[0-9.]*"' /tmp/readability-dom.html | head -1 | cut -d'"' -f2)
+          awk "BEGIN{exit !(${HITS:-0} >= 2.8)}"
+          awk "BEGIN{exit !(${VOID:-0} >= 1.8)}"
+
+      - name: Capture readability showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8797 --directory crazy-weapon-man-site/public >/tmp/cwm-readability-showcase-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=3800 --screenshot=/tmp/readability-showcase.png 'http://127.0.0.1:8797/?readabilityShowcase=1' 2>/tmp/readability-showcase.log
+          test -s /tmp/readability-showcase.png
+
+      - name: Upload readability QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: readability-v22-showcase
+          path: /tmp/readability-showcase.png
+          retention-days: 5
