@@ -25,7 +25,7 @@
     const api=globalThis.CWM_ARSENAL_V14;
     const result={ok:false,rolls:n,types:{},elements:{},models:{},missingTypes:[],missingNewElements:[],typePassed:0,newElementPassed:0,modelManifestCount:0,heavyOnly:false,error:null,at:Date.now()};
     try{
-      if(!api||typeof makeW!=='function')throw new Error('arsenal API or makeW unavailable');
+      if(!api||typeof api.sample!=='function')throw new Error('native arsenal API unavailable');
       const sample=api.sample(n);result.types=sample.types;result.elements=sample.elements;result.models=sample.models;
       result.missingTypes=EXPECTED.filter(t=>!(sample.types[t]>0));result.typePassed=EXPECTED.length-result.missingTypes.length;
       result.missingNewElements=EXPECTED_NEW.filter(t=>!(sample.elements[t]>0));result.newElementPassed=EXPECTED_NEW.length-result.missingNewElements.length;
@@ -48,9 +48,7 @@
       const w=d.equip('staff','Legendary');
       api.forceModel(w,'Arc Furnace Staff');api.forceElement(w,'plasma');
       for(let i=0;i<5;i++)d.spawn(i%2?'crawler':'stalker',false);
-      setTimeout(()=>d.attack(),120);
-      setTimeout(()=>d.attack(),430);
-      setTimeout(()=>d.attack(),760);
+      setTimeout(()=>d.attack(),120);setTimeout(()=>d.attack(),430);setTimeout(()=>d.attack(),760);
       document.documentElement.dataset.cwmArsenalShowcase='ready';
       return true;
     }catch(e){console.warn('Arsenal showcase failed',e);return false}
@@ -60,11 +58,12 @@
   const qs=new URLSearchParams(location.search);
   if(qs.has('arsenalSmoke')||qs.has('arsenalShowcase')){
     const wait=setInterval(()=>{
-      if(!globalThis.CWM_ARSENAL_V14||typeof makeW!=='function')return;
+      if(!globalThis.CWM_ARSENAL_V14)return;
       clearInterval(wait);run(Number(qs.get('rolls'))||1800);if(qs.has('arsenalShowcase'))setTimeout(showcase,250);
     },75);
     setTimeout(()=>{clearInterval(wait);if(!state.last){const r={ok:false,error:'arsenal self-check timeout',typePassed:0,newElementPassed:0,modelManifestCount:0,heavyOnly:false};state.last=r;expose(r)}},7000);
   }else{
-    const manifest={ok:!!globalThis.CWM_ARSENAL_V14,rolls:0,types:{},elements:{},models:{},missingTypes:[],missingNewElements:[],typePassed:0,newElementPassed:0,modelManifestCount:Object.values(globalThis.CWM_ARSENAL_V14?.models||{}).reduce((s,a)=>s+(a?.length||0),0),heavyOnly:false,manifestOnly:true,at:Date.now()};state.last=manifest;expose(manifest);
+    const api=globalThis.CWM_ARSENAL_V14;
+    const manifest={ok:!!api,rolls:0,types:{},elements:{},models:{},missingTypes:[],missingNewElements:[],typePassed:0,newElementPassed:0,modelManifestCount:Object.values(api?.models||{}).reduce((s,a)=>s+(a?.length||0),0),heavyOnly:false,manifestOnly:true,at:Date.now()};state.last=manifest;expose(manifest);
   }
 })();
