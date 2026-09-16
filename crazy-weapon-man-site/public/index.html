@@ -44,7 +44,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '/arsenal-native-cleanup-v14.js?v=cwm-arsenal-cleanup-20260915a',
     '/combat-feedback-v17.js?v=cwm-feedback-20260916a',
     '/feedback-clarity-v17.js?v=cwm-feedback-clarity-20260916c',
-    '/animation-polish-v19.js?v=cwm-animation-20260916a'
+    '/animation-polish-v19.js?v=cwm-animation-20260916b'
   ];
   const nativeParts=await Promise.all(nativeUrls.map(async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('Native arsenal module failed: '+url+' HTTP '+r.status);return r.text()}));
   const nativeMarker='window.__KM_DEBUG=';
