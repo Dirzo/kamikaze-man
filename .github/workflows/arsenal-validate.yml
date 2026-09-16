@@ -28,6 +28,8 @@ jobs:
           node --check crazy-weapon-man-site/public/weapon-specials-v15.js
           node --check crazy-weapon-man-site/public/no-mana-compat-v17.js
           node --check crazy-weapon-man-site/public/horde-combat-v16.js
+          node --check crazy-weapon-man-site/public/nightmare-director-v18.js
+          node --check crazy-weapon-man-site/public/nightmare-balance-v18.js
           node --check crazy-weapon-man-site/public/elemental-overdrive-v16.js
           node --check crazy-weapon-man-site/public/horde-clarity-v16.js
           node --check crazy-weapon-man-site/public/horde-selfcheck-v16.js
@@ -95,10 +97,33 @@ jobs:
           fi
           grep -q '>SPECIAL<' /tmp/arsenal-dom.html
           grep -q 'SPACE //' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-horde-proof="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-horde-count="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-horde-crowd-hits="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-element-families="[^"]*"' /tmp/arsenal-dom.html
+
+      - name: Headless browser nightmare boss proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8791 --directory crazy-weapon-man-site/public >/tmp/cwm-nightmare-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8791/?nightmareSmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=7000 --dump-dom "$URL" >/tmp/nightmare-dom.html 2>/tmp/nightmare-chrome.log
+          for proof in \
+            'data-cwm-nightmare-proof="pass"' \
+            'data-cwm-nightmare-boss-sets="6"' \
+            'data-cwm-nightmare-hazards="pass"' \
+            'data-cwm-nightmare-prison="pass"' \
+            'data-cwm-nightmare-boil="pass"' \
+            'data-cwm-nightmare-laser="pass"' \
+            'data-cwm-nightmare-whirl="pass"'; do
+            if ! grep -q "$proof" /tmp/nightmare-dom.html; then
+              echo "Missing nightmare proof: $proof"
+              grep -o 'data-cwm-nightmare-[^ >]*' /tmp/nightmare-dom.html || true
+              tail -160 /tmp/nightmare-chrome.log || true
+              exit 1
+            fi
+          done
 
       - name: Headless browser combat feedback proof
         shell: bash
@@ -121,9 +146,8 @@ jobs:
           test "${LEVELS:-0}" -ge 1
           test "${DROPS:-0}" -ge 1
           test "${CASCADE:-0}" -ge 1
-          grep -o 'data-cwm-feedback-[^ >]*' /tmp/feedback-dom.html
 
-      - name: Audit and capture horde elemental feedback showcase
+      - name: Capture combat and nightmare showcases
         shell: bash
         run: |
           set -euo pipefail
@@ -132,15 +156,20 @@ jobs:
           trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
           sleep 0.5
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
-          URL='http://127.0.0.1:8789/?hordeShowcase=1&feedbackShowcase=1'
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=4800 --dump-dom "$URL" >/tmp/showcase-dom.html 2>/tmp/showcase-dom-chrome.log
+          HORDE_URL='http://127.0.0.1:8789/?hordeShowcase=1&feedbackShowcase=1'
+          NIGHT_URL='http://127.0.0.1:8789/?nightmareShowcase=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=4800 --dump-dom "$HORDE_URL" >/tmp/showcase-dom.html 2>/tmp/showcase-dom-chrome.log
           grep -q 'data-cwm-horde-showcase="ready"' /tmp/showcase-dom.html
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5000 --screenshot=/tmp/arsenal-showcase.png "$URL" 2>/tmp/showcase-chrome.log
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5000 --screenshot=/tmp/arsenal-showcase.png "$HORDE_URL" 2>/tmp/showcase-chrome.log
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=3600 --screenshot=/tmp/nightmare-showcase.png "$NIGHT_URL" 2>/tmp/nightmare-showcase-chrome.log
           test -s /tmp/arsenal-showcase.png
+          test -s /tmp/nightmare-showcase.png
 
-      - name: Upload arsenal QA screenshot
+      - name: Upload arsenal QA screenshots
         uses: actions/upload-artifact@v4
         with:
           name: arsenal-showcase
-          path: /tmp/arsenal-showcase.png
+          path: |
+            /tmp/arsenal-showcase.png
+            /tmp/nightmare-showcase.png
           retention-days: 5
