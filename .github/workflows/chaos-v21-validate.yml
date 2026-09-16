@@ -1,0 +1,76 @@
+name: Chaos V21 Validation
+
+on:
+  push:
+    branches:
+      - crazy-weapon-man-web
+    paths:
+      - 'crazy-weapon-man-site/public/enemy-weapon-chaos-v21.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/chaos-v21-validate.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: chaos-v21-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-chaos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax check chaos module
+        run: node --check crazy-weapon-man-site/public/enemy-weapon-chaos-v21.js
+
+      - name: Browser comedy and weapon mutation proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8794 --directory crazy-weapon-man-site/public >/tmp/cwm-chaos-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8794/?chaosSmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=6500 --dump-dom "$URL" >/tmp/chaos-dom.html 2>/tmp/chaos-chrome.log
+          for proof in \
+            'data-cwm-chaos-proof="pass"' \
+            'data-cwm-chaos-sizes="6"' \
+            'data-cwm-chaos-nameplates="pass"' \
+            'data-cwm-chaos-proc="pass"' \
+            'data-cwm-chaos-scale-range="0.58-1.88"'; do
+            if ! grep -q "$proof" /tmp/chaos-dom.html; then
+              echo "Missing chaos proof: $proof"
+              grep -o 'data-cwm-chaos-[^ >]*' /tmp/chaos-dom.html || true
+              tail -180 /tmp/chaos-chrome.log || true
+              exit 1
+            fi
+          done
+          MUTS=$(grep -o 'data-cwm-chaos-mutations="[0-9]*"' /tmp/chaos-dom.html | head -1 | grep -o '[0-9]*')
+          NAMES=$(grep -o 'data-cwm-chaos-names="[0-9]*"' /tmp/chaos-dom.html | head -1 | grep -o '[0-9]*')
+          HEADS=$(grep -o 'data-cwm-chaos-headliners="[0-9]*"' /tmp/chaos-dom.html | head -1 | grep -o '[0-9]*')
+          test "${MUTS:-0}" -ge 7
+          test "${NAMES:-0}" -ge 4
+          test "${HEADS:-0}" -ge 1
+
+      - name: Capture chaos showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8795 --directory crazy-weapon-man-site/public >/tmp/cwm-chaos-shot-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=3200 --screenshot=/tmp/chaos-showcase.png 'http://127.0.0.1:8795/?chaosSmoke=1' 2>/tmp/chaos-shot.log
+          test -s /tmp/chaos-showcase.png
+
+      - name: Upload chaos QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-v21-showcase
+          path: /tmp/chaos-showcase.png
+          retention-days: 5
