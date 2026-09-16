@@ -29,6 +29,7 @@ jobs:
           node --check crazy-weapon-man-site/public/no-mana-compat-v17.js
           node --check crazy-weapon-man-site/public/horde-combat-v16.js
           node --check crazy-weapon-man-site/public/nightmare-director-v18.js
+          node --check crazy-weapon-man-site/public/nightmare-mutants-v18.js
           node --check crazy-weapon-man-site/public/nightmare-balance-v18.js
           node --check crazy-weapon-man-site/public/elemental-overdrive-v16.js
           node --check crazy-weapon-man-site/public/horde-clarity-v16.js
@@ -116,7 +117,8 @@ jobs:
             'data-cwm-nightmare-prison="pass"' \
             'data-cwm-nightmare-boil="pass"' \
             'data-cwm-nightmare-laser="pass"' \
-            'data-cwm-nightmare-whirl="pass"'; do
+            'data-cwm-nightmare-whirl="pass"' \
+            'data-cwm-nightmare-mutants="pass"'; do
             if ! grep -q "$proof" /tmp/nightmare-dom.html; then
               echo "Missing nightmare proof: $proof"
               grep -o 'data-cwm-nightmare-[^ >]*' /tmp/nightmare-dom.html || true
