@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate-arsenal:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 7
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +30,7 @@ jobs:
           node --check crazy-weapon-man-site/public/elemental-overdrive-v16.js
           node --check crazy-weapon-man-site/public/horde-clarity-v16.js
           node --check crazy-weapon-man-site/public/horde-selfcheck-v16.js
+          node --check crazy-weapon-man-site/public/combat-feedback-v17.js
           node --check crazy-weapon-man-site/public/arsenal-selfcheck-v14.js
           node --check crazy-weapon-man-site/public/arsenal-presentation-v14.js
           node --check crazy-weapon-man-site/public/arsenal-hud-v16.js
@@ -95,7 +96,30 @@ jobs:
           grep -o 'data-cwm-horde-crowd-hits="[^"]*"' /tmp/arsenal-dom.html
           grep -o 'data-cwm-element-families="[^"]*"' /tmp/arsenal-dom.html
 
-      - name: Audit and capture horde elemental showcase
+      - name: Headless browser combat feedback proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8790 --directory crazy-weapon-man-site/public >/tmp/cwm-feedback-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.4
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=6500 --dump-dom 'http://127.0.0.1:8790/?feedbackSmoke=1' >/tmp/feedback-dom.html 2>/tmp/feedback-chrome.log
+          grep -q 'data-cwm-feedback-proof="pass"' /tmp/feedback-dom.html
+          CHAIN=$(grep -o 'data-cwm-feedback-kill-chain="[0-9]*"' /tmp/feedback-dom.html | head -1 | grep -o '[0-9]*')
+          XP=$(grep -o 'data-cwm-feedback-xp-pulses="[0-9]*"' /tmp/feedback-dom.html | head -1 | grep -o '[0-9]*')
+          LEVELS=$(grep -o 'data-cwm-feedback-levelups="[0-9]*"' /tmp/feedback-dom.html | head -1 | grep -o '[0-9]*')
+          DROPS=$(grep -o 'data-cwm-feedback-drops="[0-9]*"' /tmp/feedback-dom.html | head -1 | grep -o '[0-9]*')
+          CASCADE=$(grep -o 'data-cwm-feedback-cascade="[0-9]*"' /tmp/feedback-dom.html | head -1 | grep -o '[0-9]*')
+          test "${CHAIN:-0}" -ge 5
+          test "${XP:-0}" -ge 5
+          test "${LEVELS:-0}" -ge 1
+          test "${DROPS:-0}" -ge 1
+          test "${CASCADE:-0}" -ge 1
+          grep -o 'data-cwm-feedback-[^ >]*' /tmp/feedback-dom.html
+
+      - name: Audit and capture horde elemental feedback showcase
         shell: bash
         run: |
           set -euo pipefail
@@ -104,10 +128,10 @@ jobs:
           trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
           sleep 0.5
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
-          URL='http://127.0.0.1:8789/?hordeShowcase=1'
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5200 --dump-dom "$URL" >/tmp/showcase-dom.html 2>/tmp/showcase-dom-chrome.log
+          URL='http://127.0.0.1:8789/?hordeShowcase=1&feedbackShowcase=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=4800 --dump-dom "$URL" >/tmp/showcase-dom.html 2>/tmp/showcase-dom-chrome.log
           grep -q 'data-cwm-horde-showcase="ready"' /tmp/showcase-dom.html
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5600 --screenshot=/tmp/arsenal-showcase.png "$URL" 2>/tmp/showcase-chrome.log
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5000 --screenshot=/tmp/arsenal-showcase.png "$URL" 2>/tmp/showcase-chrome.log
           test -s /tmp/arsenal-showcase.png
 
       - name: Upload arsenal QA screenshot
