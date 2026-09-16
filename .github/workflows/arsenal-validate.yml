@@ -31,6 +31,7 @@ jobs:
           node --check crazy-weapon-man-site/public/horde-clarity-v16.js
           node --check crazy-weapon-man-site/public/horde-selfcheck-v16.js
           node --check crazy-weapon-man-site/public/combat-feedback-v17.js
+          node --check crazy-weapon-man-site/public/feedback-clarity-v17.js
           node --check crazy-weapon-man-site/public/arsenal-selfcheck-v14.js
           node --check crazy-weapon-man-site/public/arsenal-presentation-v14.js
           node --check crazy-weapon-man-site/public/arsenal-hud-v16.js
