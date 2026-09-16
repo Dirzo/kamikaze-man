@@ -2,7 +2,7 @@
   if(globalThis.__CWM_ANIMATION_V19)return;
   globalThis.__CWM_ANIMATION_V19=true;
 
-  const A={land:0,landPower:0,skill:0,hurt:0,attackKick:0,playerFrames:0,enemyFrames:0,trailFrames:0,lastGrounded:false};
+  const A={land:0,landPower:0,skill:0,hurt:0,attackKick:0,playerFrames:0,enemyFrames:0,trailFrames:0,weaponTrailFrames:0,lastGrounded:false};
   const clampA=(n,a=0,b=1)=>Math.max(a,Math.min(b,n));
   const easeOut=t=>1-Math.pow(1-clampA(t),3);
   const melee=new Set(['sword','dagger','nunchucks','katana','hammer']);
@@ -70,11 +70,37 @@
     return{cx,cy,sx,sy,rot,dx,dy};
   }
 
+  function drawWeaponMotion(){
+    if(!(pl.at>0&&pl.atMax>0))return;
+    const w=curW(),q=rarityRank(w),p=clampA(1-pl.at/pl.atMax),a=Math.sin(Math.PI*p),cx=pl.x+17,cy=pl.y+21,dir=pl.dir||1;
+    if(a<.06)return;A.weaponTrailFrames++;
+    X.save();X.translate(cx,cy);X.scale(dir,1);X.lineCap='round';X.lineJoin='round';X.strokeStyle=w.col;X.shadowColor=w.col;X.shadowBlur=10+Math.min(18,q*2);X.globalAlpha=.18+.38*a;
+    if(w.type==='sword'){
+      const step=pl.combo%3,base=step===1?-1.9:step===2?1.5:-2.2,travel=step===2?-2.75:3.1,ang=base+travel*p,r=58+q*2.4;X.lineWidth=6+q*.35;X.beginPath();X.arc(0,0,r,ang-.62,ang+.16);X.stroke();X.globalAlpha*=.38;X.lineWidth=2;X.beginPath();X.arc(0,0,r+10,ang-.9,ang+.1);X.stroke();
+    }else if(w.type==='katana'){
+      const ang=-2.12+3.28*p,r=78+q*2.6;X.lineWidth=4+q*.24;X.beginPath();X.arc(0,0,r,ang-.76,ang+.08);X.stroke();X.globalAlpha*=.55;X.strokeStyle='#fff';X.lineWidth=1.6;X.beginPath();X.arc(0,0,r+5,ang-.64,ang+.03);X.stroke();
+    }else if(w.type==='hammer'){
+      const ang=-2.18+3.05*p,r=78+q*3.2;X.lineWidth=10+q*.55;X.beginPath();X.arc(0,0,r,ang-.46,ang+.10);X.stroke();X.globalAlpha*=.3;X.lineWidth=18;X.beginPath();X.arc(0,0,r-3,ang-.27,ang+.04);X.stroke();
+    }else if(w.type==='dagger'){
+      const ang=-1.4+2.2*p,len=62+q*2;X.rotate(ang);X.lineWidth=5;X.beginPath();X.moveTo(14,-5);X.lineTo(len,0);X.stroke();X.globalAlpha*=.35;X.lineWidth=2;X.beginPath();X.moveTo(4,5);X.lineTo(len+18,5);X.stroke();
+    }else if(w.type==='nunchucks'){
+      const r=42+q*2.2,ang=p*Math.PI*5.4;X.lineWidth=5+q*.25;X.beginPath();X.arc(12,0,r,ang-.9,ang+.35);X.stroke();X.globalAlpha*=.45;X.beginPath();X.arc(12,0,r+12,ang-1.4,ang-.2);X.stroke();
+    }else if(w.type==='shuriken'){
+      const r=29+q*1.5,ang=p*Math.PI*4;X.lineWidth=3;for(let i=0;i<3;i++){X.beginPath();X.arc(20,0,r+i*7,ang+i*.8,ang+1.05+i*.8);X.stroke()}
+    }else if(w.type==='bow'){
+      const kick=a*(12+q);X.lineWidth=3;for(let i=-1;i<=1;i++){X.globalAlpha=.18+.18*a;X.beginPath();X.moveTo(28-kick-i*5,i*8);X.lineTo(62+i*9,i*8);X.stroke()}X.globalAlpha=.45*a;X.fillStyle=w.col;X.beginPath();X.arc(51,0,4+q*.45+4*a,0,Math.PI*2);X.fill();
+    }else if(w.type==='wand'||w.type==='staff'){
+      const r=(w.type==='staff'?44:34)+q*2,spin=(time||0)*3.4;X.lineWidth=2.5+q*.18;for(let i=0;i<2;i++){X.beginPath();X.arc(w.type==='staff'?43:35,-15,r+i*10,spin+i,spin+2.6+i);X.stroke()}X.globalAlpha=.3*a;X.fillStyle=w.col;X.beginPath();X.arc(w.type==='staff'?50:42,-17,7+q*.6+5*a,0,Math.PI*2);X.fill();
+    }
+    X.restore();X.globalAlpha=1;X.shadowBlur=0;
+  }
+
   const playerDraw0=playerDraw;
   playerDraw=function(){
     A.playerFrames++;
     const p=playerPose();X.save();pivotTransform(p.cx,p.cy,p.sx,p.sy,p.rot,p.dx,p.dy);
-    try{return playerDraw0()}finally{X.restore()}
+    try{playerDraw0()}finally{X.restore()}
+    drawWeaponMotion();
   };
 
   function drawEnemyShadow(e){
@@ -129,17 +155,17 @@
   const dash0=dash;
   dash=function(){const before=pl.dashT,r=dash0();if(pl.dashT>before){try{const w=curW();F.push({k:'speed',x:pl.x+pl.w/2,y:pl.y+pl.h/2,dir:pl.dir,col:w.col,n:6,life:.16,max:.16})}catch(_){ }}return r};
 
-  function selfTest(){return{ok:typeof playerDraw==='function'&&typeof creature==='function'&&typeof drawP==='function',playerFrames:A.playerFrames,enemyFrames:A.enemyFrames,trailFrames:A.trailFrames,gameplayChanges:false};}
+  function selfTest(){return{ok:typeof playerDraw==='function'&&typeof creature==='function'&&typeof drawP==='function',playerFrames:A.playerFrames,enemyFrames:A.enemyFrames,trailFrames:A.trailFrames,weaponTrailFrames:A.weaponTrailFrames,gameplayChanges:false};}
   function smoke(){
     const root=document.documentElement,api=globalThis.__KM_DEBUG||globalThis.KM_DEBUG;
     try{
       api?.start?.();api?.heal?.();api?.equip?.('katana','Legendary');api?.spawn?.('brute',false);
       pl.vx=260;attack();P.push({k:'arrow',x:pl.x+55,y:pl.y+18,vx:720,vy:-35,dam:1,pier:0,life:.8,hit:new Set(),col:'#7fe8ff',size:1});
       draw();
-      const st=selfTest();root.dataset.cwmAnimationProof=st.ok&&A.playerFrames>0&&A.enemyFrames>0&&A.trailFrames>0?'pass':'fail';root.dataset.cwmAnimationPlayer=A.playerFrames>0?'pass':'fail';root.dataset.cwmAnimationEnemy=A.enemyFrames>0?'pass':'fail';root.dataset.cwmAnimationTrails=A.trailFrames>0?'pass':'fail';root.dataset.cwmAnimationGameplay='unchanged';
+      const st=selfTest();root.dataset.cwmAnimationProof=st.ok&&A.playerFrames>0&&A.enemyFrames>0&&A.trailFrames>0&&A.weaponTrailFrames>0?'pass':'fail';root.dataset.cwmAnimationPlayer=A.playerFrames>0?'pass':'fail';root.dataset.cwmAnimationEnemy=A.enemyFrames>0?'pass':'fail';root.dataset.cwmAnimationTrails=A.trailFrames>0?'pass':'fail';root.dataset.cwmAnimationWeaponTrails=A.weaponTrailFrames>0?'pass':'fail';root.dataset.cwmAnimationGameplay='unchanged';
     }catch(err){root.dataset.cwmAnimationProof='fail';root.dataset.cwmAnimationError=String(err?.message||err)}
   }
   try{const p=new URLSearchParams(location.search);if(p.get('animationSmoke')==='1')setTimeout(smoke,1500)}catch(_){ }
 
-  globalThis.CWM_ANIMATION_V19={version:'v19-motion-polish',state:A,selfTest};
+  globalThis.CWM_ANIMATION_V19={version:'v19-motion-polish-b',state:A,selfTest};
 })();
