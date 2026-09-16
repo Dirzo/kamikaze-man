@@ -1,0 +1,83 @@
+name: Arsenal Validation
+
+on:
+  push:
+    branches:
+      - crazy-weapon-man-web
+    paths:
+      - 'crazy-weapon-man-site/**'
+      - '.github/workflows/arsenal-validate.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: arsenal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-arsenal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax check arsenal modules
+        run: |
+          node --check crazy-weapon-man-site/public/arsenal-expansion-v14.js
+          node --check crazy-weapon-man-site/public/arsenal-visual-v14.js
+          node --check crazy-weapon-man-site/public/arsenal-selfcheck-v14.js
+          node --check crazy-weapon-man-site/public/patch-version-v14.js
+          node --check crazy-weapon-man-site/public/leaderboard-selfcheck-v14.js
+
+      - name: Headless browser mixed-arsenal proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8788 --directory crazy-weapon-man-site/public >/tmp/cwm-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:8788/ >/dev/null && break
+            sleep 0.2
+          done
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser || true)"
+          test -n "$CHROME"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=8000 --dump-dom 'http://127.0.0.1:8788/?arsenalSmoke=1&rolls=2200' >/tmp/arsenal-dom.html 2>/tmp/chrome.log
+          for proof in \
+            'data-cwm-arsenal-proof="pass"' \
+            'data-cwm-arsenal-types="9/9"' \
+            'data-cwm-arsenal-new-elements="10/10"' \
+            'data-cwm-arsenal-models="54"' \
+            'data-cwm-heavy-only="no"; do
+            if ! grep -q "$proof" /tmp/arsenal-dom.html; then
+              echo "Missing proof: $proof"
+              grep -o 'data-cwm-arsenal-[^ >]*' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-heavy-only="[^"]*"' /tmp/arsenal-dom.html || true
+              grep -o '<div id="cwmArsenalProof"[^>]*>[^<]*' /tmp/arsenal-dom.html || true
+              tail -120 /tmp/chrome.log || true
+              exit 1
+            fi
+          done
+          grep -o 'data-cwm-arsenal-proof="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-arsenal-types="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-arsenal-new-elements="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-arsenal-models="[^"]*"' /tmp/arsenal-dom.html
+
+      - name: Capture live arsenal showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8789 --directory crazy-weapon-man-site/public >/tmp/cwm-showcase-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5000 --screenshot=/tmp/arsenal-showcase.png 'http://127.0.0.1:8789/?arsenalShowcase=1&rolls=1800' 2>/tmp/showcase-chrome.log
+          test -s /tmp/arsenal-showcase.png
+
+      - name: Upload arsenal QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: arsenal-showcase
+          path: /tmp/arsenal-showcase.png
+          retention-days: 5
