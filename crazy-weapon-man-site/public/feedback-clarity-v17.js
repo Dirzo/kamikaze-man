@@ -18,7 +18,7 @@
     return false;
   }
   function shouldDemoteBig(label){
-    return density()>=7&&/(?:FALLING|TACTICAL|CHAOS DIRECTOR|FLOOR|AUDIT|OUTBREAK|FESTIVAL|EMERGENCY|PRESSURE|TEAM BUILDING|SLOWLY TURNING)/i.test(label);
+    return /(?:FALLING|TACTICAL|CHAOS DIRECTOR|FLOOR|AUDIT|OUTBREAK|FESTIVAL|EMERGENCY|PRESSURE|TEAM BUILDING|SLOWLY TURNING|MUNICIPAL SIGNAGE)/i.test(label);
   }
 
   const txt0=txt;
@@ -37,7 +37,6 @@
   checkLevel=function(){
     const before=pl.lv,r=check0();
     if(pl.lv>before){
-      // The v17 level splash is now the sole level-up visual. Kill the packed renderer's duplicate banner.
       levelUpT=0;
       document.body.classList.add('cwmLevelMoment');
       if(U.fsUpgrade)U.fsUpgrade.classList.remove('show');
@@ -46,7 +45,6 @@
     return r;
   };
 
-  // Final render-time filter catches legacy systems that push directly into T instead of calling txt().
   const draw0=draw;
   draw=function(){
     if(Array.isArray(T)&&T.length)T=T.filter(t=>!isLegacyNoise(t?.s));
@@ -67,5 +65,5 @@
     try{return draw0()}finally{for(const [item,name] of names)item.name=name}
   };
 
-  globalThis.CWM_FEEDBACK_CLARITY_V17={version:'v17-single-channel-feedback-b',ok:true,isLegacyNoise};
+  globalThis.CWM_FEEDBACK_CLARITY_V17={version:'v17-single-channel-feedback-c',ok:true,isLegacyNoise};
 })();
