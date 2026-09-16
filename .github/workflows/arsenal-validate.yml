@@ -28,6 +28,7 @@ jobs:
           node --check crazy-weapon-man-site/public/weapon-specials-v15.js
           node --check crazy-weapon-man-site/public/horde-combat-v16.js
           node --check crazy-weapon-man-site/public/elemental-overdrive-v16.js
+          node --check crazy-weapon-man-site/public/horde-clarity-v16.js
           node --check crazy-weapon-man-site/public/horde-selfcheck-v16.js
           node --check crazy-weapon-man-site/public/arsenal-selfcheck-v14.js
           node --check crazy-weapon-man-site/public/arsenal-presentation-v14.js
