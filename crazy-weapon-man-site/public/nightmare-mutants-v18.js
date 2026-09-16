@@ -2,10 +2,9 @@
   if(globalThis.__CWM_NIGHTMARE_MUTANTS_V18)return;
   globalThis.__CWM_NIGHTMARE_MUTANTS_V18=true;
 
-  const clampM=(n,a,b)=>Math.max(a,Math.min(b,n));
   function mutate(e,forced=false){
     if(!e||e.dead||e.boss||e.__nightMutant)return false;
-    const z=Math.max(0,Number(zoneI)||0),chance=.12+Math.min(.16,z*.022)+(e.elite?.06:0);
+    const z=Math.max(0,Number(zoneI)||0),chance=.12+Math.min(.16,z*.022)+(e.elite ? .06 : 0);
     if(!forced&&Math.random()>chance)return false;
     e.__nightMutant='ABOMINATION';
     const oldW=e.w,oldH=e.h,s=1.34+Math.random()*.28;
