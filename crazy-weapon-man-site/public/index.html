@@ -33,7 +33,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '/elemental-weapons-v13.js?v=cwm-elements-20260914a',
     '/arsenal-expansion-v14.js?v=cwm-arsenal-expansion-20260915c',
     '/arsenal-visual-v14.js?v=cwm-arsenal-visual-20260915c',
-    '/weapon-specials-v15.js?v=cwm-specials-20260916a',
+    '/weapon-specials-v15.js?v=cwm-specials-20260916b',
     '/arsenal-native-cleanup-v14.js?v=cwm-arsenal-cleanup-20260915a'
   ];
   const nativeParts=await Promise.all(nativeUrls.map(async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('Native arsenal module failed: '+url+' HTTP '+r.status);return r.text()}));
@@ -52,7 +52,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '<script src="/arsenal-presentation-v14.js?v=cwm-arsenal-presentation-20260915d"><\/script>'+
     '<script src="/arsenal-hud-v16.js?v=cwm-hud-20260916a"><\/script>'+
     '<script src="/leaderboard-selfcheck-v14.js?v=cwm-lbcheck-20260915b"><\/script>'+
-    '<script src="/arsenal-selfcheck-v14.js?v=cwm-arsenal-check-20260915c"><\/script>';
+    '<script src="/arsenal-selfcheck-v14.js?v=cwm-arsenal-check-20260916d"><\/script>';
   html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,patches+'</body>'):html+patches;
   document.open();document.write(html);document.close();
 })().catch(err=>{const el=document.getElementById('bootText');if(el)el.textContent='LOAD FAILED: '+err.message;console.error(err)});
