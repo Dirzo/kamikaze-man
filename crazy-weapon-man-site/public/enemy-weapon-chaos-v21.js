@@ -30,7 +30,7 @@
   function funnyName(type,elite=false){
     const base=choose(NAMES[type]||[String(ED?.[type]?.name||type||'Problem')]);
     let out=elite?`${choose(TITLES)} ${base}`:base;
-    if(Math.random()<(elite?.58:.24))out+=` ${choose(SUFFIXES)}`;
+    if(Math.random()<(elite ? .58 : .24))out+=` ${choose(SUFFIXES)}`;
     return out;
   }
   const enemyName0=enemyName;
