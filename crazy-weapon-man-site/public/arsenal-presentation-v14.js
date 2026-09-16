@@ -50,6 +50,21 @@
     const nodes=[...document.querySelectorAll(sel)];
     return !nodes.length||nodes.every(el=>getComputedStyle(el).display==='none'||el.hidden);
   }
+  function stageAudit(){
+    const stage=document.getElementById('gameStage');if(!stage)return [];
+    const sr=stage.getBoundingClientRect();
+    return [...stage.querySelectorAll('*')].map(el=>{
+      const s=getComputedStyle(el),r=el.getBoundingClientRect(),area=r.width*r.height;
+      if(s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0||area<18000)return null;
+      const overlaps=r.right>sr.left&&r.left<sr.right&&r.bottom>sr.top&&r.top<sr.bottom;
+      if(!overlaps)return null;
+      return {tag:el.tagName.toLowerCase(),id:el.id||'',cls:String(el.className||'').slice(0,120),x:Math.round(r.left-sr.left),y:Math.round(r.top-sr.top),w:Math.round(r.width),h:Math.round(r.height),pos:s.position,z:s.zIndex,bg:s.backgroundColor};
+    }).filter(Boolean).slice(0,80);
+  }
+  function publishAudit(){
+    const audit=stageAudit();globalThis.__CWM_STAGE_AUDIT=audit;
+    let pre=document.getElementById('cwmStageAudit');if(!pre){pre=document.createElement('pre');pre.id='cwmStageAudit';pre.hidden=true;document.body.appendChild(pre)}pre.textContent=JSON.stringify(audit);
+  }
   function sync(){
     const title=document.getElementById('titleScreen');
     const active=!!title?.classList.contains('hidden');
@@ -61,11 +76,12 @@
         root.dataset.cwmLegacyShards=isHidden('.shardHud,.weaponForgeHud,.forgeHud')?'hidden':'visible';
         root.dataset.cwmLegacyAugments=isHidden('.augmentHud')?'hidden':'visible';
         root.dataset.cwmLegacySide=isHidden('.side')?'hidden':'visible';
+        publishAudit();setTimeout(publishAudit,500);
       });
     }
   }
   const mo=new MutationObserver(sync);
   const boot=()=>{const title=document.getElementById('titleScreen');if(title)mo.observe(title,{attributes:true,attributeFilter:['class']});sync()};
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();
-  globalThis.CWM_ARSENAL_PRESENTATION={version:'v1.4b',sync};
+  globalThis.CWM_ARSENAL_PRESENTATION={version:'v1.4c',sync,audit:stageAudit};
 })();
