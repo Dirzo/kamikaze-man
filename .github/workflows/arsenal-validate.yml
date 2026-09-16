@@ -25,13 +25,15 @@ jobs:
         run: |
           node --check crazy-weapon-man-site/public/arsenal-expansion-v14.js
           node --check crazy-weapon-man-site/public/arsenal-visual-v14.js
+          node --check crazy-weapon-man-site/public/weapon-specials-v15.js
           node --check crazy-weapon-man-site/public/arsenal-selfcheck-v14.js
           node --check crazy-weapon-man-site/public/arsenal-presentation-v14.js
+          node --check crazy-weapon-man-site/public/arsenal-hud-v16.js
           node --check crazy-weapon-man-site/public/arsenal-native-cleanup-v14.js
           node --check crazy-weapon-man-site/public/patch-version-v14.js
           node --check crazy-weapon-man-site/public/leaderboard-selfcheck-v14.js
 
-      - name: Headless browser mixed-arsenal proof
+      - name: Headless browser mixed-arsenal and controls proof
         shell: bash
         run: |
           set -euo pipefail
@@ -50,20 +52,35 @@ jobs:
             'data-cwm-arsenal-types="9/9"' \
             'data-cwm-arsenal-new-elements="10/10"' \
             'data-cwm-arsenal-models="54"' \
-            'data-cwm-heavy-only="no"'; do
+            'data-cwm-heavy-only="no"' \
+            'data-cwm-specials-proof="pass"' \
+            'data-cwm-specials-types="9/9"' \
+            'data-cwm-special-key="space"' \
+            'data-cwm-mana-mechanic="off"' \
+            'data-cwm-a-combat-key="retired"' \
+            'data-cwm-space-special="pass"'; do
             if ! grep -q "$proof" /tmp/arsenal-dom.html; then
               echo "Missing proof: $proof"
               grep -o 'data-cwm-arsenal-[^ >]*' /tmp/arsenal-dom.html || true
-              grep -o 'data-cwm-heavy-only="[^"]*"' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-special[^ >]*' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-mana-mechanic="[^"]*"' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-a-combat-key="[^"]*"' /tmp/arsenal-dom.html || true
+              grep -o 'data-cwm-space-special="[^"]*"' /tmp/arsenal-dom.html || true
               grep -o '<div id="cwmArsenalProof"[^>]*>[^<]*' /tmp/arsenal-dom.html || true
               tail -120 /tmp/chrome.log || true
               exit 1
             fi
           done
+          if grep -q '>MANA<' /tmp/arsenal-dom.html; then
+            echo 'Visible MANA label remains in HUD DOM'
+            exit 1
+          fi
+          grep -q '>SPECIAL<' /tmp/arsenal-dom.html
+          grep -q 'SPACE //' /tmp/arsenal-dom.html
           grep -o 'data-cwm-arsenal-proof="[^"]*"' /tmp/arsenal-dom.html
           grep -o 'data-cwm-arsenal-types="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-arsenal-new-elements="[^"]*"' /tmp/arsenal-dom.html
-          grep -o 'data-cwm-arsenal-models="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-specials-proof="[^"]*"' /tmp/arsenal-dom.html
+          grep -o 'data-cwm-space-special="[^"]*"' /tmp/arsenal-dom.html
 
       - name: Audit and capture live arsenal showcase
         shell: bash
