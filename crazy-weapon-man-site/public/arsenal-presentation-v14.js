@@ -34,7 +34,7 @@
     body.cwmArsenalPlaying .fsVRow{grid-template-columns:32px 1fr 50px!important;gap:5px!important;font-size:8px!important;margin:2px 0!important}
     body.cwmArsenalPlaying .fsBar{height:6px!important}
     body.cwmArsenalPlaying .fsBottom{display:none!important}
-    body.cwmArsenalPlaying .fsZone{right:auto!important;left:12px!important;bottom:10px!important;text-align:left!important;padding:5px 8px!important;border-radius:8px!important;background:#04101bbd!important;border:1px solid #72eaff25!important;font-size:8px!important;max-width:260px!important}
+    body.cwmArsenalPlaying .fsZone{top:auto!important;right:auto!important;left:12px!important;bottom:10px!important;width:auto!important;height:auto!important;min-height:0!important;max-height:none!important;text-align:left!important;padding:5px 8px!important;border-radius:8px!important;background:#04101bbd!important;border:1px solid #72eaff25!important;font-size:8px!important;max-width:260px!important}
     body.cwmArsenalPlaying .fsUpgrade{top:13%!important;width:min(440px,48vw)!important;max-width:48vw!important;padding:6px 10px!important;border:1px solid #ffffff2d!important;border-radius:10px!important;background:#06111de5!important;filter:drop-shadow(0 7px 18px #000)!important}
     body.cwmArsenalPlaying .fsUpgrade .u1{font-size:7px!important;letter-spacing:.16em!important;color:#9fb3c9!important}
     body.cwmArsenalPlaying .fsUpgrade .u2{font-size:clamp(14px,1.65vw,22px)!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
@@ -83,5 +83,5 @@
   const mo=new MutationObserver(sync);
   const boot=()=>{const title=document.getElementById('titleScreen');if(title)mo.observe(title,{attributes:true,attributeFilter:['class']});sync()};
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();
-  globalThis.CWM_ARSENAL_PRESENTATION={version:'v1.4c',sync,audit:stageAudit};
+  globalThis.CWM_ARSENAL_PRESENTATION={version:'v1.4d',sync,audit:stageAudit};
 })();
