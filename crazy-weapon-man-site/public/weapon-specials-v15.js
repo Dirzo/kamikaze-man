@@ -25,7 +25,6 @@
   }
   function trimCooldown(seconds){pl.scd=Math.max(0,(Number(pl.scd)||0)-Math.max(0,seconds||0))}
 
-  // Mana is retired from gameplay. The legacy numeric field stays pinned only for compatibility with packed code.
   pl.mana=100;
   const update0=update;
   update=function(dt){pl.mana=100;const r=update0(dt);pl.mana=100;return r};
@@ -106,16 +105,19 @@
   function rewriteControlText(){
     for(const el of document.querySelectorAll('.titleControls,.keys,.fsBottom,.top')){
       if(!el?.innerHTML)continue;
-      el.innerHTML=el.innerHTML.replace(/A weapon skill/gi,'Space special').replace(/<b>A<\/b>\s*WEAPON SKILL/gi,'<b>SPACE</b> SPECIAL');
+      el.innerHTML=el.innerHTML
+        .replace(/A weapon skill/gi,'Space special')
+        .replace(/<b>A<\/b>\s*WEAPON SKILL/gi,'<b>SPACE</b> SPECIAL')
+        .replace(/<b>Skill<\/b>\s*A/gi,'<b>Special</b> Space');
     }
+    for(const el of document.querySelectorAll('[data-tap="skill"]'))el.textContent='Space';
     for(const el of document.querySelectorAll('.fsVitals .fsVRow span:first-child'))if(el.textContent.trim().toUpperCase()==='MANA')el.textContent='SPECIAL';
-    // The old side panel is normally hidden, but remove its obsolete resource label as well.
     for(const el of document.querySelectorAll('.side .row span:first-child'))if(el.textContent.trim().toLowerCase()==='mana')el.textContent='SPECIAL';
   }
   rewriteControlText();
 
   function state(){const w=curW(),meta=specialMeta(w),max=Math.max(.01,pl.__specialMax||cooldownFor(w)),rem=Math.max(0,Number(pl.scd)||0);return{type:w.type,name:meta.name,desc:meta.desc,key:'SPACE',remaining:rem,max,ready:rem<=.01,manaMechanic:false}}
   function selfTest(){const types=Object.keys(SPECIALS),all=types.length===9&&types.every(t=>SPECIALS[t]?.name&&SPECIALS[t]?.desc&&SPECIALS[t]?.cd>0);return{ok:all,types:types.length,key:'SPACE',manaMechanic:false,names:Object.fromEntries(types.map(t=>[t,SPECIALS[t].name]))}}
-  globalThis.CWM_SPECIALS_V15={version:'v15-space-specials-b',specials:SPECIALS,state,selfTest,forceReady(){pl.scd=0;refreshHud()},invoke(){pl.scd=0;return skill()},refreshHud};
+  globalThis.CWM_SPECIALS_V15={version:'v15-space-specials-c',specials:SPECIALS,state,selfTest,forceReady(){pl.scd=0;refreshHud()},invoke(){pl.scd=0;return skill()},refreshHud};
   globalThis.__CWM_SPECIALS_PROOF=selfTest();refreshHud();
 })();
