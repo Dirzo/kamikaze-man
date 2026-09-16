@@ -30,7 +30,6 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
   let html=await new Response(stream).text();
   if(!html.includes('CRAZY WEAPON MAN')&&!html.includes('Crazy Weapon Man'))throw new Error('Decoded bundle did not contain the game.');
 
-  // Gameplay-changing arsenal systems execute inside the packed game's native IIFE.
   const nativeUrls=[
     '/elemental-weapons-v13.js?v=cwm-elements-20260914a',
     '/arsenal-expansion-v14.js?v=cwm-arsenal-expansion-20260915c',
@@ -51,7 +50,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '<script src="/graphics-overhaul-v12.js?v=cwm-gfx-20260914b"><\/script>'+
     '<script src="/leaderboard-browser-v2.js?v=cwm-lb-browser-20260914a"><\/script>'+
     '<script src="/combat-balance-v12.js?v=cwm-danger-20260914b"><\/script>'+
-    '<script src="/arsenal-presentation-v14.js?v=cwm-arsenal-presentation-20260915a"><\/script>'+
+    '<script src="/arsenal-presentation-v14.js?v=cwm-arsenal-presentation-20260915b"><\/script>'+
     '<script src="/leaderboard-selfcheck-v14.js?v=cwm-lbcheck-20260915b"><\/script>'+
     '<script src="/arsenal-selfcheck-v14.js?v=cwm-arsenal-check-20260915c"><\/script>';
   html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,patches+'</body>'):html+patches;
