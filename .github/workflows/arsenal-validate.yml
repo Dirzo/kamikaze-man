@@ -16,7 +16,7 @@ concurrency:
 jobs:
   validate-arsenal:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,6 +37,7 @@ jobs:
           node --check crazy-weapon-man-site/public/combat-feedback-v17.js
           node --check crazy-weapon-man-site/public/feedback-clarity-v17.js
           node --check crazy-weapon-man-site/public/animation-polish-v19.js
+          node --check crazy-weapon-man-site/public/wave-shop-v20.js
           node --check crazy-weapon-man-site/public/arsenal-selfcheck-v14.js
           node --check crazy-weapon-man-site/public/arsenal-presentation-v14.js
           node --check crazy-weapon-man-site/public/arsenal-hud-v16.js
@@ -93,6 +94,44 @@ jobs:
           fi
           grep -q '>SPECIAL<' /tmp/arsenal-dom.html
           grep -q 'SPACE //' /tmp/arsenal-dom.html
+
+      - name: Headless browser stacked wave and shard market proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8793 --directory crazy-weapon-man-site/public >/tmp/cwm-wave-shop-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8793/?waveShopSmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=6500 --dump-dom "$URL" >/tmp/wave-shop-dom.html 2>/tmp/wave-shop-chrome.log
+          for proof in \
+            'data-cwm-wave-shop-proof="pass"' \
+            'data-cwm-wave-stack="pass"' \
+            'data-cwm-wave-offscreen="pass"' \
+            'data-cwm-shop-d20="removed"' \
+            'data-cwm-shop-mask="pass"' \
+            'data-cwm-shop-cards="7"' \
+            'data-cwm-shop-purchase="pass"' \
+            'data-cwm-shop-persistent="pass"'; do
+            if ! grep -q "$proof" /tmp/wave-shop-dom.html; then
+              echo "Missing wave/shop proof: $proof"
+              grep -o 'data-cwm-wave-[^ >]*' /tmp/wave-shop-dom.html || true
+              grep -o 'data-cwm-shop-[^ >]*' /tmp/wave-shop-dom.html || true
+              tail -180 /tmp/wave-shop-chrome.log || true
+              exit 1
+            fi
+          done
+          INITIAL=$(grep -o 'data-cwm-wave-initial="[0-9]*"' /tmp/wave-shop-dom.html | head -1 | grep -o '[0-9]*')
+          STACKED=$(grep -o 'data-cwm-wave-stacked="[0-9]*"' /tmp/wave-shop-dom.html | head -1 | grep -o '[0-9]*')
+          TOTAL=$(grep -o 'data-cwm-wave-total="[0-9]*"' /tmp/wave-shop-dom.html | head -1 | grep -o '[0-9]*')
+          MAX_PRICE=$(grep -o 'data-cwm-shop-max-price="[0-9]*"' /tmp/wave-shop-dom.html | head -1 | grep -o '[0-9]*')
+          test "${INITIAL:-0}" -ge 10
+          test "${STACKED:-0}" -gt "${INITIAL:-99}"
+          test "${STACKED:-99}" -le 28
+          test "${TOTAL:-0}" -gt "${STACKED:-0}"
+          test "${MAX_PRICE:-0}" -ge 1000000
 
       - name: Headless browser animation polish proof
         shell: bash
