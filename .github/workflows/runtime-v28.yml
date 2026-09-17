@@ -44,8 +44,11 @@ jobs:
           echo "V28 actual game-loop outfit/HP frames: $FRAMES"
           echo "V28 base cooldowns: $COOLDOWNS"
           echo "$COOLDOWNS" | grep -q 'sword:0.299'
-          echo "$COOLDOWNS" | grep -q 'dagger:0.1668'
+          echo "$COOLDOWNS" | grep -q 'dagger:0.1667'
+          echo "$COOLDOWNS" | grep -q 'nunchucks:0.184'
+          echo "$COOLDOWNS" | grep -q 'katana:0.2875'
           echo "$COOLDOWNS" | grep -q 'bow:0.345'
+          echo "$COOLDOWNS" | grep -q 'shuriken:0.2415'
           echo "$COOLDOWNS" | grep -q 'wand:0.368'
           echo "$COOLDOWNS" | grep -q 'staff:0.5405'
           echo "$COOLDOWNS" | grep -q 'hammer:0.529'
