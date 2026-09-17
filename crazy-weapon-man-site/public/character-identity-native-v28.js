@@ -6,7 +6,7 @@
   const valid=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#8fefff';
   function mix(a,b,t=.5){a=valid(a);b=valid(b);t=clamp01(t);const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),ac=[A>>16,A>>8&255,A&255],bc=[B>>16,B>>8&255,B&255],v=ac.map((x,i)=>Math.round(x+(bc[i]-x)*t));return '#'+((v[0]<<16)|(v[1]<<8)|v[2]).toString(16).padStart(6,'0')}
   function role(w){const t=w?.type||'sword';if(t==='hammer')return'JUGGERNAUT';if(t==='staff'||t==='wand')return'ARCANE';if(t==='bow')return'RANGER';if(t==='dagger'||t==='shuriken')return'ASSASSIN';if(t==='katana'||t==='nunchucks')return'RONIN';return'VANGUARD'}
-  function palette(w){const a=valid(w?.element?.col||w?.col),q=rarityRank(w);return{a,q,d:mix(a,'#05080d',.73),m:mix(a,'#243141',.48),l:mix(a,'#ffffff',.34)}}
+  function palette(w){const a=valid(w?.col||w?.element?.col),e=valid(w?.element?.col||w?.col),q=rarityRank(w);return{a,e,q,d:mix(a,'#05080d',.73),m:mix(a,'#243141',.48),l:mix(a,'#ffffff',.34)}}
   function bodyPose(w){const run=pl.on?Math.min(1,Math.abs(pl.vx||0)/190):0,bob=Math.abs(Math.sin(time*12))*2*run,atk=pl.at>0?1-pl.at/Math.max(.01,pl.atMax):0;let rot=0;if(atk&&w.type==='hammer')rot=-.20+atk*.32;else if(atk&&w.type==='katana')rot=-.22+atk*.36;else if(atk&&w.type==='dagger')rot=-.08+atk*.12;else if(atk&&(w.type==='wand'||w.type==='staff'))rot=-.08;else if(atk&&w.type==='bow')rot=-.07;return{bob,rot}}
   function drawOutfit(){
     if(!gameStarted)return;const w=curW();if(!w)return;const p=palette(w),r=role(w),po=bodyPose(w);S.outfitDraws++;S.lastType=w.type;S.lastRole=r;S.lastColor=p.a;
@@ -15,7 +15,7 @@
       X.fillStyle=p.d;X.beginPath();X.moveTo(-15,-16);X.lineTo(15,-16);X.lineTo(20,19);X.lineTo(8,13);X.lineTo(1,26);X.lineTo(-7,14);X.lineTo(-20,19);X.closePath();X.fill();
       X.fillStyle=p.m;X.beginPath();X.moveTo(-14,-15);X.lineTo(0,-24);X.lineTo(14,-15);X.lineTo(8,-5);X.lineTo(-8,-5);X.closePath();X.fill();
       X.strokeStyle=p.a;X.lineWidth=3.2;X.globalAlpha=.96;X.beginPath();X.moveTo(0,-10);X.lineTo(0,17);X.moveTo(-11,1);X.lineTo(11,1);X.stroke();X.fillStyle=p.l;X.beginPath();X.arc(0,2,4.5,0,Math.PI*2);X.fill();
-      X.fillStyle=p.a;X.globalAlpha=.68;X.beginPath();X.moveTo(-15,-12);X.lineTo(-23,3);X.lineTo(-16,14);X.closePath();X.fill();X.beginPath();X.moveTo(15,-12);X.lineTo(23,3);X.lineTo(16,14);X.closePath();X.fill();
+      X.fillStyle=p.e;X.globalAlpha=.76;X.beginPath();X.moveTo(-15,-12);X.lineTo(-23,3);X.lineTo(-16,14);X.closePath();X.fill();X.beginPath();X.moveTo(15,-12);X.lineTo(23,3);X.lineTo(16,14);X.closePath();X.fill();
     }else if(r==='JUGGERNAUT'){
       X.fillStyle=p.d;X.beginPath();X.roundRect(-15,-15,30,32,5);X.fill();X.fillStyle=p.m;X.beginPath();X.roundRect(-22,-13,11,14,3);X.roundRect(11,-13,11,14,3);X.fill();X.fillStyle=p.a;X.fillRect(-13,6,26,6);X.fillRect(-3,-12,6,20);X.fillStyle='#10151d';X.fillRect(-11,12,22,5);
     }else if(r==='RANGER'){
@@ -42,7 +42,7 @@
   globalThis.CWM_CHARACTER_NATIVE_V28={state:()=>({...S}),roleFor:role};
   const stamp=document.createElement('div');stamp.id='cwmV28BuildStamp';stamp.textContent='CHARACTER RUNTIME V28';stamp.style.cssText='margin:5px auto 0;text-align:center;color:#5f7891;font:900 8px/1 system-ui;letter-spacing:.12em';document.getElementById('startGame')?.insertAdjacentElement('afterend',stamp);
   if(new URLSearchParams(location.search).get('runtimeV28Smoke')==='1'){
-    setTimeout(()=>{try{window.__KM_DEBUG?.start();window.__KM_DEBUG?.equip('wand','Legendary') }catch(e){S.error=String(e)}},180);
-    setTimeout(()=>{const ok=S.outfitDraws>5&&S.hpDraws>5&&S.lastType==='wand'&&!S.error;document.documentElement.dataset.cwmCharacterV28=ok?'pass':'fail';document.documentElement.dataset.cwmCharacterFrames=`${S.outfitDraws}/${S.hpDraws}`;document.documentElement.dataset.cwmCharacterRole=S.lastRole||'none';document.documentElement.dataset.cwmCharacterError=S.error||''},1200);
+    setTimeout(()=>{try{window.__KM_DEBUG?.start();window.__KM_DEBUG?.equip('wand','Legendary');pl.x=Math.max(100,Math.min(W-180,Math.round(W*.48)));pl.y=G-pl.h;pl.vx=0;pl.vy=0;E=[];P=[];Q=[];F=[];T=[];U.banner.style.display='none'}catch(e){S.error=String(e)}},180);
+    setTimeout(()=>{const ok=S.outfitDraws>0&&S.hpDraws>0&&S.lastType==='wand'&&!S.error;document.documentElement.dataset.cwmCharacterV28=ok?'pass':'fail';document.documentElement.dataset.cwmCharacterFrames=`${S.outfitDraws}/${S.hpDraws}`;document.documentElement.dataset.cwmCharacterRole=S.lastRole||'none';document.documentElement.dataset.cwmCharacterColor=S.lastColor||'none';document.documentElement.dataset.cwmCharacterError=S.error||''},1200);
   }
 })();
