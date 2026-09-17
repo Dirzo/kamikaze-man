@@ -1,0 +1,69 @@
+name: Rarity V30 Progression Validation
+
+on:
+  push:
+    branches: [crazy-weapon-man-web]
+    paths:
+      - 'crazy-weapon-man-site/public/index.html'
+      - 'crazy-weapon-man-site/public/rarity-progression-v30.js'
+      - '.github/workflows/rarity-v30.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-rarity-progression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "rarity-progression-v30.js" crazy-weapon-man-site/public/index.html
+          grep -q "Gleaming Rare" crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "Radiant Rare" crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "Ascendant Rare" crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "#57e389" crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "#4d8dff" crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "#ffd84d" crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "#ff8a3d" crazy-weapon-man-site/public/rarity-progression-v30.js
+          grep -q "#ff3f52" crazy-weapon-man-site/public/rarity-progression-v30.js
+      - name: Run real browser rarity proof
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8820 --directory crazy-weapon-man-site/public >/tmp/cwm-rarity-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8820/?rarityV30Smoke=1&characterV29Smoke=1&runtimeV28Smoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=6500 --dump-dom "$URL" >/tmp/cwm-rarity-dom.html 2>/tmp/cwm-rarity-chrome.log
+          if ! grep -q 'data-cwm-rarity-v30="pass"' /tmp/cwm-rarity-dom.html; then
+            echo 'Rarity V30 runtime proof failed'
+            grep -o 'data-cwm-rarity-[^ >]*' /tmp/cwm-rarity-dom.html | tail -20 || true
+            tail -120 /tmp/cwm-rarity-chrome.log || true
+            exit 1
+          fi
+          grep -q 'data-cwm-rarity-tiers="21"' /tmp/cwm-rarity-dom.html
+          grep -q 'data-cwm-rarity-targets="0.55|2.55|6.45|13.20"' /tmp/cwm-rarity-dom.html
+          grep -q 'Common|Rare|Epic|Ultra|Mythic|Legendary|Gleaming Rare|Gleaming Epic|Gleaming Ultra|Gleaming Mythic|Gleaming Legendary|Radiant Rare' /tmp/cwm-rarity-dom.html
+          grep -q 'data-cwm-hair-v29="pass"' /tmp/cwm-rarity-dom.html
+          grep -q 'data-cwm-hair-color="#ff3f52"' /tmp/cwm-rarity-dom.html
+          grep -q 'data-cwm-attack-v28="pass"' /tmp/cwm-rarity-dom.html
+          echo "Rarity progression proof passed"
+          grep -o 'data-cwm-rarity-targets="[^"]*"' /tmp/cwm-rarity-dom.html | head -1
+          grep -o 'data-cwm-rarity-powers="[^"]*"' /tmp/cwm-rarity-dom.html | head -1
+      - name: Capture gameplay with new Legendary color
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8821 --directory crazy-weapon-man-site/public >/tmp/cwm-rarity-shot-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4200 --screenshot=/tmp/cwm-rarity-v30.png 'http://127.0.0.1:8821/?rarityV30Smoke=1&characterV29Smoke=1&runtimeV28Smoke=1' 2>/tmp/cwm-rarity-shot.log
+          test -s /tmp/cwm-rarity-v30.png
+      - name: Upload rarity screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: rarity-v30-gameplay
+          path: /tmp/cwm-rarity-v30.png
+          retention-days: 5
