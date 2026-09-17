@@ -111,13 +111,13 @@
   if(new URLSearchParams(location.search).get('characterIdentitySmoke')==='1'){
     setTimeout(()=>{
       try{
-        const api=globalThis.__KM_DEBUG||globalThis.KM_DEBUG;api?.start?.();api?.equip?.('hammer','Legendary');
+        const api=globalThis.__KM_DEBUG||globalThis.KM_DEBUG;api?.equip?.('hammer','Legendary');
         if(typeof pl!=='undefined'){pl.hp=Math.max(1,Math.round((pl.max||pl.maxHp||100)*.62));pl.inv=0}
-        if(typeof playerDraw==='function'){playerDraw();playerDraw();playerDraw()}
+        drawOutfit();drawHp();S.draws++;
         const root=document.documentElement,t=selfTest(),hammer=profile({type:'hammer'}).role,staff=profile({type:'staff'}).role,bow=profile({type:'bow'}).role;
         root.dataset.cwmCharacterIdentityProof=(t.ok&&S.draws>0&&S.hpDraws>0&&S.outfitDraws>0)?'pass':'fail';
         root.dataset.cwmCharacterOutfits=[hammer,staff,bow].join('/');root.dataset.cwmCharacterDraws=String(S.draws);root.dataset.cwmCharacterType=S.lastType||'none';
-      }catch(e){document.documentElement.dataset.cwmCharacterIdentityProof='fail';document.documentElement.dataset.cwmCharacterIdentityError=String(e).slice(0,120)}
+      }catch(e){const r=document.documentElement;r.dataset.cwmCharacterIdentityProof='fail';r.dataset.cwmCharacterIdentityError=(e?.name||'Error')+':'+(e?.message||String(e)).replace(/\s+/g,' ').slice(0,100)}
     },1300);
   }
 })();
