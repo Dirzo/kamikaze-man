@@ -1,0 +1,58 @@
+name: Character Identity V26 Validation
+
+on:
+  push:
+    branches: [crazy-weapon-man-web]
+    paths:
+      - 'crazy-weapon-man-site/public/character-identity-v26.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/character-identity-v26.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-character-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/character-identity-v26.js
+          grep -q 'character-identity-v26.js' crazy-weapon-man-site/public/index.html
+          grep -q 'CRAZY WEAPON MAN' crazy-weapon-man-site/public/character-identity-v26.js
+          grep -q 'juggernaut' crazy-weapon-man-site/public/character-identity-v26.js
+      - name: Browser character identity proof
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8804 --directory crazy-weapon-man-site/public >/tmp/cwm-character-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8804/?characterIdentitySmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5000 --dump-dom "$URL" >/tmp/character-identity-dom.html 2>/tmp/character-identity-chrome.log
+          if ! grep -q 'data-cwm-character-identity-proof="pass"' /tmp/character-identity-dom.html; then
+            echo 'Character identity proof failed'
+            grep -o 'data-cwm-character-[^ >]*' /tmp/character-identity-dom.html | tail -40 || true
+            tail -160 /tmp/character-identity-chrome.log || true
+            exit 1
+          fi
+          OUTFITS=$(grep -o 'data-cwm-character-outfits="[^"]*"' /tmp/character-identity-dom.html | head -1 | cut -d'"' -f2)
+          DRAWS=$(grep -o 'data-cwm-character-draws="[0-9]*"' /tmp/character-identity-dom.html | head -1 | cut -d'"' -f2)
+          TYPE=$(grep -o 'data-cwm-character-type="[^"]*"' /tmp/character-identity-dom.html | head -1 | cut -d'"' -f2)
+          echo "Character outfits: ${OUTFITS:-missing}; draws: ${DRAWS:-missing}; active type: ${TYPE:-missing}"
+      - name: Capture character showcase
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8805 --directory crazy-weapon-man-site/public >/tmp/cwm-character-show-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=3000 --screenshot=/tmp/character-identity-v26.png 'http://127.0.0.1:8805/?characterIdentitySmoke=1' 2>/tmp/character-identity-show.log
+          test -s /tmp/character-identity-v26.png
+      - name: Upload QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: character-identity-v26-showcase
+          path: /tmp/character-identity-v26.png
+          retention-days: 5
