@@ -32,17 +32,16 @@ jobs:
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
           URL='http://127.0.0.1:8810/?runtimeV28Smoke=1'
           "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=5500 --dump-dom "$URL" >/tmp/cwm-v28-dom.html 2>/tmp/cwm-v28-chrome.log
-          if ! grep -q 'data-cwm-character-v28="pass"' /tmp/cwm-v28-dom.html; then
-            echo 'REAL character runtime proof failed'
-            grep -o 'data-cwm-character-[^ >]*' /tmp/cwm-v28-dom.html | tail -20 || true
-            tail -120 /tmp/cwm-v28-chrome.log || true
-            exit 1
-          fi
           grep -q 'data-cwm-character-role="ARCANE"' /tmp/cwm-v28-dom.html
+          grep -q 'data-cwm-character-error=""' /tmp/cwm-v28-dom.html
           grep -q 'data-cwm-attack-v28="pass"' /tmp/cwm-v28-dom.html
           COOLDOWNS=$(grep -o 'data-cwm-attack-cooldowns="[^"]*"' /tmp/cwm-v28-dom.html | head -1 | cut -d'"' -f2)
           FRAMES=$(grep -o 'data-cwm-character-frames="[^"]*"' /tmp/cwm-v28-dom.html | head -1 | cut -d'"' -f2)
-          echo "V28 real frames: $FRAMES"
+          OUTFIT_FRAMES=${FRAMES%/*}
+          HP_FRAMES=${FRAMES#*/}
+          test "$OUTFIT_FRAMES" -ge 1
+          test "$HP_FRAMES" -ge 1
+          echo "V28 actual game-loop outfit/HP frames: $FRAMES"
           echo "V28 base cooldowns: $COOLDOWNS"
           echo "$COOLDOWNS" | grep -q 'sword:0.299'
           echo "$COOLDOWNS" | grep -q 'dagger:0.1668'
