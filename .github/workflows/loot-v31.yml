@@ -1,0 +1,62 @@
+name: Loot V31 Early Progression Validation
+
+on:
+  push:
+    branches: [crazy-weapon-man-web]
+    paths:
+      - 'crazy-weapon-man-site/public/loot-curve-v31.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/loot-v31.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-early-loot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/loot-curve-v31.js
+          grep -q 'loot-curve-v31.js' crazy-weapon-man-site/public/index.html
+          grep -q "0.72,0.25,0.03" crazy-weapon-man-site/public/loot-curve-v31.js
+          grep -q "#c5cbd2" crazy-weapon-man-site/public/loot-curve-v31.js
+      - name: Test actual post-element weapon distribution
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8830 --directory crazy-weapon-man-site/public >/tmp/cwm-loot31-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8830/?lootV31Smoke=1&runtimeV28Smoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=7500 --dump-dom "$URL" >/tmp/cwm-loot31-dom.html 2>/tmp/cwm-loot31-chrome.log
+          if ! grep -q 'data-cwm-loot-v31="pass"' /tmp/cwm-loot31-dom.html; then
+            echo 'V31 loot proof failed'
+            grep -o 'data-cwm-loot-v31[^ >]*' /tmp/cwm-loot31-dom.html | tail -20 || true
+            tail -120 /tmp/cwm-loot31-chrome.log || true
+            exit 1
+          fi
+          grep -q 'data-cwm-loot-v31-common="#c5cbd2"' /tmp/cwm-loot31-dom.html
+          grep -q 'data-cwm-loot-v31-max="2|3|5|15"' /tmp/cwm-loot31-dom.html
+          echo "Zone 1 actual Common/Rare/Epic sample: $(grep -o 'data-cwm-loot-v31-zone0="[^"]*"' /tmp/cwm-loot31-dom.html | head -1)"
+          echo "Zone 1 Common+Rare share: $(grep -o 'data-cwm-loot-v31-zone0-common-rare="[^"]*"' /tmp/cwm-loot31-dom.html | head -1)"
+      - name: Capture parking-lot loot sample
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8831 --directory crazy-weapon-man-site/public >/tmp/cwm-loot31-shot-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8831/?lootV31Showcase=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4200 --dump-dom "$URL" >/tmp/cwm-loot31-show-dom.html 2>/tmp/cwm-loot31-show-chrome.log
+          grep -q 'data-cwm-loot-v31-showcase=' /tmp/cwm-loot31-show-dom.html
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4200 --screenshot=/tmp/cwm-loot-v31.png "$URL" 2>/tmp/cwm-loot31-shot.log
+          test -s /tmp/cwm-loot-v31.png
+          echo "Visible loot sample: $(grep -o 'data-cwm-loot-v31-showcase="[^"]*"' /tmp/cwm-loot31-show-dom.html | head -1)"
+      - name: Upload loot screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: loot-v31-parking-lot
+          path: /tmp/cwm-loot-v31.png
+          retention-days: 5
