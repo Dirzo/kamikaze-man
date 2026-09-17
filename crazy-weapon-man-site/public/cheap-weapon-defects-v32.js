@@ -49,7 +49,6 @@
     if(w.__cwmRoasted)return;
     const q=rankOf(w),pre=choice(q===0?GRAY_PREFIX:GREEN_PREFIX),suf=choice(q===0?GRAY_SUFFIX:GREEN_SUFFIX);
     let base=String(w.name||`${w.type||'Weapon'}`);
-    // Keep existing elemental/model absurdity, but let the cheap construction be the first thing the player reads.
     w.name=`${pre} ${base} ${suf}`.replace(/\s+/g,' ').slice(0,176);
     w.__cwmRoasted=true;w.__cwmRoastPrefix=pre;w.__cwmRoastSuffix=suf;
   }
@@ -89,11 +88,9 @@
     return w;
   }
 
-  // Apply after V31 has restored the true rarity/color, so a defect never promotes the weapon.
   const makeW0=makeW;
   makeW=function(...args){return maybeDefect(makeW0(...args))};
 
-  // Static speed defects belong in the same multiplier path as models/boons so the HUD DPS estimate sees them.
   const speed0=weaponSpeedMult;
   weaponSpeedMult=function(w){return speed0(w)*(Number(w?.__cwmCheapSpeed)||1)};
 
@@ -144,7 +141,23 @@
 
   globalThis.CWM_CHEAP_WEAPONS_V32={version:'v32-bargain-bin-defects',defects:DEFECTS,rates:RATE,state:()=>({...S,byRank:JSON.parse(JSON.stringify(S.byRank))}),sampleEarly,forceDefect,triggerForTest};
 
-  if(new URLSearchParams(location.search).get('cheapV32Smoke')==='1')setTimeout(()=>{
+  const params=new URLSearchParams(location.search);
+  if(params.get('cheapV32Showcase')==='1')setTimeout(()=>{
+    try{
+      window.__KM_DEBUG?.start?.();zoneI=0;stageClears=0;
+      let w=null;
+      for(let i=0;i<120;i++){const c=makeW(1,false);if(rankOf(c)===0){w=c;break}}
+      w=w||makeW(1,false);
+      if(!w.defects?.length)forceDefect(w,'backfire');
+      if(!w.defects.some(d=>d.id==='backfire'))forceDefect(w,'backfire');
+      pl.weapon=w;pl.hp=pl.max;render();
+      document.documentElement.dataset.cwmCheapShowcase=w.name;
+      document.documentElement.dataset.cwmCheapShowcaseRarity=w.rar;
+      document.documentElement.dataset.cwmCheapShowcaseDefects=w.defects.map(d=>d.name).join('|');
+    }catch(e){document.documentElement.dataset.cwmCheapShowcaseError=String(e).slice(0,160)}
+  },220);
+
+  if(params.get('cheapV32Smoke')==='1')setTimeout(()=>{
     try{
       const root=document.documentElement,s=sampleEarly(3600);
       const ok=s.common.made>1500&&s.rare.made>500&&s.common.rate>.78&&s.rare.rate>.54&&s.epic.rate<.28;
