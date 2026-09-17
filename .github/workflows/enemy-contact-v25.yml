@@ -1,0 +1,69 @@
+name: Enemy Contact V25 Validation
+
+on:
+  push:
+    branches:
+      - crazy-weapon-man-web
+    paths:
+      - 'crazy-weapon-man-site/public/enemy-contact-v25.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/enemy-contact-v25.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: enemy-contact-v25-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-enemy-contact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax and integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/enemy-contact-v25.js
+          grep -q 'enemy-contact-v25.js' crazy-weapon-man-site/public/index.html
+          grep -q 'windPose' crazy-weapon-man-site/public/enemy-contact-v25.js
+
+      - name: Browser enemy contact proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8802 --directory crazy-weapon-man-site/public >/tmp/cwm-enemy-contact-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8802/?enemyContactSmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5400 --dump-dom "$URL" >/tmp/enemy-contact-dom.html 2>/tmp/enemy-contact-chrome.log
+          if ! grep -q 'data-cwm-enemy-contact-proof="pass"' /tmp/enemy-contact-dom.html; then
+            echo 'Enemy contact proof failed'
+            grep -o 'data-cwm-enemy-contact-[^ >]*' /tmp/enemy-contact-dom.html | tail -40 || true
+            tail -160 /tmp/enemy-contact-chrome.log || true
+            exit 1
+          fi
+          ORDER=$(grep -o 'data-cwm-enemy-contact-order="[0-9/]\+"' /tmp/enemy-contact-dom.html | head -1 | cut -d'"' -f2)
+          WIND=$(grep -o 'data-cwm-enemy-wind="[0-9]\+"' /tmp/enemy-contact-dom.html | head -1 | cut -d'"' -f2)
+          echo "Enemy knockback ranged/crawler/brute: ${ORDER:-missing}; wind frames: ${WIND:-missing}"
+
+      - name: Capture windup showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8803 --directory crazy-weapon-man-site/public >/tmp/cwm-enemy-contact-show-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=2400 --screenshot=/tmp/enemy-contact-v25.png 'http://127.0.0.1:8803/?enemyContactSmoke=1' 2>/tmp/enemy-contact-show.log
+          test -s /tmp/enemy-contact-v25.png
+
+      - name: Upload QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: enemy-contact-v25-showcase
+          path: /tmp/enemy-contact-v25.png
+          retention-days: 5
