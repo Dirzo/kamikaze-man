@@ -52,7 +52,9 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '/knockback-satisfaction-v24.js?v=cwm-knockback-20260917a',
     '/enemy-contact-v25.js?v=cwm-enemy-contact-20260917a',
     '/combat-readability-v22.js?v=cwm-readability-20260916a',
-    '/chaos-showcase-v21.js?v=cwm-chaos-showcase-20260916a'
+    '/chaos-showcase-v21.js?v=cwm-chaos-showcase-20260916a',
+    '/attack-speed-v28.js?v=cwm-attack-speed-20260917a',
+    '/character-identity-native-v28.js?v=cwm-character-native-20260917a'
   ];
   const nativeParts=await Promise.all(nativeUrls.map(async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('Native arsenal module failed: '+url+' HTTP '+r.status);return r.text()}));
   const nativeMarker='window.__KM_DEBUG=';
@@ -65,15 +67,13 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '<script src="/gameplay-clarity.js?v=cwm-clarity-20260914b"><\/script>'+
     '<script src="/clarity-hotfix.js?v=cwm-clarity-hotfix-20260914a"><\/script>'+
     '<script src="/graphics-overhaul-v12.js?v=cwm-gfx-20260914b"><\/script>'+
-    '<script src="/character-identity-v26.js?v=cwm-character-20260917a"><\/script>'+
     '<script src="/leaderboard-browser-v2.js?v=cwm-lb-browser-20260914a"><\/script>'+
     '<script src="/combat-balance-v12.js?v=cwm-danger-20260914b"><\/script>'+
     '<script src="/nightmare-balance-v18.js?v=cwm-nightmare-balance-20260916a"><\/script>'+
     '<script src="/arsenal-presentation-v14.js?v=cwm-arsenal-presentation-20260915d"><\/script>'+
     '<script src="/arsenal-hud-v16.js?v=cwm-hud-20260916a"><\/script>'+
     '<script src="/leaderboard-selfcheck-v14.js?v=cwm-lbcheck-20260915b"><\/script>'+
-    '<script src="/arsenal-selfcheck-v14.js?v=cwm-arsenal-check-20260916d"><\/script>'+
-    '<script src="/character-identity-v27.js?v=cwm-character-v27-20260917b"><\/script>';
+    '<script src="/arsenal-selfcheck-v14.js?v=cwm-arsenal-check-20260916d"><\/script>';
   html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,patches+'</body>'):html+patches;
   document.open();document.write(html);document.close();
 })().catch(err=>{const el=document.getElementById('bootText');if(el)el.textContent='LOAD FAILED: '+err.message;console.error(err)});
