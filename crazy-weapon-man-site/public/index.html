@@ -44,6 +44,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '/arsenal-native-cleanup-v14.js?v=cwm-arsenal-cleanup-20260915a',
     '/combat-feedback-v17.js?v=cwm-feedback-20260916a',
     '/feedback-clarity-v17.js?v=cwm-feedback-clarity-20260916c',
+    '/character-hair-v29.js?v=cwm-character-hair-20260917a',
     '/animation-polish-v19.js?v=cwm-animation-20260916b',
     '/animation-smoke-v19.js?v=cwm-animation-smoke-20260916a',
     '/wave-shop-v20.js?v=cwm-wave-shop-20260916a',
@@ -54,7 +55,7 @@ html,body{margin:0;min-height:100%;background:#05070c;color:#eaf2ff;font-family:
     '/combat-readability-v22.js?v=cwm-readability-20260916a',
     '/chaos-showcase-v21.js?v=cwm-chaos-showcase-20260916a',
     '/attack-speed-v28.js?v=cwm-attack-speed-20260917a',
-    '/character-identity-native-v28.js?v=cwm-character-native-20260917a'
+    '/player-hp-v29.js?v=cwm-player-hp-20260917a'
   ];
   const nativeParts=await Promise.all(nativeUrls.map(async url=>{const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('Native arsenal module failed: '+url+' HTTP '+r.status);return r.text()}));
   const nativeMarker='window.__KM_DEBUG=';
