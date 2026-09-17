@@ -1,0 +1,69 @@
+name: Knockback V24 Satisfaction Validation
+
+on:
+  push:
+    branches:
+      - crazy-weapon-man-web
+    paths:
+      - 'crazy-weapon-man-site/public/knockback-satisfaction-v24.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/knockback-v24.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: knockback-v24-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-knockback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax and integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/knockback-satisfaction-v24.js
+          grep -q 'knockback-satisfaction-v24.js' crazy-weapon-man-site/public/index.html
+          grep -q "comboSoftened" crazy-weapon-man-site/public/knockback-satisfaction-v24.js
+
+      - name: Browser knockback satisfaction proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8800 --directory crazy-weapon-man-site/public >/tmp/cwm-knock-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8800/?knockSmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5400 --dump-dom "$URL" >/tmp/knock-dom.html 2>/tmp/knock-chrome.log
+          if ! grep -q 'data-cwm-knock-proof="pass"' /tmp/knock-dom.html; then
+            echo 'Knockback satisfaction proof failed'
+            grep -o 'data-cwm-knock-[^ >]*' /tmp/knock-dom.html | tail -40 || true
+            tail -160 /tmp/knock-chrome.log || true
+            exit 1
+          fi
+          ORDER=$(grep -o 'data-cwm-knock-order="[0-9/]\+"' /tmp/knock-dom.html | head -1 | cut -d'"' -f2)
+          REPEAT=$(grep -o 'data-cwm-knock-repeat="[0-9]\+"' /tmp/knock-dom.html | head -1 | cut -d'"' -f2)
+          echo "Knockback order dagger/bow/sword/hammer: ${ORDER:-missing}; repeat sword: ${REPEAT:-missing}"
+
+      - name: Capture knockback showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8801 --directory crazy-weapon-man-site/public >/tmp/cwm-knock-show-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=2400 --screenshot=/tmp/knockback-v24.png 'http://127.0.0.1:8801/?knockSmoke=1' 2>/tmp/knock-show.log
+          test -s /tmp/knockback-v24.png
+
+      - name: Upload knockback QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: knockback-v24-showcase
+          path: /tmp/knockback-v24.png
+          retention-days: 5
