@@ -1,0 +1,67 @@
+name: Enemy Impact V23 Validation
+
+on:
+  push:
+    branches:
+      - crazy-weapon-man-web
+    paths:
+      - 'crazy-weapon-man-site/public/enemy-impact-v23.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/impact-v23.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: impact-v23-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-impact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Syntax check impact module
+        run: node --check crazy-weapon-man-site/public/enemy-impact-v23.js
+
+      - name: Browser struck animation proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8798 --directory crazy-weapon-man-site/public >/tmp/cwm-impact-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8798/?impactSmoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=5400 --dump-dom "$URL" >/tmp/impact-dom.html 2>/tmp/impact-chrome.log
+          if ! grep -q 'data-cwm-impact-proof="pass"' /tmp/impact-dom.html; then
+            echo 'Enemy impact proof failed'
+            grep -o 'data-cwm-impact-[^ >]*' /tmp/impact-dom.html | tail -80 || true
+            tail -200 /tmp/impact-chrome.log || true
+            exit 1
+          fi
+          TYPES=$(grep -o 'data-cwm-impact-types="[0-9]*"' /tmp/impact-dom.html | head -1 | cut -d'"' -f2)
+          RINGS=$(grep -o 'data-cwm-impact-rings="[0-9]*"' /tmp/impact-dom.html | head -1 | cut -d'"' -f2)
+          test "${TYPES:-0}" -ge 5
+          test "${RINGS:-0}" -ge 1
+
+      - name: Capture struck animation showcase
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8799 --directory crazy-weapon-man-site/public >/tmp/cwm-impact-showcase-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=2200 --screenshot=/tmp/impact-showcase.png 'http://127.0.0.1:8799/?impactShowcase=1' 2>/tmp/impact-showcase.log
+          test -s /tmp/impact-showcase.png
+
+      - name: Upload impact QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: impact-v23-showcase
+          path: /tmp/impact-showcase.png
+          retention-days: 5
