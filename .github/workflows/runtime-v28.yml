@@ -1,0 +1,68 @@
+name: Runtime V28 Gameplay Validation
+
+on:
+  push:
+    branches: [crazy-weapon-man-web]
+    paths:
+      - 'crazy-weapon-man-site/public/index.html'
+      - 'crazy-weapon-man-site/public/attack-speed-v28.js'
+      - 'crazy-weapon-man-site/public/character-identity-native-v28.js'
+      - '.github/workflows/runtime-v28.yml'
+  workflow_dispatch:
+
+jobs:
+  real-gameplay-proof:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and native integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/attack-speed-v28.js
+          node --check crazy-weapon-man-site/public/character-identity-native-v28.js
+          grep -q "attack-speed-v28.js" crazy-weapon-man-site/public/index.html
+          grep -q "character-identity-native-v28.js" crazy-weapon-man-site/public/index.html
+          ! grep -q "character-identity-v27.js" crazy-weapon-man-site/public/index.html
+      - name: Run actual game loop and verify character runtime
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8810 --directory crazy-weapon-man-site/public >/tmp/cwm-v28-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8810/?runtimeV28Smoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=5500 --dump-dom "$URL" >/tmp/cwm-v28-dom.html 2>/tmp/cwm-v28-chrome.log
+          if ! grep -q 'data-cwm-character-v28="pass"' /tmp/cwm-v28-dom.html; then
+            echo 'REAL character runtime proof failed'
+            grep -o 'data-cwm-character-[^ >]*' /tmp/cwm-v28-dom.html | tail -20 || true
+            tail -120 /tmp/cwm-v28-chrome.log || true
+            exit 1
+          fi
+          grep -q 'data-cwm-character-role="ARCANE"' /tmp/cwm-v28-dom.html
+          grep -q 'data-cwm-attack-v28="pass"' /tmp/cwm-v28-dom.html
+          COOLDOWNS=$(grep -o 'data-cwm-attack-cooldowns="[^"]*"' /tmp/cwm-v28-dom.html | head -1 | cut -d'"' -f2)
+          FRAMES=$(grep -o 'data-cwm-character-frames="[^"]*"' /tmp/cwm-v28-dom.html | head -1 | cut -d'"' -f2)
+          echo "V28 real frames: $FRAMES"
+          echo "V28 base cooldowns: $COOLDOWNS"
+          echo "$COOLDOWNS" | grep -q 'sword:0.299'
+          echo "$COOLDOWNS" | grep -q 'dagger:0.1668'
+          echo "$COOLDOWNS" | grep -q 'bow:0.345'
+          echo "$COOLDOWNS" | grep -q 'wand:0.368'
+          echo "$COOLDOWNS" | grep -q 'staff:0.5405'
+          echo "$COOLDOWNS" | grep -q 'hammer:0.529'
+      - name: Capture actual playing screen
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8811 --directory crazy-weapon-man-site/public >/tmp/cwm-v28-shot-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4000 --screenshot=/tmp/cwm-runtime-v28.png 'http://127.0.0.1:8811/?runtimeV28Smoke=1' 2>/tmp/cwm-v28-shot.log
+          test -s /tmp/cwm-runtime-v28.png
+      - name: Upload actual gameplay screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: runtime-v28-actual-gameplay
+          path: /tmp/cwm-runtime-v28.png
+          retention-days: 5
