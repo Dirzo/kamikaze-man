@@ -11,7 +11,7 @@
     e.w=Math.round(e.w*s);e.h=Math.round(e.h*s);e.x-=Math.round((e.w-oldW)/2);e.y-=Math.max(0,e.h-oldH);
     e.max=Math.max(1,Math.round(e.max*(1.48+z*.035)));e.hp=e.max;e.dmg*=1.24+Math.min(.18,z*.02);e.sp*=.92;
     e.__stompCd=1.4+Math.random()*1.6;e.__stompWind=0;e.__stompHit=false;
-    try{txt(e.x+e.w/2,e.y-30,'ABOMINATION','#ff5f66',true);ring(e.x+e.w/2,e.y+e.h/2,'#ff4f5c',82,4)}catch(_){ }
+    try{txt(e.x+e.w/2,e.y-30,'ABOMINATION','#ff5f66',true);part(e.x+e.w/2,e.y+e.h*.7,'#ff5f66',10,170,6)}catch(_){ }
     return true;
   }
 
@@ -46,12 +46,21 @@
   creature=function(e){
     const r=creature0(e);
     if(e&&e.__nightMutant==='ABOMINATION'&&!e.dead){
-      X.save();X.globalAlpha=.38+.15*Math.sin((time||0)*7);X.strokeStyle='#ff4f5f';X.shadowColor='#ff3348';X.shadowBlur=12;X.lineWidth=3;X.beginPath();X.ellipse(e.x+e.w/2,e.y+e.h/2,e.w*.62,e.h*.58,0,0,Math.PI*2);X.stroke();X.restore();X.shadowBlur=0;
+      const cx=e.x+e.w/2,top=e.y+6,bottom=e.y+e.h-5,pulse=.72+.18*Math.sin((time||0)*7);
+      X.save();X.globalAlpha=pulse;X.strokeStyle='#ff5968';X.fillStyle='#ff5968';X.shadowColor='#ff3348';X.shadowBlur=9;X.lineWidth=3;X.lineCap='round';
+      // Jagged silhouette scars/spines instead of a permanent circular aura.
+      for(const side of [-1,1]){
+        const x=cx+side*e.w*.42;
+        X.beginPath();X.moveTo(x,e.y+e.h*.22);X.lineTo(x+side*11,top-8);X.lineTo(x+side*4,e.y+e.h*.38);X.stroke();
+        X.beginPath();X.moveTo(x,e.y+e.h*.58);X.lineTo(x+side*15,e.y+e.h*.48);X.lineTo(x+side*6,bottom);X.stroke();
+      }
+      X.shadowBlur=0;X.globalAlpha=.42;for(let i=0;i<4;i++){let ox=(i-1.5)*e.w*.18;X.fillRect(cx+ox-2,bottom+Math.sin((time||0)*8+i)*2,4,5+i%2*3)}
+      X.restore();
     }
     return r;
   };
 
-  function selfTest(){return{ok:true,mutation:'ABOMINATION',stompTelegraph:.58,minScale:1.34,maxScale:1.62};}
+  function selfTest(){return{ok:true,mutation:'ABOMINATION',stompTelegraph:.58,minScale:1.34,maxScale:1.62,passiveHalo:false};}
   try{
     const p=new URLSearchParams(location.search);
     if(p.get('nightmareSmoke')==='1')setTimeout(()=>{
