@@ -1,4 +1,4 @@
-name: Runtime V28 Gameplay Validation
+name: Character V29 Gameplay Validation
 
 on:
   push:
@@ -6,7 +6,8 @@ on:
     paths:
       - 'crazy-weapon-man-site/public/index.html'
       - 'crazy-weapon-man-site/public/attack-speed-v28.js'
-      - 'crazy-weapon-man-site/public/character-identity-native-v28.js'
+      - 'crazy-weapon-man-site/public/character-hair-v29.js'
+      - 'crazy-weapon-man-site/public/player-hp-v29.js'
       - '.github/workflows/runtime-v28.yml'
   workflow_dispatch:
 
@@ -15,34 +16,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Syntax and native integration checks
+      - name: Syntax and hair-only integration checks
         run: |
           node --check crazy-weapon-man-site/public/attack-speed-v28.js
-          node --check crazy-weapon-man-site/public/character-identity-native-v28.js
+          node --check crazy-weapon-man-site/public/character-hair-v29.js
+          node --check crazy-weapon-man-site/public/player-hp-v29.js
+          grep -q "character-hair-v29.js" crazy-weapon-man-site/public/index.html
+          grep -q "player-hp-v29.js" crazy-weapon-man-site/public/index.html
           grep -q "attack-speed-v28.js" crazy-weapon-man-site/public/index.html
-          grep -q "character-identity-native-v28.js" crazy-weapon-man-site/public/index.html
+          ! grep -q "character-identity-native-v28.js" crazy-weapon-man-site/public/index.html
           ! grep -q "character-identity-v27.js" crazy-weapon-man-site/public/index.html
-      - name: Run actual game loop and verify character runtime
+          ! grep -q "character-identity-v26.js" crazy-weapon-man-site/public/index.html
+          ! grep -q "drawOutfit" crazy-weapon-man-site/public/character-hair-v29.js
+      - name: Run actual game loop and verify hair-only runtime
         run: |
           set -euo pipefail
-          python3 -m http.server 8810 --directory crazy-weapon-man-site/public >/tmp/cwm-v28-http.log 2>&1 &
+          python3 -m http.server 8810 --directory crazy-weapon-man-site/public >/tmp/cwm-v29-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
           sleep 0.6
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
-          URL='http://127.0.0.1:8810/?runtimeV28Smoke=1'
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=5500 --dump-dom "$URL" >/tmp/cwm-v28-dom.html 2>/tmp/cwm-v28-chrome.log
-          grep -q 'data-cwm-character-role="ARCANE"' /tmp/cwm-v28-dom.html
-          grep -q 'data-cwm-character-error=""' /tmp/cwm-v28-dom.html
-          grep -q 'data-cwm-attack-v28="pass"' /tmp/cwm-v28-dom.html
-          COOLDOWNS=$(grep -o 'data-cwm-attack-cooldowns="[^"]*"' /tmp/cwm-v28-dom.html | head -1 | cut -d'"' -f2)
-          FRAMES=$(grep -o 'data-cwm-character-frames="[^"]*"' /tmp/cwm-v28-dom.html | head -1 | cut -d'"' -f2)
-          OUTFIT_FRAMES=${FRAMES%/*}
-          HP_FRAMES=${FRAMES#*/}
-          test "$OUTFIT_FRAMES" -ge 1
-          test "$HP_FRAMES" -ge 1
-          echo "V28 actual game-loop outfit/HP frames: $FRAMES"
-          echo "V28 base cooldowns: $COOLDOWNS"
+          URL='http://127.0.0.1:8810/?characterV29Smoke=1&runtimeV28Smoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=5500 --dump-dom "$URL" >/tmp/cwm-v29-dom.html 2>/tmp/cwm-v29-chrome.log
+          grep -q 'data-cwm-hair-v29="pass"' /tmp/cwm-v29-dom.html
+          grep -q 'data-cwm-hair-type="wand"' /tmp/cwm-v29-dom.html
+          grep -q 'data-cwm-hair-error=""' /tmp/cwm-v29-dom.html
+          grep -q 'data-cwm-outfit-overlay="none"' /tmp/cwm-v29-dom.html
+          grep -q 'data-cwm-player-hp-v29="pass"' /tmp/cwm-v29-dom.html
+          grep -q 'data-cwm-player-hp-error=""' /tmp/cwm-v29-dom.html
+          grep -q 'data-cwm-attack-v28="pass"' /tmp/cwm-v29-dom.html
+          HAIR=$(grep -o 'data-cwm-hair-frames="[^"]*"' /tmp/cwm-v29-dom.html | head -1 | cut -d'"' -f2)
+          HAIR_COLOR=$(grep -o 'data-cwm-hair-color="[^"]*"' /tmp/cwm-v29-dom.html | head -1 | cut -d'"' -f2)
+          HP=$(grep -o 'data-cwm-player-hp-frames="[^"]*"' /tmp/cwm-v29-dom.html | head -1 | cut -d'"' -f2)
+          COOLDOWNS=$(grep -o 'data-cwm-attack-cooldowns="[^"]*"' /tmp/cwm-v29-dom.html | head -1 | cut -d'"' -f2)
+          test "$HAIR" -ge 1
+          test "$HP" -ge 1
+          echo "V29 hair frames: $HAIR"
+          echo "V29 hair color: $HAIR_COLOR"
+          echo "V29 HP frames: $HP"
+          echo "V29 base cooldowns: $COOLDOWNS"
           echo "$COOLDOWNS" | grep -q 'sword:0.299'
           echo "$COOLDOWNS" | grep -q 'dagger:0.1667'
           echo "$COOLDOWNS" | grep -q 'nunchucks:0.184'
@@ -55,16 +67,16 @@ jobs:
       - name: Capture actual playing screen
         run: |
           set -euo pipefail
-          python3 -m http.server 8811 --directory crazy-weapon-man-site/public >/tmp/cwm-v28-shot-http.log 2>&1 &
+          python3 -m http.server 8811 --directory crazy-weapon-man-site/public >/tmp/cwm-v29-shot-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
           sleep 0.6
           CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
-          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4000 --screenshot=/tmp/cwm-runtime-v28.png 'http://127.0.0.1:8811/?runtimeV28Smoke=1' 2>/tmp/cwm-v28-shot.log
-          test -s /tmp/cwm-runtime-v28.png
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4000 --screenshot=/tmp/cwm-character-v29.png 'http://127.0.0.1:8811/?characterV29Smoke=1&runtimeV28Smoke=1' 2>/tmp/cwm-v29-shot.log
+          test -s /tmp/cwm-character-v29.png
       - name: Upload actual gameplay screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: runtime-v28-actual-gameplay
-          path: /tmp/cwm-runtime-v28.png
+          name: character-v29-actual-gameplay
+          path: /tmp/cwm-character-v29.png
           retention-days: 5
