@@ -6,6 +6,7 @@ on:
       - crazy-weapon-man-web
     paths:
       - 'crazy-weapon-man-site/public/enemy-impact-v23.js'
+      - 'crazy-weapon-man-site/public/nightmare-mutants-v18.js'
       - 'crazy-weapon-man-site/public/index.html'
       - '.github/workflows/impact-v23.yml'
   workflow_dispatch:
@@ -22,8 +23,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Syntax check impact module
-        run: node --check crazy-weapon-man-site/public/enemy-impact-v23.js
+      - name: Syntax check impact modules
+        run: |
+          node --check crazy-weapon-man-site/public/enemy-impact-v23.js
+          node --check crazy-weapon-man-site/public/nightmare-mutants-v18.js
+          grep -q 'passiveHalo:false' crazy-weapon-man-site/public/nightmare-mutants-v18.js
 
       - name: Browser struck animation proof
         shell: bash
