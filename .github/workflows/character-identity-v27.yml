@@ -1,0 +1,49 @@
+name: Character Identity V27 Validation
+
+on:
+  push:
+    branches: [crazy-weapon-man-web]
+    paths:
+      - 'crazy-weapon-man-site/public/character-identity-v27.js'
+      - 'crazy-weapon-man-site/public/index.html'
+      - '.github/workflows/character-identity-v27.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-character-identity-v27:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/character-identity-v27.js
+          grep -q 'character-identity-v27.js' crazy-weapon-man-site/public/index.html
+          grep -q 'CRAZY WEAPON MAN' crazy-weapon-man-site/public/character-identity-v27.js
+      - name: Browser identity proof
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8805 --directory crazy-weapon-man-site/public >/tmp/cwm-v27-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8805/?characterIdentityV27Smoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=4500 --dump-dom "$URL" >/tmp/cwm-v27-dom.html 2>/tmp/cwm-v27-chrome.log
+          grep -q 'data-cwm-v27-proof="pass"' /tmp/cwm-v27-dom.html
+          grep -q 'data-cwm-v27-role="caster"' /tmp/cwm-v27-dom.html
+      - name: Capture showcase
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8806 --directory crazy-weapon-man-site/public >/tmp/cwm-v27-show-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.5
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1440,900 --virtual-time-budget=2500 --screenshot=/tmp/character-identity-v27.png 'http://127.0.0.1:8806/?characterIdentityV27Smoke=1' 2>/tmp/cwm-v27-show.log
+          test -s /tmp/character-identity-v27.png
+      - name: Upload QA screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: character-identity-v27-showcase
+          path: /tmp/character-identity-v27.png
+          retention-days: 5
