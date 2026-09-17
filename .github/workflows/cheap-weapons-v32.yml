@@ -1,0 +1,71 @@
+name: Cheap Weapons V32 Validation
+
+on:
+  push:
+    branches: [crazy-weapon-man-web]
+    paths:
+      - 'crazy-weapon-man-site/public/index.html'
+      - 'crazy-weapon-man-site/public/cheap-weapon-defects-v32.js'
+      - '.github/workflows/cheap-weapons-v32.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-cheap-weapons:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and integration checks
+        run: |
+          node --check crazy-weapon-man-site/public/cheap-weapon-defects-v32.js
+          grep -q 'cheap-weapon-defects-v32.js' crazy-weapon-man-site/public/index.html
+          grep -q "RATE=\[.86,.62,.18,.06,.02,.006\]" crazy-weapon-man-site/public/cheap-weapon-defects-v32.js
+          grep -q 'ASSEMBLED BACKWARDS' crazy-weapon-man-site/public/cheap-weapon-defects-v32.js
+          grep -q 'CHEAP WIRING' crazy-weapon-man-site/public/cheap-weapon-defects-v32.js
+      - name: Validate live generated defect rates and side effects
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8840 --directory crazy-weapon-man-site/public >/tmp/cwm-cheap-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8840/?cheapV32Smoke=1&runtimeV28Smoke=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=8500 --dump-dom "$URL" >/tmp/cwm-cheap-dom.html 2>/tmp/cwm-cheap-chrome.log
+          if ! grep -q 'data-cwm-cheap-v32="pass"' /tmp/cwm-cheap-dom.html; then
+            echo 'Cheap weapon rate validation failed'
+            grep -o 'data-cwm-cheap-[^ >]*' /tmp/cwm-cheap-dom.html | tail -30 || true
+            tail -100 /tmp/cwm-cheap-chrome.log || true
+            exit 1
+          fi
+          grep -q 'data-cwm-cheap-trigger="pass"' /tmp/cwm-cheap-dom.html
+          RATES=$(grep -o 'data-cwm-cheap-rates="[^"]*"' /tmp/cwm-cheap-dom.html | head -1 | cut -d'"' -f2)
+          COUNTS=$(grep -o 'data-cwm-cheap-counts="[^"]*"' /tmp/cwm-cheap-dom.html | head -1 | cut -d'"' -f2)
+          DOUBLE=$(grep -o 'data-cwm-cheap-double="[^"]*"' /tmp/cwm-cheap-dom.html | head -1 | cut -d'"' -f2)
+          echo "Actual Common|Rare|Epic defect rates: $RATES"
+          echo "Sample counts: $COUNTS"
+          echo "Double-defect Common weapons: $DOUBLE"
+          test "$DOUBLE" -gt 50
+      - name: Capture live roasted Common weapon
+        run: |
+          set -euo pipefail
+          python3 -m http.server 8841 --directory crazy-weapon-man-site/public >/tmp/cwm-cheap-shot-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID >/dev/null 2>&1 || true' EXIT
+          sleep 0.6
+          CHROME="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          URL='http://127.0.0.1:8841/?cheapV32Showcase=1'
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4200 --dump-dom "$URL" >/tmp/cwm-cheap-show-dom.html 2>/tmp/cwm-cheap-show-chrome.log
+          grep -q 'data-cwm-cheap-showcase-rarity="Common"' /tmp/cwm-cheap-show-dom.html
+          grep -q 'data-cwm-cheap-showcase-defects=' /tmp/cwm-cheap-show-dom.html
+          NAME=$(grep -o 'data-cwm-cheap-showcase="[^"]*"' /tmp/cwm-cheap-show-dom.html | head -1 | cut -d'"' -f2)
+          DEFECTS=$(grep -o 'data-cwm-cheap-showcase-defects="[^"]*"' /tmp/cwm-cheap-show-dom.html | head -1 | cut -d'"' -f2)
+          echo "Showcase weapon: $NAME"
+          echo "Defects: $DEFECTS"
+          "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1500,820 --virtual-time-budget=4200 --screenshot=/tmp/cwm-cheap-v32.png "$URL" 2>/tmp/cwm-cheap-shot.log
+          test -s /tmp/cwm-cheap-v32.png
+      - name: Upload bargain-bin screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: cheap-weapons-v32-showcase
+          path: /tmp/cwm-cheap-v32.png
+          retention-days: 5
