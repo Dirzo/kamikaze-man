@@ -21,11 +21,18 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 - Art pipeline: `python3 crazy-weapon-man-site/art-src/build_assets.py` writes `public/assets/px/` (PNGs + `manifest.json` with palette and font glyphs; the game reads both from there). `scene.py` still renders the style sheet.
 - `tests/smoke.sh`: legacy self-tests run with `nopx`; new check that the pixel renderer reports ready.
 
+**Art pass done (same day)**
+- All 10 zones: backdrop + ground + platform slab each (`art-src/zones.py`); citadel and forge redone as castle/smithy to keep everything fantasy.
+- All 16 regular enemies (`art-src/enemies.py`, shared colour key; walk1/walk2/white hit frame).
+- All 6 bosses (`art-src/bosses.py`; breathe frame, hit frame, enraged flicker); core `drawBoss` defers to `CWM_PX.bossBody`.
+- 9 held weapon types + 2 loot-drop icons (`art-src/weapons.py`): magenta marker pixels recoloured in game to 3 palette shades of the rarity colour; higher rarities scale in whole-pixel steps (1x/2x/3x). Hooks: `CWM_PX.weaponBody`, `CWM_PX.dropBody`.
+- Translucent effects (fill/stroke with alpha) draw as a 4x4 Bayer stipple in the nearest palette colour instead of blending, so every legacy glow/ring/trail stays on-palette. `?nodither` turns this off.
+- Preview hooks for screenshots: `CWM_PX.previewZone(n)`, `previewBoss(kind)`, `previewWeapon(type, rank)`.
+
 **Next**
-- Backdrops for the other 6 map styles (zone -> backdrop map is `ZONE_ART` in the renderer).
-- Sprites for the remaining 16 enemy types and the 6 bosses; weapon sprites for the 9 weapon types (currently procedural vectors snapped to the palette); drops/loot gems; pixel FX for slashes, hits, explosions.
-- Phase 3 replaces the HTML HUD panels (still the old glassy UI) with the framed pixel bar from the style sheet.
-- Check the per-frame palette snap on a real device (readback measured ~0.5 ms alone in headless Chrome).
+- Phase 3: replace the HTML HUD panels with the framed pixel bar; restyle title/shop/level-up/death/leaderboard/Museum screens.
+- Phase 4: floating-text budget (the stopgap overlap rule is in the renderer), the dark boxes behind legacy text labels, trait/weapon-name jokes that are still modern (e.g. "Parking Enforcement", "Forklift").
+- Check the per-frame palette snap on a real device (~0.5 ms readback alone in headless Chrome).
 
 ## 2026-10-18 — Phase 1: consolidation
 

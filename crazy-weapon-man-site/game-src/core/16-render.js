@@ -1225,7 +1225,9 @@ function playerDraw() {
   X.lineCap = 'round';
   X.shadowColor = w.col;
   X.shadowBlur = q ? 8 + q * 7 : 2;
-  if (w.type === 'sword') {
+  if (globalThis.CWM_PX && globalThis.CWM_PX.weaponBody(w, q, sc, atk)) {
+    // pixel weapon sprite drawn
+  } else if (w.type === 'sword') {
     let len = 58 * sc,
       th = 6 + q * 1.5;
     X.strokeStyle = '#7b5b3e';
@@ -1980,6 +1982,7 @@ function draw() {
     let q = rarityRank(d.item),
       riq = rarityIndex(d.item),
       sz = 9 + q * 3;
+    if (globalThis.CWM_PX && globalThis.CWM_PX.dropBody(d, q, riq)) continue;
     X.save();
     X.translate(d.x, d.y);
     X.rotate(time * (4 + q * 0.7));

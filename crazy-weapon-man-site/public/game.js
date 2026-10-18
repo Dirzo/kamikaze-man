@@ -11903,7 +11903,9 @@ function playerDraw() {
   X.lineCap = 'round';
   X.shadowColor = w.col;
   X.shadowBlur = q ? 8 + q * 7 : 2;
-  if (w.type === 'sword') {
+  if (globalThis.CWM_PX && globalThis.CWM_PX.weaponBody(w, q, sc, atk)) {
+    // pixel weapon sprite drawn
+  } else if (w.type === 'sword') {
     let len = 58 * sc,
       th = 6 + q * 1.5;
     X.strokeStyle = '#7b5b3e';
@@ -12658,6 +12660,7 @@ function draw() {
     let q = rarityRank(d.item),
       riq = rarityIndex(d.item),
       sz = 9 + q * 3;
+    if (globalThis.CWM_PX && globalThis.CWM_PX.dropBody(d, q, riq)) continue;
     X.save();
     X.translate(d.x, d.y);
     X.rotate(time * (4 + q * 0.7));
@@ -22614,6 +22617,12 @@ function render() {
     applyMap(zoneI);
     return Z[zoneI].name;
   };
+  PX.previewWeapon = (type, rank = 0) => {
+    const w = makeExactRankWeapon(pl.lv, rank);
+    w.type = type;
+    pl.weapon = w;
+    return w.rar + ' ' + type;
+  };
   PX.previewBoss = kind => {
     startBoss(kind);
     return bossMode;
@@ -22688,6 +22697,66 @@ function render() {
     if (colourCache.size > 400) colourCache.clear();
     colourCache.set(style, hit);
     return hit;
+  }
+
+  // ---- translucency as ordered dither ---------------------------------------------------
+  // Blended translucent effects snap to muddy greys on a 32-colour palette. In pixel mode a
+  // translucent fill/stroke is drawn opaque through a 4x4 Bayer stipple in the nearest palette
+  // colour (how 16-bit games faked transparency). The pattern is locked to the device pixel grid.
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  const patCache = new Map();
+  const alphaCache = new Map();
+  function styleAlpha(style) {
+    let a = alphaCache.get(style);
+    if (a !== undefined) return a;
+    probe.clearRect(0, 0, 1, 1);
+    probe.fillStyle = '#000';
+    probe.fillStyle = style;
+    probe.fillRect(0, 0, 1, 1);
+    a = probe.getImageData(0, 0, 1, 1).data[3] / 255;
+    if (alphaCache.size > 400) alphaCache.clear();
+    alphaCache.set(style, a);
+    return a;
+  }
+  function stipple(hex, level) {
+    const key = hex + level;
+    let p = patCache.get(key);
+    if (p) return p;
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 4;
+    const g = cv.getContext('2d');
+    g.fillStyle = hex;
+    for (let i = 0; i < 16; i++) if (BAYER[i] < level) g.fillRect(i % 4, i >> 2, 1, 1);
+    p = X.createPattern(cv, 'repeat');
+    if (patCache.size > 600) patCache.clear();
+    patCache.set(key, p);
+    return p;
+  }
+  function dithered(prop, fn) {
+    return function (...args) {
+      const style = X[prop];
+      if (!LUT || typeof style !== 'string') return fn.apply(X, args);
+      const a = X.globalAlpha * styleAlpha(style);
+      if (a >= 0.94) return fn.apply(X, args);
+      const level = Math.round(a * 16);
+      if (level <= 0) return;
+      const p = stipple(paletteHex(style), level);
+      p.setTransform(X.getTransform().inverse());
+      X.save();
+      X.globalAlpha = 1;
+      X[prop] = p;
+      try {
+        return fn.apply(X, args);
+      } finally {
+        X.restore();
+      }
+    };
+  }
+  if (!params.has('nodither')) {
+    X.fill = dithered('fillStyle', X.fill.bind(X));
+    X.fillRect = dithered('fillStyle', X.fillRect.bind(X));
+    X.stroke = dithered('strokeStyle', X.stroke.bind(X));
+    X.strokeRect = dithered('strokeStyle', X.strokeRect.bind(X));
   }
 
   // ---- pixel font ----------------------------------------------------------------------
@@ -22811,7 +22880,7 @@ function render() {
   };
 
   // ---- assets ----------------------------------------------------------------------------
-  const ART = { hero: null, enemies: {}, bosses: {}, bg: {}, slabs: {}, zones: [], man: null };
+  const ART = { hero: null, enemies: {}, bosses: {}, weapons: {}, bg: {}, slabs: {}, zones: [], man: null };
   const loadImg = src =>
     new Promise((res, rej) => {
       const im = new Image();
@@ -22845,6 +22914,11 @@ function render() {
       await Promise.all(
         Object.entries(man.bosses || {}).map(
           async ([type, info]) => (ART.bosses[type] = { im: await loadImg(base + 'boss-' + type + '.png'), ...info })
+        )
+      );
+      await Promise.all(
+        Object.entries(man.weapons || {}).map(
+          async ([type, info]) => (ART.weapons[type] = { im: await loadImg(base + 'weapon-' + type + '.png'), ...info })
         )
       );
       ART.zones = man.zones || [];
@@ -22958,6 +23032,85 @@ function render() {
       lift = windP > 0 ? -windP * 2 / S : 0;
     X.drawImage(a.im, f * a.w, 0, a.w, a.h, -sw / 2, e.h / 2 - sh + 1 / S + lift, sw, sh);
     PX.stats.enemyDraws++;
+    return true;
+  };
+
+  // ---- held weapons (called from core playerDraw inside the arm's swing transform) --------
+  // Magenta marker pixels become three palette shades of the weapon's rarity colour.
+  const tintCache = new Map();
+  function snapRgb(r, g, b) {
+    const c = LUT[(clampByte(r) >> 3) | ((clampByte(g) >> 3) << 5) | ((clampByte(b) >> 3) << 10)];
+    return c;
+  }
+  const clampByte = v => Math.max(0, Math.min(255, Math.round(v)));
+  function tinted(type, a, hex) {
+    const key = type + '|' + hex;
+    let cv = tintCache.get(key);
+    if (cv) return cv;
+    const [r, g, b] = hexRgb(hex);
+    const mid = snapRgb(r, g, b),
+      light = snapRgb(r + (255 - r) * 0.55, g + (255 - g) * 0.55, b + (255 - b) * 0.55),
+      dark = snapRgb(r * 0.55, g * 0.55, b * 0.55);
+    cv = document.createElement('canvas');
+    cv.width = a.w;
+    cv.height = a.h;
+    const gx = cv.getContext('2d');
+    gx.drawImage(a.im, 0, 0);
+    const img = gx.getImageData(0, 0, a.w, a.h),
+      d = new Uint32Array(img.data.buffer);
+    for (let i = 0; i < d.length; i++) {
+      const c = d[i] & 0xffffff;
+      if (c === 0xff00ff) d[i] = mid;
+      else if (c === 0xff80ff) d[i] = light;
+      else if (c === 0x800080) d[i] = dark;
+    }
+    gx.putImageData(img, 0, 0);
+    if (tintCache.size > 200) tintCache.clear();
+    tintCache.set(key, cv);
+    return cv;
+  }
+  PX.weaponBody = function (w, q, sc, atk) {
+    const a = PX.ready && LUT && ART.weapons[w.type];
+    if (!a) return false;
+    const k = sc < 1.7 ? 1 : sc < 2.6 ? 2 : 3; // bigger rarities grow in whole-pixel steps
+    const m = X.getTransform(),
+      u = k / (Math.hypot(m.a, m.b) || S); // local units per sprite pixel
+    const cv = tinted(w.type, a, paletteHex(w.col));
+    X.drawImage(cv, -a.gx * u, -a.gy * u, a.w * u, a.h * u);
+    PX.stats.weaponDraws = (PX.stats.weaponDraws || 0) + 1;
+    return true;
+  };
+
+  // ---- loot drops: bobbing rarity-tinted gem / armour piece, stippled glow on rare ones ---
+  PX.dropBody = function (d, q, riq) {
+    const a = PX.ready && LUT && ART.weapons[d.item.kind === 'armor' ? 'drop-armor' : 'drop-gem'];
+    if (!a) return false;
+    const hex = paletteHex(d.item.col),
+      cv = tinted(d.item.kind === 'armor' ? 'drop-armor' : 'drop-gem', a, hex);
+    const bob = Math.round(Math.sin(time * 4 + d.x * 0.01) * 1.5);
+    const p = X.getTransform().transformPoint(new DOMPoint(d.x, d.y));
+    const k = q >= 6 ? 2 : 1,
+      x0 = Math.round(p.x - (a.w * k) / 2),
+      y0 = Math.round(p.y - (a.h * k) / 2) + bob;
+    X.save();
+    X.setTransform(1, 0, 0, 1, 0, 0);
+    if (q >= 2) {
+      // short light pillar + stippled halo for anything rare or better
+      X.globalAlpha = 0.5;
+      X.fillStyle = hex;
+      X.fillRect(Math.round(p.x) - 1, y0 - 10 - q * 2, 2, 10 + q * 2);
+      X.globalAlpha = 0.35;
+      X.fillRect(x0 - 2, y0 - 2, a.w * k + 4, a.h * k + 4);
+      X.globalAlpha = 1;
+    }
+    X.drawImage(cv, 0, 0, a.w, a.h, x0, y0, a.w * k, a.h * k);
+    X.restore();
+    if (riq >= 3) {
+      X.fillStyle = d.item.col;
+      X.textAlign = 'center';
+      X.font = '700 12px system-ui';
+      X.fillText(d.item.name, d.x, d.y - 18 - q * 2);
+    }
     return true;
   };
 

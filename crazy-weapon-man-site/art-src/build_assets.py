@@ -34,6 +34,7 @@ HERO_FRAMES = {
 
 from enemies import ENEMIES, ENEMY_KEY
 from bosses import BOSSES
+from weapons import WEAPONS, weapon_image
 
 
 def frame2(rows, alt):
@@ -98,6 +99,13 @@ def main():
         f2 = flip(outlined(shifted))
         strip([f1, f2, white(f1)]).save(os.path.join(OUT, f'boss-{btype}.png'))
         man['bosses'][btype] = {'w': f1.width, 'h': f1.height, 'frames': ['idle1', 'idle2', 'hit']}
+
+    # held weapons: outlined, magenta markers recoloured in game; grip offset +1 for the outline
+    man['weapons'] = {}
+    for wtype, ((gx, gy), rows) in WEAPONS.items():
+        im = outlined(weapon_image(rows))
+        im.save(os.path.join(OUT, f'weapon-{wtype}.png'))
+        man['weapons'][wtype] = {'w': im.width, 'h': im.height, 'gx': gx + 1, 'gy': gy + 1}
 
     # zone backdrops + per-zone platform slabs (3-slice: 9 | 9 | 9)
     man['zones'] = []
