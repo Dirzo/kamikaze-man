@@ -323,7 +323,7 @@
       max: o.crit ? 0.22 : 0.12,
       r: o.crit ? 34 : 19
     });
-    if (e.hp <= 0) killE(e, n >= before, o.sourceMod || null, o.sourceDam || n);
+    if (e.hp <= 0) killE(e, n >= before && before >= e.max, o.sourceMod || null, o.sourceDam || n); // one-shot = from full health
     return n;
   }
   function crit(e, b = 0.0) {
@@ -1340,7 +1340,7 @@
           cc: cchance()
         });
       }
-      txt(pl.x + 17, pl.y - 36, 'GHOST SHIFT CLOCKED IN', '#d5ddff', false);
+      txt(pl.x + 17, pl.y - 36, 'GHOST SHIFT ON THE ROSTER', '#d5ddff', false);
     }
     if (hasTrait(w, 'jazzhands') && pl.combo % 5 === 0) {
       for (let i = 0; i < 8; i++) {
@@ -1544,7 +1544,7 @@
     if (q >= 7 && pl.combo % 5 === 0 && nearby.length) {
       let t = pick(nearby);
       boom(t.x + t.w / 2, t.y + t.h / 2, w.col, 135 + q * 9, 1);
-      txt(t.x, t.y - 35, 'OSHA VIOLATION', w.col, false);
+      txt(t.x, t.y - 35, 'GUILD-SAFETY VIOLATION', w.col, false);
     }
     if (q >= 8 && pl.combo % 4 === 0) {
       for (const e of nearby.slice(0, Math.min(5, q - 2))) {
@@ -1878,7 +1878,7 @@
       pl.warranty--;
       pl.hp = 1;
       pl.inv = 2;
-      txt(pl.x + 17, pl.y - 40, 'WARRANTY CLAIM APPROVED', '#fff176', true);
+      txt(pl.x + 17, pl.y - 40, 'BLESSING CLAIM APPROVED', '#fff176', true);
       return;
     }
     pl.hp -= h;

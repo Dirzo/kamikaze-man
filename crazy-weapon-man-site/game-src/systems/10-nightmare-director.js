@@ -108,7 +108,7 @@
     e.__nightWhirlShot = 0;
     e.__nightWhirlHit = 0;
     e.__nightWhirlFinal = final;
-    announceBoss(e, final ? 'APOCALYPSE BLENDER' : 'WHIRLWIND PANIC', final ? '#ffffff' : '#ffce66');
+    announceBoss(e, final ? 'APOCALYPSE MILLSTONE' : 'WHIRLWIND PANIC', final ? '#ffffff' : '#ffce66');
   }
   function prisonLaserCombo(e) {
     prison(e, true);
@@ -147,10 +147,10 @@
       whirlwind(e, 3.15 + phase * 0.2, false);
       laserFan(e, 4, 0.22);
     } else if (move === 'fan') {
-      announceBoss(e, 'PANIC LASER FAN', '#ff5a72');
+      announceBoss(e, 'PANIC BEAM FAN', '#ff5a72');
       laserFan(e, 5 + Math.min(2, phase), 0.28);
     } else if (move === 'grid') {
-      announceBoss(e, 'LASER GRID // DO NOT PANIC', '#ffdf67');
+      announceBoss(e, 'BEAM GRID // DO NOT PANIC', '#ffdf67');
       laserGrid(e);
     } else if (move === 'prison') {
       announceBoss(e, 'YOU ARE GOING TO JAIL', '#ff5577');

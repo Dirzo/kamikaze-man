@@ -33,11 +33,23 @@
     applyMap(zoneI);
     return Z[zoneI].name;
   };
-  PX.previewWeapon = (type, rank = 0) => {
+  PX.previewWeapon = (type, rank = 0, trait = '') => {
     const w = makeExactRankWeapon(pl.lv, rank);
     w.type = type;
+    if (trait) w.traits = [...(w.traits || []), TRAITS.find(t => t.code === trait)].filter(Boolean);
     pl.weapon = w;
     return w.rar + ' ' + type;
+  };
+  PX.sampleByRank = (ranks = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20], n = 3) =>
+    ranks.map(r => {
+      const ws = Array.from({ length: n }, () => makeExactRankWeapon(pl.lv, r));
+      return { rank: r, rar: ws[0].rar, q: rarityRank(ws[0]), names: ws.map(w => w.name) };
+    });
+  PX.sampleNames = (n = 40) => {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(makeW(pl.lv + i).name);
+    for (const t of Object.keys(ED)) if (!ED[t].boss) out.push(enemyName(t, Math.random() < 0.4));
+    return out;
   };
   PX.previewBoss = kind => {
     startBoss(kind);
@@ -274,7 +286,8 @@
     else dy -= 7 * k; // alphabetic / bottom
     // Readability rule until the phase-4 text budget: skip text that would land on text already
     // drawn this frame (earlier draws win: world labels, then the player, then floating text).
-    if (X.globalAlpha < 0.35 || textRects.length >= 14) {
+    // PX.forceText: speech bubbles always print (they draw their own solid box)
+    if (!PX.forceText && (X.globalAlpha < 0.35 || textRects.length >= 14)) {
       PX.stats.textCulled++;
       return;
     }
@@ -282,7 +295,7 @@
       ry = Math.round(dy) - 1,
       rw = cv.width,
       rh = cv.height;
-    for (const r of textRects) {
+    if (!PX.forceText) for (const r of textRects) {
       const ox = Math.min(rx + rw, r[0] + r[2]) - Math.max(rx, r[0]),
         oy = Math.min(ry + rh, r[1] + r[3]) - Math.max(ry, r[1]);
       if (ox > 1 && oy > 1 && ox * oy > rw * rh * 0.08) {
@@ -553,6 +566,12 @@
     return t.trimEnd() + '..';
   };
   PX.paletteHex = s => paletteHex(s);
+  // internals for systems/40-weapon-looks.js
+  PX.afterWorld = [];
+  PX._art = ART;
+  PX._hexRgb = hexRgb;
+  PX._snapRgb = (r, g, b) => snapRgb(r, g, b);
+  PX._lutReady = () => !!LUT;
   PX.weaponIcon = (type, col) => {
     const a = ART.weapons[type];
     return a && LUT ? { cv: tinted(type, a, paletteHex(col)), w: a.w, h: a.h } : null;
@@ -586,10 +605,17 @@
   const draw0 = draw;
   draw = function () {
     textRects = [];
-    X.setTransform(S, 0, 0, S, 0, 0);
+    // whole-pixel screenshake offset from systems/32-game-feel.js (world layer only; HUD is drawn later)
+    X.setTransform(S, 0, 0, S, PX.shakeX || 0, PX.shakeY || 0);
     X.imageSmoothingEnabled = false;
     const r = draw0();
     X.setTransform(1, 0, 0, 1, 0, 0);
+    // extra world-layer painters (device pixels, before the palette snap), e.g. weapon-look particles
+    for (const f of PX.afterWorld) {
+      try {
+        f();
+      } catch (_) {}
+    }
     snapFrame();
     PX.stats.frames++;
     return r;

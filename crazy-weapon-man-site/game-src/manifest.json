@@ -21,6 +21,7 @@
     "core/18-mobile.js"
   ],
   "systems": [
+    "systems/00-damage-budget.js",
     "systems/01-elemental-weapons.js",
     "systems/02-arsenal-expansion.js",
     "systems/03-rarity-progression.js",
@@ -51,7 +52,16 @@
     "systems/28-attack-speed.js",
     "systems/29-player-hp.js",
     "systems/30-pixel-renderer.js",
-    "systems/31-pixel-hud.js"
+    "systems/31-pixel-hud.js",
+    "systems/32-game-feel.js",
+    "systems/33-chiptune.js",
+    "systems/34-chipmusic.js",
+    "systems/35-balance-probe.js",
+    "systems/36-weapon-names.js",
+    "systems/37-text-budget.js",
+    "systems/38-geese-sleepers.js",
+    "systems/39-weapon-curve.js",
+    "systems/40-weapon-looks.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [

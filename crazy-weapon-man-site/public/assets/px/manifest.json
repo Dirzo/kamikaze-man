@@ -596,6 +596,15 @@
     "hit"
    ]
   },
+  "goose": {
+   "w": 20,
+   "h": 20,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
   "stalker": {
    "w": 16,
    "h": 19,
@@ -856,6 +865,180 @@
    "w": 11,
    "h": 10,
    "gx": 5,
+   "gy": 5
+  },
+  "sword-blade": {
+   "w": 19,
+   "h": 6,
+   "gx": 2,
+   "gy": 2
+  },
+  "sword-broadsword": {
+   "w": 21,
+   "h": 9,
+   "gx": 2,
+   "gy": 4
+  },
+  "sword-longsword": {
+   "w": 27,
+   "h": 7,
+   "gx": 2,
+   "gy": 3
+  },
+  "sword-claymore": {
+   "w": 31,
+   "h": 9,
+   "gx": 2,
+   "gy": 4
+  },
+  "dagger-shiv": {
+   "w": 11,
+   "h": 5,
+   "gx": 2,
+   "gy": 2
+  },
+  "dagger-dirk": {
+   "w": 14,
+   "h": 7,
+   "gx": 2,
+   "gy": 3
+  },
+  "dagger-stiletto": {
+   "w": 15,
+   "h": 6,
+   "gx": 2,
+   "gy": 2
+  },
+  "dagger-knife": {
+   "w": 12,
+   "h": 5,
+   "gx": 2,
+   "gy": 2
+  },
+  "katana-nodachi": {
+   "w": 33,
+   "h": 6,
+   "gx": 3,
+   "gy": 3
+  },
+  "katana-curved-blade": {
+   "w": 19,
+   "h": 7,
+   "gx": 2,
+   "gy": 4
+  },
+  "katana-odachi": {
+   "w": 33,
+   "h": 6,
+   "gx": 3,
+   "gy": 3
+  },
+  "nunchucks-flails": {
+   "w": 17,
+   "h": 9,
+   "gx": 3,
+   "gy": 1
+  },
+  "nunchucks-chain-sticks": {
+   "w": 18,
+   "h": 5,
+   "gx": 2,
+   "gy": 2
+  },
+  "nunchucks-whackers": {
+   "w": 17,
+   "h": 9,
+   "gx": 2,
+   "gy": 2
+  },
+  "shuriken-throwing-star": {
+   "w": 9,
+   "h": 7,
+   "gx": 4,
+   "gy": 3
+  },
+  "shuriken-star": {
+   "w": 11,
+   "h": 9,
+   "gx": 5,
+   "gy": 4
+  },
+  "shuriken-disc": {
+   "w": 10,
+   "h": 8,
+   "gx": 2,
+   "gy": 4
+  },
+  "bow-longbow": {
+   "w": 9,
+   "h": 25,
+   "gx": 4,
+   "gy": 12
+  },
+  "bow-shortbow": {
+   "w": 8,
+   "h": 13,
+   "gx": 4,
+   "gy": 6
+  },
+  "bow-warbow": {
+   "w": 11,
+   "h": 21,
+   "gx": 4,
+   "gy": 10
+  },
+  "wand-twig": {
+   "w": 14,
+   "h": 6,
+   "gx": 2,
+   "gy": 3
+  },
+  "wand-rod": {
+   "w": 15,
+   "h": 6,
+   "gx": 2,
+   "gy": 2
+  },
+  "wand-baton": {
+   "w": 12,
+   "h": 6,
+   "gx": 2,
+   "gy": 2
+  },
+  "staff-stave": {
+   "w": 25,
+   "h": 5,
+   "gx": 3,
+   "gy": 2
+  },
+  "staff-scepter": {
+   "w": 23,
+   "h": 7,
+   "gx": 3,
+   "gy": 3
+  },
+  "staff-walking-stick": {
+   "w": 25,
+   "h": 7,
+   "gx": 3,
+   "gy": 2
+  },
+  "hammer-maul": {
+   "w": 23,
+   "h": 10,
+   "gx": 2,
+   "gy": 5
+  },
+  "hammer-mallet": {
+   "w": 17,
+   "h": 8,
+   "gx": 2,
+   "gy": 4
+  },
+  "hammer-bonker": {
+   "w": 19,
+   "h": 9,
+   "gx": 2,
    "gy": 5
   }
  },

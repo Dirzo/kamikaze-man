@@ -110,7 +110,7 @@
       X.globalAlpha = 0.65;
       X.fillStyle = '#75eaff';
       X.font = '900 15px system-ui';
-      X.fillText('MUNICIPAL SWORD PARKING', 36, 92);
+      X.fillText('MUNICIPAL SWORD TOLL-BRIDGE', 36, 92);
       X.globalAlpha = 0.3;
       X.font = '800 11px system-ui';
       X.fillText('WEAPON VALIDATION • LEVEL P1', 38, 111);

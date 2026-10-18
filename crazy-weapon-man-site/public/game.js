@@ -181,7 +181,7 @@
       nextBoss: 'bossman',
       map: 3,
       pool: ['taxman', 'shieldbro', 'blinker', 'mimic', 'sniper'],
-      sub: 'Management has privatized the feast hall. Every skeleton now has a meeting summons.',
+      sub: 'Management has privatized the feast hall. Every skeleton now has a council summons.',
       a: '#11131e',
       b: '#32384f',
       h: '#8c93b3',
@@ -208,7 +208,7 @@
       boss: 'bossman',
       map: 5,
       pool: ['taxman', 'sniper', 'roller', 'summoner', 'shieldbro', 'mimic'],
-      sub: 'The executive retreat is a frozen mountain fortress, hostile and aggressively KPI-driven. Boss Man is next.',
+      sub: 'The royal retreat is a frozen mountain fortress, hostile and aggressively KPI-driven. Boss Man is next.',
       a: '#0d1c2a',
       b: '#35647d',
       h: '#9de4ff',
@@ -250,7 +250,7 @@
       boss: 'ceo',
       map: 0,
       pool: ['taxman', 'shieldbro', 'sniper', 'blinker', 'roller', 'eyeball'],
-      sub: 'Every floor is a performance review. The CEO owns the floating staircases and most of your lunch break.',
+      sub: 'Every floor is a performance review. The CEO owns the floating staircases and most of your mead break.',
       a: '#17130b',
       b: '#51451d',
       h: '#ffd24f',
@@ -279,7 +279,7 @@
       traits: ['caffeine', 'confetti', 'rabbitlauncher', 'sneeze'],
       aliases: {
         stalker: 'Prototype Sword Apprentice',
-        crawler: 'Loose Ammo Gremlin',
+        crawler: 'Loose Arrow Gremlin',
         blinker: 'Teleporting Training Golem',
         bombchicken: 'Tactical Bomb Chicken',
         wizard: 'Particle-Effect Apprentice',
@@ -342,10 +342,10 @@
       aliases: {
         taxman: 'Senior Revenue Executioner',
         shieldbro: 'Golden-Parachute Knight',
-        sniper: 'Boardroom Crossbowman',
+        sniper: 'Throne-Room Crossbowman',
         blinker: 'Restructuring Shade',
-        roller: 'Executive Throne of Violence',
-        eyeball: 'Shareholder Scrying Orb'
+        roller: 'Royal Throne of Violence',
+        eyeball: 'Court Noble Scrying Orb'
       }
     },
     weapon: {
@@ -526,7 +526,7 @@
     } else if (mz === 1) {
       scene.kind = 'sewerriver';
       let rx = v === 0 ? 500 : v === 1 ? 230 : 760;
-      scene.water = { x: rx, w: 260, col: '#36f0b9', name: 'NEON SEWAGE' };
+      scene.water = { x: rx, w: 260, col: '#36f0b9', name: 'WITCHLIGHT SEWAGE' };
       if (v === 0) {
         add(90, 505, 190);
         add(350, 440, 130);
@@ -569,7 +569,7 @@
         add(880, 435, 170);
         add(1080, 535, 120);
       }
-      scene.water = { x: v === 2 ? 430 : 570, w: 170, col: '#ff5426', name: 'UNION LAVA' };
+      scene.water = { x: v === 2 ? 430 : 570, w: 170, col: '#ff5426', name: 'GUILD LAVA' };
     } else if (mz === 3) {
       scene.kind = 'boneravine';
       scene.water = { x: v === 0 ? 520 : v === 1 ? 170 : 860, w: 220, col: '#65718c', name: 'SOUP RAVINE' };
@@ -763,7 +763,7 @@
       'Sword-Shaped Liability',
       'Emergency Cutlery',
       'Curb Stomper',
-      'Long Knife of HR'
+      'Long Knife Of Grievances'
     ],
     dagger: [
       'Dagger',
@@ -774,7 +774,7 @@
       'Pocket Menace',
       'Tiny Crime',
       'Stabby Receipt',
-      'Lunch Break Shiv',
+      'Mead Break Shiv',
       'Needle of Regret',
       'Backspace'
     ],
@@ -783,8 +783,8 @@
       'Payroll Nunchucks',
       'Chain Complaint',
       'Double Bonk',
-      'HR Flails',
-      'Lunch Break Nunchucks',
+      'Grievance Flails',
+      'Mead Break Nunchucks',
       'Spinning Liability',
       'Two-Stick Problem',
       'Concussion Necklace',
@@ -792,10 +792,10 @@
     ],
     katana: [
       'Katana',
-      'Office Samurai',
+      'Scriptorium Samurai',
       'Overtime Katana',
       'Performance Review Blade',
-      'Long Meeting Ender',
+      'Long Council Ender',
       'Payroll Ronin',
       'Quarterly Cut',
       'Iaido Incident',
@@ -820,7 +820,7 @@
       'Ninja Receipt',
       'Throwing Problem',
       'Payroll Star',
-      'Five-Point HR Complaint',
+      'Five-Point Guild Grievance',
       'Spinny Liability',
       'Pocket Windmill',
       'Tax Star',
@@ -833,10 +833,10 @@
       'Hex Wand',
       'Spirit Wand',
       'Spark Wand',
-      'OSHA Wand',
-      'Parking Ticket Wand',
+      'Guild-Safety Wand',
+      'Toll Writ Wand',
       'Wizard Stick',
-      'Microwave Wand',
+      'Dragon-Oven Wand',
       'Compliance Rod',
       'Questionable Pointer'
     ],
@@ -849,8 +849,8 @@
       'Morbidly Obese Staff',
       'Payroll Staff',
       'Weather Stick',
-      'Wizard Rebar',
-      'Staff Meeting',
+      'Wizard Iron-Bar',
+      'Staff Council',
       'Long Problem'
     ],
     hammer: [
@@ -859,7 +859,7 @@
       'Stonebreaker',
       'Judgement Hammer',
       'Crusher',
-      'HR Complaint',
+      'Guild Grievance',
       'Municipal Hammer',
       'Concrete Opinion',
       'Bonk Engine',
@@ -880,14 +880,14 @@
     'Crooked',
     'Violent',
     'Unlicensed',
-    'Overcaffeinated',
+    'Over-Potioned',
     'Spiteful',
     'Jazz',
     'Aggressively Legal',
     'Emotionally Complicated',
     'Tax-Deductible',
     'Suspiciously Warm',
-    'Union-Made',
+    'Guild-Made',
     'Non-Euclidean',
     'Extremely Online',
     'Budget',
@@ -896,39 +896,39 @@
   const SUFFIXES = [
     'of Bad Decisions',
     'of Excessive Force',
-    'of the Parking Authority',
+    'of the Toll-Bridge Authority',
     'of Unscheduled Maintenance',
     'of Mild Panic',
     'of Weaponized Accounting',
     'of Questionable Intent',
     'of Greater Bonking',
     'of the Last Brain Cell',
-    'of OSHA Noncompliance',
+    'of Guild-Safety Noncompliance',
     'of Recursive Problems',
     'of the Tuesday Incident',
     'of Unpaid Overtime',
     'of Extremely Local Weather',
-    'of the Forbidden Food Court'
+    'of the Forbidden Feast Hall'
   ];
   const NAME_CHAOS = [
-    'OSHA-Adjacent',
-    'Parking-Lot Approved',
+    'Guild-Safety-Adjacent',
+    'Courtyard Approved',
     'Unsupervised',
     'Probably Legal',
     'Break-Room Certified',
     'Emotionally Overclocked',
     'Management-Resistant',
-    'Forklift Compatible',
+    'Siege-Ox Compatible',
     'After-Hours',
-    'Warranty-Void',
+    'Blessing-Void',
     'Suspiciously Motivated',
     'Municipally Questionable',
     'Aggressively Portable',
     'Payroll-Disputed',
     'Liability-Shaped',
-    'Meeting-Proof',
+    'Council-Proof',
     'Raccoon-Endorsed',
-    'Microwave-Adjacent',
+    'Dragon-Oven-Adjacent',
     'Deeply Unnecessary',
     'Budget-Unlimited'
   ];
@@ -1006,7 +1006,7 @@
       desc: 'attacks bounce into extra targets'
     },
     {
-      n: 'Nuclear',
+      n: 'Meteoric',
       code: 'nuclear',
       dam: 1.18,
       crit: 0,
@@ -1033,7 +1033,7 @@
       desc: 'the weapon attacks things by itself'
     },
     {
-      n: 'Plasma',
+      n: 'Starfire',
       code: 'plasma',
       dam: 1.1,
       crit: 0.025,
@@ -1136,12 +1136,12 @@
       desc: 'every few attacks honk a spectral weapon into somebody else'
     },
     {
-      n: 'Microwaved',
+      n: 'Oven-Blasted',
       code: 'microwaved',
       dam: 1.09,
       spd: 1.04,
       aoe: 1.16,
-      desc: 'periodically erupts into deeply unsafe plasma leftovers'
+      desc: 'periodically erupts into deeply unsafe starfire leftovers'
     },
     {
       n: 'Divorced',
@@ -1157,7 +1157,7 @@
       dam: 1.02,
       spd: 1.18,
       aoe: 1.04,
-      desc: 'somehow comfortable enough to become a workplace concern'
+      desc: 'somehow comfortable enough to become a kingdom concern'
     },
     {
       n: 'Loud',
@@ -1176,12 +1176,12 @@
       desc: 'occasionally attacks the wrong direction and somehow hits something'
     },
     {
-      n: 'Dishwasher Safe',
+      n: 'Cauldron Safe',
       code: 'dishwasher',
       dam: 1.03,
       spd: 1.06,
       aoe: 1.08,
-      desc: 'gets inexplicably stronger around water and industrial soup'
+      desc: 'gets inexplicably stronger around water and forge-grade soup'
     },
     {
       n: 'Emotionally Available',
@@ -1291,7 +1291,7 @@
 
   const META_TRAITS = [
     {
-      n: 'Quantumly Dubious',
+      n: 'Arcanely Dubious',
       code: 'quantum',
       dam: 1.06,
       spd: 1.08,
@@ -1299,7 +1299,7 @@
       desc: 'attacks sometimes occur twice because causality has poor supervision'
     },
     {
-      n: 'Internet Explorer Compatible',
+      n: 'Carrier-Pigeon Compatible',
       code: 'iexplorer',
       dam: 1.24,
       spd: 0.74,
@@ -1353,7 +1353,7 @@
     ],
     nunchucks: [
       ['chainstorm', 'every third combo becomes a spinning chain storm'],
-      ['blender', 'rapid hits drag enemies into the nunchuck blender'],
+      ['blender', 'rapid hits drag enemies into the nunchuck millstone'],
       ['orbitalkarate', 'ghost nunchucks orbit you and bonk independently']
     ],
     katana: [
@@ -1636,15 +1636,15 @@
     [60, 'VERY NICE!', 'The numbers are beginning to smile.'],
     [110, 'YOU ARE COOKING', 'Something irresponsible is happening.'],
     [180, 'CERTIFIED PROBLEM', 'Local enemies have filed paperwork.'],
-    [280, 'ABSOLUTE MENACE', 'This is becoming a workplace incident.'],
+    [280, 'ABSOLUTE MENACE', 'This is becoming a kingdom incident.'],
     [420, 'WEAPON ENTHUSIAST', 'Excellent form. Questionable intent.'],
-    [620, 'HR HAS BEEN NOTIFIED', 'HR cannot physically reach you.'],
-    [900, 'LOCAL LEGEND', 'Nearby monsters are updating their resumes.'],
+    [620, 'THE GUILD HAS BEEN NOTIFIED', 'The guild cannot physically reach you.'],
+    [900, 'LOCAL LEGEND', 'Nearby monsters are rewriting their wills.'],
     [1250, 'DEEPLY UNREASONABLE', 'The combo is now making its own decisions.'],
     [1700, 'PLEASE CONTINUE', 'This is objectively excellent behavior.'],
     [2300, 'THIS IS ART', 'Violence has become a creative medium.'],
     [3100, 'SLAUGHTER SCHOLAR', 'You have done the research.'],
-    [4100, 'APOCALYPSE INTERN', 'Promoted without additional compensation.'],
+    [4100, 'APOCALYPSE APPRENTICE', 'Promoted without additional compensation.'],
     [5400, 'DPS PHILOSOPHER', 'You understand the number on a spiritual level.'],
     [7000, 'COMBO ARCHITECT', 'Every enemy is structural material now.'],
     [9000, 'UNEMPLOYABLE', 'A powerful career milestone.'],
@@ -2970,7 +2970,7 @@
     {
       id: 'tinynuke',
       name: 'POCKET-SIZED WAR CRIME',
-      desc: 'Suspiciously Tiny + Nuclear: very fast tiny attacks cause very non-tiny explosions.',
+      desc: 'Suspiciously Tiny + Meteoric: very fast tiny attacks cause very non-tiny explosions.',
       test: w => hasTrait(w, 'tiny') && w.material?.code === 'nuclear'
     },
     {
@@ -2993,7 +2993,7 @@
     },
     {
       id: 'wetboat',
-      name: 'MARITIME OSHA EXEMPTION',
+      name: 'MARITIME GUILD-SAFETY EXEMPTION',
       desc: 'Legally A Boat + water: attacks leave damaging wakes and gain absurd reach.',
       test: w => hasTrait(w, 'boat')
     },
@@ -3132,15 +3132,15 @@
     'PLOT ARMOR FROM TEMU',
     'A MIRACLE, SORT OF',
     'SECOND WIND',
-    'THE INTERN BELIEVES IN YOU',
+    'THE APPRENTICE BELIEVES IN YOU',
     'LUCKY ENOUGH',
     'THE SOUNDTRACK PICKS UP',
-    'THE CAMERA ZOOMS IN',
+    'THE BARD LEANS IN',
     'MAIN CHARACTER PROBATION',
     'MAIN CHARACTER STATUS',
     'THE BOSS LOOKS NERVOUS',
     'ANIME HAIR ACTIVATED',
-    'HR CANNOT STOP THIS',
+    'THE GUILD CANNOT STOP THIS',
     'THE BUDGET INCREASED',
     'PROTAGONIST PRIVILEGE',
     'THE THEME SONG HAS LYRICS NOW',
@@ -3151,12 +3151,12 @@
   const D20_FATE_LINES = [
     'The universe rolls its eyes, but it does technically revive you.',
     'This is not a good roll. It is, however, much better than being dead.',
-    'The armor is cardboard. The comeback is real.',
+    'The armor is parchment. The comeback is real.',
     'Someone in accounting accidentally approved a miracle.',
     'You inhale violence and stand back up.',
-    'An unpaid intern somewhere whispers: you got this.',
+    'An unpaid apprentice somewhere whispers: you got this.',
     'Not legendary. Not embarrassing. Proceed.',
-    'The boss can suddenly hear electric guitars.',
+    'The boss can suddenly hear battle lutes.',
     'There is now an unnecessary close-up of your eye.',
     'You have been granted temporary narrative importance.',
     'The story has decided you are probably the protagonist.',
@@ -3164,11 +3164,11 @@
     'Your hair is not actually longer, but spiritually it absolutely is.',
     'Human Resources has lost jurisdiction over this fight.',
     'The animation studio has found several extra dollars.',
-    'Physics is now taking your side in meetings.',
+    'Physics is now taking your side in councils.',
     'The chorus kicks in and your weapon starts glowing irresponsibly.',
     'Several forms were signed. None of them were read.',
     'This weapon may constitute a minor religious event.',
-    'The D20 screams. Reality files for PTO.'
+    'The D20 screams. Reality files for feast days.'
   ];
   function d20Fate(roll) {
     let minRanks = [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 9, 10, 11, 13, 20],
@@ -3446,7 +3446,7 @@
     pl.dcd = 0;
     pl.vx = 0;
     pl.vy = -120;
-    styleAdd(260 + roll * 42, roll === 20 ? 'NATURAL 20 SUPER SAIYAN' : `D20 COMEBACK • ${roll}`);
+    styleAdd(260 + roll * 42, roll === 20 ? 'NATURAL 20 ASCENDED' : `D20 COMEBACK • ${roll}`);
     txt(
       W / 2,
       126,
@@ -3458,10 +3458,10 @@
       W / 2,
       166,
       roll === 1
-        ? 'EMBARRASSING SUPER SAIYAN'
+        ? 'EMBARRASSING ASCENDED'
         : roll >= 17
-          ? 'SUPER SAIYAN: ANIME BUDGET'
-          : 'SUPER SAIYAN ACTIVATED',
+          ? 'ASCENDED: BARDIC BUDGET'
+          : 'ASCENDED ACTIVATED',
       '#fff176',
       true
     );
@@ -4416,7 +4416,7 @@
         move: 0
       },
       {
-        name: 'EXECUTIVE VISOR',
+        name: 'ROYAL VISOR',
         desc: 'Quarterly earnings are up. Restraint is down.',
         armor: 9,
         damage: 0.08,
@@ -4481,8 +4481,8 @@
         move: 24
       },
       {
-        name: 'EXECUTIVE FLAK VEST',
-        desc: 'Boardroom protection for hostile workplace takeovers.',
+        name: 'ROYAL FLAK VEST',
+        desc: 'Throne-room protection for hostile kingdom takeovers.',
         armor: 18,
         damage: 0.12,
         speed: 0.08,
@@ -4501,7 +4501,7 @@
     ],
     feet: [
       {
-        name: 'ROCKET BOOTS',
+        name: 'GRIFFON BOOTS',
         desc: 'The floor becomes more of a scheduling suggestion.',
         armor: 7,
         damage: 0.04,
@@ -4511,7 +4511,7 @@
       },
       {
         name: 'STEEL-TOE GREAVES',
-        desc: 'Kick the problem until the spreadsheet agrees.',
+        desc: 'Kick the problem until the ledger agrees.',
         armor: 15,
         damage: 0.08,
         speed: 0.05,
@@ -5192,7 +5192,7 @@
     },
     {
       id: 'eliteunion',
-      name: 'ELITE UNION MEETING',
+      name: 'ELITE GUILD COUNCIL',
       desc: 'Too many enemies have benefits now. Several are elite.'
     },
     {
@@ -5275,7 +5275,7 @@
   const TERRAIN = [
     {
       id: 'conveyor',
-      name: 'UNION CONVEYOR FLOOR',
+      name: 'GUILD MILLWHEEL FLOOR',
       msg: 'The floor has joined organized labor and is moving sideways.'
     },
     { id: 'ice', name: 'LIABILITY ICE', msg: 'Stopping is now more of a long-term goal than an action.' },
@@ -5509,7 +5509,7 @@
     {
       id: 'disco',
       name: 'DISCO EMERGENCY',
-      msg: 'Everything gets faster because apparently this is a nightclub now.'
+      msg: 'Everything gets faster because apparently this is a tavern now.'
     },
     {
       id: 'lava',
@@ -5766,7 +5766,7 @@
     col: '#8c55cc',
     shape: 'blinker',
     atk: 'blink',
-    name: 'Backstab Intern'
+    name: 'Backstab Apprentice'
   };
   ED.summoner = {
     w: 43,
@@ -5793,7 +5793,7 @@
     shape: 'sniper',
     atk: 'laser',
     bolt: '#ffdd77',
-    name: 'OSHA Sniper'
+    name: 'Guild-Safety Sniper'
   };
   ED.roller = {
     w: 48,
@@ -5806,7 +5806,7 @@
     col: '#7b8794',
     shape: 'roller',
     atk: 'charge',
-    name: 'Aggressive Office Wheel'
+    name: 'Aggressive Scriptorium Wheel'
   };
   ED.bossjr = {
     w: 92,
@@ -5931,15 +5931,15 @@
     },
     {
       id: 'coupon',
-      name: 'Coupon Shrapnel',
+      name: 'Voucher Shrapnel',
       tag: 'SAVE 15% OR DIE',
       col: '#ffe86d',
-      desc: 'detonates expired coupons in every direction'
+      desc: 'detonates expired tavern vouchers in every direction'
     },
     {
       id: 'caffeine',
-      name: 'Dangerously Caffeinated',
-      tag: 'TOO MUCH COFFEE',
+      name: 'Dangerously Over-Brewed',
+      tag: 'TOO MUCH MANA POTION',
       col: '#d7985e',
       desc: 'gets random bursts of irresponsible movement speed'
     },
@@ -5980,8 +5980,8 @@
     },
     {
       id: 'microwave',
-      name: 'Microwave Vision',
-      tag: 'MICROWAVE EYES',
+      name: 'Basilisk Vision',
+      tag: 'BASILISK EYES',
       col: '#ff9257',
       desc: 'fires a short-range heating beam after a warning'
     },
@@ -6283,13 +6283,13 @@
     'Unauthorized',
     'Regional',
     'Extremely Motivated',
-    'Union',
-    'Executive',
+    'Guild',
+    'Royal',
     'Interim',
     'Freelance',
     'Emotionally Unavailable',
     'Night Shift',
-    'Turbo',
+    'Gale-Powered',
     'Budget',
     'Acting'
   ];
@@ -6372,7 +6372,7 @@
       hint: 'Interrupt the green casting circle or prepare to dodge the summons.'
     },
     sniper: {
-      how: 'LASER SHOT — long wind-up with a targeting line, then a very fast bolt.',
+      how: 'Beam shot — long wind-up with a targeting line, then a very fast bolt.',
       hint: 'The line is the answer key. Move before the shot.'
     },
     roller: {
@@ -6579,13 +6579,13 @@
     ceo: {
       name: 'CRAZY CEO MAN',
       sub: 'OWNER OF THE ARENA • TARGET CLEAR 24%',
-      line: 'He has acquired the floor, the ceiling, and your lunch break.',
+      line: 'He has acquired the floor, the ceiling, and your mead break.',
       quote: '“YOUR BUILD HAS BEEN RESTRUCTURED.”'
     },
     weapon: {
       name: 'THE WEAPON ITSELF',
       sub: 'SENTIENT DPS EVENT • TARGET CLEAR 20%',
-      line: 'Every bad decision has finally unionized into one object.',
+      line: 'Every bad decision has finally guild-certified into one object.',
       quote: '“YOU WERE NEVER HOLDING ME. I WAS HOLDING YOU.”'
     }
   };
@@ -6601,7 +6601,7 @@
     if (kind === 'sr')
       return [
         { x: 70, y: 520, w: 180, h: 18, tag: 'dad shelf' },
-        { x: 315, y: 420, w: 180, h: 18, tag: 'garage bench' },
+        { x: 315, y: 420, w: 180, h: 18, tag: 'forge bench' },
         { x: 565, y: 500, w: 150, h: 18, tag: 'questionable ramp' },
         { x: 790, y: 385, w: 190, h: 18, tag: 'weapon attic' },
         { x: 1030, y: 500, w: 170, h: 18, tag: 'inheritance' }
@@ -6618,7 +6618,7 @@
       return [
         { x: 60, y: 515, w: 155, h: 18, tag: 'subsidiary' },
         { x: 275, y: 390, w: 170, h: 18, tag: 'board seat' },
-        { x: 520, y: 495, w: 165, h: 18, tag: 'stock option' },
+        { x: 520, y: 495, w: 165, h: 18, tag: 'royal stipend' },
         { x: 755, y: 365, w: 190, h: 18, tag: 'penthouse' },
         { x: 1040, y: 505, w: 150, h: 18, tag: 'golden parachute' }
       ];
@@ -6634,9 +6634,9 @@
     return bossArenaVariant === 0
       ? [
           { x: 90, y: 540, w: 190, h: 18, tag: 'cubicle' },
-          { x: 380, y: 455, w: 200, h: 18, tag: 'meeting table' },
-          { x: 700, y: 375, w: 185, h: 18, tag: 'executive deck' },
-          { x: 1000, y: 505, w: 180, h: 18, tag: 'HR' }
+          { x: 380, y: 455, w: 200, h: 18, tag: 'council table' },
+          { x: 700, y: 375, w: 185, h: 18, tag: 'high council deck' },
+          { x: 1000, y: 505, w: 180, h: 18, tag: 'THE GUILD' }
         ]
       : bossArenaVariant === 1
         ? [
@@ -6831,11 +6831,11 @@
     let type = curW().type;
     e.adaptType = type;
     if (type === 'bow' || type === 'shuriken') {
-      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: SHIELD INTERN', '#bde8ff', true);
+      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: SHIELD APPRENTICE', '#bde8ff', true);
       if (E.filter(x => !x.dead && x.type === 'shieldbro').length < 2)
         spawn('shieldbro', clamp(e.x - 170, 80, W - 180), false);
     } else if (type === 'hammer') {
-      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: OSHA AIRSPACE', '#ffcf73', true);
+      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: GUILD-SAFETY AIRSPACE', '#ffcf73', true);
       for (let i = 0; i < 2 + e.phase; i++)
         bossHazards.push({ k: 'jrMeteor', x: rand(80, W - 80), t: 0.55 + i * 0.12, hit: false });
     } else if (type === 'staff' || type === 'wand') {
@@ -7457,7 +7457,7 @@
     {
       id: 'coffee',
       icon: '☕',
-      name: 'DANGEROUS AMOUNT OF COFFEE',
+      name: 'DANGEROUS AMOUNT OF MANA POTION',
       desc: '+18% attack speed. -8 armor. Your hands have become theoretical.',
       apply: () => {
         pl.boonSpeed *= 1.18;
@@ -7498,7 +7498,7 @@
     {
       id: 'support',
       icon: '🪚',
-      name: 'EMOTIONAL SUPPORT CHAINSAW',
+      name: 'EMOTIONAL SUPPORT WAR-SCYTHE',
       desc: '+10% damage and +50% heal-on-kill. It listens. Loudly.',
       apply: () => {
         pl.boonDamage *= 1.1;
@@ -7508,7 +7508,7 @@
     {
       id: 'intern',
       icon: '📎',
-      name: 'UNPAID COMBAT INTERN',
+      name: 'UNPAID COMBAT APPRENTICE',
       desc: 'Every 6th attack fires an autonomous spectral projectile. No benefits.',
       apply: () => {
         pl.boonIntern = (pl.boonIntern || 0) + 1;
@@ -7517,8 +7517,8 @@
     {
       id: 'warranty',
       icon: '🧾',
-      name: 'QUESTIONABLE WARRANTY',
-      desc: 'Once per boss, lethal damage leaves you at 1 HP and voids the warranty immediately.',
+      name: 'QUESTIONABLE BLESSING',
+      desc: 'Once per boss, lethal damage leaves you at 1 HP and voids the blessing immediately.',
       apply: () => {
         pl.warranty = (pl.warranty || 0) + 1;
       }
@@ -7527,7 +7527,7 @@
       id: 'space',
       icon: '📏',
       name: 'PERSONAL SPACE VIOLATION',
-      desc: '+25% attack size and reach. HR has been notified but is hiding.',
+      desc: '+25% attack size and reach. The guild has been notified but is hiding.',
       apply: () => {
         pl.aoeMult *= 1.25;
       }
@@ -7575,7 +7575,7 @@
       id: 'soup',
       icon: '🥣',
       name: 'SOUP-BASED ECONOMY',
-      desc: 'Standing in rivers or industrial soup grants +20% damage instead of dignity.',
+      desc: 'Standing in rivers or forge-grade soup grants +20% damage instead of dignity.',
       apply: () => {
         pl.boonSoup = (pl.boonSoup || 0) + 1;
       }
@@ -7584,7 +7584,7 @@
       id: 'screaming',
       icon: '📢',
       name: 'SCREAMING IS A BUFF',
-      desc: 'Every 5th attack makes a radial shockwave. The weapon has discovered podcasts.',
+      desc: 'Every 5th attack makes a radial shockwave. The weapon has discovered bardic ballads.',
       apply: () => {
         pl.boonScream = (pl.boonScream || 0) + 1;
       }
@@ -7601,8 +7601,8 @@
     {
       id: 'ceilingfan',
       icon: '🌀',
-      name: 'INDUSTRIAL CEILING FAN',
-      desc: 'Airborne enemies take +20% damage and get launched harder. OSHA says no.',
+      name: 'FORGE-GRADE CEILING FAN',
+      desc: 'Airborne enemies take +20% damage and get launched harder. Guild-safety says no.',
       apply: () => {
         pl.boonAir = (pl.boonAir || 0) + 1;
       }
@@ -7620,7 +7620,7 @@
     {
       id: 'forklift',
       icon: '🏗️',
-      name: 'FORKLIFT CERTIFIED',
+      name: 'SIEGE-OX CERTIFIED',
       desc: 'Knockback +35%. Wall splats restore a little mana.',
       apply: () => {
         pl.boonForklift = (pl.boonForklift || 0) + 1;
@@ -7629,7 +7629,7 @@
     {
       id: 'feral',
       icon: '🦝',
-      name: 'PARKING-LOT RACCOON MENTOR',
+      name: 'COURTYARD RACCOON MENTOR',
       desc: 'Low HP grants attack speed because fear has left the building.',
       apply: () => {
         pl.boonRaccoon = (pl.boonRaccoon || 0) + 1;
@@ -7638,7 +7638,7 @@
     {
       id: 'union',
       icon: '🤝',
-      name: 'UNION-MANDATED SECOND DASH',
+      name: 'GUILD-MANDATED SECOND DASH',
       desc: 'Elite kills reduce dash cooldown immediately.',
       apply: () => {
         pl.boonUnion = (pl.boonUnion || 0) + 1;
@@ -8124,7 +8124,7 @@
       max: o.crit ? 0.22 : 0.12,
       r: o.crit ? 34 : 19
     });
-    if (e.hp <= 0) killE(e, n >= before, o.sourceMod || null, o.sourceDam || n);
+    if (e.hp <= 0) killE(e, n >= before && before >= e.max, o.sourceMod || null, o.sourceDam || n); // one-shot = from full health
     return n;
   }
   function crit(e, b = 0.0) {
@@ -9141,7 +9141,7 @@
           cc: cchance()
         });
       }
-      txt(pl.x + 17, pl.y - 36, 'GHOST SHIFT CLOCKED IN', '#d5ddff', false);
+      txt(pl.x + 17, pl.y - 36, 'GHOST SHIFT ON THE ROSTER', '#d5ddff', false);
     }
     if (hasTrait(w, 'jazzhands') && pl.combo % 5 === 0) {
       for (let i = 0; i < 8; i++) {
@@ -9345,7 +9345,7 @@
     if (q >= 7 && pl.combo % 5 === 0 && nearby.length) {
       let t = pick(nearby);
       boom(t.x + t.w / 2, t.y + t.h / 2, w.col, 135 + q * 9, 1);
-      txt(t.x, t.y - 35, 'OSHA VIOLATION', w.col, false);
+      txt(t.x, t.y - 35, 'GUILD-SAFETY VIOLATION', w.col, false);
     }
     if (q >= 8 && pl.combo % 4 === 0) {
       for (const e of nearby.slice(0, Math.min(5, q - 2))) {
@@ -9679,7 +9679,7 @@
       pl.warranty--;
       pl.hp = 1;
       pl.inv = 2;
-      txt(pl.x + 17, pl.y - 40, 'WARRANTY CLAIM APPROVED', '#fff176', true);
+      txt(pl.x + 17, pl.y - 40, 'BLESSING CLAIM APPROVED', '#fff176', true);
       return;
     }
     pl.hp -= h;
@@ -11579,12 +11579,8 @@ function creature(e) {
     X.fillStyle = e.elite ? '#ff5d69' : '#d95d6a';
     X.fillRect(e.x, e.y - 11, e.w * (e.hp / e.max), 5);
   }
-  if (
-    e.themeReveal > 0 ||
-    e.rareMutator ||
-    e.elite ||
-    ['shieldbro', 'blinker', 'summoner', 'sniper', 'roller'].includes(e.type)
-  ) {
+  // Names only for enemies worth reading about (text budget, phase 4).
+  if (e.themeReveal > 0 || e.rareMutator || e.elite) {
     X.textAlign = 'center';
     X.font = e.rareMutator
       ? '1000 12px system-ui'
@@ -11609,11 +11605,11 @@ function creature(e) {
       X.fillText('KILL → ' + e.rareMutator.name, e.x + e.w / 2, e.y - 17);
     }
   }
-  if (e.traits && e.traits.length) {
+  if (e.traits && e.traits.length && e.rareMutator) {
     X.textAlign = 'center';
     X.font = '900 8px system-ui';
     X.fillStyle = e.traits[0].col;
-    X.fillText(enemyTraitText(e), e.x + e.w / 2, e.y - 6);
+    X.fillText(String(e.traits[0].tag || e.traits[0].name || '').slice(0, 22), e.x + e.w / 2, e.y - 6); // one short tag, not the whole list
   }
   X.textAlign = 'left';
 }
@@ -12551,28 +12547,45 @@ function drawWeaponWorldFX() {
     X.restore();
   }
   if (hasTrait(w, 'dark')) {
+    // Night falls around the hero: a wide pocket of light, two stepped rings of darkness that
+    // never go fully black, and glowing eyes on anything lurking out in the dark.
     X.save();
     let gx = pl.x + pl.w / 2,
       gy = pl.y + pl.h / 2,
-      gr = X.createRadialGradient(gx, gy, 55, gx, gy, 270);
-    gr.addColorStop(0, 'rgba(0,0,0,0)');
-    gr.addColorStop(0.42, 'rgba(5,2,12,.18)');
-    gr.addColorStop(0.72, 'rgba(2,0,8,.72)');
-    gr.addColorStop(1, 'rgba(0,0,0,.96)');
-    X.fillStyle = gr;
-    X.fillRect(0, 0, W, H);
-    X.globalAlpha = 0.72;
-    X.strokeStyle = '#6e50ff';
-    X.shadowBlur = 12;
-    X.shadowColor = '#4c32d9';
-    X.lineWidth = 2;
-    for (let i = 0; i < 6; i++) {
-      let a = time * 0.45 + (i * Math.PI) / 3;
+      inner = 250 + Math.sin(time * 2) * 8,
+      outer = 420;
+    X.fillStyle = '#1a1428';
+    X.globalAlpha = 0.35;
+    X.beginPath();
+    X.rect(0, 0, W, H);
+    X.arc(gx, gy, inner, 0, Math.PI * 2, true);
+    X.fill('evenodd');
+    X.globalAlpha = 0.3;
+    X.beginPath();
+    X.rect(0, 0, W, H);
+    X.arc(gx, gy, outer, 0, Math.PI * 2, true);
+    X.fill('evenodd');
+    X.globalAlpha = 0.85;
+    X.strokeStyle = '#7a4bc2';
+    X.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      let a = time * 0.45 + (i * Math.PI * 2) / 3;
       X.beginPath();
-      X.arc(gx, gy, 105 + i * 10, a, a + 1.1);
+      X.arc(gx, gy, inner, a, a + 0.7);
       X.stroke();
     }
-    X.shadowBlur = 0;
+    X.globalAlpha = 1;
+    for (const e of E) {
+      if (e.dead || e.state === 'spawn') continue;
+      let ex = e.x + e.w / 2,
+        ey = e.y + e.h * 0.28;
+      if (Math.hypot(ex - gx, ey - gy) < inner) continue;
+      let blink = Math.sin(time * 3 + (e.anim || 0) * 7) > -0.92;
+      if (!blink) continue;
+      X.fillStyle = e.boss ? '#c4363e' : '#ffc15a';
+      X.fillRect(ex - 8, ey, 5, 4);
+      X.fillRect(ex + 3, ey, 5, 4);
+    }
     X.restore();
   }
   if (hasTrait(w, 'speedy') && Math.abs(pl.vx) > 80) {
@@ -12636,7 +12649,7 @@ function draw() {
               ? 'HOSTILE TAKEOVER THRONE ROOM'
               : bossMode === 'weapon'
                 ? 'THE ARMORY HAS BECOME SENTIENT'
-                : 'EXECUTIVE PERFORMANCE CHAMBER',
+                : 'ROYAL PERFORMANCE CHAMBER',
       W / 2,
       190
     );
@@ -12919,7 +12932,7 @@ function render() {
   U.fsMasteryT.textContent = riftReady ? 'OPEN' : `${stageClears}/${stageGoal()}`;
   U.fsLv.textContent = pl.lv;
   U.fsZone.textContent = Z[zoneI].name;
-  U.fsKills.textContent = `${kills} kills • ${ones} one-shots • ${tempAugment ? 'AUGMENT ' + tempAugment.name + ' ' + tempAugment.t.toFixed(1) + 's' : superT > 0 ? 'D20 ' + superRoll + ' • SUPER SAIYAN ' + superT.toFixed(1) + 's' : approachLabel()}`;
+  U.fsKills.textContent = `${kills} kills • ${ones} one-shots • ${tempAugment ? 'AUGMENT ' + tempAugment.name + ' ' + tempAugment.t.toFixed(1) + 's' : superT > 0 ? 'D20 ' + superRoll + ' • ASCENDED ' + superT.toFixed(1) + 's' : approachLabel()}`;
   if (bossMode) {
     let be = E.find(e => e.boss && !e.dead);
     if (be) {
@@ -13505,6 +13518,155 @@ function render() {
       if (document.body.classList.contains('touchDevice')) e.preventDefault();
     });
   }
+;
+
+/* ---- systems/00-damage-budget.js ---- */
+// Damage budget: the phase-4 weapon curve (loaded FIRST among systems, so its hitE wrapper is the
+// innermost one and sees the final amount after every crit/proc/element/boon multiplier).
+//
+// Before: ~20 systems multiplied hit damage (crits, procs, elements, augments, player level running
+// ahead of the zone), so one swing deleted anything and the HUD showed thousands of DPS at level 1.
+//
+// Now every swing has a budget against each non-boss enemy, expressed as a share of that enemy's
+// health in the zone the weapon was found in:
+//   normal weapon     0.24 .. 0.44 of its health per swing (by rarity)   -> 3-5 swings in its zone
+//   standout (1 in 5) 1.55 per swing at home (a plain hit one-shots)     -> one-shots in its zone,
+//                     never more than 0.70 further on                       2 swings next zone, 4 after
+//   elites take 0.6x the share. Each zone has ~1.4-2x the health of the last, so every weapon fades
+//   as you push on and new drops take over.
+// A plain hit is normalised to ~80% of the budget against a typical enemy; crits/procs/multi-hits
+// push above that and bend smoothly toward the budget (big crits still look bigger, they just never
+// skip the fight). Hits on one enemy within one attack's
+// cadence count as one swing (multishot volleys, pierce, splash, procs).
+// Debug: CWM_BUDGET.share(w), CWM_BUDGET.stats; ?nobudget turns it off.
+(() => {
+  if (globalThis.CWM_BUDGET) return;
+  const off = new URLSearchParams(location.search).has('nobudget');
+  const ST = { swings: 0, bent: 0, oneSwing: 0, kills: 0, standouts: 0, drops: 0, hist: {}, byStandout: [0, 0] };
+  const STANDOUT_CHANCE = 0.2;
+
+  // How strong is the weapon's home zone compared with where we are now (1 at home, ~0.5 next zone).
+  function levelRatio(w) {
+    const home = Math.max(1, Number(w?.lv) || 1),
+      here = Math.max(1, Z[zoneI]?.lv || 1);
+    return mobHP(home) / mobHP(here);
+  }
+  // Share of a typical enemy's health one swing may take, here and now.
+  //   normal:   (0.24 + 0.02 * rarity) at home, falling with the zone ratio
+  //   standout: 1.55 at home (plain hits one-shot), then at most 0.7 anywhere further on
+  function share(w) {
+    if (!w) return 0.25;
+    const r = levelRatio(w);
+    if (w.__standout) return r >= 0.95 ? 1.55 : Math.min(0.7, 1.55 * r);
+    const q = Math.max(0, Math.min(10, Number(rarityRank(w)) || 0));
+    return (0.24 + 0.02 * q) * Math.min(1.25, r);
+  }
+  function budgetFor(e, w) {
+    return e.max * share(w) * (e.elite ? 0.6 : 1);
+  }
+  // Normalise the weapon's base hit onto the curve: a plain hit lands at ~80% of the swing budget,
+  // so crits, procs and multi-hits are what push a swing up into the bend.
+  function curveScale(e, w) {
+    const base = baseD(pl.lv) * (w.m || 1) * weaponDamageMult(w) * combatScale(w);
+    if (!(base > 0)) return 1;
+    // against a typical enemy of this one's level (so a goose and a brute show the same numbers)
+    return ((w.__standout ? 0.8 : 0.85) * mobHP(Math.max(1, e.lv || 1)) * share(w)) / base;
+  }
+  // smooth bend: identity up to 70% of the budget, then eases toward (never past) 100%
+  function bend(x, b) {
+    if (x <= 0.7 * b) return x;
+    return b * (0.7 + 0.3 * (1 - Math.exp(-(x - 0.7 * b) / (0.3 * b))));
+  }
+
+  // ---- standout drops (innermost makeW wrapper, so the name system sees the flag) ----
+  function markStandout(w) {
+    if (!w || typeof w !== 'object' || w.kind === 'armor' || !w.type) return w;
+    ST.drops++;
+    if (Math.random() < STANDOUT_CHANCE) {
+      Object.defineProperty(w, '__standout', { value: true, enumerable: false, configurable: true });
+      ST.standouts++;
+    }
+    return w;
+  }
+  const makeW0 = makeW;
+  makeW = function (...a) {
+    return markStandout(makeW0.apply(this, a));
+  };
+
+  if (!off) {
+    const hitE0 = hitE;
+    hitE = function (e, a, o = {}) {
+      if (!e || e.dead || e.boss || o.ignoreCap || !(a > 0)) return hitE0(e, a, o);
+      const w = curW(),
+        win = Math.max(0.08, Math.min(0.35, heldAttackCooldown(w) * 0.9));
+      let sw = e.__swing;
+      if (!sw || time - sw.t > win || sw.w !== w) {
+        if (sw && sw.dealt >= 0.05 * e.max) e.__swings = (e.__swings || 0) + 1; // count real swings only
+        sw = e.__swing = { t: time, raw: 0, dealt: 0, w, full: e.hp >= e.max };
+        ST.swings++;
+      }
+      const b = budgetFor(e, w);
+      sw.raw += a * curveScale(e, w);
+      const allowed = bend(sw.raw, b),
+        n = Math.max(1, Math.round(allowed - sw.dealt));
+      if (allowed < sw.raw - 0.5) ST.bent++;
+      if (allowed - sw.dealt < 0.5) {
+        // budget for this swing is spent: a token tick keeps the hit feel
+        sw.dealt += 1;
+        const r = hitE0(e, 1, o);
+        return r;
+      }
+      sw.dealt += n;
+      // standouts may exceed the core's 52% impact cap; everything else stays under it anyway
+      const o2 = w.__standout && b >= e.hp ? { ...o, ignoreCap: true } : o;
+      const r = hitE0(e, n, o2);
+      if (e.dead || e.hp <= 0) {
+        ST.kills++;
+        e.__swings = (e.__swings || 0) + 1;
+        if (sw.full) ST.oneSwing++;
+        (ST.hist[e.__swings] = (ST.hist[e.__swings] || 0) + 1), (ST.byStandout[w.__standout ? 1 : 0] += e.__swings);
+      }
+      return r;
+    };
+  }
+
+  // ---- test arena (debug): put the hero in zone z with a fresh drop from zone `from` ----
+  let god = false,
+    lockW = null;
+  const update0 = update;
+  update = function (dt) {
+    if (god) {
+      if (lockW) pl.weapon = lockW;
+      pl.hp = pl.max;
+      pl.inv = Math.max(pl.inv || 0, 0.2);
+    }
+    return update0(dt);
+  };
+  function arena({ zone = 0, from = zone, standout = false, rank = null, count = 6, elite = false, type = null } = {}) {
+    god = true;
+    zoneI = Math.max(0, Math.min(Z.length - 1, zone));
+    try {
+      applyMap(zoneI);
+    } catch (_) {}
+    pl.lv = Z[zoneI].lv + 1;
+    const L = Z[Math.max(0, Math.min(Z.length - 1, from))].lv;
+    let w = rank == null ? makeW(L) : makeExactRankWeapon(L, rank);
+    w.lv = L;
+    Object.defineProperty(w, '__standout', { value: !!standout, enumerable: false, configurable: true });
+    pl.weapon = lockW = w;
+    E.length = 0;
+    for (const k in ST.hist) delete ST.hist[k];
+    ST.kills = ST.oneSwing = ST.swings = ST.bent = 0;
+    ST.byStandout[0] = ST.byStandout[1] = 0;
+    for (let i = 0; i < count; i++) spawn(type || Z[zoneI].pool[i % Z[zoneI].pool.length], pl.x + 160 + i * 60, elite);
+    return { zone: Z[zoneI].name, weapon: w.name, rar: w.rar, q: rarityRank(w), standout: !!standout, lv: L };
+  }
+
+  globalThis.CWM_BUDGET = {
+    arena,
+    curveScale,
+    god: on => ((god = !!on), on || (lockW = null)), share, levelRatio, budgetFor, bend, stats: ST, STANDOUT_CHANCE, off };
+})();
 ;
 
 /* ---- systems/01-elemental-weapons.js ---- */
@@ -14110,8 +14272,8 @@ function render() {
       id: 'plasma',
       family: 'plasma',
       polarity: 'positive',
-      name: 'PLASMA',
-      prefix: 'Plasma-Forged',
+      name: 'STARFIRE',
+      prefix: 'Starfire-Forged',
       col: '#ff72f5',
       rarity: 2,
       dpsMult: 1.24,
@@ -14168,11 +14330,11 @@ function render() {
       family: 'plasma',
       polarity: 'negative',
       name: 'MELTDOWN',
-      prefix: 'Reactor-Breached',
+      prefix: 'Rune-Core-Breached',
       col: '#ff4bd6',
       rarity: 3,
       dpsMult: 1.38,
-      desc: 'miniature reactor failures that sometimes feed back into the operator'
+      desc: 'miniature rune-core failures that sometimes feed back into the operator'
     },
     {
       id: 'singularity',
@@ -14183,7 +14345,7 @@ function render() {
       col: '#7655ff',
       rarity: 3,
       dpsMult: 1.37,
-      desc: 'violent gravity wells with highly questionable workplace ergonomics'
+      desc: 'violent gravity wells with highly questionable kingdom ergonomics'
     },
     {
       id: 'blowback',
@@ -14222,7 +14384,7 @@ function render() {
         desc: 'slow, huge and deeply unnecessary'
       },
       {
-        name: 'Neon Saber',
+        name: 'Witchlight Saber',
         dam: 0.93,
         spd: 1.18,
         crit: 0.025,
@@ -14258,7 +14420,7 @@ function render() {
         desc: 'balanced heavy combat blade'
       },
       {
-        name: 'Executive Longknife',
+        name: 'Royal Longknife',
         dam: 0.98,
         spd: 1.12,
         crit: 0.035,
@@ -14381,7 +14543,7 @@ function render() {
     ],
     katana: [
       {
-        name: 'Neon Nodachi',
+        name: 'Witchlight Nodachi',
         dam: 1.18,
         spd: 0.9,
         crit: 0.03,
@@ -14414,7 +14576,7 @@ function render() {
         crit: 0.04,
         aoe: 1.03,
         scale: 1.08,
-        desc: 'dense industrial blade with violent launch'
+        desc: 'dense forge-grade blade with violent launch'
       },
       {
         name: 'Audit Blade',
@@ -14426,7 +14588,7 @@ function render() {
         desc: 'reliable crit-focused cutter'
       },
       {
-        name: 'Long Meeting Ender',
+        name: 'Long Council Ender',
         dam: 1.14,
         spd: 0.94,
         crit: 0.04,
@@ -14455,7 +14617,7 @@ function render() {
         desc: 'balanced modern bow'
       },
       {
-        name: 'Rebar Longbow',
+        name: 'Iron-Bar Longbow',
         dam: 1.12,
         spd: 0.94,
         crit: 0.02,
@@ -14576,7 +14738,7 @@ function render() {
         desc: 'slower heavy magic bolts'
       },
       {
-        name: 'Microwave Wand',
+        name: 'Dragon-Oven Wand',
         dam: 1.08,
         spd: 1.0,
         crit: 0.025,
@@ -14585,7 +14747,7 @@ function render() {
         desc: 'wide-area electromagnetic nonsense'
       },
       {
-        name: 'Wizard OSHA Violation',
+        name: 'Wizard Guild-Safety Violation',
         dam: 1.16,
         spd: 0.92,
         crit: 0.035,
@@ -14614,7 +14776,7 @@ function render() {
         desc: 'huge slow cluster-deleting focus'
       },
       {
-        name: 'Utility Pole',
+        name: 'Hitching Post',
         dam: 1.14,
         spd: 0.88,
         crit: 0.01,
@@ -14650,24 +14812,24 @@ function render() {
         desc: 'faster compact casting staff'
       },
       {
-        name: 'Wizard Rebar',
+        name: 'Wizard Iron-Bar',
         dam: 1.12,
         spd: 0.94,
         crit: 0.02,
         aoe: 1.1,
         scale: 1.1,
-        desc: 'industrial rod with excellent spell violence'
+        desc: 'forge-grade rod with excellent spell violence'
       }
     ],
     hammer: [
       {
-        name: 'Industrial Maul',
+        name: 'Forge-Grade Maul',
         dam: 1.15,
         spd: 0.92,
         crit: 0.015,
         aoe: 1.1,
         scale: 1.12,
-        desc: 'wide industrial impact head'
+        desc: 'wide forge-grade impact head'
       },
       {
         name: 'Pile Driver',
@@ -15169,8 +15331,8 @@ function render() {
 
   const BASE_NAMES = {
     sword: [
-      'Parking Meter Greatsword',
-      'Breakroom Claymore',
+      'Toll-Gate Greatsword',
+      'Mess Hall Claymore',
       'Liability Saber',
       'Municipal Guillotine',
       'Deadline Divider',
@@ -15178,7 +15340,7 @@ function render() {
       'Exit Interview Blade',
       'Cafeteria Executioner',
       'Budget Apocalypse',
-      'Forklift Longsword',
+      'Siege-Ox Longsword',
       'Unauthorized Broadsword',
       'Quarterly Results Cleaver'
     ],
@@ -15186,25 +15348,25 @@ function render() {
       'Stapler Shiv',
       'Expense Report Stiletto',
       'Pocket Lawsuit',
-      'Breakroom Fang',
+      'Mess Hall Fang',
       'Tiny Hostile Merger',
       'Emergency Letter Opener',
       'Audit Needle',
       'Probation Kris',
-      'Unpaid Intern Knife',
+      'Unpaid Apprentice Knife',
       'Desk Drawer Problem',
-      'HR Toothpick',
+      'The Guild Toothpick',
       'Micro Catastrophe'
     ],
     nunchucks: [
-      'OSHA Nunchucks',
+      'Guild-Safety Nunchucks',
       'Double Payroll Bonk',
       'Chain of Command',
       'Performance Review Flails',
       'Two-Factor Concussion',
       'Revolving Complaint',
       'LinkedIn Connection',
-      'Meeting Canceller',
+      'Council Canceller',
       'Rotating Liability',
       'Corporate Chucks'
     ],
@@ -15214,24 +15376,24 @@ function render() {
       'Overtime Wakizashi',
       'Audit Katana',
       'Railway Samurai Problem',
-      'HR Drawblade',
-      'Spreadsheet Slayer',
+      'The Guild Drawblade',
+      'Ledger Slayer',
       'Deadline Tachi',
-      'Neon Resignation',
-      'Boardroom Iaijutsu'
+      'Witchlight Resignation',
+      'Throne-Room Iaijutsu'
     ],
     bow: [
       'Foreclosure Longbow',
-      'Parking Enforcement Bow',
-      'Rebar Recurve',
+      'Toll-Bridge Enforcement Bow',
+      'Iron-Bar Recurve',
       'Compliance Compound',
       'Hostile Geometry',
-      'Spreadsheet Ballista',
+      'Ledger Ballista',
       'Budget Siege Bow',
-      'Arrow-Based Email',
+      'Arrow-Based Scroll',
       'Performance Improvement Bow',
       'Municipal Warbow',
-      'Overdraft Launcher'
+      'Debtor’s Launcher'
     ],
     shuriken: [
       'Quarterly Throwing Star',
@@ -15240,52 +15402,52 @@ function render() {
       'Payroll Shuriken',
       'Circular Reasoning',
       'Orbiting Complaint',
-      'Ninja Spreadsheet',
+      'Ninja Ledger',
       'Expense Report Star',
-      'Meeting Cancellation Disc',
+      'Council Cancellation Disc',
       'Rotating Tax Form'
     ],
     wand: [
-      'Microwave Wand',
-      'Parking Citation Wand',
-      'Wizard Flashlight',
-      'Union Arc Wand',
-      'Breakroom Scepter',
+      'Dragon-Oven Wand',
+      'Toll Citation Wand',
+      'Wizard Lantern',
+      'Guild Arc Wand',
+      'Mess Hall Scepter',
       'Overtime Pointer',
-      'Arcane Barcode Scanner',
+      'Arcane Tally-Rune Reader',
       'Liability Wand',
       'Budget Necromancy Stick',
       'Municipal Magic Rod',
-      'Questionable Laser Pointer',
-      'Forbidden Food Court Wand'
+      'Questionable Scrying Pointer',
+      'Forbidden Feast Hall Wand'
     ],
     staff: [
-      'Utility Pole of Power',
-      'Wizard Rebar',
+      'Hitching Post of Power',
+      'Wizard Iron-Bar',
       'Payroll Staff',
       'Municipal Lightning Rod',
-      'Long Meeting Staff',
+      'Long Council Staff',
       'Arc Furnace Scepter',
       'Storm Drain Staff',
       'Corporate Wizard Pole',
       'Emergency Conduit',
       'Weather Department Stick',
       'Budget Totem',
-      'Forklift Mage Staff'
+      'Siege-Ox Mage Staff'
     ],
     hammer: [
       'Performance Review Hammer',
       'Concrete Opinion',
       'Debt Restructurer',
       'Municipal Maul',
-      'Portable Workplace Accident',
+      'Portable Kingdom Accident',
       'Compliance Crusher',
       'Quarterly Pile Driver',
-      'Union Negotiator',
-      'Meeting Gavel XL',
+      'Guild Negotiator',
+      'Council Gavel XL',
       'Budget Demolition Tool',
-      'HR Complaint Hammer',
-      'Forklift Bonker'
+      'Guild Grievance Hammer',
+      'Siege-Ox Bonker'
     ]
   };
   for (const [type, names] of Object.entries(BASE_NAMES)) {
@@ -15298,16 +15460,16 @@ function render() {
     'Overqualified',
     'Underfunded',
     'Catastrophically Approved',
-    'Union-Certified',
+    'Guild-Certified',
     'Management-Resistant',
     'Municipally Enchanted',
     'Legally Distinct',
     'Extremely Taxable',
     'Unreasonably Polished',
-    'Aggressively Laminated',
+    'Aggressively Lacquered',
     'Performance-Managed',
     'Budget-Overrun',
-    'Executive-Grade',
+    'Royal-Grade',
     'Night-Shift',
     'Lunch-Break',
     'Overtime-Forged',
@@ -15316,8 +15478,8 @@ function render() {
     'Formally Escalated',
     'Noncompliant',
     'Backordered',
-    'Forklift-Compatible',
-    'OSHA-Adjacent',
+    'Siege-Ox-Compatible',
+    'Guild-Safety-Adjacent',
     'Deeply Unnecessary',
     'Hostilely Optimized',
     'Questionably Blessed',
@@ -15325,29 +15487,29 @@ function render() {
   ];
   const EXTRA_SUFFIXES = [
     'of Escalating Consequences',
-    'of the Final Email',
+    'of the Final Scroll',
     'of Mandatory Overtime',
     'of Unapproved Capital Spending',
-    'of the Broken Printer',
+    'of the Broken Scribe Golem',
     'of Hostile Procurement',
     'of the Third Shift',
     'of Catastrophic Synergy',
-    'of the Lost Purchase Order',
+    'of the Lost Requisition Scroll',
     'of Weaponized Compliance',
-    'of the Emergency Meeting',
+    'of the Emergency Council',
     'of Financial Violence',
     'of Questionable Governance',
     'of the Armory Vault',
     'of Zero Follow-Up Questions',
     'of Immediate Corrective Action',
-    'of the Forbidden Breakroom',
+    'of the Forbidden Mess Hall',
     'of Extremely Poor Judgment',
     'of the Municipal Budget Crisis',
     'of Unscheduled Career Development',
-    'of the Last Available Forklift',
+    'of the Last Available Siege-Ox',
     'of Advanced Bonking',
-    'of the Infinite Spreadsheet',
-    'of Several OSHA Findings'
+    'of the Infinite Ledger',
+    'of Several Guild-Safety Findings'
   ];
   for (const x of EXTRA_PREFIXES) if (!PF.includes(x)) PF.push(x);
   for (const x of EXTRA_SUFFIXES) if (!SUFFIXES.includes(x)) SUFFIXES.push(x);
@@ -15871,7 +16033,7 @@ function render() {
           spawnDrop(95 + col * 125, G - 165 - row * 72, w, false);
         }
         document.documentElement.dataset.cwmLootV31Showcase = counts.join(',');
-        U.msg.textContent = `PARKING LOT LOOT SAMPLE // ${counts[0]} COMMON • ${counts[1]} RARE • ${counts[2]} EPIC`;
+        U.msg.textContent = `CASTLE COURTYARD LOOT SAMPLE // ${counts[0]} COMMON • ${counts[1]} RARE • ${counts[2]} EPIC`;
       } catch (e) {
         document.documentElement.dataset.cwmLootV31ShowcaseError = String(e).slice(0, 160);
       }
@@ -15890,16 +16052,16 @@ function render() {
   const choice = a => a[Math.floor(Math.random() * a.length)];
 
   const GRAY_PREFIX = [
-    'Clearance-Bin',
+    'Bargain-Barrel',
     'Previously Returned',
     'Mildly Bent',
-    'Warranty-Void',
-    'Parking-Lot Special',
-    'Wet-Cardboard',
-    'One-Star Reviewed',
+    'Blessing-Void',
+    'Courtyard Special',
+    'Wet-Parchment',
+    'One-Star Bard-Reviewed',
     'Manager Refused',
     'Found Near a Dumpster',
-    'Factory-Reject',
+    'Smithy-Reject',
     'Loose-Handle',
     'Budget-Cut',
     'Probably a Prop',
@@ -15929,16 +16091,16 @@ function render() {
     'Acceptable From Far Away',
     'Barely Within Spec',
     'Good Enough for Night Shift',
-    'Warranty Pending',
+    'Blessing Pending',
     'Quality-Control Adjacent',
     'Improved by Accident'
   ];
   const GRAY_SUFFIX = [
     '— FINAL SALE',
     'with One Good Screw',
-    'of the Recall Notice',
+    'of the Royal Recall',
     'of Immediate Regret',
-    'of Questionable Warranty',
+    'of Questionable Blessing',
     'from the Lost-and-Found',
     'of Poor Life Choices',
     'with Cosmetic Structural Damage',
@@ -15958,8 +16120,8 @@ function render() {
     'with the Better Handle',
     'of Moderate Improvement',
     'Now With Fewer Sparks',
-    'of the Second Purchase Order',
-    'with a Real Serial Number',
+    'of the Second Requisition Scroll',
+    'with a Real Maker’s Mark',
     'of Nearly Acceptable Craftsmanship',
     'Approved Pending Review',
     'with Only Minor Concerns',
@@ -15999,7 +16161,7 @@ function render() {
     },
     {
       id: 'dull',
-      name: 'Factory Dull',
+      name: 'Smithy Dull',
       desc: 'Deals less base damage. The edge inspection was conducted by optimism.',
       weight: 1.0,
       static: true
@@ -17303,7 +17465,7 @@ function render() {
     e.__nightWhirlShot = 0;
     e.__nightWhirlHit = 0;
     e.__nightWhirlFinal = final;
-    announceBoss(e, final ? 'APOCALYPSE BLENDER' : 'WHIRLWIND PANIC', final ? '#ffffff' : '#ffce66');
+    announceBoss(e, final ? 'APOCALYPSE MILLSTONE' : 'WHIRLWIND PANIC', final ? '#ffffff' : '#ffce66');
   }
   function prisonLaserCombo(e) {
     prison(e, true);
@@ -17342,10 +17504,10 @@ function render() {
       whirlwind(e, 3.15 + phase * 0.2, false);
       laserFan(e, 4, 0.22);
     } else if (move === 'fan') {
-      announceBoss(e, 'PANIC LASER FAN', '#ff5a72');
+      announceBoss(e, 'PANIC BEAM FAN', '#ff5a72');
       laserFan(e, 5 + Math.min(2, phase), 0.28);
     } else if (move === 'grid') {
-      announceBoss(e, 'LASER GRID // DO NOT PANIC', '#ffdf67');
+      announceBoss(e, 'BEAM GRID // DO NOT PANIC', '#ffdf67');
       laserGrid(e);
     } else if (move === 'prison') {
       announceBoss(e, 'YOU ARE GOING TO JAIL', '#ff5577');
@@ -18789,7 +18951,7 @@ function render() {
       X.globalAlpha = 0.65;
       X.fillStyle = '#75eaff';
       X.font = '900 15px system-ui';
-      X.fillText('MUNICIPAL SWORD PARKING', 36, 92);
+      X.fillText('MUNICIPAL SWORD TOLL-BRIDGE', 36, 92);
       X.globalAlpha = 0.3;
       X.font = '800 11px system-ui';
       X.fillText('WEAPON VALIDATION • LEVEL P1', 38, 111);
@@ -20763,34 +20925,34 @@ function render() {
 
   const NAMES = {
     stalker: [
-      'Kevin From The Parking Lot',
+      'Kevin From The Castle Courtyard',
       'Greg With Your Catalytic Converter',
-      'Parking Enforcement Werewolf',
+      'Toll-Bridge Enforcement Werewolf',
       'Guy Who Definitely Knows Your VIN'
     ],
     crawler: [
       'Floor Gremlin With Benefits',
       'Wet Sock Supervisor',
-      'Unionized Basement Goblin',
+      'Guild-Certified Basement Goblin',
       'Todd From Under The Fridge'
     ],
     wizard: [
-      'Unlicensed Microwave Wizard',
+      'Unlicensed Dragon-Oven Wizard',
       'Craig, Wizard of Minor Inconvenience',
-      'Certified Forklift Necromancer',
-      'Derek the Spell Intern'
+      'Certified Siege-Ox Necromancer',
+      'Derek the Spell Apprentice'
     ],
     shieldbro: [
       'Assistant Manager of Blocking',
-      'OSHA-Compliant Human Door',
+      'Guild-Safety-Compliant Human Door',
       'Regional Shield Enthusiast',
       'Bradley, Portable Wall'
     ],
     maw: [
       'Pretzel Maw of Human Resources',
       'Hungry Payroll Mistake',
-      'Mouth With A 401(k)',
-      'Lunch Break Violation With Teeth'
+      'Mouth With A pension chest',
+      'Mead Break Violation With Teeth'
     ],
     brute: [
       'Axe Landlord From Craigslist',
@@ -20800,27 +20962,27 @@ function render() {
     ],
     taxman: [
       'Combat Auditor With Questions',
-      'IRS Battle Intern',
+      'IRS Battle Apprentice',
       'Receipts Goblin',
       'Senior Director of Surprise Fees'
     ],
     blinker: [
       'Teleporting Coward Greg',
-      'Quantum Hall Monitor',
+      'Arcane Hall Monitor',
       'Dave Who Was Just Behind You',
-      'Union Blink Supervisor'
+      'Guild Blink Supervisor'
     ],
     bombchicken: [
       'Tactical Chicken With Tenure',
       'Explosive Emotional Support Chicken',
-      'OSHA Rooster',
+      'Guild-Safety Rooster',
       'Poultry of Mass Destruction'
     ],
     roller: [
-      'Sentient Office Chair',
+      'Sentient Scriptorium Chair',
       'Payroll Roomba of Doom',
       'Wheel With Anger Issues',
-      'Unionized Murder Tire'
+      'Guild-Certified Murder Wheel'
     ],
     summoner: [
       'Middle Manager of More Problems',
@@ -20830,21 +20992,21 @@ function render() {
     ],
     wraith: [
       'Ghost of Mandatory Overtime',
-      'Former Employee Still Clocked In',
+      'Former Employee Still On The Roster',
       'Haunted Exit Interview',
-      'Spectral HR Complaint'
+      'Spectral Guild Grievance'
     ],
     mimic: [
       'Definitely Normal Benefits Package',
       'Chest That Read Your Search History',
-      'Totally Legal Vending Machine',
-      'Box With Teeth And PTO'
+      'Totally Legal Wishing Well',
+      'Box With Teeth And Feast Days'
     ],
     flyer: [
-      'Airborne Parking Ticket',
+      'Airborne Toll Writ',
       'Flying Liability Waiver',
       'Drone With A Personal Grudge',
-      'Sky Rat With Dental'
+      'Sky Rat With Tooth Coverage'
     ],
     eyeball: [
       'Management Eye Watching Your Break',
@@ -20854,7 +21016,7 @@ function render() {
     ],
     sniper: [
       'Long-Distance Micromanager',
-      'Remote Work Denial Specialist',
+      'Far-Tower Duty Denial Specialist',
       'Performance Improvement Marksman',
       'Guy Across The Map Named Steve'
     ]
@@ -20865,10 +21027,10 @@ function render() {
     'Interim',
     'Night-Shift',
     'Emotionally Unavailable',
-    'Union',
+    'Guild',
     'Freelance',
-    'Executive',
-    'Turbo',
+    'Royal',
+    'Gale-Powered',
     'Unauthorized',
     'Assistant Regional',
     'Budget'
@@ -20877,10 +21039,10 @@ function render() {
     '(No Appointment)',
     '— On Probation',
     '— Certified Somehow',
-    '— Has A Clipboard',
+    '— Has A Wax Tablet',
     '— Absolutely Not Insured',
     '— Final Warning',
-    '— Owns A Leaf Blower'
+    '— Owns A Gale Bellows'
   ];
 
   function funnyName(type, elite = false) {
@@ -20906,7 +21068,7 @@ function render() {
     if (e && !e.boss) {
       e.__funnyName = e.label = funnyName(type, elite);
       C.names++;
-      e.__headline = !!elite || e.__nightMutant === 'ABOMINATION' || Math.random() < 0.22;
+      e.__headline = !!elite || e.__nightMutant === 'ABOMINATION' || Math.random() < 0.06; // text budget: plates are rare
       if (e.__headline) C.headliners++;
     }
     return r;
@@ -20927,7 +21089,7 @@ function render() {
   function headlinerVisible(e) {
     if (!e?.__headline || e.dead || e.boss || e.x + e.w < 0 || e.x > W) return false;
     const alive = E.filter(x => x && !x.dead && !x.boss).length,
-      max = alive >= 16 ? 1 : alive >= 10 ? 2 : 3;
+      max = alive >= 8 ? 1 : 2;
     const pool = E.filter(x => x && !x.dead && !x.boss && x.__headline && x.x + x.w >= 0 && x.x <= W).sort(
       (a, b) =>
         (b.__nightMutant === 'ABOMINATION') - (a.__nightMutant === 'ABOMINATION') ||
@@ -20952,8 +21114,8 @@ function render() {
     for (const ln of lines) mw = Math.max(mw, X.measureText(ln).width);
     mw = Math.min(330, mw + 20);
     const h = lines.length * 17 + 8;
-    X.globalAlpha = 0.9;
-    X.fillStyle = '#05080de8';
+    X.globalAlpha = 1; // solid panel: translucent boxes stipple in pixel mode
+    X.fillStyle = '#1a1428';
     X.strokeStyle = col;
     X.lineWidth = 1.5;
     X.beginPath();
@@ -21019,28 +21181,28 @@ function render() {
   const MUTATIONS = [
     {
       id: 'vacuum',
-      name: 'INDUSTRIAL VACUUM WARRANTY',
+      name: 'FORGE-GRADE BELLOWS BLESSING',
       every: 4,
       dps: 1.08,
       desc: 'every fourth impact sucks nearby enemies into the victim'
     },
     {
       id: 'pinball',
-      name: 'PINBALL LIABILITY CLAUSE',
+      name: 'BAGATELLE LIABILITY CLAUSE',
       every: 5,
       dps: 1.11,
       desc: 'every fifth impact ricochets damage through the nearest coworkers'
     },
     {
       id: 'moonshot',
-      name: 'MOONSHOT BUTTON',
+      name: 'MOONSHOT LEVER',
       every: 4,
       dps: 1.06,
       desc: 'occasionally sends the target vertically into upper management'
     },
     {
       id: 'microwave',
-      name: 'BREAKROOM MICROWAVE CORE',
+      name: 'MESS HALL DRAGON-OVEN CORE',
       every: 5,
       dps: 1.1,
       desc: 'periodically goes DING and cooks the entire immediate area'
@@ -21054,7 +21216,7 @@ function render() {
     },
     {
       id: 'copy',
-      name: 'HOSTILE COPY MACHINE',
+      name: 'HOSTILE COPYING SCRIPTORIUM',
       every: 5,
       dps: 1.1,
       desc: 'duplicates an impact because apparently one was not enough'
@@ -21068,7 +21230,7 @@ function render() {
     },
     {
       id: 'polarity',
-      name: 'REVERSIBLE GRAVITY WARRANTY',
+      name: 'REVERSIBLE GRAVITY BLESSING',
       every: 4,
       dps: 1.07,
       desc: 'alternates between violently pushing crowds away and dragging them back'
@@ -21156,7 +21318,7 @@ function render() {
     try {
       if (m.id === 'vacuum') {
         ring(x, y, w.col, 95, 3);
-        txt(x, y - 38, 'VACUUM WARRANTY', w.col, false);
+        txt(x, y - 38, 'BELLOWS BLESSING', w.col, false);
         for (const t of near.slice(0, 7)) {
           t.vx += Math.sign(x - (t.x + t.w / 2)) * 320;
           t.vy -= 70;
@@ -21171,7 +21333,7 @@ function render() {
           sec(t, 0.22);
           prev = t;
         }
-        txt(x, y - 38, 'PINBALL CLAUSE', w.col, false);
+        txt(x, y - 38, 'BAGATELLE CLAUSE', w.col, false);
       } else if (m.id === 'moonshot') {
         e.vy = -520;
         e.on = false;
@@ -21206,7 +21368,7 @@ function render() {
           sc: 1.2
         });
       } else if (m.id === 'banana') {
-        txt(x, y - 38, 'SLIPPERY WHEN UNIONIZED', '#fff46b', false);
+        txt(x, y - 38, 'SLIPPERY WHEN GUILD-CERTIFIED', '#fff46b', false);
         for (const t of [e, ...near.slice(0, 5)]) {
           t.stun = Math.max(t.stun || 0, 0.42);
           t.vx += rand(-260, 260);
@@ -22617,11 +22779,23 @@ function render() {
     applyMap(zoneI);
     return Z[zoneI].name;
   };
-  PX.previewWeapon = (type, rank = 0) => {
+  PX.previewWeapon = (type, rank = 0, trait = '') => {
     const w = makeExactRankWeapon(pl.lv, rank);
     w.type = type;
+    if (trait) w.traits = [...(w.traits || []), TRAITS.find(t => t.code === trait)].filter(Boolean);
     pl.weapon = w;
     return w.rar + ' ' + type;
+  };
+  PX.sampleByRank = (ranks = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20], n = 3) =>
+    ranks.map(r => {
+      const ws = Array.from({ length: n }, () => makeExactRankWeapon(pl.lv, r));
+      return { rank: r, rar: ws[0].rar, q: rarityRank(ws[0]), names: ws.map(w => w.name) };
+    });
+  PX.sampleNames = (n = 40) => {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(makeW(pl.lv + i).name);
+    for (const t of Object.keys(ED)) if (!ED[t].boss) out.push(enemyName(t, Math.random() < 0.4));
+    return out;
   };
   PX.previewBoss = kind => {
     startBoss(kind);
@@ -22858,7 +23032,8 @@ function render() {
     else dy -= 7 * k; // alphabetic / bottom
     // Readability rule until the phase-4 text budget: skip text that would land on text already
     // drawn this frame (earlier draws win: world labels, then the player, then floating text).
-    if (X.globalAlpha < 0.35 || textRects.length >= 14) {
+    // PX.forceText: speech bubbles always print (they draw their own solid box)
+    if (!PX.forceText && (X.globalAlpha < 0.35 || textRects.length >= 14)) {
       PX.stats.textCulled++;
       return;
     }
@@ -22866,7 +23041,7 @@ function render() {
       ry = Math.round(dy) - 1,
       rw = cv.width,
       rh = cv.height;
-    for (const r of textRects) {
+    if (!PX.forceText) for (const r of textRects) {
       const ox = Math.min(rx + rw, r[0] + r[2]) - Math.max(rx, r[0]),
         oy = Math.min(ry + rh, r[1] + r[3]) - Math.max(ry, r[1]);
       if (ox > 1 && oy > 1 && ox * oy > rw * rh * 0.08) {
@@ -23137,6 +23312,12 @@ function render() {
     return t.trimEnd() + '..';
   };
   PX.paletteHex = s => paletteHex(s);
+  // internals for systems/40-weapon-looks.js
+  PX.afterWorld = [];
+  PX._art = ART;
+  PX._hexRgb = hexRgb;
+  PX._snapRgb = (r, g, b) => snapRgb(r, g, b);
+  PX._lutReady = () => !!LUT;
   PX.weaponIcon = (type, col) => {
     const a = ART.weapons[type];
     return a && LUT ? { cv: tinted(type, a, paletteHex(col)), w: a.w, h: a.h } : null;
@@ -23170,10 +23351,17 @@ function render() {
   const draw0 = draw;
   draw = function () {
     textRects = [];
-    X.setTransform(S, 0, 0, S, 0, 0);
+    // whole-pixel screenshake offset from systems/32-game-feel.js (world layer only; HUD is drawn later)
+    X.setTransform(S, 0, 0, S, PX.shakeX || 0, PX.shakeY || 0);
     X.imageSmoothingEnabled = false;
     const r = draw0();
     X.setTransform(1, 0, 0, 1, 0, 0);
+    // extra world-layer painters (device pixels, before the palette snap), e.g. weapon-look particles
+    for (const f of PX.afterWorld) {
+      try {
+        f();
+      } catch (_) {}
+    }
     snapFrame();
     PX.stats.frames++;
     return r;
@@ -23277,7 +23465,7 @@ function render() {
     // HP
     icon(HEART, { k: 'ink', r: 'red', w: 'paper' }, 8, cy - 1);
     bar(18, cy + 1, 62, pl.hp / pl.max, pl.hp / pl.max < 0.3 ? 'coral' : 'red', 'wine');
-    PX.text(String(Math.max(0, Math.ceil(pl.hp))), 86, cy, COL.paper);
+    PX.text(globalThis.CWM_FMT ? CWM_FMT(Math.max(0, Math.ceil(pl.hp))) : String(Math.ceil(pl.hp)), 86, cy, COL.paper);
 
     // Special (space): cooldown fills up, READY when charged
     const rem = Math.max(0, Number(pl.scd) || 0);
@@ -23288,19 +23476,38 @@ function render() {
     PX.text(ready ? 'READY' : rem.toFixed(1) + 'S', 171, cy, ready ? COL.lime : COL.mist);
 
     // Weapon: tinted sprite, name in rarity colour (trimmed), DPS
-    const ic = PX.weaponIcon(w.type, w.col);
+    const ic = PX.weaponIconFor ? PX.weaponIconFor(w) : PX.weaponIcon(w.type, w.col);
     let nx = 218;
     if (ic) {
-      const ih = Math.min(ic.h, 9),
-        iw = Math.round((ic.w * ih) / ic.h);
+      const k = Math.min(1, 10 / ic.h, 24 / ic.w),
+        ih = Math.max(1, Math.round(ic.h * k)),
+        iw = Math.max(1, Math.round(ic.w * k));
+      X.imageSmoothingEnabled = false;
       X.drawImage(ic.cv, nx, cy + 3 - Math.floor(ih / 2), iw, ih);
-      nx += Math.min(iw, 22) + 4;
+      nx += iw + 4;
     }
     const dps = Math.round(estimateDPS(w));
-    const dpsText = dps + ' DPS',
+    const dpsText = (globalThis.CWM_FMT ? CWM_FMT(dps) : dps) + ' DPS',
       dpsW = PX.textWidth(dpsText);
     const nameHex = PX.paletteHex(w.col);
-    PX.text(PX.fit(w.name, 394 - dpsW - 6 - nx), nx, cy, nameHex === COL.ink ? COL.mist : nameHex);
+    // long relic names scroll (pause, slide to the end, pause, snap back) instead of being cut off
+    const room = 394 - dpsW - 10 - nx,
+      nmW = PX.textWidth(w.name),
+      nmCol = nameHex === COL.ink ? COL.mist : nameHex;
+    if (nmW <= room) PX.text(w.name, nx, cy, nmCol);
+    else {
+      const over = nmW - room,
+        slide = over / 14, // seconds at 14 px/s
+        cyc = slide + 3,
+        t = (performance.now() / 1000) % cyc,
+        off = Math.round(t < 1.5 ? 0 : t < 1.5 + slide ? (t - 1.5) * 14 : over);
+      X.save();
+      X.beginPath();
+      X.rect(nx, cy - 2, room, 12);
+      X.clip();
+      PX.text(w.name, nx - off, cy, nmCol);
+      X.restore();
+    }
     PX.text(dpsText, 394, cy, COL.gold, 1, 'right');
 
     // Shards, level, XP
@@ -23329,7 +23536,7 @@ function render() {
 
     // new-weapon toast (auto-equip)
     if (w !== lastW) {
-      if (lastW && dps > lastDps) toast = { name: w.name, hex: nameHex, gain: Math.round((dps / Math.max(1, lastDps) - 1) * 100), t: 2.6 };
+      if (lastW && dps > lastDps) toast = { name: w.name, hex: nameHex, standout: !!w.__standout, gain: Math.round((dps / Math.max(1, lastDps) - 1) * 100), t: 2.6 };
       lastW = w;
     }
     lastDps = dps;
@@ -23341,7 +23548,7 @@ function render() {
       r(PW / 2 - tw / 2 - 1, ty - 1, tw + 2, 24, 'ink');
       r(PW / 2 - tw / 2, ty, tw, 22, 'night');
       r(PW / 2 - tw / 2, ty, tw, 1, 'gold');
-      PX.text('NEW WEAPON  +' + toast.gain + '% DPS', PW / 2, ty + 3, COL.gold, 1, 'center');
+      PX.text((toast.standout ? 'STANDOUT WEAPON!  +' : 'NEW WEAPON  +') + toast.gain + '% DPS', PW / 2, ty + 3, toast.standout ? COL.lime || COL.gold : COL.gold, 1, 'center');
       PX.text(name, PW / 2, ty + 12, toast.hex === COL.ink ? COL.paper : toast.hex, 1, 'center');
     }
     // level-up toast (replaces the HTML level splash, which lived in the hidden juice HUD)
@@ -23372,6 +23579,1918 @@ function render() {
     }
     return out;
   };
+})();
+;
+
+/* ---- systems/32-game-feel.js ---- */
+// Game feel (phase 4): pixel screenshake and budgeted hit-stop.
+//
+// Before: ~40 call sites set `shake` (up to 34 world units, random jitter every frame), but
+// systems/26-combat-readability.js zeroes it at the draw boundary, so the live game never shook.
+// Meanwhile almost every hit set `stop` (18-50 ms freeze), so hordes stuttered constantly.
+//
+// Now:
+//   shake  -> "trauma" only from real impacts (shake >= 6: crits, big kills, explosions, bosses),
+//             rendered as a whole-pixel alternating rumble (max 4 px, ~0.4 s), canvas only (HUD
+//             stays still). Read by the pixel renderer through CWM_PX.shakeX / shakeY.
+//   stop   -> small freezes (< 0.1 s) are capped at 40 ms and allowed at most every 140 ms;
+//             big moments (>= 0.1 s: elite crits, boss hits/kills, loot reveals) pass unchanged.
+// ?nofeel turns this module off.
+(() => {
+  const PX = globalThis.CWM_PX;
+  if (!PX || globalThis.__CWM_GAME_FEEL || new URLSearchParams(location.search).has('nofeel')) return;
+  globalThis.__CWM_GAME_FEEL = true;
+
+  const F = { trauma: 0, frame: 0, lastStopAt: -9, stopsKept: 0, stopsDropped: 0, shakes: 0 };
+  globalThis.CWM_FEEL = F;
+
+  // ---- hit-stop budget (runs around update, where events set `stop`) ----
+  const update0 = update;
+  update = function (dt) {
+    const before = stop;
+    const r = update0(dt);
+    if (stop > before + 1e-6) {
+      // a hit/kill/crit during this update asked for a freeze
+      const now = performance.now() / 1000;
+      if (stop < 0.1) {
+        if (now - F.lastStopAt < 0.14) {
+          stop = Math.max(0, before - dt);
+          F.stopsDropped++;
+        } else {
+          stop = Math.min(stop, 0.04);
+          F.lastStopAt = now;
+          F.stopsKept++;
+        }
+      } else {
+        F.lastStopAt = now;
+        F.stopsKept++;
+      }
+    }
+    return r;
+  };
+
+  // ---- pixel screenshake (runs around draw; reads shake before the readability patch zeroes it) ----
+  const draw0 = draw;
+  let last = performance.now();
+  draw = function () {
+    const now = performance.now(),
+      dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (shake >= 6) {
+      F.trauma = Math.max(F.trauma, Math.min(1, shake / 28));
+      F.shakes++;
+    }
+    F.trauma = Math.max(0, F.trauma - 2.4 * dt);
+    F.frame++;
+    const amp = Math.round(4 * F.trauma * F.trauma);
+    // classic 16-bit rumble: alternate sides every 2 frames, vertical at half rate
+    PX.shakeX = amp ? (Math.floor(F.frame / 2) % 2 ? amp : -amp) : 0;
+    PX.shakeY = amp > 1 ? (Math.floor(F.frame / 4) % 2 ? 1 : -1) * Math.ceil(amp / 2) : 0;
+    shake = 0; // the core's random jitter stays off; all shake comes from the offset above
+    return draw0();
+  };
+})();
+;
+
+/* ---- systems/33-chiptune.js ---- */
+// Chiptune sound effects (phase 4). Replaces the core's sine/saw synth sweeps with 16-bit-style
+// sounds: pulse waves at 12.5 / 25 / 50% duty, triangle bass, and the classic 15-bit LFSR noise
+// channel (long and short "metallic" modes). Pitch and volume move in 1/60 s steps, like a
+// sound driver updating once per video frame, instead of smooth ramps.
+// Same function names and arguments as core/04-player-audio.js, same output bus (SND.comp),
+// same anti-spam gates. ?nochip keeps the original sounds.
+(() => {
+  if (globalThis.__CWM_CHIPTUNE || new URLSearchParams(location.search).has('nochip')) return;
+  globalThis.__CWM_CHIPTUNE = true;
+  const FR = 1 / 60;
+  let waves = null,
+    lfsr = null,
+    offset = 0; // extra start delay, used by the offline preview to lay sounds end to end
+
+  function ready() {
+    const a = audioInit();
+    if (!a || !SND.comp) return null;
+    if (!waves) {
+      const pulse = duty => {
+        const n = 64,
+          re = new Float32Array(n),
+          im = new Float32Array(n);
+        for (let k = 1; k < n; k++) re[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty); // pulse wave series
+        return a.createPeriodicWave(re, im, { disableNormalization: false });
+      };
+      waves = { p12: pulse(0.125), p25: pulse(0.25), p50: pulse(0.5) };
+      const mk = short => {
+        // 15-bit LFSR noise, one sample per "clock"; played back at different rates for pitch
+        const len = short ? 93 * 64 : 32767,
+          b = a.createBuffer(1, len, a.sampleRate),
+          d = b.getChannelData(0);
+        let r = 1;
+        for (let i = 0; i < len; i++) {
+          const bit = (r ^ (r >> (short ? 6 : 1))) & 1;
+          r = (r >> 1) | (bit << 14);
+          d[i] = r & 1 ? 0.8 : -0.8;
+        }
+        return b;
+      };
+      lfsr = { long: mk(false), short: mk(true) };
+    }
+    return a;
+  }
+
+  // steps: [[freq, frames], ...]; vol: start volume; decay: volume lost per frame (stepped)
+  function chip(steps, { wave = 'p25', vol = 0.05, decay = 0.004, delay = 0, at = null, out = 'sfx' } = {}) {
+    const a = ready();
+    if (!a) return;
+    const t0 = (at != null ? at : a.currentTime + 0.005 + delay) + offset,
+      o = a.createOscillator(),
+      g = a.createGain();
+    if (wave === 'tri') o.type = 'triangle';
+    else o.setPeriodicWave(waves[wave]);
+    let t = t0,
+      v = vol,
+      total = 0;
+    g.gain.setValueAtTime(0, t0);
+    for (const [f, n] of steps) {
+      for (let i = 0; i < n; i++) {
+        o.frequency.setValueAtTime(Math.max(20, f), t);
+        g.gain.setValueAtTime(f > 0 ? Math.max(0, v) : 0, t);
+        v -= decay;
+        t += FR;
+        total++;
+      }
+    }
+    g.gain.setValueAtTime(0, t);
+    o.connect(g);
+    g.connect(out === 'music' && SND.musicGain ? SND.musicGain : SND.comp);
+    o.start(t0);
+    o.stop(t + 0.02);
+  }
+
+  // noise burst: rate = playback speed (higher = brighter), stepped decay, optional pitch drop per frame
+  function hiss(frames, { vol = 0.05, rate = 1, drop = 0, short = false, delay = 0, at = null, out = 'sfx' } = {}) {
+    const a = ready();
+    if (!a) return;
+    const t0 = (at != null ? at : a.currentTime + 0.005 + delay) + offset,
+      s = a.createBufferSource(),
+      g = a.createGain();
+    s.buffer = short ? lfsr.short : lfsr.long;
+    s.loop = true;
+    let t = t0,
+      v = vol,
+      r = rate;
+    for (let i = 0; i < frames; i++) {
+      s.playbackRate.setValueAtTime(Math.max(0.05, r), t);
+      g.gain.setValueAtTime(Math.max(0, v), t);
+      v -= vol / frames;
+      r *= 1 - drop;
+      t += FR;
+    }
+    g.gain.setValueAtTime(0, t);
+    s.connect(g);
+    g.connect(out === 'music' && SND.musicGain ? SND.musicGain : SND.comp);
+    s.start(t0);
+    s.stop(t + 0.02);
+  }
+
+  const N = m => 440 * Math.pow(2, (m - 69) / 12); // midi note -> Hz
+  const arp = (notes, frames, opts) => chip(notes.map(m => [N(m), frames]), opts);
+
+  sfxAttack = function (w) {
+    if (!sndGate('atk', 18)) return;
+    const q = rarityRank(w),
+      v = 0.035 + q * 0.002,
+      up = Math.min(q, 8);
+    switch (w.type) {
+      case 'sword':
+      case 'katana':
+        hiss(4, { vol: v, rate: w.type === 'katana' ? 0.9 : 0.6, drop: 0.12 });
+        chip([[N(79 + up), 1], [N(74 + up), 1], [N(67 + up), 2]], { wave: 'p12', vol: v * 0.8, decay: 0.006 });
+        break;
+      case 'dagger':
+      case 'shuriken':
+        chip([[N(88 + up), 1], [N(83 + up), 2]], { wave: 'p12', vol: v * 0.7, decay: 0.01 });
+        hiss(2, { vol: v * 0.6, rate: 1.4, short: true });
+        break;
+      case 'nunchucks':
+        chip([[N(76 + up), 1], [N(71 + up), 1]], { wave: 'p25', vol: v * 0.7 });
+        chip([[N(81 + up), 1], [N(76 + up), 1]], { wave: 'p25', vol: v * 0.5, delay: 0.04 });
+        break;
+      case 'bow':
+        chip([[N(72 + up), 1], [N(60 + up), 1], [N(55 + up), 3]], { wave: 'p50', vol: v * 0.8, decay: 0.008 });
+        break;
+      case 'wand':
+        arp([72 + up, 76 + up, 79 + up, 84 + up], 1, { wave: 'p25', vol: v * 0.7, decay: 0.003 });
+        break;
+      case 'staff':
+        arp([60 + up, 67 + up, 72 + up, 79 + up], 2, { wave: 'p50', vol: v * 0.75, decay: 0.003 });
+        hiss(5, { vol: v * 0.4, rate: 0.3 });
+        break;
+      default: // hammer
+        chip([[N(45), 2], [N(40), 2], [N(33), 3]], { wave: 'tri', vol: v * 2.2, decay: 0.012 });
+        hiss(6, { vol: v * 1.1, rate: 0.25, drop: 0.1 });
+    }
+    if (q >= 6) arp([96, 100, 103], 1, { wave: 'p12', vol: 0.02, delay: 0.03 });
+  };
+
+  sfxSkill = function () {
+    if (!sndGate('skill', 120)) return;
+    arp([60, 64, 67, 72, 76, 79, 84], 2, { wave: 'p25', vol: 0.055, decay: 0.002 });
+    hiss(14, { vol: 0.05, rate: 0.35, drop: -0.03 });
+  };
+
+  sfxHit = function (isCrit = false, pow = 1) {
+    if (!sndGate(isCrit ? 'hitc' : 'hit', isCrit ? 25 : 30)) return;
+    hiss(3, { vol: 0.045 + Math.min(0.03, pow * 0.01), rate: 0.7, drop: 0.15 });
+    chip([[N(57), 1], [N(52), 1]], { wave: 'p50', vol: 0.03, decay: 0.01 });
+  };
+
+  sfxCrit = function (damage = 0) {
+    if (!sndGate('crit', 45)) return;
+    const big = Math.log10(Math.max(10, damage)) > 3;
+    arp(big ? [84, 91, 96] : [84, 91], 2, { wave: 'p12', vol: 0.05, decay: 0.002 });
+    hiss(4, { vol: 0.05, rate: 1.1, short: true });
+  };
+
+  sfxKill = function (elite = false) {
+    if (!sndGate('kill', 30)) return;
+    if (elite) arp([79, 74, 67, 62, 55], 2, { wave: 'p25', vol: 0.05, decay: 0.002 });
+    else arp([76, 71, 64], 1, { wave: 'p25', vol: 0.04, decay: 0.004 });
+    hiss(5, { vol: 0.04, rate: 0.45, drop: 0.1 });
+  };
+
+  sfxLoot = function (w) {
+    if (!sndGate('loot', 60)) return;
+    const q = w ? rarityRank(w) : 0;
+    chip([[N(83), 4], [N(88), 12]], { wave: 'p50', vol: 0.05, decay: 0.002 }); // the coin
+    if (q >= 3) arp([88, 92, 95, 100], 2, { wave: 'p12', vol: 0.035, decay: 0.001, delay: 0.27 });
+  };
+
+  sfxEnemyCast = function () {
+    if (!sndGate('ecast', 90)) return;
+    chip([[N(62), 2], [N(63), 2], [N(62), 2], [N(65), 2], [N(70), 3]], { wave: 'p12', vol: 0.028, decay: 0.001 });
+  };
+
+  sfxEnemyMelee = function () {
+    if (!sndGate('emelee', 70)) return;
+    hiss(4, { vol: 0.035, rate: 0.5, drop: 0.08 });
+    chip([[N(50), 1], [N(45), 2]], { wave: 'p25', vol: 0.025, decay: 0.006 });
+  };
+
+  sfxExplosion = function (pow = 1) {
+    if (!sndGate('boom', 60)) return;
+    hiss(Math.round(18 + pow * 6), { vol: 0.08 + Math.min(0.04, pow * 0.015), rate: 0.5, drop: 0.06 });
+    chip([[N(40), 3], [N(36), 3], [N(31), 4]], { wave: 'tri', vol: 0.09, decay: 0.008 });
+  };
+
+  sfxHurt = function () {
+    if (!sndGate('hurt', 120)) return;
+    chip([[N(67), 2], [N(60), 2], [N(55), 2], [N(48), 3]], { wave: 'p50', vol: 0.06, decay: 0.004 });
+    hiss(4, { vol: 0.05, rate: 0.6 });
+  };
+
+  sfxJump = function () {
+    if (!sndGate('jump', 60)) return;
+    chip([[N(60), 1], [N(64), 1], [N(67), 1], [N(72), 2]], { wave: 'p25', vol: 0.035, decay: 0.004 });
+  };
+
+  sfxDash = function () {
+    if (!sndGate('dash', 90)) return;
+    hiss(7, { vol: 0.045, rate: 0.4, drop: -0.12 });
+  };
+
+  sfxLand = function (v) {
+    if (!sndGate('land', 120) || (v || 0) < 260) return;
+    hiss(3, { vol: 0.03, rate: 0.25 });
+  };
+
+  sfxChaos = function () {
+    if (!sndGate('chaos', 300)) return;
+    arp([72, 66, 73, 65, 74, 64, 75], 2, { wave: 'p12', vol: 0.04, decay: 0.001 });
+  };
+
+  sfxZone = function () {
+    if (!sndGate('zone', 400)) return;
+    arp([60, 67, 72], 5, { wave: 'p25', vol: 0.05, decay: 0.001 });
+    arp([64, 71, 76], 5, { wave: 'p50', vol: 0.035, decay: 0.001 });
+  };
+
+  sfxLevelUp = function () {
+    if (!sndGate('lvl', 300)) return;
+    arp([72, 76, 79, 84, 79, 84, 88], 3, { wave: 'p25', vol: 0.05, decay: 0.0008 });
+    arp([60, 64, 67, 72, 67, 72, 76], 3, { wave: 'tri', vol: 0.06, decay: 0.0008 });
+  };
+
+  uiChime = function (strong = false) {
+    if (!sndGate('ui', 50)) return;
+    arp(strong ? [88, 95] : [88], 2, { wave: 'p12', vol: 0.03, decay: 0.003 });
+  };
+
+  sfxStageClear = function () {
+    if (!sndGate('clear', 600)) return;
+    arp([67, 72, 76, 79, 84], 4, { wave: 'p25', vol: 0.055, decay: 0.0008 });
+    arp([55, 60, 64, 67, 72], 4, { wave: 'tri', vol: 0.06, decay: 0.0008 });
+  };
+
+  function toWav(buf) {
+    const sr = buf.sampleRate,
+      d = buf.getChannelData(0),
+      n = d.length,
+      bytes = new Uint8Array(44 + n * 2),
+      v = new DataView(bytes.buffer);
+    const wr = (o, s) => [...s].forEach((c, i) => (bytes[o + i] = c.charCodeAt(0)));
+    wr(0, 'RIFF');
+    v.setUint32(4, 36 + n * 2, true);
+    wr(8, 'WAVEfmt ');
+    v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true);
+    v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true);
+    v.setUint32(28, sr * 2, true);
+    v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true);
+    wr(36, 'data');
+    v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, d[i])) * 32767, true);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode(...bytes.subarray(i, i + 32768));
+    return btoa(bin);
+  }
+  // Run fn with SND pointed at an offline context; returns the rendered WAV (base64).
+  async function renderOffline(seconds, fn) {
+    const off = new OfflineAudioContext(1, Math.ceil(44100 * seconds), 44100);
+    const saved = { ctx: SND.ctx, comp: SND.comp, musicGain: SND.musicGain, on: SND.on, musicOn: SND.musicOn, waves, lfsr };
+    SND.ctx = off;
+    SND.comp = off.createGain();
+    SND.comp.gain.value = 1.6;
+    SND.comp.connect(off.destination);
+    SND.musicGain = off.createGain();
+    SND.musicGain.gain.value = 0.7;
+    SND.musicGain.connect(off.destination);
+    SND.on = true;
+    waves = null;
+    lfsr = null;
+    try {
+      fn(off);
+    } finally {
+      offset = 0;
+      Object.assign(SND, { ctx: saved.ctx, comp: saved.comp, musicGain: saved.musicGain, on: saved.on, musicOn: saved.musicOn });
+      waves = saved.waves;
+      lfsr = saved.lfsr;
+    }
+    return toWav(await off.startRendering());
+  }
+
+  // Offline preview: renders every effect end to end into a WAV (base64) for listening checks.
+  async function preview() {
+    const sr = 44100,
+      list = [
+        ['sword', () => sfxAttack({ type: 'sword', rar: 'Common' })],
+        ['katana', () => sfxAttack({ type: 'katana', rar: 'Rare' })],
+        ['dagger', () => sfxAttack({ type: 'dagger', rar: 'Common' })],
+        ['nunchucks', () => sfxAttack({ type: 'nunchucks', rar: 'Common' })],
+        ['bow', () => sfxAttack({ type: 'bow', rar: 'Common' })],
+        ['wand', () => sfxAttack({ type: 'wand', rar: 'Common' })],
+        ['staff', () => sfxAttack({ type: 'staff', rar: 'Common' })],
+        ['hammer', () => sfxAttack({ type: 'hammer', rar: 'Common' })],
+        ['hit', () => sfxHit(false, 1)],
+        ['crit', () => sfxCrit(5000)],
+        ['kill', () => sfxKill(false)],
+        ['elite kill', () => sfxKill(true)],
+        ['loot', () => sfxLoot({ type: 'sword', rar: 'Legendary' })],
+        ['special', () => sfxSkill()],
+        ['jump', () => sfxJump()],
+        ['dash', () => sfxDash()],
+        ['hurt', () => sfxHurt()],
+        ['enemy cast', () => sfxEnemyCast()],
+        ['enemy melee', () => sfxEnemyMelee()],
+        ['explosion', () => sfxExplosion(2)],
+        ['level up', () => sfxLevelUp()],
+        ['stage clear', () => sfxStageClear()],
+        ['zone', () => sfxZone()]
+      ],
+      gap = 0.75,
+      off = new OfflineAudioContext(1, Math.ceil(sr * (list.length * gap + 1)), sr);
+    const saved = { ctx: SND.ctx, comp: SND.comp, on: SND.on, waves, lfsr };
+    SND.ctx = off;
+    SND.comp = off.createGain();
+    SND.comp.gain.value = 1.6;
+    SND.comp.connect(off.destination);
+    SND.on = true;
+    waves = null;
+    lfsr = null;
+    try {
+      list.forEach(([, fn], i) => {
+        SND.last = {};
+        offset = i * gap;
+        fn();
+      });
+    } finally {
+      offset = 0;
+      Object.assign(SND, { ctx: saved.ctx, comp: saved.comp, on: saved.on });
+      waves = saved.waves;
+      lfsr = saved.lfsr;
+    }
+    const buf = await off.startRendering(),
+      d = buf.getChannelData(0),
+      n = d.length,
+      bytes = new Uint8Array(44 + n * 2),
+      v = new DataView(bytes.buffer);
+    const wr = (o, s) => [...s].forEach((c, i) => (bytes[o + i] = c.charCodeAt(0)));
+    wr(0, 'RIFF');
+    v.setUint32(4, 36 + n * 2, true);
+    wr(8, 'WAVEfmt ');
+    v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true);
+    v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true);
+    v.setUint32(28, sr * 2, true);
+    v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true);
+    wr(36, 'data');
+    v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, d[i])) * 32767, true);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode(...bytes.subarray(i, i + 32768));
+    return { wav: btoa(bin), order: list.map(x => x[0]), gap };
+  }
+
+  globalThis.CWM_CHIPTUNE = { chip, hiss, preview, renderOffline, version: 'phase4' };
+})();
+;
+
+/* ---- systems/34-chipmusic.js ---- */
+// Chiptune music (phase 4). Replaces the core's single synth loop with a 4-channel sequencer in
+// the NES/SNES style: pulse lead (25%), pulse arpeggio (12.5%), triangle bass, LFSR-noise drums.
+// Every zone has its own key, mode, tempo and chord progression; bosses get faster harmonic-minor
+// tracks. Melodies come from a seeded generator, so a zone always plays the same 16-bar song.
+// Uses CWM_CHIPTUNE (systems/33-chiptune.js) voices routed to SND.musicGain. ?nochip disables.
+(() => {
+  const CT = globalThis.CWM_CHIPTUNE;
+  if (!CT || globalThis.__CWM_CHIPMUSIC) return;
+  globalThis.__CWM_CHIPMUSIC = true;
+
+  const SCALES = {
+    minor: [0, 2, 3, 5, 7, 8, 10],
+    dorian: [0, 2, 3, 5, 7, 9, 10],
+    phrygian: [0, 1, 3, 5, 7, 8, 10],
+    major: [0, 2, 4, 5, 7, 9, 11],
+    harmonic: [0, 2, 3, 5, 7, 8, 11]
+  };
+  // degree progressions (0 = tonic), 2 bars per chord
+  const SONGS = [
+    { key: 52, scale: 'minor', bpm: 132, prog: [0, 5, 2, 6], drums: 'march' }, // Sword Graveyard
+    { key: 57, scale: 'dorian', bpm: 124, prog: [0, 3, 0, 4], drums: 'disco' }, // Disco Crypt
+    { key: 50, scale: 'phrygian', bpm: 150, prog: [0, 1, 0, 6], drums: 'drive' }, // Tax Audit Volcano
+    { key: 55, scale: 'dorian', bpm: 118, prog: [0, 3, 4, 0], drums: 'jig' }, // Bone Dragon Feast Hall
+    { key: 48, scale: 'harmonic', bpm: 100, prog: [0, 5, 3, 4], drums: 'slow' }, // Cathedral
+    { key: 54, scale: 'minor', bpm: 128, prog: [0, 5, 6, 4], drums: 'march' }, // Frozen Meat Peaks
+    { key: 47, scale: 'minor', bpm: 146, prog: [0, 6, 5, 4], drums: 'drive' }, // Dad's Storm Forge
+    { key: 50, scale: 'harmonic', bpm: 110, prog: [0, 3, 5, 4], drums: 'swing' }, // Witch Cottage
+    { key: 58, scale: 'major', bpm: 138, prog: [0, 3, 4, 5], drums: 'march' }, // Takeover Citadel
+    { key: 49, scale: 'minor', bpm: 156, prog: [0, 5, 3, 4], drums: 'drive' } // Armory Vault
+  ];
+  const BOSS = {
+    jr: { key: 53, bpm: 176 },
+    bossman: { key: 45, bpm: 164 },
+    sr: { key: 47, bpm: 168 },
+    grandma: { key: 50, bpm: 160 },
+    ceo: { key: 46, bpm: 172 },
+    weapon: { key: 44, bpm: 190 }
+  };
+  const DRUMS = {
+    // 16 steps: K kick, S snare, h hat, . rest
+    march: 'K.h.S.h.K.hKS.h.',
+    disco: 'K.h.K.hSK.h.K.hS',
+    drive: 'K.hKS.hKK.hKS.hS',
+    jig: 'K..hS..hK..hS.hh',
+    slow: 'K.......S.....h.',
+    swing: 'K..h.hS..hK..hS.',
+    boss: 'KhKhSKhKKhKhSKSS'
+  };
+
+  function rng(seed) {
+    let s = seed >>> 0 || 1;
+    return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  }
+
+  // build one 16-bar song: per 16th-step lists of [channel, midi, steps]
+  const cache = new Map();
+  function song(id) {
+    if (cache.has(id)) return cache.get(id);
+    let spec;
+    if (id.startsWith('boss:')) {
+      const b = BOSS[id.slice(5)] || BOSS.jr;
+      spec = { key: b.key, scale: 'harmonic', bpm: b.bpm, prog: [0, 1, 4, 0], drums: 'boss' };
+    } else spec = SONGS[Number(id.slice(5)) % SONGS.length];
+    const sc = SCALES[spec.scale],
+      r = rng([...id].reduce((h, c) => h * 31 + c.charCodeAt(0), 7));
+    const deg = (d, oct = 0) => spec.key + sc[((d % 7) + 7) % 7] + 12 * (Math.floor(d / 7) + oct);
+    const steps = Array.from({ length: 256 }, () => []);
+    // lead motif: 2-bar phrase over each chord, B section answers an octave/third higher
+    const motif = [];
+    for (let i = 0; i < 32; i++) {
+      const strong = i % 4 === 0;
+      if (!strong && r() < 0.42) continue;
+      const len = strong && r() < 0.4 ? 4 : r() < 0.5 ? 2 : 1;
+      motif.push([i, Math.floor(r() * 5) - (strong ? 0 : 1), len]);
+    }
+    for (let bar = 0; bar < 16; bar++) {
+      const chord = spec.prog[Math.floor(bar / 2) % spec.prog.length],
+        section = bar >= 8 ? 1 : 0;
+      for (let i = 0; i < 16; i++) {
+        const s = bar * 16 + i;
+        // drums
+        const dch = DRUMS[spec.drums][i];
+        if (dch !== '.') steps[s].push(['d', dch]);
+        // triangle bass: root on the beat, fifth on the off-beat 8ths
+        if (i % 4 === 0) steps[s].push(['b', deg(chord, -2), 3]);
+        else if (i % 4 === 2) steps[s].push(['b', deg(chord + 4, -2), 1]);
+        // 12.5% arpeggio: chord tones in 16ths, up and down
+        const arp = [0, 2, 4, 7, 4, 2][(i + bar) % 6];
+        if (spec.drums !== 'slow' || i % 2 === 0) steps[s].push(['a', deg(chord + arp, 1), 1]);
+      }
+      // lead from the motif (shifted into the current chord)
+      for (const [pos, d, len] of motif) {
+        if (Math.floor(pos / 16) !== bar % 2) continue;
+        const s = bar * 16 + (pos % 16);
+        steps[s].push(['l', deg(chord + d + (section ? 2 : 0), 1), len]);
+      }
+    }
+    const out = { steps, stepDur: 60 / spec.bpm / 4 };
+    cache.set(id, out);
+    return out;
+  }
+
+  const N = m => 440 * Math.pow(2, (m - 69) / 12);
+  let current = '',
+    pos = 0;
+  const VOICE = {
+    l: (m, n, t) => CT.chip([[N(m), n * 6 - 1], [0, 1]], { wave: 'p25', vol: 0.05, decay: 0.002, at: t, out: 'music' }),
+    a: (m, n, t) => CT.chip([[N(m), 3]], { wave: 'p12', vol: 0.022, decay: 0.004, at: t, out: 'music' }),
+    b: (m, n, t) => CT.chip([[N(m), n * 6 - 1], [0, 1]], { wave: 'tri', vol: 0.11, decay: 0.002, at: t, out: 'music' })
+  };
+  function drum(kind, t) {
+    if (kind === 'K') {
+      CT.chip([[N(45), 1], [N(38), 1], [N(31), 2]], { wave: 'tri', vol: 0.12, decay: 0.02, at: t, out: 'music' });
+    } else if (kind === 'S') CT.hiss(5, { vol: 0.07, rate: 0.55, drop: 0.05, at: t, out: 'music' });
+    else CT.hiss(2, { vol: 0.03, rate: 1.6, short: true, at: t, out: 'music' });
+  }
+
+  scheduleMusic = function () {
+    const a = audioInit();
+    if (!a || !SND.musicOn) return;
+    const id = bossMode ? 'boss:' + bossMode : 'zone:' + (zoneI || 0);
+    if (id !== current) {
+      current = id;
+      pos = 0;
+    }
+    const sg = song(id);
+    while (SND.musicNext < a.currentTime + 0.25) {
+      const t = SND.musicNext;
+      for (const ev of sg.steps[pos % sg.steps.length]) {
+        if (ev[0] === 'd') drum(ev[1], t);
+        else VOICE[ev[0]](ev[1], ev[2], t);
+      }
+      pos++;
+      SND.musicNext += sg.stepDur;
+    }
+  };
+  // Offline preview: `seconds` of each listed song back to back (ids like 'zone:0', 'boss:jr').
+  async function preview(ids = ['zone:0', 'zone:1', 'zone:8', 'boss:jr'], seconds = 8) {
+    return CT.renderOffline(ids.length * seconds + 0.5, () => {
+      ids.forEach((id, k) => {
+        const sg = song(id);
+        let t = k * seconds,
+          p = 0;
+        while (t < (k + 1) * seconds - 0.05) {
+          for (const ev of sg.steps[p % sg.steps.length]) {
+            if (ev[0] === 'd') drum(ev[1], t);
+            else VOICE[ev[0]](ev[1], ev[2], t);
+          }
+          p++;
+          t += sg.stepDur;
+        }
+      });
+    });
+  }
+  globalThis.CWM_CHIPMUSIC = { song, SONGS, BOSS, preview };
+})();
+;
+
+/* ---- systems/35-balance-probe.js ---- */
+// Balance probe (debug only; no effect on play). CWM_BALANCE.probe() measures, per zone, what the
+// live (fully patched) weapon factory and spawner produce: weapon hit damage, DPS, hits-to-kill
+// against that zone's enemies, name length and rarity mix. Used by the phase-4 balance pass.
+(() => {
+  if (globalThis.CWM_BALANCE) return;
+  const pct = (a, p) => {
+    const s = [...a].sort((x, y) => x - y);
+    return s.length ? s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))] : 0;
+  };
+  function hitOf(w, lv) {
+    return baseD(lv) * w.m * weaponDamageMult(w) * combatScale(w);
+  }
+  function probe({ zones = Z.map((_, i) => i), samples = 300, playerLv = null } = {}) {
+    const saved = { lv: pl.lv, zone: zoneI, E: E.length, weapon: pl.weapon, rnd: null };
+    const out = [];
+    try {
+      for (const z of zones) {
+        zoneI = z;
+        const L = playerLv ? playerLv(z) : Z[z].lv;
+        pl.lv = L;
+        // enemies: spawn a pack of the zone's pool (normal + some elites), read hp, remove
+        const hp = [],
+          ehp = [];
+        const before = E.length;
+        for (let i = 0; i < 40; i++) {
+          const t = Z[z].pool[i % Z[z].pool.length];
+          try {
+            spawn(t, -999, i % 8 === 7);
+          } catch (_) {}
+        }
+        for (const e of E.slice(before)) (e.elite ? ehp : hp).push(e.max);
+        E.length = before;
+        // weapons
+        const hits = [],
+          dps = [],
+          names = [],
+          rar = {};
+        for (let i = 0; i < samples; i++) {
+          let w;
+          try {
+            w = makeW(L);
+          } catch (_) {
+            continue;
+          }
+          const h = hitOf(w, L);
+          hits.push(h);
+          dps.push(estimateDPS(w));
+          names.push(String(w.name || '').length);
+          rar[w.rar] = (rar[w.rar] || 0) + 1;
+        }
+        const hpMed = pct(hp, 50);
+        out.push({
+          zone: z,
+          name: Z[z].name,
+          lv: L,
+          enemyHp: { p50: Math.round(hpMed), elite: Math.round(pct(ehp, 50)) },
+          hit: { p10: Math.round(pct(hits, 10)), p50: Math.round(pct(hits, 50)), p80: Math.round(pct(hits, 80)), p95: Math.round(pct(hits, 95)), max: Math.round(pct(hits, 100)) },
+          dps: { p50: Math.round(pct(dps, 50)), p95: Math.round(pct(dps, 95)), max: Math.round(pct(dps, 100)) },
+          hitsToKill: { p10: +(hpMed / pct(hits, 10)).toFixed(2), p50: +(hpMed / pct(hits, 50)).toFixed(2), p80: +(hpMed / pct(hits, 80)).toFixed(2), p95: +(hpMed / pct(hits, 95)).toFixed(2) },
+          oneShotPct: Math.round((100 * hits.filter(h => h >= hpMed).length) / Math.max(1, hits.length)),
+          nameLen: { p50: pct(names, 50), p95: pct(names, 95), max: pct(names, 100) },
+          rarity: rar
+        });
+      }
+    } finally {
+      pl.lv = saved.lv;
+      zoneI = saved.zone;
+      E.length = Math.min(E.length, saved.E);
+      pl.weapon = saved.weapon;
+    }
+    return out;
+  }
+  globalThis.CWM_BALANCE = { probe, hitOf };
+})();
+;
+
+/* ---- systems/36-weapon-names.js ---- */
+// Weapon names that escalate with rarity but always fit on screen (phase 4).
+//
+// The old names were assembled by ~10 systems appending prefixes, " // model" and suffix chunks
+// (median 100 chars, up to 210). Every weapon factory is wrapped here (outermost), and each new
+// weapon gets one name built from its real attributes. The name is then locked; it is rebuilt only
+// when the weapon's rarity changes. Length budget by rarity rank q (0-10):
+//   q0-1  "Rusty Sword"                              <= 22
+//   q2-3  "Haunted Katana of Mild Peril"             <= 30
+//   q4-5  "Starfire Royal Hammer of Unpaid Fines"    <= 36
+//   q6-7  "Bonkreaver, Bane of Landlords"            <= 38   named relics
+//   q8-9  "Honkmourn IX, Who Audits the Gods"        <= 40
+//   q10   "THE GOOSE (A SWORD)"                       absurd and short
+(() => {
+  if (globalThis.__CWM_WEAPON_NAMES) return;
+  globalThis.__CWM_WEAPON_NAMES = true;
+
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const BASE = {
+    sword: ['Sword', 'Blade', 'Broadsword', 'Longsword', 'Claymore'],
+    dagger: ['Dagger', 'Shiv', 'Dirk', 'Stiletto', 'Knife'],
+    nunchucks: ['Nunchucks', 'Flails', 'Chain Sticks', 'Whackers'],
+    katana: ['Katana', 'Nodachi', 'Curved Blade', 'Odachi'],
+    shuriken: ['Shuriken', 'Throwing Star', 'Star', 'Disc'],
+    bow: ['Bow', 'Longbow', 'Shortbow', 'Warbow'],
+    wand: ['Wand', 'Twig', 'Rod', 'Baton'],
+    staff: ['Staff', 'Stave', 'Scepter', 'Walking Stick'],
+    hammer: ['Hammer', 'Maul', 'Mallet', 'Bonker']
+  };
+  const COND = ['Rusty', 'Chipped', 'Borrowed', 'Damp', 'Dented', 'Wobbly', 'Pointy', 'Used', 'Stolen', 'Bent',
+    'Discount', 'Loose', 'Sticky', 'Musty', 'Plain', 'Spare', 'Sad', 'Cracked'];
+  const ADJ = ['Haunted', 'Grumpy', 'Cursed', 'Sneaky', 'Spiteful', 'Shiny', 'Feral', 'Smug', 'Jittery', 'Honking',
+    'Moody', 'Bitey', 'Rowdy', 'Gloomy', 'Brave-ish', 'Forbidden', 'Suspicious', 'Overbrewed'];
+  const OF = ['Mild Peril', 'Regret', 'Bees', 'Soup', 'Taxes', 'Bad Ideas', 'Paperwork', 'Tuesdays', 'the Goose',
+    'Second Thoughts', 'Loud Noises', 'Questionable Ethics', 'Late Fees', 'Poor Choices', 'Minor Doom', 'Snacks'];
+  const GRAND = ['Royal', 'Ancient', 'Eldritch', 'Dread', 'Sacred', 'Infernal', 'Celestial', 'Unholy', 'Mighty'];
+  const OF_GRAND = ['Unpaid Fines', 'the Last Goose', 'Endless Audits', 'a Thousand Bonks', 'Total Overkill',
+    'the Angry Moon', 'Doom, Mostly', 'Unspeakable Snacks', 'the Ninth Invoice', 'Very Loud Thunder'];
+  const SYL_A = ['Grim', 'Bonk', 'Honk', 'Mor', 'Skal', 'Vex', 'Thun', 'Gor', 'Brin', 'Krag', 'Zul', 'Dread', 'Snor', 'Glum'];
+  const SYL_B = ['brand', 'reaver', 'fang', 'mourn', 'bane', 'gash', 'dor', 'wick', 'thorn', 'rend', 'grin', 'hammer'];
+  const EPITHET = ['Bane of Landlords', 'Eater of Lunches', 'Who Honks at Kings', 'the Unreasonable',
+    'Scourge of Paperwork', 'Breaker of Shins', 'the Very Loud', 'Doom of Small Goblins', 'Friend to No One',
+    'the Last Excuse', 'Who Audits the Gods', 'the Ill-Advised', 'Ender of Brunch', 'Terror of Geese'];
+  const ROMAN = ['II', 'III', 'IV', 'VII', 'IX', 'XII', 'XL', 'MMX'];
+  const WHAT = ['THE GOOSE', 'IT', 'A SWORD?', 'THE LAST INVOICE', 'BONK', 'MOM', 'THE GOOD ONE', 'NO', 'THE ENDING',
+    'A DOOR', 'UNCLE', 'THE MOON, BUT SHARP'];
+
+  const fit = (s, max) => (s.length <= max ? s : s.slice(0, max).replace(/[\s,]+\S*$/, ''));
+  const titleCase = n => n.toLowerCase().replace(/(^|[\s-])([a-z])/g, (x, p, c) => p + c.toUpperCase());
+  const elemOf = w => {
+    const e = w.element || null;
+    if (!e) return null;
+    const n = e.name || e.n || e.label;
+    return {
+      family: e.family || e.id || null,
+      word: typeof n === 'string' && n.length <= 10 ? titleCase(n) : null,
+      prefix: typeof e.prefix === 'string' ? e.prefix : null
+    };
+  };
+  const relicName = () => pick(SYL_A) + pick(SYL_B);
+
+  // Returns [name, max length, look]. The look records which words were used, so the weapon can be
+  // drawn the way it is named (systems/40-weapon-looks.js): a Rusty Sword is rusty, a Haunted one
+  // trails ghosts, a Starfire one throws embers, relics glow.
+  function build(w, q, base) {
+    const el0 = elemOf(w),
+      // element weapons say so in the name most of the time (variety for the rest)
+      el = el0 && Math.random() < 0.65 ? el0 : null,
+      look = { q, base, family: el0 ? el0.family : null };
+    if (q <= 1) {
+      look.cond = pick(COND);
+      if (el && el.prefix) {
+        look.elemNamed = true;
+        const a = `${look.cond} ${el.prefix} ${base}`;
+        return [a.length <= 22 ? a : `${el.prefix} ${base}`, 22, look];
+      }
+      return [`${look.cond} ${base}`, 22, look];
+    }
+    if (q <= 3) {
+      look.of = pick(OF);
+      if (el && el.prefix) {
+        look.elemNamed = true;
+        return [`${el.prefix} ${base} of ${look.of}`, 30, look];
+      }
+      look.adj = pick(ADJ);
+      return [`${look.adj} ${base} of ${look.of}`, 30, look];
+    }
+    if (q <= 5) {
+      look.of = pick(OF_GRAND);
+      let pre;
+      if (el && el.word) {
+        pre = el.word;
+        look.elemNamed = true;
+      } else pre = look.grand = pick(GRAND);
+      if (Math.random() < 0.5) {
+        look.adj = pick(ADJ);
+        return [`${pre} ${look.adj} ${base} of ${look.of}`, 36, look];
+      }
+      return [`${pre} ${base} of ${look.of}`, 36, look];
+    }
+    look.relic = relicName();
+    look.epithet = pick(EPITHET);
+    look.elemNamed = !!el;
+    if (q <= 7) return [`${look.relic}, ${look.epithet}`, 38, look];
+    look.roman = pick(ROMAN);
+    if (q <= 9) return [`${look.relic} ${look.roman}, ${look.epithet}`, 40, look];
+    look.what = pick(WHAT);
+    const b0 = (BASE[w.type] || BASE.sword)[0].toUpperCase();
+    look.base = (BASE[w.type] || BASE.sword)[0];
+    return [`${look.what} (${b0.endsWith('S') ? 'SOME' : 'A'} ${b0})`, 40, look];
+  }
+  function nameFor(w) {
+    const q = Math.max(0, Math.min(10, Number(rarityRank(w)) || 0));
+    // standouts (1 in 5 drops, see 00-damage-budget.js) get names a couple of tiers grander
+    const r = nameAt(w, w.__standout ? Math.min(10, Math.max(q + 2, 4)) : q);
+    r.look.standout = !!w.__standout;
+    return r;
+  }
+  function nameAt(w, q) {
+    let last = null;
+    // re-roll until a whole name fits its budget (never cut a phrase in half)
+    for (let i = 0; i < 12; i++) {
+      const [nm, max, look] = build(w, q, pick(BASE[w.type] || BASE.sword));
+      if (nm.length <= max) return { nm, look };
+      last = { nm: fit(nm, 40), look };
+    }
+    return last;
+  }
+
+  // Name once, lock the property, rebuild only if the rarity changes afterwards.
+  function christen(w) {
+    if (!w || typeof w !== 'object' || w.kind === 'armor' || !w.type || w.__named) return w;
+    if (/^QA /.test(String(w.name || ''))) return w; // self-test weapons keep their tags
+    let cur = nameFor(w),
+      rar = w.rar;
+    const refresh = () => {
+      if (w.rar !== rar) {
+        rar = w.rar;
+        cur = nameFor(w);
+      }
+      return cur;
+    };
+    Object.defineProperty(w, '__named', { value: true, enumerable: false });
+    Object.defineProperty(w, 'name', {
+      enumerable: true,
+      configurable: true,
+      get: () => refresh().nm,
+      set() {} // later "// suffix" appends from older systems are ignored
+    });
+    // which words the name used (drives the weapon's look); not enumerable, so saves skip it
+    Object.defineProperty(w, '__look', { enumerable: false, configurable: true, get: () => refresh().look });
+    return w;
+  }
+  const wrap = fn =>
+    function (...args) {
+      return christen(fn.apply(this, args));
+    };
+  makeW = wrap(makeW);
+  makeExactRankWeapon = wrap(makeExactRankWeapon);
+  makeDeathOfferWeapon = wrap(makeDeathOfferWeapon);
+  makeFunnyIntroWeapon = wrap(makeFunnyIntroWeapon);
+  makeEarlyWeapon = wrap(makeEarlyWeapon);
+  makeUpgradeW = wrap(makeUpgradeW);
+  globalThis.CWM_NAMES = { nameFor, nameAt, christen, BASE };
+})();
+;
+
+/* ---- systems/37-text-budget.js ---- */
+// Floating-text budget and compact numbers (phase 4). Replaces the pixel renderer's overlap
+// stopgap as the main readability rule.
+//   - Hits on the same enemy within 0.3 s merge into one rising number instead of a pile.
+//   - At most 8 damage numbers and 2 callouts (3 if one is big), stacked, on screen; duplicate callouts within 1.2 s dropped.
+//   - Numbers are compact: 999, 12.3K, 4.5M, 6.7B ... and then joke units when truly absurd.
+(() => {
+  if (globalThis.CWM_FMT) return;
+  const JOKE = ['GAZILLION', 'BAJILLION', 'KAJILLION', 'TOO MANY', 'YES'];
+  function fmt(n) {
+    n = Math.max(0, Math.round(Number(n) || 0));
+    if (n < 1000) return String(n);
+    const units = ['K', 'M', 'B', 'T'];
+    let u = -1,
+      v = n;
+    while (v >= 1000 && u < units.length - 1) {
+      v /= 1000;
+      u++;
+    }
+    if (v >= 1000) return JOKE[Math.min(JOKE.length - 1, Math.floor(Math.log10(v) / 3) - 1)];
+    return (v < 10 ? v.toFixed(1) : String(Math.round(v))).replace(/\.0$/, '') + units[u];
+  }
+  globalThis.CWM_FMT = fmt;
+  const S = { merged: 0, droppedDamage: 0, droppedCallouts: 0 };
+  globalThis.CWM_TEXT = S;
+
+  const damagePop0 = damagePop;
+  damagePop = function (e, n, crit = false, col = '#fff') {
+    const now = time;
+    const prev = T.findLast?.(t => t.kind === 'damage' && t.eid === e?.id && now - t.born < 0.3 && t.life > 0);
+    if (prev && !crit) {
+      prev.total += n;
+      prev.s = fmt(prev.total);
+      prev.life = Math.max(prev.life, prev.max * 0.85);
+      S.merged++;
+      return;
+    }
+    const before = T.length;
+    const r = damagePop0(e, n, crit, col);
+    const t = T[T.length - 1];
+    if (T.length > before && t && t.kind === 'damage') {
+      t.eid = e?.id;
+      t.born = now;
+      t.total = n;
+      t.s = fmt(n);
+    }
+    const dmg = T.filter(x => x.kind === 'damage');
+    while (dmg.length > 8) {
+      const old = dmg.shift();
+      T.splice(T.indexOf(old), 1);
+      S.droppedDamage++;
+    }
+    return r;
+  };
+
+  const recent = new Map();
+  const txt0 = txt;
+  txt = function (x, y, s, col = '#fff', big = false) {
+    const key = String(s);
+    if (now() - (recent.get(key) || -9) < 1.2) {
+      S.droppedCallouts++;
+      return;
+    }
+    const callouts = T.filter(t => t.kind !== 'damage' && t.life > 0);
+    if (callouts.length >= (big ? 3 : 2)) {
+      if (!big) {
+        S.droppedCallouts++;
+        return;
+      }
+      const drop = callouts.find(t => !t.big) || callouts[0];
+      T.splice(T.indexOf(drop), 1);
+    }
+    recent.set(key, now());
+    if (recent.size > 80) recent.clear();
+    const before = T.length;
+    const r = txt0(x, y, s, col, big);
+    const t = T.length > before ? T[T.length - 1] : null;
+    // stack instead of overlapping: nudge up past any nearby callout
+    if (t && typeof t.y === 'number') {
+      for (let guard = 0; guard < 4; guard++) {
+        const hit = T.find(o => o !== t && o.kind !== 'damage' && o.life > 0 && Math.abs(o.x - t.x) < 200 && Math.abs(o.y - t.y) < 26);
+        if (!hit) break;
+        t.y = hit.y - 28;
+      }
+    }
+    return r;
+  };
+  function now() {
+    return typeof time === 'number' ? time : performance.now() / 1000;
+  }
+})();
+;
+
+/* ---- systems/38-geese-sleepers.js ---- */
+// Geese and sleeper elites (phase 4).
+//
+//   War Goose  - a new melee enemy (helmeted goose, leap-bite). About 1 in 10 ground spawns in any
+//                zone is swapped for a goose. Honks when it winds up; sometimes says worse things.
+//   Sleepers   - about 1 in 4 ground elites spawns asleep ("Zzz"). It does nothing until it is hit or
+//                the hero walks up to it, then wakes with a grumpy line and fights. Awake sleepers
+//                grumble now and then and get last words.
+// Speech bubbles are solid dark pixel boxes (light text; the pixel font outlines glyphs in ink) drawn over the enemy; at most 2 on screen at once.
+// Hooks: CWM_GOOSE.state(), CWM_GOOSE.forceSleeper(), CWM_GOOSE.say(e, line).
+(() => {
+  if (globalThis.CWM_GOOSE || typeof ED !== 'object') return;
+  const pickL = a => a[Math.floor(Math.random() * a.length)];
+
+  ED.goose = {
+    w: 40,
+    h: 44,
+    hp: 0.85,
+    dmg: 0.95,
+    sp: 172,
+    range: 46,
+    wind: 0.34,
+    col: '#f1efe4',
+    shape: 'chicken', // legacy (nopx) body
+    atk: 'leap',
+    name: 'War Goose'
+  };
+  try {
+    ENEMY_LESSONS.goose = {
+      how: 'WAR GOOSE — honks, then lunges beak-first. Wears a helmet. Fears nothing.',
+      hint: 'The honk is the warning. Hit it first or jump the lunge.'
+    };
+  } catch (_) {}
+
+  const GOOSE_NAMES = ['War Goose', 'Grave Goose', 'Helmet Goose', 'Goose of Ill Omen', 'Absolute Unit (Goose)',
+    'Goose, Knight-Errant', 'Unlicensed Goose', 'The Honkening'];
+  const HONK = ['HONK', 'HONK!', 'HONK?!', 'HONK HONK', 'HONK.', 'HOOONK'];
+  const GOOSE_RARE = ['PEACE WAS NEVER AN OPTION', 'THIS SWORD IS MINE NOW', 'HONK (THREATENING)',
+    'I BITE KINGS', 'YOUR BREAD. NOW.'];
+  const WAKE = ['FIVE MORE MINUTES...', 'WHO RANG THE DOOM BELL?', 'I WAS DREAMING OF SOUP', 'RUDE. VERY RUDE.',
+    'OH NO. A HERO. GREAT.', "I'M UP! I'M UP!", "WAS I SNORING? DON'T ANSWER", 'MY SHIFT STARTS AT NOON',
+    'YOU WOKE THE WRONG GUY', 'HANG ON, WHERE IS MY AXE', 'IS IT TUESDAY ALREADY?', 'I WAS ON BREAK'];
+  const GRUMBLE = ['I HAD A NICE DREAM, TOO', 'THIS IS COMING OUT OF MY NAP', 'HEROES NEVER KNOCK',
+    "I'M TELLING THE LICH", 'NO REFUNDS ON NAPS', 'COULD YOU NOT', 'I HATE MORNINGS. AND YOU.'];
+  const LAST = ['BACK... TO BED...', 'WAKE ME... NEVER', 'TELL MY PILLOW...', 'WORTH IT', 'SNOOZE BUTTON...'];
+
+  const G = { geese: 0, sleepers: 0, woke: 0, lines: 0, honks: 0, force: false };
+
+  // ---- spawning ----
+  const spawn0 = spawn;
+  spawn = function (type, x, elite = false, yTop = null) {
+    const d0 = ED[type];
+    let t = type;
+    if (!bossMode && d0 && !d0.air && type !== 'goose' && !elite && Math.random() < 0.1) t = 'goose';
+    const before = E.length;
+    const r = spawn0(t, x, elite, yTop);
+    const e = E.length > before ? E.at(-1) : null;
+    if (!e || e.boss) return r;
+    if (t === 'goose') {
+      G.geese++;
+      e.label = e.__funnyName = pickL(GOOSE_NAMES);
+      e.__honkCd = 1 + Math.random() * 3;
+    }
+    if (elite && !ED[t].air && !bossMode && (G.force || Math.random() < 0.25)) {
+      G.sleepers++;
+      e.__sleep = true;
+      e.__sleeper = true;
+      e.state = 'sleep';
+      e.__grumbleCd = 6 + Math.random() * 6;
+    }
+    return r;
+  };
+
+  // ---- sleeping enemies skip the core AI entirely ----
+  const updateE0 = updateE;
+  updateE = function (dt) {
+    const asleep = [];
+    for (let i = E.length - 1; i >= 0; i--) {
+      const e = E[i];
+      if (e && e.__sleep && !e.dead) {
+        asleep.push([i, e]);
+        E.splice(i, 1);
+      }
+    }
+    try {
+      return updateE0(dt);
+    } finally {
+      for (let k = asleep.length - 1; k >= 0; k--) {
+        const [i, e] = asleep[k];
+        E.splice(Math.min(i, E.length), 0, e);
+      }
+    }
+  };
+
+  function say(e, line, life = 2.2) {
+    if (!e) return;
+    const live = E.filter(o => o && o.__bubble && o.__bubble.t > 0 && o !== e).length;
+    if (live >= 2) return false;
+    e.__bubble = { s: line, t: life, max: life };
+    G.lines++;
+    return true;
+  }
+  function wake(e, why) {
+    e.__sleep = false;
+    e.state = 'approach';
+    e.stun = 0;
+    e.dir = pl.x >= e.x ? 1 : -1;
+    G.woke++;
+    // a sleeper always gets to complain, even over the bubble cap
+    e.__bubble = { s: pickL(WAKE), t: 2.4, max: 2.4 };
+    G.lines++;
+    try {
+      txt(e.x + e.w / 2, e.y - 40, '!', '#ffe16d', false);
+    } catch (_) {}
+  }
+
+  // ---- per-frame logic after the core update ----
+  const update0 = update;
+  update = function (dt) {
+    const r = update0(dt);
+    const step = Math.min(0.05, dt || 0);
+    for (const e of E) {
+      if (!e || e.boss) continue;
+      if (e.__bubble) e.__bubble.t -= step;
+      if (e.dead) {
+        if (e.__sleeper && !e.__lastWords) {
+          e.__lastWords = true;
+          try {
+            txt(e.x + e.w / 2, e.y - 30, pickL(LAST), '#c9d8e8', false);
+          } catch (_) {}
+        }
+        continue;
+      }
+      if (e.__sleep) {
+        const near = Math.abs(pl.x + pl.w / 2 - (e.x + e.w / 2)) < 120 && Math.abs(pl.y - e.y) < 140;
+        if (e.hp < e.max || near) wake(e);
+        continue;
+      }
+      if (e.type === 'goose') {
+        e.__honkCd -= step;
+        if (e.state === 'wind' && !e.__honked) {
+          e.__honked = true;
+          G.honks++;
+          say(e, Math.random() < 0.12 ? pickL(GOOSE_RARE) : pickL(HONK), 1.1);
+          try {
+            globalThis.CWM_CHIPTUNE?.chip(
+              [
+                [740, 2],
+                [622, 3],
+                [523, 4]
+              ],
+              { wave: 'p25', vol: 0.05, decay: 0.01 }
+            );
+          } catch (_) {}
+        } else if (e.state !== 'wind') e.__honked = false;
+        if (e.__honkCd <= 0) {
+          e.__honkCd = 4 + Math.random() * 5;
+          if (Math.random() < 0.5) say(e, pickL(HONK), 0.9);
+        }
+      } else if (e.__sleeper) {
+        e.__grumbleCd -= step;
+        if (e.__grumbleCd <= 0) {
+          e.__grumbleCd = 9 + Math.random() * 8;
+          say(e, pickL(GRUMBLE), 2);
+        }
+      }
+    }
+    return r;
+  };
+
+  // ---- drawing: Zzz while asleep, speech bubble when talking ----
+  const placed = [];
+  let placedFrame = -1;
+  function bubble(e) {
+    const b = e.__bubble;
+    if (!b || b.t <= 0 || e.dead) return;
+    const cx = e.x + e.w / 2,
+      top = e.y - 46;
+    X.save();
+    X.font = '1000 13px system-ui';
+    X.textAlign = 'center';
+    X.textBaseline = 'middle';
+    const tw = Math.min(360, X.measureText(b.s).width + 22),
+      h = 26,
+      bx = Math.max(6, Math.min(W - tw - 6, cx - tw / 2)),
+      fr = globalThis.CWM_PX?.stats?.frames ?? 0;
+    if (fr !== placedFrame) {
+      placedFrame = fr;
+      placed.length = 0;
+    }
+    let by = Math.max(18, top - h);
+    // stack over any bubble already placed this frame
+    for (let g = 0; g < 3; g++) {
+      const o = placed.find(r => bx < r[0] + r[2] && bx + tw > r[0] && by < r[1] + r[3] + 4 && by + h + 4 > r[1]);
+      if (!o) break;
+      by = o[1] - h - 8;
+    }
+    placed.push([bx, by, tw, h]);
+    X.globalAlpha = 1;
+    X.fillStyle = '#1a1428';
+    X.fillRect(bx, by, tw, h);
+    // tail
+    const tx = Math.max(bx + 8, Math.min(bx + tw - 16, cx - 4));
+    X.fillRect(tx, by + h, 10, 6);
+    X.fillRect(tx + 3, by + h + 6, 5, 5);
+    X.strokeStyle = e.type === 'goose' ? '#ffb35d' : '#f4f1e6';
+    X.lineWidth = 2;
+    X.strokeRect(bx, by, tw, h);
+    X.fillStyle = e.type === 'goose' ? '#ffcf6e' : '#f4f1e6';
+    const PX = globalThis.CWM_PX;
+    if (PX) PX.forceText = true;
+    try {
+      X.fillText(b.s, bx + tw / 2, by + h / 2 + 1);
+    } finally {
+      if (PX) PX.forceText = false;
+    }
+    X.restore();
+  }
+  function zzz(e) {
+    const t = typeof time === 'number' ? time : performance.now() / 1000;
+    X.save();
+    X.textAlign = 'left';
+    X.textBaseline = 'middle';
+    X.fillStyle = '#c9d8e8';
+    for (let i = 0; i < 3; i++) {
+      const p = (t * 0.6 + i / 3 + (e.anim || 0)) % 1;
+      X.globalAlpha = 1;
+      X.font = `1000 ${11 + i * 4}px system-ui`;
+      X.fillText('z', e.x + e.w * 0.7 + p * 26 + i * 6, e.y - 6 - p * 46);
+    }
+    X.restore();
+  }
+  const creature0 = creature;
+  creature = function (e) {
+    // while talking, the bubble replaces the nameplate/label
+    const talking = e && e.__bubble && e.__bubble.t > 0 && !e.dead,
+      hl = talking ? e.__headline : null,
+      lb = talking ? e.label : null;
+    if (talking) {
+      e.__headline = false;
+      e.label = ' ';
+    }
+    let r;
+    try {
+      r = creature0(e);
+    } finally {
+      if (talking) {
+        e.__headline = hl;
+        e.label = lb;
+      }
+    }
+    if (e && !e.boss && !e.dead) {
+      if (e.__sleep) zzz(e);
+      if (e.__bubble) bubble(e);
+    }
+    return r;
+  };
+
+  globalThis.CWM_GOOSE = {
+    state: () => ({ ...G }),
+    forceSleeper: (on = true) => (G.force = !!on),
+    say,
+    wake,
+    spawn: (t, x, el = false) => spawn(t, x, el)
+  };
+})();
+;
+
+/* ---- systems/39-weapon-curve.js ---- */
+// Weapon curve, display side (phase 4): the DPS shown in the HUD and used for auto-equip and the
+// "+X% DPS" toast follows the damage budget in systems/00-damage-budget.js, so the number matches
+// what the weapon really does to this zone's enemies instead of the uncapped multiplier stack.
+(() => {
+  const B = globalThis.CWM_BUDGET;
+  if (!B || B.off || globalThis.__CWM_WEAPON_CURVE) return;
+  globalThis.__CWM_WEAPON_CURVE = true;
+  const estimateDPS0 = estimateDPS;
+  estimateDPS = function (w) {
+    const raw = estimateDPS0(w);
+    if (!w || !(raw > 0)) return raw;
+    // typical enemy here vs. the most one swing may take from it
+    const hpHere = mobHP(Math.max(1, Z[zoneI]?.lv || 1)),
+      budget = hpHere * B.share(w),
+      cd = Math.max(0.05, heldAttackCooldown(w)),
+      swing = raw * cd; // raw damage per swing
+    const dealt = B.bend(swing, budget);
+    return dealt / cd;
+  };
+  // debug: what the live drop factory produces at level L
+  B.sample = (n = 300, L = Z[zoneI]?.lv || 1) => {
+    let so = 0;
+    const names = { normal: [], standout: [] };
+    for (let i = 0; i < n; i++) {
+      const w = makeW(L);
+      if (w.__standout) so++;
+      const list = w.__standout ? names.standout : names.normal;
+      if (list.length < 6) list.push(w.name);
+    }
+    return { standoutPct: Math.round((100 * so) / n), names };
+  };
+})();
+;
+
+/* ---- systems/40-weapon-looks.js ---- */
+// Weapon looks (phase 4): every weapon is drawn the way it is named.
+//
+// systems/36-weapon-names.js records which words a name used (w.__look). From those words:
+//   base word   -> sprite variant (Longsword, Claymore, Shiv, Flails, Scepter, Maul, ...)
+//   palette     -> element > grand word > adjective > condition > rarity colour
+//                  (Rusty = rust, Royal = gold, Eldritch = violet, Starfire = embers, ...)
+//   details     -> baked into the sprite: rust speckles, chips, cracks, dents, bends, goo, price
+//                  tags, teeth, spikes, grumpy eyes, sunglasses, chains, moss, jewels, a goose beak
+//   motion      -> Wobbly wobbles, Loose rattles, Jittery jitters, Rowdy bounces, Sad droops
+//   particles   -> embers, frost, sparks, bubbles, drips, ghosts, curse smoke, steam, rain, notes
+//   tier glow   -> relic names get a pulsing aura, numbered relics add orbiting runes, the absurd
+//                  top tier cycles through the rainbow, standouts sparkle gold
+//   attacks     -> slashes and projectiles take the weapon's colour and leave the same particles
+// Drops on the ground and the HUD icon show the same look. Pixel-space only (needs CWM_PX).
+(() => {
+  const PX = globalThis.CWM_PX;
+  if (!PX || PX.__looks) return;
+  PX.__looks = true;
+  const ART = PX._art;
+  const SCALE = 0.375;
+
+  const HEX = {
+    ink: '#1a1428', night: '#2b2442', slate: '#3e3a5c', stone: '#5d5a7a', fog: '#8a89a6', mist: '#c3c4d6',
+    paper: '#f4f1e8', woodD: '#5d2f14', wood: '#8a4f22', rust: '#c4501f', orange: '#f08a2c', gold: '#ffc15a',
+    cream: '#f8e08e', sand: '#c9a66b', wine: '#7a1f2b', red: '#c4363e', coral: '#f06a52', pine: '#2f5a2c',
+    leaf: '#4f8a3a', grass: '#7cc254', lime: '#b7e27a', navy: '#1d2b6b', blue: '#2f5fbf', sky: '#5aa6f0',
+    ice: '#a8dcfd', indigo: '#22107f', violet: '#7a4bc2', teal: '#3bb8a8', pink: '#ff6fb5'
+  };
+  const pack = name => {
+    const [r, g, b] = PX._hexRgb(HEX[name] || name);
+    return (0xff000000 | (b << 16) | (g << 8) | r) >>> 0;
+  };
+
+  // ---- palettes (light, mid, dark) by word ----
+  const ELEM = {
+    fire: ['cream', 'orange', 'rust'], ice: ['paper', 'ice', 'sky'], lightning: ['paper', 'sky', 'blue'],
+    plasma: ['pink', 'violet', 'indigo'], poison: ['lime', 'grass', 'pine'], radiant: ['paper', 'cream', 'gold'],
+    void: ['violet', 'indigo', 'ink'], water: ['ice', 'sky', 'blue'], wind: ['paper', 'mist', 'teal'],
+    earth: ['sand', 'wood', 'woodD']
+  };
+  const GRANDP = {
+    Royal: ['cream', 'gold', 'orange'], Ancient: ['mist', 'stone', 'slate'], Eldritch: ['pink', 'violet', 'indigo'],
+    Dread: ['fog', 'slate', 'night'], Sacred: ['paper', 'cream', 'gold'], Infernal: ['orange', 'red', 'wine'],
+    Celestial: ['paper', 'ice', 'sky'], Unholy: ['lime', 'leaf', 'pine']
+  };
+  const ADJP = {
+    Haunted: ['paper', 'ice', 'teal'], Cursed: ['pink', 'violet', 'indigo'], Shiny: ['paper', 'ice', 'fog'],
+    Gloomy: ['fog', 'stone', 'slate'], Moody: ['mist', 'fog', 'stone'], Spiteful: ['coral', 'red', 'wine'],
+    Feral: ['sand', 'wood', 'woodD'], Forbidden: ['violet', 'indigo', 'night'], Overbrewed: ['sand', 'wood', 'woodD'],
+    Honking: ['paper', 'mist', 'fog']
+  };
+  const CONDP = {
+    Rusty: ['orange', 'rust', 'woodD'], Damp: ['ice', 'fog', 'stone'], Musty: ['mist', 'fog', 'stone'],
+    Sad: ['mist', 'fog', 'slate'], Plain: ['paper', 'mist', 'fog'], Spare: ['paper', 'mist', 'fog'],
+    Used: ['mist', 'fog', 'stone'], Cracked: ['mist', 'fog', 'stone'], Bent: ['mist', 'fog', 'stone'],
+    Sticky: ['lime', 'grass', 'leaf']
+  };
+  const RAINBOW = [
+    ['cream', 'orange', 'red'], ['cream', 'gold', 'orange'], ['lime', 'grass', 'leaf'],
+    ['ice', 'sky', 'blue'], ['pink', 'violet', 'indigo'], ['paper', 'pink', 'violet']
+  ];
+  function paletteFor(look) {
+    if (!look) return null;
+    if (look.what) return 'rainbow';
+    if (look.elemNamed && look.family && ELEM[look.family]) return ELEM[look.family];
+    if (look.grand && GRANDP[look.grand]) return GRANDP[look.grand];
+    if (look.adj && ADJP[look.adj]) return ADJP[look.adj];
+    if (look.cond && CONDP[look.cond]) return CONDP[look.cond];
+    return null;
+  }
+  function rarityTriple(hex) {
+    const [r, g, b] = PX._hexRgb(hex);
+    return [
+      PX._snapRgb(r + (255 - r) * 0.55, g + (255 - g) * 0.55, b + (255 - b) * 0.55),
+      PX._snapRgb(r, g, b),
+      PX._snapRgb(r * 0.55, g * 0.55, b * 0.55)
+    ];
+  }
+
+  // ---- seeded random per weapon ----
+  function seeded(str) {
+    let h = 2166136261;
+    for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+    return () => {
+      h = (h + 0x6d2b79f5) | 0;
+      let t = Math.imul(h ^ (h >>> 15), 1 | h);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const slug = s => String(s || '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '');
+  function spriteFor(w, look) {
+    const k = look && look.base ? w.type + '-' + slug(look.base) : null;
+    return (k && ART.weapons[k]) || ART.weapons[w.type];
+  }
+
+  // ---- build the look canvas: tint + baked details ----
+  const MARK_A = 0xffff80ff,
+    MARK_M = 0xffff00ff,
+    MARK_Z = 0xff800080;
+  const cache = new Map();
+  const PAD = 3;
+  function build(w, look, a, frame) {
+    const key = [w.name, w.type, look && look.base, w.col, frame, look && look.standout].join('|');
+    let L = cache.get(key);
+    if (L) return L;
+    const W2 = a.w + PAD * 2,
+      H2 = a.h + PAD * 2;
+    const cv = document.createElement('canvas');
+    cv.width = W2;
+    cv.height = H2;
+    const g = cv.getContext('2d');
+    g.drawImage(a.im, PAD, PAD);
+    const img = g.getImageData(0, 0, W2, H2),
+      d = new Uint32Array(img.data.buffer);
+    const at = (x, y) => (x < 0 || y < 0 || x >= W2 || y >= H2 ? 0 : d[y * W2 + x]);
+    const isMark = v => v === MARK_A || v === MARK_M || v === MARK_Z;
+    const INK = pack('ink'),
+      GOLD = pack('gold');
+    const WOODS = new Set([pack('woodD'), pack('wood')]);
+    const deco = new Set();
+    const put = (x, y, v, isDeco = true) => {
+      if (x < 0 || y < 0 || x >= W2 || y >= H2) return;
+      d[y * W2 + x] = v;
+      if (isDeco) deco.add(y * W2 + x);
+    };
+    // classify sprite pixels
+    const marks = [],
+      top = [],
+      bottom = [],
+      guard = [],
+      handle = [];
+    for (let y = 0; y < H2; y++)
+      for (let x = 0; x < W2; x++) {
+        const v = at(x, y);
+        if (isMark(v)) {
+          marks.push([x, y]);
+          if (!isMark(at(x, y - 1))) top.push([x, y]);
+          if (!isMark(at(x, y + 1))) bottom.push([x, y]);
+        } else if (v === GOLD) guard.push([x, y]);
+        else if (WOODS.has(v)) handle.push([x, y]);
+      }
+    const rnd = seeded(key);
+    const pickP = list => list[Math.floor(rnd() * list.length)];
+    let tip = marks[0] || [W2 - PAD, H2 >> 1];
+    for (const m of marks) if (m[0] > tip[0] || (m[0] === tip[0] && Math.abs(m[1] - H2 / 2) < Math.abs(tip[1] - H2 / 2))) tip = m;
+    const minX = marks.reduce((v, m) => Math.min(v, m[0]), W2);
+    // a blade column ~55% along, used for faces
+    let face = null;
+    {
+      const cx = Math.round(minX + (tip[0] - minX) * 0.5);
+      let best = 0;
+      for (let x = Math.max(minX, cx - 3); x <= Math.min(tip[0] - 2, cx + 3); x++) {
+        const col = marks.filter(m => m[0] === x);
+        if (col.length > best) {
+          best = col.length;
+          face = { x, y0: Math.min(...col.map(m => m[1])), y1: Math.max(...col.map(m => m[1])) };
+        }
+      }
+    }
+    const tri = (() => {
+      const p = paletteFor(look);
+      if (p === 'rainbow') return RAINBOW[frame % RAINBOW.length].map(pack);
+      if (p) return p.map(pack);
+      return rarityTriple(PX.paletteHex(w.col || '#c3c4d6'));
+    })();
+    // recolour markers
+    for (const [x, y] of marks) {
+      const v = at(x, y);
+      put(x, y, v === MARK_A ? tri[0] : v === MARK_M ? tri[1] : tri[2], false);
+    }
+    const c = look ? look.cond : null,
+      adj = look ? look.adj : null,
+      grand = look ? look.grand : null;
+    // ---- baked details by word ----
+    if (c === 'Rusty') for (const m of marks) if (rnd() < 0.28) put(m[0], m[1], pack(rnd() < 0.5 ? 'rust' : 'woodD'), false);
+    if (grand === 'Ancient') {
+      for (const m of top) if (rnd() < 0.35) put(m[0], m[1], pack('leaf'), false);
+      for (const m of marks) if (rnd() < 0.08) put(m[0], m[1], pack('pine'), false);
+    }
+    if ((c === 'Chipped' || c === 'Cracked') && top.length > 3) {
+      for (let i = 0; i < 2; i++) {
+        const m = pickP(top.filter(t => t[0] < tip[0] - 1));
+        if (m) put(m[0], m[1], INK, false);
+      }
+    }
+    if (c === 'Cracked' && face) for (let i = 0; i < 3; i++) put(face.x + i - 1, Math.min(face.y1, face.y0 + i), INK, false);
+    if (c === 'Dented') for (let i = 0; i < 3; i++) {
+      const m = pickP(rnd() < 0.5 ? top : bottom);
+      if (m) put(m[0], m[1], pack('slate'), false);
+    }
+    if (c === 'Bent') {
+      const x0 = Math.round(minX + (tip[0] - minX) * 0.66);
+      for (let x = x0; x < W2; x++)
+        for (let y = H2 - 2; y >= 0; y--) {
+          d[(y + 1) * W2 + x] = d[y * W2 + x];
+          if (y === 0) d[x] = 0;
+        }
+      tip = [tip[0], tip[1] + 1];
+    }
+    if (c === 'Sticky') for (let i = 0; i < 2; i++) {
+      const m = pickP(bottom);
+      if (m) {
+        put(m[0], m[1] + 1, pack('lime'));
+        if (rnd() < 0.6) put(m[0], m[1] + 2, pack('grass'));
+      }
+    }
+    if ((c === 'Stolen' || c === 'Borrowed' || c === 'Discount') && (guard.length || handle.length)) {
+      const gx = guard.length ? guard[guard.length >> 1][0] : handle[handle.length - 1][0];
+      const gy = Math.max(...(guard.length ? guard : handle).map(p => p[1]));
+      put(gx, gy + 1, pack('fog'));
+      put(gx, gy + 2, pack('paper'));
+      put(gx + 1, gy + 2, pack('paper'));
+      put(gx, gy + 3, pack('paper'));
+      put(gx + 1, gy + 3, pack(c === 'Discount' ? 'red' : 'paper'));
+    }
+    if (adj === 'Bitey') for (const m of bottom) if ((m[0] + m[1]) % 2 === 0 && m[0] < tip[0]) put(m[0], m[1] + 1, pack('paper'));
+    if (adj === 'Spiteful') for (const m of top) if (m[0] % 3 === 0 && m[0] < tip[0]) {
+      put(m[0], m[1] - 1, pack('red'));
+      put(m[0], m[1] - 2, pack('coral'));
+    }
+    if (face && face.y1 - face.y0 >= 1) {
+      const ey = face.y0 + (face.y1 - face.y0 >= 2 ? 1 : 0);
+      if (adj === 'Grumpy') {
+        put(face.x - 1, ey, pack('red'), false);
+        put(face.x + 2, ey, pack('red'), false);
+        put(face.x - 1, face.y0 - 1, INK);
+        put(face.x + 2, face.y0 - 1, INK);
+        put(face.x, face.y0, INK, false);
+        put(face.x + 1, face.y0, INK, false);
+      }
+      if (adj === 'Smug') {
+        for (const dx of [-2, -1, 1, 2]) put(face.x + dx, ey, INK, false);
+        put(face.x, ey, pack('fog'), false);
+      }
+      if (adj === 'Suspicious' || grand === 'Eldritch') {
+        put(face.x, ey, pack(grand === 'Eldritch' ? 'pink' : 'paper'), false);
+        put(face.x + 1, ey, pack(grand === 'Eldritch' ? 'pink' : 'paper'), false);
+        put(face.x + (grand === 'Eldritch' ? 1 : 0), ey, INK, false);
+      }
+      if (grand === 'Dread') {
+        put(face.x - 1, ey, pack('red'), false);
+        put(face.x + 1, ey, pack('red'), false);
+      }
+    }
+    if (adj === 'Feral' && guard.length) for (const p of guard) if (rnd() < 0.6) put(p[0] + (rnd() < 0.5 ? -1 : 1), p[1] + (rnd() < 0.5 ? -1 : 1), pack('sand'));
+    if (adj === 'Brave-ish' && handle.length) {
+      const hx = Math.min(...handle.map(p => p[0])),
+        hy = Math.min(...handle.map(p => p[1]));
+      for (let i = 1; i <= 3; i++) put(hx, hy - i, pack('fog'));
+      put(hx + 1, hy - 3, pack('red'));
+      put(hx + 2, hy - 3, pack('red'));
+      put(hx + 1, hy - 2, pack('red'));
+    }
+    if (adj === 'Forbidden') for (const m of marks) if ((m[0] - m[1]) % 4 === 0) put(m[0], m[1], pack((m[0] >> 2) % 2 ? 'fog' : 'stone'), false);
+    if (grand === 'Royal' && guard.length) {
+      const gm = guard[guard.length >> 1];
+      put(gm[0], gm[1], pack('red'), false);
+    }
+    if (adj === 'Honking' || (look && /GOOSE/.test(look.what || '') )) {
+      put(tip[0], tip[1], pack('orange'), false);
+      put(tip[0] + 1, tip[1], pack('orange'));
+      put(tip[0] + 1, tip[1] + 1, pack('rust'));
+    }
+    // ink outline around anything added outside the sprite
+    for (const i of deco) {
+      const x = i % W2,
+        y = (i / W2) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const j = (y + dy) * W2 + x + dx;
+        if (x + dx >= 0 && x + dx < W2 && y + dy >= 0 && y + dy < H2 && d[j] === 0) d[j] = INK;
+      }
+    }
+    g.putImageData(img, 0, 0);
+    // aura ring: empty pixels touching the sprite
+    const ring = [];
+    for (let y = 0; y < H2; y++)
+      for (let x = 0; x < W2; x++)
+        if (!d[y * W2 + x] && (at(x + 1, y) || at(x - 1, y) || at(x, y + 1) || at(x, y - 1))) ring.push([x, y]);
+    const recoloured = marks.map(([x, y]) => [x, y + (c === 'Bent' && x >= Math.round(minX + (tip[0] - minX) * 0.66) ? 1 : 0)]);
+    const hex = n => '#' + [0, 8, 16].map(s => ((n >>> s) & 255).toString(16).padStart(2, '0')).join('');
+    L = { cv, w: W2, h: H2, gx: a.gx + PAD, gy: a.gy + PAD, marks: recoloured, ring, tip, face, light: hex(tri[0]), mid: hex(tri[1]), dark: hex(tri[2]) };
+    cache.set(key, L);
+    if (cache.size > 90) cache.delete(cache.keys().next().value);
+    return L;
+  }
+
+  // ---- particles (device pixels, drawn after the world, before the palette snap) ----
+  const parts = [];
+  function emit(x, y, kind, col) {
+    if (parts.length > 260) parts.shift();
+    const r = Math.random;
+    const p = { x, y, vx: 0, vy: 0, g: 0, life: 24, max: 24, col, size: 1, kind: 'dot' };
+    switch (kind) {
+      case 'ember': p.vx = (r() - 0.5) * 0.3; p.vy = -0.35 - r() * 0.45; p.life = 20 + r() * 16; break;
+      case 'frost': p.vx = (r() - 0.5) * 0.2; p.vy = 0.12 + r() * 0.15; p.life = 26 + r() * 16; p.kind = r() < 0.3 ? 'plus' : 'dot'; break;
+      case 'spark': p.vx = (r() - 0.5) * 2.2; p.vy = (r() - 0.5) * 2.2; p.life = 5 + r() * 6; p.size = 1; break;
+      case 'mote': p.vx = (r() - 0.5) * 0.5; p.vy = (r() - 0.5) * 0.5; p.life = 22 + r() * 18; break;
+      case 'bubble': p.vx = (r() - 0.5) * 0.15; p.vy = -0.2 - r() * 0.2; p.life = 28 + r() * 18; p.kind = 'ring'; break;
+      case 'twinkle': p.life = 14 + r() * 12; p.kind = 'plus'; break;
+      case 'suck': {
+        const a = r() * Math.PI * 2, d = 7 + r() * 5;
+        p.x += Math.cos(a) * d; p.y += Math.sin(a) * d; p.vx = -Math.cos(a) * d / 16; p.vy = -Math.sin(a) * d / 16; p.life = 16;
+        break;
+      }
+      case 'drip': p.vy = 0.15; p.g = 0.04; p.life = 26 + r() * 10; break;
+      case 'streak': p.vx = -0.9 - r() * 0.8; p.vy = (r() - 0.5) * 0.1; p.life = 12 + r() * 8; p.kind = 'streak'; break;
+      case 'pebble': p.vx = (r() - 0.5) * 0.5; p.vy = -0.3; p.g = 0.06; p.life = 22; break;
+      case 'ghost': p.vx = (r() - 0.5) * 0.25; p.vy = -0.25 - r() * 0.2; p.life = 30 + r() * 14; p.kind = 'ghost'; p.ph = r() * 6; break;
+      case 'smoke': p.vx = (r() - 0.5) * 0.2; p.vy = -0.18 - r() * 0.15; p.life = 30 + r() * 12; p.size = 2; break;
+      case 'spore': p.vx = (r() - 0.5) * 0.3; p.vy = -0.08 + (r() - 0.5) * 0.2; p.life = 34 + r() * 12; break;
+      case 'steam': p.vx = (r() - 0.5) * 0.25; p.vy = -0.4 - r() * 0.3; p.life = 18 + r() * 10; p.size = r() < 0.5 ? 2 : 1; break;
+      case 'rain': p.y -= 10; p.x += (r() - 0.5) * 8; p.vy = 0.9; p.life = 12; p.kind = 'streakv'; break;
+      case 'note': p.vx = 0.15 + r() * 0.2; p.vy = -0.35; p.life = 34; p.kind = 'note'; break;
+      case 'confetti': p.vx = (r() - 0.5) * 1.2; p.vy = -0.8 - r() * 0.6; p.g = 0.05; p.life = 30; p.kind = r() < 0.5 ? 'dot' : 'streak'; break;
+      case 'flame': p.vx = (r() - 0.5) * 0.2; p.vy = -0.5 - r() * 0.4; p.life = 12 + r() * 8; p.size = r() < 0.4 ? 2 : 1; break;
+    }
+    p.max = p.life;
+    parts.push(p);
+  }
+  const NOTE = [[1, 0], [2, 0], [1, 1], [1, 2], [0, 3], [1, 3]];
+  const GHOST = [[1, 0], [0, 1], [1, 1], [2, 1], [0, 2], [2, 2]];
+  PX.afterWorld.push(function drawParts() {
+    if (!parts.length) return;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.vy += p.g;
+      p.x += p.vx + (p.kind === 'ghost' ? Math.sin((p.ph += 0.2)) * 0.2 : 0);
+      p.y += p.vy;
+      if (--p.life <= 0) {
+        parts.splice(i, 1);
+        continue;
+      }
+      // fade by thinning: late in life, skip alternate frames (no translucency on the pixel layer)
+      if (p.life < p.max * 0.3 && (p.life & 1)) continue;
+      const x = Math.round(p.x),
+        y = Math.round(p.y);
+      X.fillStyle = p.col;
+      if (p.kind === 'plus') {
+        X.fillRect(x, y - 1, 1, 3);
+        X.fillRect(x - 1, y, 3, 1);
+      } else if (p.kind === 'ring') {
+        X.fillRect(x, y - 1, 1, 1);
+        X.fillRect(x - 1, y, 1, 1);
+        X.fillRect(x + 1, y, 1, 1);
+        X.fillRect(x, y + 1, 1, 1);
+      } else if (p.kind === 'streak') X.fillRect(x, y, 2, 1);
+      else if (p.kind === 'streakv') X.fillRect(x, y, 1, 2);
+      else if (p.kind === 'note') for (const [dx, dy] of NOTE) X.fillRect(x + dx, y + dy, 1, 1);
+      else if (p.kind === 'ghost') for (const [dx, dy] of GHOST) X.fillRect(x + dx, y + dy, 1, 1);
+      else X.fillRect(x, y, p.size, p.size);
+    }
+  });
+
+  // emitters by word: [kind, colours[], rate per frame]
+  const FAMILY_FX = {
+    fire: ['ember', ['orange', 'cream', 'rust'], 0.5], ice: ['frost', ['ice', 'paper'], 0.35],
+    lightning: ['spark', ['paper', 'sky', 'ice'], 0.6], plasma: ['mote', ['pink', 'violet'], 0.4],
+    poison: ['bubble', ['lime', 'grass'], 0.25], radiant: ['twinkle', ['paper', 'cream'], 0.3],
+    void: ['suck', ['violet', 'indigo', 'pink'], 0.5], water: ['drip', ['sky', 'ice'], 0.25],
+    wind: ['streak', ['paper', 'mist'], 0.35], earth: ['pebble', ['sand', 'wood'], 0.2]
+  };
+  const WORD_FX = {
+    Haunted: ['ghost', ['paper', 'ice'], 0.07], Cursed: ['smoke', ['violet', 'indigo'], 0.2],
+    Forbidden: ['smoke', ['night', 'violet'], 0.12], Dread: ['smoke', ['night', 'wine'], 0.15],
+    Musty: ['spore', ['grass', 'lime'], 0.12], Damp: ['drip', ['sky'], 0.12], Sticky: ['drip', ['lime'], 0.06],
+    Overbrewed: ['steam', ['paper', 'mist'], 0.3], Gloomy: ['rain', ['sky'], 0.25], Moody: ['rain', ['sky', 'fog'], 0.15],
+    Honking: ['note', ['paper', 'gold'], 0.03], Infernal: ['flame', ['orange', 'red', 'cream'], 0.55],
+    Unholy: ['flame', ['lime', 'leaf', 'grass'], 0.5], Sacred: ['twinkle', ['paper', 'cream'], 0.2],
+    Celestial: ['twinkle', ['ice', 'paper'], 0.2], Royal: ['twinkle', ['gold', 'cream'], 0.1],
+    Eldritch: ['mote', ['pink', 'violet'], 0.2], Shiny: ['twinkle', ['paper'], 0.05]
+  };
+  function emittersFor(look) {
+    if (!look) return [];
+    const out = [];
+    if (look.family && FAMILY_FX[look.family]) {
+      const [k, cols, rate] = FAMILY_FX[look.family];
+      out.push([k, cols, rate * (look.elemNamed ? 1.5 : 0.4)]);
+    }
+    for (const word of [look.cond, look.adj, look.grand]) if (word && WORD_FX[word]) out.push(WORD_FX[word]);
+    if (look.what) out.push(['confetti', ['pink', 'gold', 'sky', 'lime', 'paper'], 0.25]);
+    if (/Geese|Honks/.test(look.epithet || '')) out.push(['note', ['paper', 'gold'], 0.03]);
+    if (look.relic) out.push(['twinkle', ['paper'], look.roman ? 0.12 : 0.06]);
+    if (look.standout) out.push(['twinkle', ['gold', 'cream'], 0.12]);
+    return out;
+  }
+  function runEmitters(list, pointAt) {
+    for (const [kind, cols, rate] of list) {
+      let n = rate;
+      while (n > 0) {
+        if (n >= 1 || Math.random() < n) {
+          const p = pointAt();
+          if (p) emit(p.x, p.y, kind, HEX[cols[Math.floor(Math.random() * cols.length)]]);
+        }
+        n -= 1;
+      }
+    }
+  }
+
+  // ---- motion by word ----
+  function motion(look, u) {
+    if (!look) return;
+    const t = time;
+    const c = look.cond,
+      adj = look.adj;
+    if (c === 'Wobbly') X.rotate(Math.sin(t * 9) * 0.12);
+    if (c === 'Loose') X.translate(0, (Math.floor(t * 20) % 2) * u * 0.6);
+    if (adj === 'Jittery') X.translate(((Math.random() * 3) | 0) * u * 0.4 - u * 0.4, ((Math.random() * 3) | 0) * u * 0.4 - u * 0.4);
+    if (adj === 'Rowdy') X.translate(0, -Math.abs(Math.sin(t * 7)) * u * 1.5);
+    if (c === 'Sad') X.rotate(0.14);
+  }
+
+  function frameOf(look) {
+    return look && look.what ? Math.floor(time * 6) % RAINBOW.length : 0;
+  }
+  function scaleFor(look, a, sc) {
+    let k = sc < 1.7 ? 1 : sc < 2.6 ? 2 : 3;
+    if (look && (look.grand === 'Mighty' || look.what)) k++;
+    return Math.max(1, Math.min(k, Math.floor(56 / a.w)));
+  }
+
+  // ---- held weapon ----
+  PX.weaponBody = function (w, q, sc, atk) {
+    if (!PX.ready || !PX._lutReady()) return false;
+    const look = w.__look || null,
+      a = spriteFor(w, look);
+    if (!a) return false;
+    const L = build(w, look, a, frameOf(look)),
+      k = scaleFor(look, a, sc);
+    const m0 = X.getTransform(),
+      u = k / (Math.hypot(m0.a, m0.b) || SCALE);
+    X.save();
+    motion(look, u);
+    const sneaky = look && look.adj === 'Sneaky';
+    if (sneaky) X.globalAlpha = Math.floor(time * 3) % 3 === 0 ? 0.45 : 0.85;
+    X.drawImage(L.cv, -L.gx * u, -L.gy * u, L.w * u, L.h * u);
+    X.globalAlpha = 1;
+    overlays(L, look, u, (sx, sy) => [(sx - L.gx) * u, (sy - L.gy) * u]);
+    // particles from random blade pixels
+    const tm = X.getTransform();
+    runEmitters(emittersFor(look), () => {
+      const m = L.marks[Math.floor(Math.random() * L.marks.length)];
+      if (!m) return null;
+      return tm.transformPoint(new DOMPoint((m[0] + 0.5 - L.gx) * u, (m[1] + 0.5 - L.gy) * u));
+    });
+    X.restore();
+    PX.stats.weaponDraws = (PX.stats.weaponDraws || 0) + 1;
+    return true;
+  };
+
+  // animated layers in sprite pixels; `to` maps sprite px -> local coords
+  function overlays(L, look, u, to) {
+    if (!look) return;
+    const t = time;
+    const px = (sx, sy, col) => {
+      const [x, y] = to(sx, sy);
+      X.fillStyle = col;
+      X.fillRect(x, y, u, u);
+    };
+    // glint sweep (Shiny, Pointy at the tip, relics)
+    if (look.adj === 'Shiny' || look.relic || look.grand === 'Sacred') {
+      const ph = Math.floor((t * 22) % (L.w + L.h + 14));
+      for (const [x, y] of L.marks) if (x + y === ph || x + y === ph - 1) px(x, y, HEX.paper);
+    }
+    if (look.cond === 'Pointy' && Math.floor(t * 2.5) % 3 === 0) {
+      px(L.tip[0] + 1, L.tip[1], HEX.paper);
+      px(L.tip[0] + 2, L.tip[1], HEX.paper);
+      px(L.tip[0] + 1, L.tip[1] - 1, HEX.paper);
+      px(L.tip[0] + 1, L.tip[1] + 1, HEX.paper);
+    }
+    // blinking eye
+    if ((look.adj === 'Suspicious' || look.grand === 'Eldritch') && L.face && Math.floor(t * 1.3) % 5 === 0) {
+      const ey = L.face.y0 + (L.face.y1 - L.face.y0 >= 2 ? 1 : 0);
+      px(L.face.x, ey, L.mid);
+      px(L.face.x + 1, ey, L.mid);
+    }
+    // rain cloud
+    if ((look.adj === 'Gloomy' || look.adj === 'Moody') && L.face) {
+      const cy = L.face.y0 - 5 + Math.round(Math.sin(t * 2));
+      for (let i = -2; i <= 2; i++) px(L.face.x + i, cy, HEX.fog);
+      for (let i = -1; i <= 1; i++) px(L.face.x + i, cy - 1, HEX.mist);
+    }
+    // aura: relics pulse in their light shade, standouts flash gold
+    const pulse = Math.sin(t * 5);
+    if (look.relic || look.what || look.standout) {
+      const col = look.standout && pulse > 0.6 ? HEX.gold : look.what ? RAINBOW[(Math.floor(t * 6) + 2) % 6].map(n => HEX[n])[1] : L.light;
+      if (pulse > -0.2 || look.standout) {
+        const every = pulse > 0.6 ? 1 : 2;
+        for (let i = 0; i < L.ring.length; i += every) px(L.ring[i][0], L.ring[i][1], col);
+      }
+    }
+    // numbered relics: three runes orbiting the blade
+    if (look.roman && L.marks.length) {
+      const cx = (L.marks[0][0] + L.tip[0]) / 2,
+        cy = L.tip[1];
+      for (let i = 0; i < 3; i++) {
+        const a = t * 3 + (i * Math.PI * 2) / 3;
+        px(Math.round(cx + Math.cos(a) * (L.w * 0.32)), Math.round(cy + Math.sin(a) * 5), HEX.gold);
+      }
+    }
+  }
+
+  // The legacy rarity/element aura circles behind the weapon are replaced by the look (aura ring,
+  // particles), so they are skipped while the pixel art is up.
+  if (typeof weaponAura === 'function') {
+    const weaponAura0 = weaponAura;
+    weaponAura = function (w, x, y) {
+      if (PX.ready && PX._lutReady() && w && w.__look) return;
+      return weaponAura0(w, x, y);
+    };
+  }
+
+  // ---- HUD icon ----
+  PX.weaponIconFor = w => {
+    if (!w || !PX._lutReady()) return null;
+    const look = w.__look || null,
+      a = spriteFor(w, look);
+    if (!a) return null;
+    const L = build(w, look, a, frameOf(look));
+    if (!L.icon) {
+      // crop to the opaque pixels so the HUD's 9px-tall slot isn't spent on padding
+      const g = L.cv.getContext('2d'),
+        d = g.getImageData(0, 0, L.w, L.h).data;
+      let x0 = L.w,
+        y0 = L.h,
+        x1 = -1,
+        y1 = -1;
+      for (let y = 0; y < L.h; y++)
+        for (let x = 0; x < L.w; x++)
+          if (d[(y * L.w + x) * 4 + 3]) {
+            x0 = Math.min(x0, x);
+            x1 = Math.max(x1, x);
+            y0 = Math.min(y0, y);
+            y1 = Math.max(y1, y);
+          }
+      const cw = Math.max(1, x1 - x0 + 1),
+        chh = Math.max(1, y1 - y0 + 1),
+        cv = document.createElement('canvas');
+      cv.width = cw;
+      cv.height = chh;
+      cv.getContext('2d').drawImage(L.cv, x0, y0, cw, chh, 0, 0, cw, chh);
+      L.icon = { cv, w: cw, h: chh };
+    }
+    return L.icon;
+  };
+
+  // ---- drops: the weapon itself lies there, bobbing, with its glow and particles ----
+  const dropBody0 = PX.dropBody;
+  PX.dropBody = function (d, q, riq) {
+    const w = d && d.item;
+    if (!w || w.kind === 'armor' || !w.type || !PX.ready || !PX._lutReady()) return dropBody0(d, q, riq);
+    const look = w.__look || null,
+      a = spriteFor(w, look);
+    if (!a) return dropBody0(d, q, riq);
+    const L = build(w, look, a, frameOf(look));
+    const bob = Math.round(Math.sin(time * 4 + d.x * 0.01) * 1.5);
+    const p = X.getTransform().transformPoint(new DOMPoint(d.x, d.y));
+    const x0 = Math.round(p.x - L.w / 2),
+      y0 = Math.round(p.y - L.h / 2) + bob;
+    X.save();
+    X.setTransform(1, 0, 0, 1, 0, 0);
+    if (q >= 2 || (look && look.standout)) {
+      X.globalAlpha = 0.5;
+      X.fillStyle = look && look.standout ? HEX.gold : L.mid;
+      X.fillRect(Math.round(p.x) - 1, y0 - 10 - q * 2, 2, 10 + q * 2);
+      X.globalAlpha = 1;
+    }
+    X.drawImage(L.cv, x0, y0);
+    overlays(L, look, 1, (sx, sy) => [x0 + sx, y0 + sy]);
+    runEmitters(
+      emittersFor(look).map(([k2, c2, r2]) => [k2, c2, r2 * 0.5]),
+      () => {
+        const m = L.marks[Math.floor(Math.random() * L.marks.length)];
+        return m ? { x: x0 + m[0] + 0.5, y: y0 + m[1] + 0.5 } : null;
+      }
+    );
+    X.restore();
+    if (riq >= 3) {
+      X.fillStyle = d.item.col;
+      X.textAlign = 'center';
+      X.font = '700 12px system-ui';
+      X.fillText(d.item.name, d.x, d.y - 18 - q * 2);
+    }
+    return true;
+  };
+
+  // ---- attacks: the weapon's slashes and projectiles take its colour and leave its particles ----
+  const seen = new WeakSet();
+  let lockedW = null; // debug: keep an equipped look while testing
+  const update0 = update;
+  update = function (dt) {
+    if (lockedW) pl.weapon = lockedW;
+    const r = update0(dt);
+    const w = curW(),
+      look = w && w.__look;
+    if (!w || !look || !PX._lutReady()) return r;
+    const a = spriteFor(w, look);
+    if (!a) return r;
+    const L = build(w, look, a, frameOf(look)),
+      fx = emittersFor(look);
+    const tag = o => {
+      if (seen.has(o)) return;
+      seen.add(o);
+      if (o.col === w.col) {
+        o.col = L.mid;
+        o.__fx = fx;
+        o.__fxCol = L.light;
+      }
+    };
+    for (const p of P) tag(p);
+    for (const f of F) if (f.k === 'slash' || f.k === 'after' || f.k === 'staff') tag(f);
+    return r;
+  };
+  PX.afterWorld.unshift(function trails() {
+    const sx = PX.shakeX || 0,
+      sy = PX.shakeY || 0;
+    const at = (x, y) => ({ x: x * SCALE + sx, y: y * SCALE + sy });
+    for (const p of P) if (p.__fx && p.__fx.length) runEmitters(p.__fx.map(([k, c, r]) => [k, c, Math.min(1, r * 1.6)]), () => at(p.x, p.y));
+    for (const f of F)
+      if (f.__fx && f.__fx.length && f.k === 'slash' && f.life > f.max * 0.4) {
+        runEmitters(
+          f.__fx.map(([k, c, r]) => [k, c, Math.min(2, r * 3)]),
+          () => {
+            const ang = (Math.random() - 0.5) * 2.2;
+            return at(f.x + Math.cos(ang) * f.r * 0.8 * (f.dir || 1), f.y + Math.sin(ang) * f.r * 0.8);
+          }
+        );
+      }
+  });
+
+  // debug: a contact sheet of looks -> data URL. specs: [{type, base, cond, adj, grand, family, ...}]
+  function sheet(specs, zoom = 4, cols = 4) {
+    const items = specs.map((sp, i) => {
+      const look = { q: 0, ...sp },
+        w = { type: sp.type, name: 'sheet' + i + JSON.stringify(sp), col: sp.col || '#c3c4d6' };
+      const a = spriteFor(w, look);
+      return { L: a ? build(w, look, a, 0) : null, label: sp.label || '' };
+    });
+    const cw = 40 * zoom,
+      ch = 26 * zoom;
+    const cv = document.createElement('canvas');
+    cv.width = cw * cols;
+    cv.height = ch * Math.ceil(items.length / cols);
+    const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = HEX.slate;
+    g.fillRect(0, 0, cv.width, cv.height);
+    items.forEach((it, i) => {
+      const x = (i % cols) * cw,
+        y = Math.floor(i / cols) * ch;
+      if (it.L) g.drawImage(it.L.cv, x + 4, y + 4, it.L.w * zoom, it.L.h * zoom);
+      g.fillStyle = HEX.paper;
+      g.font = '12px monospace';
+      g.fillText(it.label, x + 4, y + ch - 6);
+    });
+    return cv.toDataURL();
+  }
+  // debug: equip a weapon with a given look, e.g. equip({type:'hammer', base:'Maul', grand:'Infernal'}, 4)
+  function equip(spec, rank = 2) {
+    const w = makeExactRankWeapon(pl.lv, rank);
+    w.type = spec.type || w.type;
+    const look = { q: rank, ...spec };
+    Object.defineProperty(w, '__look', { configurable: true, get: () => look });
+    Object.defineProperty(w, 'name', { configurable: true, enumerable: true, value: spec.label || spec.base || w.type, writable: true });
+    if (spec.col) w.col = spec.col;
+    pl.weapon = lockedW = w;
+    if (spec.clear !== false) {
+      E.length = 0;
+      pl.x = W / 2 - pl.w / 2;
+    }
+    return w.name;
+  }
+  PX.looks = { build, paletteFor, emittersFor, spriteFor, parts, sheet, equip, unlock: () => (lockedW = null) };
 })();
 ;
 

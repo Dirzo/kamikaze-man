@@ -257,7 +257,7 @@
           spawnDrop(95 + col * 125, G - 165 - row * 72, w, false);
         }
         document.documentElement.dataset.cwmLootV31Showcase = counts.join(',');
-        U.msg.textContent = `PARKING LOT LOOT SAMPLE // ${counts[0]} COMMON • ${counts[1]} RARE • ${counts[2]} EPIC`;
+        U.msg.textContent = `CASTLE COURTYARD LOOT SAMPLE // ${counts[0]} COMMON • ${counts[1]} RARE • ${counts[2]} EPIC`;
       } catch (e) {
         document.documentElement.dataset.cwmLootV31ShowcaseError = String(e).slice(0, 160);
       }

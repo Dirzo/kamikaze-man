@@ -163,7 +163,7 @@
     col: '#8c55cc',
     shape: 'blinker',
     atk: 'blink',
-    name: 'Backstab Intern'
+    name: 'Backstab Apprentice'
   };
   ED.summoner = {
     w: 43,
@@ -190,7 +190,7 @@
     shape: 'sniper',
     atk: 'laser',
     bolt: '#ffdd77',
-    name: 'OSHA Sniper'
+    name: 'Guild-Safety Sniper'
   };
   ED.roller = {
     w: 48,
@@ -203,7 +203,7 @@
     col: '#7b8794',
     shape: 'roller',
     atk: 'charge',
-    name: 'Aggressive Office Wheel'
+    name: 'Aggressive Scriptorium Wheel'
   };
   ED.bossjr = {
     w: 92,
@@ -328,15 +328,15 @@
     },
     {
       id: 'coupon',
-      name: 'Coupon Shrapnel',
+      name: 'Voucher Shrapnel',
       tag: 'SAVE 15% OR DIE',
       col: '#ffe86d',
-      desc: 'detonates expired coupons in every direction'
+      desc: 'detonates expired tavern vouchers in every direction'
     },
     {
       id: 'caffeine',
-      name: 'Dangerously Caffeinated',
-      tag: 'TOO MUCH COFFEE',
+      name: 'Dangerously Over-Brewed',
+      tag: 'TOO MUCH MANA POTION',
       col: '#d7985e',
       desc: 'gets random bursts of irresponsible movement speed'
     },
@@ -377,8 +377,8 @@
     },
     {
       id: 'microwave',
-      name: 'Microwave Vision',
-      tag: 'MICROWAVE EYES',
+      name: 'Basilisk Vision',
+      tag: 'BASILISK EYES',
       col: '#ff9257',
       desc: 'fires a short-range heating beam after a warning'
     },
@@ -680,13 +680,13 @@
     'Unauthorized',
     'Regional',
     'Extremely Motivated',
-    'Union',
-    'Executive',
+    'Guild',
+    'Royal',
     'Interim',
     'Freelance',
     'Emotionally Unavailable',
     'Night Shift',
-    'Turbo',
+    'Gale-Powered',
     'Budget',
     'Acting'
   ];
@@ -769,7 +769,7 @@
       hint: 'Interrupt the green casting circle or prepare to dodge the summons.'
     },
     sniper: {
-      how: 'LASER SHOT — long wind-up with a targeting line, then a very fast bolt.',
+      how: 'Beam shot — long wind-up with a targeting line, then a very fast bolt.',
       hint: 'The line is the answer key. Move before the shot.'
     },
     roller: {

@@ -93,7 +93,7 @@
     // HP
     icon(HEART, { k: 'ink', r: 'red', w: 'paper' }, 8, cy - 1);
     bar(18, cy + 1, 62, pl.hp / pl.max, pl.hp / pl.max < 0.3 ? 'coral' : 'red', 'wine');
-    PX.text(String(Math.max(0, Math.ceil(pl.hp))), 86, cy, COL.paper);
+    PX.text(globalThis.CWM_FMT ? CWM_FMT(Math.max(0, Math.ceil(pl.hp))) : String(Math.ceil(pl.hp)), 86, cy, COL.paper);
 
     // Special (space): cooldown fills up, READY when charged
     const rem = Math.max(0, Number(pl.scd) || 0);
@@ -104,19 +104,38 @@
     PX.text(ready ? 'READY' : rem.toFixed(1) + 'S', 171, cy, ready ? COL.lime : COL.mist);
 
     // Weapon: tinted sprite, name in rarity colour (trimmed), DPS
-    const ic = PX.weaponIcon(w.type, w.col);
+    const ic = PX.weaponIconFor ? PX.weaponIconFor(w) : PX.weaponIcon(w.type, w.col);
     let nx = 218;
     if (ic) {
-      const ih = Math.min(ic.h, 9),
-        iw = Math.round((ic.w * ih) / ic.h);
+      const k = Math.min(1, 10 / ic.h, 24 / ic.w),
+        ih = Math.max(1, Math.round(ic.h * k)),
+        iw = Math.max(1, Math.round(ic.w * k));
+      X.imageSmoothingEnabled = false;
       X.drawImage(ic.cv, nx, cy + 3 - Math.floor(ih / 2), iw, ih);
-      nx += Math.min(iw, 22) + 4;
+      nx += iw + 4;
     }
     const dps = Math.round(estimateDPS(w));
-    const dpsText = dps + ' DPS',
+    const dpsText = (globalThis.CWM_FMT ? CWM_FMT(dps) : dps) + ' DPS',
       dpsW = PX.textWidth(dpsText);
     const nameHex = PX.paletteHex(w.col);
-    PX.text(PX.fit(w.name, 394 - dpsW - 6 - nx), nx, cy, nameHex === COL.ink ? COL.mist : nameHex);
+    // long relic names scroll (pause, slide to the end, pause, snap back) instead of being cut off
+    const room = 394 - dpsW - 10 - nx,
+      nmW = PX.textWidth(w.name),
+      nmCol = nameHex === COL.ink ? COL.mist : nameHex;
+    if (nmW <= room) PX.text(w.name, nx, cy, nmCol);
+    else {
+      const over = nmW - room,
+        slide = over / 14, // seconds at 14 px/s
+        cyc = slide + 3,
+        t = (performance.now() / 1000) % cyc,
+        off = Math.round(t < 1.5 ? 0 : t < 1.5 + slide ? (t - 1.5) * 14 : over);
+      X.save();
+      X.beginPath();
+      X.rect(nx, cy - 2, room, 12);
+      X.clip();
+      PX.text(w.name, nx - off, cy, nmCol);
+      X.restore();
+    }
     PX.text(dpsText, 394, cy, COL.gold, 1, 'right');
 
     // Shards, level, XP
@@ -145,7 +164,7 @@
 
     // new-weapon toast (auto-equip)
     if (w !== lastW) {
-      if (lastW && dps > lastDps) toast = { name: w.name, hex: nameHex, gain: Math.round((dps / Math.max(1, lastDps) - 1) * 100), t: 2.6 };
+      if (lastW && dps > lastDps) toast = { name: w.name, hex: nameHex, standout: !!w.__standout, gain: Math.round((dps / Math.max(1, lastDps) - 1) * 100), t: 2.6 };
       lastW = w;
     }
     lastDps = dps;
@@ -157,7 +176,7 @@
       r(PW / 2 - tw / 2 - 1, ty - 1, tw + 2, 24, 'ink');
       r(PW / 2 - tw / 2, ty, tw, 22, 'night');
       r(PW / 2 - tw / 2, ty, tw, 1, 'gold');
-      PX.text('NEW WEAPON  +' + toast.gain + '% DPS', PW / 2, ty + 3, COL.gold, 1, 'center');
+      PX.text((toast.standout ? 'STANDOUT WEAPON!  +' : 'NEW WEAPON  +') + toast.gain + '% DPS', PW / 2, ty + 3, toast.standout ? COL.lime || COL.gold : COL.gold, 1, 'center');
       PX.text(name, PW / 2, ty + 12, toast.hex === COL.ink ? COL.paper : toast.hex, 1, 'center');
     }
     // level-up toast (replaces the HTML level splash, which lived in the hidden juice HUD)
