@@ -110,6 +110,7 @@ function drawWorld(t) {
   const Z = ZONES[world.zone];
   worldLayer();
   X.drawImage(A.bg[Z.id], 0, 0);
+  dither(0, 0, W, GROUND, C.ink, 5); // dim the backdrop so characters read clearly
   for (const p of world.platforms) drawSlab(Z.id, p);
   drawDrops(t);
   drawHazards(t);
@@ -217,10 +218,40 @@ function loop(now) {
   render();
   requestAnimationFrame(loop);
 }
+// ---------------------------------------------------------------- buttons (mouse) + M/N keys
+const btn = id => document.getElementById(id);
+function syncButtons() {
+  btn('b-sound').textContent = 'Sound: ' + (audioSettings.sound ? 'On' : 'Off');
+  btn('b-music').textContent = 'Music: ' + (audioSettings.music ? 'On' : 'Off');
+  btn('b-pause').textContent = scene === 'pause' ? 'Resume' : 'Pause';
+}
+function click(id, fn) {
+  btn(id).addEventListener('click', e => {
+    audioOn();
+    fn();
+    e.currentTarget.blur(); // keep keyboard focus on the game (Space must not re-press the button)
+    syncButtons();
+  });
+}
+click('b-sound', toggleSound);
+click('b-music', toggleMusic);
+click('b-pause', () => {
+  if (scene === 'play') scene = 'pause';
+  else if (scene === 'pause') scene = 'play';
+});
+click('b-restart', () => {
+  if (scene !== 'loading') startRun();
+});
+click('b-full', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen?.();
+});
 addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleMusic();
   if (e.code === 'KeyN') toggleSound();
+  syncButtons();
 });
+setInterval(syncButtons, 250);
 
 requestAnimationFrame(loop);
 loadAssets(f => (loadFrac = f))

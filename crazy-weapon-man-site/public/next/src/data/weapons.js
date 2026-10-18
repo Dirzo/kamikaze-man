@@ -55,8 +55,8 @@ export const ELEMENTS = {
   water: { word: 'Tidal', prefix: 'Soggy', col: 'blue', effect: 'wave' },
   earth: { word: 'Quake', prefix: 'Seismic', col: 'sand', effect: 'stun' },
   wind: { word: 'Gale', prefix: 'Cyclonic', col: 'mist', effect: 'gust' },
-  plasma: { word: 'Plasma', prefix: 'Overloaded', col: 'pink', effect: 'pierce' },
+  plasma: { word: 'Arcane', prefix: 'Spellcharged', col: 'pink', effect: 'pierce' },
   radiant: { word: 'Radiant', prefix: 'Blinding', col: 'cream', effect: 'holy' },
-  void: { word: 'Void', prefix: 'Event-Horizon', col: 'violet', effect: 'pull' }
+  void: { word: 'Void', prefix: 'Abyssal', col: 'violet', effect: 'pull' }
 };
 export const ELEMENT_LIST = Object.keys(ELEMENTS);

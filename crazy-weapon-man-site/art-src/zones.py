@@ -766,6 +766,90 @@ def z9_slab(w):
     return slab(w, ['mist', 'fog'], 'stone', 'slate', 'night', bolts)
 
 
+# ---- Mushroom Hollow (replaces the disco crypt in the new game) -------------------------
+def big_shroom(img, r, x, h, cap, col, shade, spots='paper', glow=None):
+    d = ImageDraw.Draw(img)
+    base = GROUND
+    rect(img, x - 2, base - h, 5, h, 'cream')
+    rect(img, x + 1, base - h, 2, h, 'sand')
+    d.ellipse([x - cap, base - h - cap // 2, x + cap, base - h + cap // 3], fill=c(col), outline=c('ink'))
+    d.rectangle([x - cap + 2, base - h + 1, x + cap - 2, base - h + cap // 3], fill=c(shade))
+    rect(img, x - cap + 2, base - h + cap // 3 - 1, cap * 2 - 3, 1, 'ink')
+    for _ in range(max(3, cap // 3)):
+        sx, sy = x + r.randrange(-cap + 4, cap - 3), base - h - r.randrange(1, max(2, cap // 2 - 1))
+        rect(img, sx, sy, 2, 2, spots)
+    if glow:
+        light_dots(img, r, x, base - h - cap // 3, cap + 12, glow, 10)
+
+
+def z10_bg():
+    r = random.Random(1010)
+    bg = Image.new('RGBA', (W, H), c('night'))
+    bands(bg, [(0, 'ink'), (70, 'night'), (140, 'slate'), (170, 'night')])
+    # stars, a few brighter ones with a cross
+    stars(bg, r, 70, 120, cols=('mist', 'paper', 'cream'))
+    for _ in range(6):
+        x, y = r.randrange(10, W - 10), r.randrange(8, 90)
+        for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
+            bg.putpixel((x + dx, y + dy), c('paper' if (dx, dy) == (0, 0) else 'mist'))
+    d = ImageDraw.Draw(bg)
+    d.ellipse([60, 22, 92, 54], fill=c('lime'))
+    d.ellipse([66, 20, 96, 50], fill=c('ink'))  # crescent
+    # calm layers: a soft hill ridge, then a row of simple pine silhouettes
+    pts = [(0, GROUND)]
+    for x in range(0, W + 20, 20):
+        pts.append((x, 150 + int(8 * math.sin(x / 47.0)) + r.randrange(-2, 3)))
+    pts.append((W, GROUND))
+    poly(bg, pts, 'night')
+    x = 4
+    while x < W:
+        h = r.randrange(26, 46)
+        base = 176
+        poly(bg, [(x - 7, base), (x, base - h), (x + 7, base)], 'ink')
+        rect(bg, x - 1, base, 2, GROUND - base, 'ink')
+        x += r.randrange(26, 44)
+    rect(bg, 0, 182, W, GROUND - 182, 'ink')
+    # hanging vines (fewer)
+    for vx in range(20, W, 70):
+        ln = r.randrange(16, 40)
+        for y in range(0, ln):
+            bg.putpixel((vx + (1 if (y // 6) % 2 else 0), y), c('leaf' if y % 5 else 'grass'))
+    # giant toadstools
+    big_shroom(bg, r, 70, 70, 34, 'red', 'wine')
+    big_shroom(bg, r, 405, 92, 42, 'violet', 'indigo', spots='pink')
+    big_shroom(bg, r, 250, 40, 20, 'teal', 'pine', spots='lime')
+    big_shroom(bg, r, 160, 26, 13, 'orange', 'rust')
+    big_shroom(bg, r, 330, 20, 10, 'pink', 'violet')
+    # fireflies: bright core with a dim halo
+    for _ in range(28):
+        x, y = r.randrange(6, W - 6), r.randrange(70, GROUND - 10)
+        core = r.choice(('lime', 'cream', 'gold'))
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            if bg.getpixel((x + dx, y + dy))[:3] in (RGB['ink'], RGB['night'], RGB['slate']):
+                bg.putpixel((x + dx, y + dy), c('pine' if core == 'lime' else 'woodD'))
+        bg.putpixel((x, y), c(core))
+    # little shrooms along the floor
+    for x in range(6, W, 29):
+        h = r.randrange(3, 7)
+        rect(bg, x, GROUND - h, 1, h, 'cream')
+        rect(bg, x - 2, GROUND - h - 2, 5, 2, r.choice(('red', 'orange', 'pink', 'teal')))
+
+    def top(rr):
+        return top_tile(rr, ['lime', 'grass', 'leaf'], 'woodD', (('wood', 14), ('pine', 8), ('red', 1)), blades='lime')
+    tile_row(bg, top, r)
+    fill_below(bg, lambda rr: fill_tile(rr, 'woodD', (('wood', 12), ('pine', 8), ('night', 6))), r)
+    return bg
+
+
+def z10_slab(w):
+    def spots(px, w, h):
+        for x in range(3, w - 2, 7):
+            px[x, 2] = c('paper')
+            px[x + 1, 2] = c('paper')
+            px[x, 3] = c('paper')
+    return slab(w, ['coral', 'red'], 'red', 'wine', 'wine', spots)
+
+
 ZONES = [
     ('graveyard', z0_bg, z0_slab),
     ('disco-crypt', z1_bg, z1_slab),
@@ -777,4 +861,5 @@ ZONES = [
     ('witch-cottage', z7_bg, z7_slab),
     ('citadel', z8_bg, z8_slab),
     ('armory-vault', z9_bg, z9_slab),
+    ('mushroom-hollow', z10_bg, z10_slab),  # new game only (replaces the disco crypt there)
 ]

@@ -190,7 +190,7 @@ export function kill(e, o = {}) {
   // loot
   const zone = world.zone;
   dropShards(cx(e), cy(e), e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0));
-  if (Math.random() < (e.elite ? 0.7 : 0.11)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
+  if (Math.random() < (e.elite ? 0.55 : 0.08)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
   if (Math.random() < (e.elite ? 0.4 : 0.05)) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
 }
