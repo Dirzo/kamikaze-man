@@ -859,6 +859,32 @@
    "gy": 5
   }
  },
+ "ui": {
+  "panel": {
+   "slice": 8,
+   "size": 32
+  },
+  "card": {
+   "slice": 8,
+   "size": 28
+  },
+  "btn": {
+   "slice": 6,
+   "size": 24
+  },
+  "btn-hot": {
+   "slice": 6,
+   "size": 24
+  },
+  "btn-down": {
+   "slice": 4,
+   "size": 24
+  },
+  "input": {
+   "slice": 4,
+   "size": 24
+  }
+ },
  "zones": [
   "graveyard",
   "disco-crypt",

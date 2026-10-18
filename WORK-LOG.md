@@ -5,12 +5,24 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 ## Roadmap (16-bit noobscrub update)
 
 1. **Consolidate the code** — done (2026-10-18), no visible change.
-2. **16-bit art foundation** — 480×270 internal resolution, fixed palette, pixel font, sprite atlases; redraw player, enemies, bosses, 9 weapon types, tiles, parallax, VFX. Starts with a style sheet for approval. See `docs/STYLE.md`.
-3. **UI/HUD** — framed pixel panels, compact edge HUD, restyled title / shop / level-up / death / leaderboard / Museum.
+2. **16-bit art foundation** (done 2026-10-18) — 480×270 internal resolution, fixed palette, pixel font, sprite atlases; redraw player, enemies, bosses, 9 weapon types, tiles, parallax, VFX. Starts with a style sheet for approval. See `docs/STYLE.md`.
+3. **UI/HUD** (done 2026-10-18) — framed pixel panels, compact edge HUD, restyled title / shop / level-up / death / leaderboard / Museum.
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
-## 2026-10-18 — Phase 2: pixel renderer in the game (in progress)
+## 2026-10-18 — Phase 3: pixel HUD and themed screens
+
+**Done** (branch `noobscrub-16bit/phase3-hud`, stacked on phase 2)
+- `art-src/build_font.py` builds **Noobscrub 5x7**, a webfont from the same glyphs as the canvas font (`public/assets/fonts/noobscrub-5x7.woff2`; 8 font px per em, so use 16/24/32/48px for crisp 2x/3x/4x/6x). Reusable for other noobscrub games.
+- `game-src/systems/31-pixel-hud.js`: canvas HUD drawn after each frame — framed bottom bar (HP, special cooldown, weapon icon + name + DPS, shards, level + XP), zone + wave + rift label top-left, kill count top-right, boss name + bar, "NEW WEAPON +x% DPS" toast and "LEVEL UP!" toast.
+- `game-src/shell/pixel-theme.css` (only under `html.px`, so `?nopx` keeps the old UI): hides the HTML in-play HUD (weapon card, run status, wave line, shard bank, juice pop-ups, boss bar); pixel font everywhere snapped to 16px+; no rounded corners/blur/soft shadows; wood-and-gold framed panels and cards via `border-image` (`public/assets/px/ui/*.png` from `build_assets.py`); framed buttons (red "hot" for primary), inputs, bars; title, museum, leaderboard, black market, boon, death offer, shard forge, zone intro, banners, pause all themed.
+- Renderer: screen-sized translucent overlays blend + palette-snap instead of stippling.
+
+**Not verified by screenshot** (themed by selector, need a real trigger): boon cards with content, death offer / D20, shard forge, pause panel.
+
+**Next — phase 4 (gameplay polish)**: floating-text budget (replace the overlap stopgap), dark label boxes behind legacy text, modern-sounding weapon/trait name parts, Dark-trait rework, hit-stop/screenshake tuning, chiptune SFX, balance via bot runs; also the leaderboard submission bug.
+
+## 2026-10-18 — Phase 2: pixel renderer in the game
 
 **Approved direction:** palette as-is; mean hero (heavy brow, flat scowl, scar, dark tank); fantasy settings only, never modern/suburban; keep the jokes with a fantasy twist. The Sword Graveyard is the template style. See `docs/STYLE.md`.
 

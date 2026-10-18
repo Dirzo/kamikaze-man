@@ -43,7 +43,7 @@
     startBoss(kind);
     return bossMode;
   };
-  PX.state = () => ({ x: pl.x, y: pl.y, w: pl.w, h: pl.h, on: pl.on, vy: pl.vy, G, zone: zoneI });
+  PX.state = () => ({ lv: pl.lv, x: pl.x, y: pl.y, w: pl.w, h: pl.h, on: pl.on, vy: pl.vy, G, zone: zoneI });
 
   // ---- canvas setup --------------------------------------------------------------------
   C.width = PW;
@@ -154,6 +154,9 @@
       if (!LUT || typeof style !== 'string') return fn.apply(X, args);
       const a = X.globalAlpha * styleAlpha(style);
       if (a >= 0.94) return fn.apply(X, args);
+      // Screen-sized overlays (pause dimming, flashes) blend and get palette-snapped instead:
+      // a full-screen stipple reads as noise.
+      if (args.length === 4 && Math.abs(args[2] * args[3]) > W * H * 0.4) return fn.apply(X, args);
       const level = Math.round(a * 16);
       if (level <= 0) return;
       const p = stipple(paletteHex(style), level);
@@ -529,6 +532,32 @@
     }
     return true;
   };
+
+  // ---- helpers for the pixel HUD module (systems/31-pixel-hud.js); device-pixel coordinates --
+  PX.text = function (str, x, y, hex, k = 1, align = 'left') {
+    if (!GLYPHS) return 0;
+    const t = norm(str);
+    if (!t) return 0;
+    const cv = textCanvas(t, hex, k),
+      w = cv.width - 2;
+    const dx = align === 'center' ? x - Math.floor(w / 2) : align === 'right' ? x - w : x;
+    X.drawImage(cv, Math.round(dx) - 1, Math.round(y) - 1);
+    return w;
+  };
+  PX.textWidth = (str, k = 1) => (GLYPHS ? textWidth(norm(str), k) : 0);
+  PX.fit = (str, maxW, k = 1) => {
+    if (!GLYPHS) return str;
+    let t = norm(str);
+    if (textWidth(t, k) <= maxW) return t;
+    while (t.length > 1 && textWidth(t + '..', k) > maxW) t = t.slice(0, -1);
+    return t.trimEnd() + '..';
+  };
+  PX.paletteHex = s => paletteHex(s);
+  PX.weaponIcon = (type, col) => {
+    const a = ART.weapons[type];
+    return a && LUT ? { cv: tinted(type, a, paletteHex(col)), w: a.w, h: a.h } : null;
+  };
+  document.documentElement.classList.add('px');
 
   // ---- bosses (called from the top of core drawBoss; replaces the whole procedural body) ---
   PX.bossBody = function (e) {

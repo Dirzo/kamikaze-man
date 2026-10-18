@@ -50,7 +50,8 @@
     "systems/27-chaos-showcase.js",
     "systems/28-attack-speed.js",
     "systems/29-player-hp.js",
-    "systems/30-pixel-renderer.js"
+    "systems/30-pixel-renderer.js",
+    "systems/31-pixel-hud.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [
@@ -65,5 +66,8 @@
     "addons/12-arsenal-hud.js",
     "addons/13-leaderboard-selfcheck.js",
     "addons/14-arsenal-selfcheck.js"
+  ],
+  "styles": [
+    "shell/pixel-theme.css"
   ]
 }

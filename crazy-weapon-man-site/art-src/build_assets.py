@@ -107,6 +107,28 @@ def main():
         im.save(os.path.join(OUT, f'weapon-{wtype}.png'))
         man['weapons'][wtype] = {'w': im.width, 'h': im.height, 'gx': gx + 1, 'gy': gy + 1}
 
+    # UI frames for CSS border-image (art pixels doubled so they stay crisp at 2x text size)
+    os.makedirs(os.path.join(OUT, 'ui'), exist_ok=True)
+    def ui_frame(name, rings, fill, hi=None):
+        n = len(rings) * 2 + 8  # roomy middle so border-image slices never overlap
+        im = Image.new('RGBA', (n, n), RGB[fill] + (255,))
+        px = im.load()
+        for i, col in enumerate(rings):
+            for k in range(i, n - i):
+                for (x, y) in ((k, i), (k, n - 1 - i), (i, k), (n - 1 - i, k)):
+                    px[x, y] = RGB[col] + (255,)
+        if hi:
+            for k in range(len(rings), n - len(rings)):
+                px[k, len(rings)] = RGB[hi] + (255,)
+        im.resize((n * 2, n * 2), Image.NEAREST).save(os.path.join(OUT, 'ui', name + '.png'))
+        man.setdefault('ui', {})[name] = {'slice': (len(rings) + (1 if hi else 0)) * 2, 'size': n * 2}
+    ui_frame('panel', ['ink', 'woodD', 'wood', 'gold'], 'night')
+    ui_frame('card', ['ink', 'slate', 'stone'], 'night', hi='slate')
+    ui_frame('btn', ['ink', 'gold'], 'slate', hi='stone')
+    ui_frame('btn-hot', ['ink', 'cream'], 'red', hi='coral')
+    ui_frame('btn-down', ['ink', 'gold'], 'night')
+    ui_frame('input', ['ink', 'stone'], 'night')
+
     # zone backdrops + per-zone platform slabs (3-slice: 9 | 9 | 9)
     man['zones'] = []
     man['slabs'] = {}
