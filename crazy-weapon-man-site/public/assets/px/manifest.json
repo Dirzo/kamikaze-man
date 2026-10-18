@@ -595,6 +595,132 @@
     "walk2",
     "hit"
    ]
+  },
+  "stalker": {
+   "w": 16,
+   "h": 19,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "brute": {
+   "w": 27,
+   "h": 21,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "wraith": {
+   "w": 15,
+   "h": 19,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "maw": {
+   "w": 29,
+   "h": 16,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "flyer": {
+   "w": 19,
+   "h": 11,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "wizard": {
+   "w": 18,
+   "h": 22,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "taxman": {
+   "w": 17,
+   "h": 18,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "mimic": {
+   "w": 25,
+   "h": 17,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "eyeball": {
+   "w": 19,
+   "h": 19,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "shieldbro": {
+   "w": 21,
+   "h": 21,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "blinker": {
+   "w": 16,
+   "h": 17,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "summoner": {
+   "w": 20,
+   "h": 18,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "sniper": {
+   "w": 18,
+   "h": 20,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
+  "roller": {
+   "w": 20,
+   "h": 17,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
   }
  },
  "backgrounds": {

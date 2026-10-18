@@ -12,7 +12,7 @@ Files:
 import json
 import os
 from PIL import Image
-from pixel import sprite, outlined, flip, RGB, HERO, HERO_KEY, CHICKEN, CHICKEN_KEY, GREMLIN, GREMLIN_KEY
+from pixel import sprite, outlined, flip, RGB, HERO, HERO_KEY
 import scene
 from zones import ZONES
 from pixel import PAL
@@ -32,11 +32,16 @@ HERO_FRAMES = {
     'jump': legs(HERO, ['....pppqpppq...', '...ppq...ppq...', '..BbbB..BbbB...', '...............']),
 }
 
-ENEMIES = {
-    # game enemy type -> (fill map facing LEFT, key, alternate leg rows for walk2)
-    'bombchicken': (CHICKEN, CHICKEN_KEY, ['......y..y.....', '.....yy.yy.....']),
-    'crawler': (GREMLIN, GREMLIN_KEY, ['...hh..hh.....', '..hhh..hhh....']),
-}
+from enemies import ENEMIES, ENEMY_KEY
+
+
+def frame2(rows, alt):
+    if 'bob' in alt:
+        return ['.' * len(rows[0])] * alt['bob'] + rows
+    out = list(rows)
+    for i, row in alt.get('rows', {}).items():
+        out[i] = row
+    return out
 
 
 def strip(frames):
@@ -67,9 +72,9 @@ def main():
     strip(hero).save(os.path.join(OUT, 'hero.png'))
     man['hero'] = {'w': hero[0].width, 'h': hero[0].height, 'frames': list(HERO_FRAMES)}
 
-    for etype, (rows, key, alt) in ENEMIES.items():
-        f1 = flip(outlined(sprite(rows, key)))
-        f2 = flip(outlined(sprite(legs(rows, alt), key)))
+    for etype, (rows, alt) in ENEMIES.items():
+        f1 = flip(outlined(sprite(rows + (['.' * len(rows[0])] if 'bob' in alt else []), ENEMY_KEY)))
+        f2 = flip(outlined(sprite(frame2(rows, alt), ENEMY_KEY)))
         frames = [f1, f2, white(f1)]
         strip(frames).save(os.path.join(OUT, f'enemy-{etype}.png'))
         man['enemies'][etype] = {'w': f1.width, 'h': f1.height, 'frames': ['walk1', 'walk2', 'hit']}
