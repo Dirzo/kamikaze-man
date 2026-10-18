@@ -52,7 +52,8 @@
     "systems/29-player-hp.js",
     "systems/30-pixel-renderer.js",
     "systems/31-pixel-hud.js",
-    "systems/32-game-feel.js"
+    "systems/32-game-feel.js",
+    "systems/33-chiptune.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [

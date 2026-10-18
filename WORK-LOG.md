@@ -10,6 +10,16 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
+## 2026-10-18 — Phase 4 (part 1): names, Dark trait, game feel, chiptune
+
+**Done** (branch `noobscrub-16bit/phase4-polish`, stacked on phase 3)
+- **Fantasy text pass** — `crazy-weapon-man-site/tools/fantasy-text.cjs` rewrites modern objects/places/tech in player-visible strings (parking -> toll-bridge, forklift -> siege-ox, microwave -> dragon-oven, coffee -> potion, intern -> apprentice, OSHA -> guild-safety, plasma -> starfire, barcode scanner -> tally-rune reader, ...). Skips ids and CSS; case follows the surrounding text; safe to re-run. Corporate/bureaucratic satire (taxes, budgets, CEO, performance reviews) intentionally kept. `CWM_PX.sampleNames(n)` samples generated names for spot checks.
+- **Dark trait** — no more near-black screen: wide lit pocket around the hero, two stepped dithered rings (never black), slim violet arcs, glowing eyes on enemies out in the dark.
+- **Game feel** — `systems/32-game-feel.js`. Found: shake was set in ~40 places but `26-combat-readability` zeroed it every frame (live game never shook), while nearly every hit froze the game (hit-stop). Now: whole-pixel alternating rumble (max 4 px, ~0.4 s) only from real impacts, world layer only; small hit-stops capped at 40 ms / one per 140 ms, big moments unchanged. `?nofeel` disables.
+- **Chiptune SFX** — `systems/33-chiptune.js` replaces every core sound effect (same names/args/gates): pulse waves 12.5/25/50%, triangle, 15-bit LFSR noise, pitch/volume stepped at 60 Hz. `CWM_CHIPTUNE.preview()` renders all effects to a WAV. `?nochip` keeps the old sounds.
+
+**Phase 4 remaining**: floating-text budget (replace the overlap stopgap), dark boxes behind legacy text labels, balance via bot runs, global leaderboard submission bug, music to match the chiptune SFX (optional).
+
 ## 2026-10-18 — Phase 3: pixel HUD and themed screens
 
 **Done** (branch `noobscrub-16bit/phase3-hud`, stacked on phase 2)
