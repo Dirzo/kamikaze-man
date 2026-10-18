@@ -735,6 +735,62 @@
   "citadel": "bg-citadel.png",
   "armory-vault": "bg-armory-vault.png"
  },
+ "bosses": {
+  "bossjr": {
+   "w": 42,
+   "h": 40,
+   "frames": [
+    "idle1",
+    "idle2",
+    "hit"
+   ]
+  },
+  "bossman": {
+   "w": 52,
+   "h": 55,
+   "frames": [
+    "idle1",
+    "idle2",
+    "hit"
+   ]
+  },
+  "bosssr": {
+   "w": 50,
+   "h": 51,
+   "frames": [
+    "idle1",
+    "idle2",
+    "hit"
+   ]
+  },
+  "bossgrandma": {
+   "w": 48,
+   "h": 50,
+   "frames": [
+    "idle1",
+    "idle2",
+    "hit"
+   ]
+  },
+  "bossceo": {
+   "w": 56,
+   "h": 59,
+   "frames": [
+    "idle1",
+    "idle2",
+    "hit"
+   ]
+  },
+  "bossweapon": {
+   "w": 58,
+   "h": 61,
+   "frames": [
+    "idle1",
+    "idle2",
+    "hit"
+   ]
+  }
+ },
  "zones": [
   "graveyard",
   "disco-crypt",

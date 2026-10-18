@@ -7317,6 +7317,7 @@
     X.textAlign = 'left';
   }
   function drawBoss(e) {
+    if (globalThis.CWM_PX && globalThis.CWM_PX.bossBody(e)) return;
     let q = e.hp / e.max;
     X.save();
     X.translate(e.x + e.w / 2, e.y + e.h / 2);
@@ -22613,6 +22614,10 @@ function render() {
     applyMap(zoneI);
     return Z[zoneI].name;
   };
+  PX.previewBoss = kind => {
+    startBoss(kind);
+    return bossMode;
+  };
   PX.state = () => ({ x: pl.x, y: pl.y, w: pl.w, h: pl.h, on: pl.on, vy: pl.vy, G, zone: zoneI });
 
   // ---- canvas setup --------------------------------------------------------------------
@@ -22806,7 +22811,7 @@ function render() {
   };
 
   // ---- assets ----------------------------------------------------------------------------
-  const ART = { hero: null, enemies: {}, bg: {}, slabs: {}, zones: [], man: null };
+  const ART = { hero: null, enemies: {}, bosses: {}, bg: {}, slabs: {}, zones: [], man: null };
   const loadImg = src =>
     new Promise((res, rej) => {
       const im = new Image();
@@ -22837,6 +22842,11 @@ function render() {
         const im = await loadImg(base + 'enemy-' + type + '.png');
         ART.enemies[type] = { im, ...info };
       }
+      await Promise.all(
+        Object.entries(man.bosses || {}).map(
+          async ([type, info]) => (ART.bosses[type] = { im: await loadImg(base + 'boss-' + type + '.png'), ...info })
+        )
+      );
       ART.zones = man.zones || [];
       await Promise.all(
         Object.entries(man.backgrounds).map(async ([key, file]) => (ART.bg[key] = await loadImg(base + file)))
@@ -22948,6 +22958,29 @@ function render() {
       lift = windP > 0 ? -windP * 2 / S : 0;
     X.drawImage(a.im, f * a.w, 0, a.w, a.h, -sw / 2, e.h / 2 - sh + 1 / S + lift, sw, sh);
     PX.stats.enemyDraws++;
+    return true;
+  };
+
+  // ---- bosses (called from the top of core drawBoss; replaces the whole procedural body) ---
+  PX.bossBody = function (e) {
+    const a = PX.ready && ART.bosses[e.type];
+    if (!a) return false;
+    let f = Math.floor(time * 2.5) % 2;
+    if ((e.hitT || 0) > 0.06) f = 2;
+    // below a third of its health the boss flickers to the white frame now and then (enraged)
+    if (e.hp / e.max < 0.34 && Math.floor(time * 6) % 5 === 0) f = 2;
+    const foot = X.getTransform().transformPoint(new DOMPoint(e.x + e.w / 2, e.y + e.h));
+    X.save();
+    X.setTransform(1, 0, 0, 1, 0, 0);
+    if (e.dir < 0) {
+      X.translate(Math.round(foot.x), 0);
+      X.scale(-1, 1);
+      X.drawImage(a.im, f * a.w, 0, a.w, a.h, -Math.round(a.w / 2), Math.round(foot.y) - a.h + 1, a.w, a.h);
+    } else {
+      X.drawImage(a.im, f * a.w, 0, a.w, a.h, Math.round(foot.x - a.w / 2), Math.round(foot.y) - a.h + 1, a.w, a.h);
+    }
+    X.restore();
+    PX.stats.bossDraws = (PX.stats.bossDraws || 0) + 1;
     return true;
   };
 

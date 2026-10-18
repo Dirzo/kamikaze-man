@@ -33,6 +33,7 @@ HERO_FRAMES = {
 }
 
 from enemies import ENEMIES, ENEMY_KEY
+from bosses import BOSSES
 
 
 def frame2(rows, alt):
@@ -41,6 +42,12 @@ def frame2(rows, alt):
     out = list(rows)
     for i, row in alt.get('rows', {}).items():
         out[i] = row
+    return out
+
+
+def _pad_top(im):
+    out = Image.new('RGBA', (im.width, im.height + 1), (0, 0, 0, 0))
+    out.alpha_composite(im, (0, 0))
     return out
 
 
@@ -78,6 +85,19 @@ def main():
         frames = [f1, f2, white(f1)]
         strip(frames).save(os.path.join(OUT, f'enemy-{etype}.png'))
         man['enemies'][etype] = {'w': f1.width, 'h': f1.height, 'frames': ['walk1', 'walk2', 'hit']}
+
+    # bosses: idle1, idle2 (1px breathe), white hit frame
+    man['bosses'] = {}
+    for btype, fn in BOSSES.items():
+        base = fn()
+        f1 = flip(outlined(base))
+        shifted = Image.new('RGBA', (base.width, base.height + 1), (0, 0, 0, 0))
+        shifted.alpha_composite(base, (0, 1))
+        f1 = flip(outlined(Image.alpha_composite(Image.new('RGBA', shifted.size, (0, 0, 0, 0)),
+                                                 _pad_top(base))))
+        f2 = flip(outlined(shifted))
+        strip([f1, f2, white(f1)]).save(os.path.join(OUT, f'boss-{btype}.png'))
+        man['bosses'][btype] = {'w': f1.width, 'h': f1.height, 'frames': ['idle1', 'idle2', 'hit']}
 
     # zone backdrops + per-zone platform slabs (3-slice: 9 | 9 | 9)
     man['zones'] = []
