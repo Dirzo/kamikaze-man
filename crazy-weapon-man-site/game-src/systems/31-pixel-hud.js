@@ -93,7 +93,7 @@
     // HP
     icon(HEART, { k: 'ink', r: 'red', w: 'paper' }, 8, cy - 1);
     bar(18, cy + 1, 62, pl.hp / pl.max, pl.hp / pl.max < 0.3 ? 'coral' : 'red', 'wine');
-    PX.text(String(Math.max(0, Math.ceil(pl.hp))), 86, cy, COL.paper);
+    PX.text(globalThis.CWM_FMT ? CWM_FMT(Math.max(0, Math.ceil(pl.hp))) : String(Math.ceil(pl.hp)), 86, cy, COL.paper);
 
     // Special (space): cooldown fills up, READY when charged
     const rem = Math.max(0, Number(pl.scd) || 0);
@@ -113,10 +113,27 @@
       nx += Math.min(iw, 22) + 4;
     }
     const dps = Math.round(estimateDPS(w));
-    const dpsText = dps + ' DPS',
+    const dpsText = (globalThis.CWM_FMT ? CWM_FMT(dps) : dps) + ' DPS',
       dpsW = PX.textWidth(dpsText);
     const nameHex = PX.paletteHex(w.col);
-    PX.text(PX.fit(w.name, 394 - dpsW - 6 - nx), nx, cy, nameHex === COL.ink ? COL.mist : nameHex);
+    // long relic names scroll (pause, slide to the end, pause, snap back) instead of being cut off
+    const room = 394 - dpsW - 10 - nx,
+      nmW = PX.textWidth(w.name),
+      nmCol = nameHex === COL.ink ? COL.mist : nameHex;
+    if (nmW <= room) PX.text(w.name, nx, cy, nmCol);
+    else {
+      const over = nmW - room,
+        slide = over / 14, // seconds at 14 px/s
+        cyc = slide + 3,
+        t = (performance.now() / 1000) % cyc,
+        off = Math.round(t < 1.5 ? 0 : t < 1.5 + slide ? (t - 1.5) * 14 : over);
+      X.save();
+      X.beginPath();
+      X.rect(nx, cy - 2, room, 12);
+      X.clip();
+      PX.text(w.name, nx - off, cy, nmCol);
+      X.restore();
+    }
     PX.text(dpsText, 394, cy, COL.gold, 1, 'right');
 
     // Shards, level, XP

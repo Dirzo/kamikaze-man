@@ -40,6 +40,11 @@
     pl.weapon = w;
     return w.rar + ' ' + type;
   };
+  PX.sampleByRank = (ranks = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20], n = 3) =>
+    ranks.map(r => {
+      const ws = Array.from({ length: n }, () => makeExactRankWeapon(pl.lv, r));
+      return { rank: r, rar: ws[0].rar, q: rarityRank(ws[0]), names: ws.map(w => w.name) };
+    });
   PX.sampleNames = (n = 40) => {
     const out = [];
     for (let i = 0; i < n; i++) out.push(makeW(pl.lv + i).name);

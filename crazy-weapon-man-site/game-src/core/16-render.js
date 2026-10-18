@@ -901,12 +901,8 @@ function creature(e) {
     X.fillStyle = e.elite ? '#ff5d69' : '#d95d6a';
     X.fillRect(e.x, e.y - 11, e.w * (e.hp / e.max), 5);
   }
-  if (
-    e.themeReveal > 0 ||
-    e.rareMutator ||
-    e.elite ||
-    ['shieldbro', 'blinker', 'summoner', 'sniper', 'roller'].includes(e.type)
-  ) {
+  // Names only for enemies worth reading about (text budget, phase 4).
+  if (e.themeReveal > 0 || e.rareMutator || e.elite) {
     X.textAlign = 'center';
     X.font = e.rareMutator
       ? '1000 12px system-ui'
@@ -931,11 +927,11 @@ function creature(e) {
       X.fillText('KILL → ' + e.rareMutator.name, e.x + e.w / 2, e.y - 17);
     }
   }
-  if (e.traits && e.traits.length) {
+  if (e.traits && e.traits.length && e.rareMutator) {
     X.textAlign = 'center';
     X.font = '900 8px system-ui';
     X.fillStyle = e.traits[0].col;
-    X.fillText(enemyTraitText(e), e.x + e.w / 2, e.y - 6);
+    X.fillText(String(e.traits[0].tag || e.traits[0].name || '').slice(0, 22), e.x + e.w / 2, e.y - 6); // one short tag, not the whole list
   }
   X.textAlign = 'left';
 }

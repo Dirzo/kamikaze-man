@@ -11579,12 +11579,8 @@ function creature(e) {
     X.fillStyle = e.elite ? '#ff5d69' : '#d95d6a';
     X.fillRect(e.x, e.y - 11, e.w * (e.hp / e.max), 5);
   }
-  if (
-    e.themeReveal > 0 ||
-    e.rareMutator ||
-    e.elite ||
-    ['shieldbro', 'blinker', 'summoner', 'sniper', 'roller'].includes(e.type)
-  ) {
+  // Names only for enemies worth reading about (text budget, phase 4).
+  if (e.themeReveal > 0 || e.rareMutator || e.elite) {
     X.textAlign = 'center';
     X.font = e.rareMutator
       ? '1000 12px system-ui'
@@ -11609,11 +11605,11 @@ function creature(e) {
       X.fillText('KILL → ' + e.rareMutator.name, e.x + e.w / 2, e.y - 17);
     }
   }
-  if (e.traits && e.traits.length) {
+  if (e.traits && e.traits.length && e.rareMutator) {
     X.textAlign = 'center';
     X.font = '900 8px system-ui';
     X.fillStyle = e.traits[0].col;
-    X.fillText(enemyTraitText(e), e.x + e.w / 2, e.y - 6);
+    X.fillText(String(e.traits[0].tag || e.traits[0].name || '').slice(0, 22), e.x + e.w / 2, e.y - 6); // one short tag, not the whole list
   }
   X.textAlign = 'left';
 }
@@ -20923,7 +20919,7 @@ function render() {
     if (e && !e.boss) {
       e.__funnyName = e.label = funnyName(type, elite);
       C.names++;
-      e.__headline = !!elite || e.__nightMutant === 'ABOMINATION' || Math.random() < 0.22;
+      e.__headline = !!elite || e.__nightMutant === 'ABOMINATION' || Math.random() < 0.06; // text budget: plates are rare
       if (e.__headline) C.headliners++;
     }
     return r;
@@ -20944,7 +20940,7 @@ function render() {
   function headlinerVisible(e) {
     if (!e?.__headline || e.dead || e.boss || e.x + e.w < 0 || e.x > W) return false;
     const alive = E.filter(x => x && !x.dead && !x.boss).length,
-      max = alive >= 16 ? 1 : alive >= 10 ? 2 : 3;
+      max = alive >= 8 ? 1 : 2;
     const pool = E.filter(x => x && !x.dead && !x.boss && x.__headline && x.x + x.w >= 0 && x.x <= W).sort(
       (a, b) =>
         (b.__nightMutant === 'ABOMINATION') - (a.__nightMutant === 'ABOMINATION') ||
@@ -20969,8 +20965,8 @@ function render() {
     for (const ln of lines) mw = Math.max(mw, X.measureText(ln).width);
     mw = Math.min(330, mw + 20);
     const h = lines.length * 17 + 8;
-    X.globalAlpha = 0.9;
-    X.fillStyle = '#05080de8';
+    X.globalAlpha = 1; // solid panel: translucent boxes stipple in pixel mode
+    X.fillStyle = '#1a1428';
     X.strokeStyle = col;
     X.lineWidth = 1.5;
     X.beginPath();
@@ -22641,6 +22637,11 @@ function render() {
     pl.weapon = w;
     return w.rar + ' ' + type;
   };
+  PX.sampleByRank = (ranks = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20], n = 3) =>
+    ranks.map(r => {
+      const ws = Array.from({ length: n }, () => makeExactRankWeapon(pl.lv, r));
+      return { rank: r, rar: ws[0].rar, q: rarityRank(ws[0]), names: ws.map(w => w.name) };
+    });
   PX.sampleNames = (n = 40) => {
     const out = [];
     for (let i = 0; i < n; i++) out.push(makeW(pl.lv + i).name);
@@ -23302,7 +23303,7 @@ function render() {
     // HP
     icon(HEART, { k: 'ink', r: 'red', w: 'paper' }, 8, cy - 1);
     bar(18, cy + 1, 62, pl.hp / pl.max, pl.hp / pl.max < 0.3 ? 'coral' : 'red', 'wine');
-    PX.text(String(Math.max(0, Math.ceil(pl.hp))), 86, cy, COL.paper);
+    PX.text(globalThis.CWM_FMT ? CWM_FMT(Math.max(0, Math.ceil(pl.hp))) : String(Math.ceil(pl.hp)), 86, cy, COL.paper);
 
     // Special (space): cooldown fills up, READY when charged
     const rem = Math.max(0, Number(pl.scd) || 0);
@@ -23322,10 +23323,27 @@ function render() {
       nx += Math.min(iw, 22) + 4;
     }
     const dps = Math.round(estimateDPS(w));
-    const dpsText = dps + ' DPS',
+    const dpsText = (globalThis.CWM_FMT ? CWM_FMT(dps) : dps) + ' DPS',
       dpsW = PX.textWidth(dpsText);
     const nameHex = PX.paletteHex(w.col);
-    PX.text(PX.fit(w.name, 394 - dpsW - 6 - nx), nx, cy, nameHex === COL.ink ? COL.mist : nameHex);
+    // long relic names scroll (pause, slide to the end, pause, snap back) instead of being cut off
+    const room = 394 - dpsW - 10 - nx,
+      nmW = PX.textWidth(w.name),
+      nmCol = nameHex === COL.ink ? COL.mist : nameHex;
+    if (nmW <= room) PX.text(w.name, nx, cy, nmCol);
+    else {
+      const over = nmW - room,
+        slide = over / 14, // seconds at 14 px/s
+        cyc = slide + 3,
+        t = (performance.now() / 1000) % cyc,
+        off = Math.round(t < 1.5 ? 0 : t < 1.5 + slide ? (t - 1.5) * 14 : over);
+      X.save();
+      X.beginPath();
+      X.rect(nx, cy - 2, room, 12);
+      X.clip();
+      PX.text(w.name, nx - off, cy, nmCol);
+      X.restore();
+    }
     PX.text(dpsText, 394, cy, COL.gold, 1, 'right');
 
     // Shards, level, XP
@@ -23992,6 +24010,290 @@ function render() {
     });
   }
   globalThis.CWM_CHIPMUSIC = { song, SONGS, BOSS, preview };
+})();
+;
+
+/* ---- systems/35-balance-probe.js ---- */
+// Balance probe (debug only; no effect on play). CWM_BALANCE.probe() measures, per zone, what the
+// live (fully patched) weapon factory and spawner produce: weapon hit damage, DPS, hits-to-kill
+// against that zone's enemies, name length and rarity mix. Used by the phase-4 balance pass.
+(() => {
+  if (globalThis.CWM_BALANCE) return;
+  const pct = (a, p) => {
+    const s = [...a].sort((x, y) => x - y);
+    return s.length ? s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))] : 0;
+  };
+  function hitOf(w, lv) {
+    return baseD(lv) * w.m * weaponDamageMult(w) * combatScale(w);
+  }
+  function probe({ zones = Z.map((_, i) => i), samples = 300, playerLv = null } = {}) {
+    const saved = { lv: pl.lv, zone: zoneI, E: E.length, weapon: pl.weapon, rnd: null };
+    const out = [];
+    try {
+      for (const z of zones) {
+        zoneI = z;
+        const L = playerLv ? playerLv(z) : Z[z].lv;
+        pl.lv = L;
+        // enemies: spawn a pack of the zone's pool (normal + some elites), read hp, remove
+        const hp = [],
+          ehp = [];
+        const before = E.length;
+        for (let i = 0; i < 40; i++) {
+          const t = Z[z].pool[i % Z[z].pool.length];
+          try {
+            spawn(t, -999, i % 8 === 7);
+          } catch (_) {}
+        }
+        for (const e of E.slice(before)) (e.elite ? ehp : hp).push(e.max);
+        E.length = before;
+        // weapons
+        const hits = [],
+          dps = [],
+          names = [],
+          rar = {};
+        for (let i = 0; i < samples; i++) {
+          let w;
+          try {
+            w = makeW(L);
+          } catch (_) {
+            continue;
+          }
+          const h = hitOf(w, L);
+          hits.push(h);
+          dps.push(estimateDPS(w));
+          names.push(String(w.name || '').length);
+          rar[w.rar] = (rar[w.rar] || 0) + 1;
+        }
+        const hpMed = pct(hp, 50);
+        out.push({
+          zone: z,
+          name: Z[z].name,
+          lv: L,
+          enemyHp: { p50: Math.round(hpMed), elite: Math.round(pct(ehp, 50)) },
+          hit: { p10: Math.round(pct(hits, 10)), p50: Math.round(pct(hits, 50)), p80: Math.round(pct(hits, 80)), p95: Math.round(pct(hits, 95)), max: Math.round(pct(hits, 100)) },
+          dps: { p50: Math.round(pct(dps, 50)), p95: Math.round(pct(dps, 95)), max: Math.round(pct(dps, 100)) },
+          hitsToKill: { p10: +(hpMed / pct(hits, 10)).toFixed(2), p50: +(hpMed / pct(hits, 50)).toFixed(2), p80: +(hpMed / pct(hits, 80)).toFixed(2), p95: +(hpMed / pct(hits, 95)).toFixed(2) },
+          oneShotPct: Math.round((100 * hits.filter(h => h >= hpMed).length) / Math.max(1, hits.length)),
+          nameLen: { p50: pct(names, 50), p95: pct(names, 95), max: pct(names, 100) },
+          rarity: rar
+        });
+      }
+    } finally {
+      pl.lv = saved.lv;
+      zoneI = saved.zone;
+      E.length = Math.min(E.length, saved.E);
+      pl.weapon = saved.weapon;
+    }
+    return out;
+  }
+  globalThis.CWM_BALANCE = { probe, hitOf };
+})();
+;
+
+/* ---- systems/36-weapon-names.js ---- */
+// Weapon names that escalate with rarity but always fit on screen (phase 4).
+//
+// The old names were assembled by ~10 systems appending prefixes, " // model" and suffix chunks
+// (median 100 chars, up to 210). Every weapon factory is wrapped here (outermost), and each new
+// weapon gets one name built from its real attributes. The name is then locked; it is rebuilt only
+// when the weapon's rarity changes. Length budget by rarity rank q (0-10):
+//   q0-1  "Rusty Sword"                              <= 22
+//   q2-3  "Haunted Katana of Mild Peril"             <= 30
+//   q4-5  "Starfire Royal Hammer of Unpaid Fines"    <= 36
+//   q6-7  "Bonkreaver, Bane of Landlords"            <= 38   named relics
+//   q8-9  "Honkmourn IX, Who Audits the Gods"        <= 40
+//   q10   "THE GOOSE (A SWORD)"                       absurd and short
+(() => {
+  if (globalThis.__CWM_WEAPON_NAMES) return;
+  globalThis.__CWM_WEAPON_NAMES = true;
+
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const BASE = {
+    sword: ['Sword', 'Blade', 'Broadsword', 'Longsword', 'Claymore'],
+    dagger: ['Dagger', 'Shiv', 'Dirk', 'Stiletto', 'Knife'],
+    nunchucks: ['Nunchucks', 'Flails', 'Chain Sticks', 'Whackers'],
+    katana: ['Katana', 'Nodachi', 'Curved Blade', 'Odachi'],
+    shuriken: ['Shuriken', 'Throwing Star', 'Star', 'Disc'],
+    bow: ['Bow', 'Longbow', 'Shortbow', 'Warbow'],
+    wand: ['Wand', 'Twig', 'Rod', 'Baton'],
+    staff: ['Staff', 'Stave', 'Scepter', 'Walking Stick'],
+    hammer: ['Hammer', 'Maul', 'Mallet', 'Bonker']
+  };
+  const COND = ['Rusty', 'Chipped', 'Borrowed', 'Damp', 'Dented', 'Wobbly', 'Pointy', 'Used', 'Stolen', 'Bent',
+    'Discount', 'Loose', 'Sticky', 'Musty', 'Plain', 'Spare', 'Sad', 'Cracked'];
+  const ADJ = ['Haunted', 'Grumpy', 'Cursed', 'Sneaky', 'Spiteful', 'Shiny', 'Feral', 'Smug', 'Jittery', 'Honking',
+    'Moody', 'Bitey', 'Rowdy', 'Gloomy', 'Brave-ish', 'Forbidden', 'Suspicious', 'Overbrewed'];
+  const OF = ['Mild Peril', 'Regret', 'Bees', 'Soup', 'Taxes', 'Bad Ideas', 'Paperwork', 'Tuesdays', 'the Goose',
+    'Second Thoughts', 'Loud Noises', 'Questionable Ethics', 'Late Fees', 'Poor Choices', 'Minor Doom', 'Snacks'];
+  const GRAND = ['Royal', 'Ancient', 'Eldritch', 'Dread', 'Sacred', 'Infernal', 'Celestial', 'Unholy', 'Mighty'];
+  const OF_GRAND = ['Unpaid Fines', 'the Last Goose', 'Endless Audits', 'a Thousand Bonks', 'Total Overkill',
+    'the Angry Moon', 'Doom, Mostly', 'Unspeakable Snacks', 'the Ninth Invoice', 'Very Loud Thunder'];
+  const SYL_A = ['Grim', 'Bonk', 'Honk', 'Mor', 'Skal', 'Vex', 'Thun', 'Gor', 'Brin', 'Krag', 'Zul', 'Dread', 'Snor', 'Glum'];
+  const SYL_B = ['brand', 'reaver', 'fang', 'mourn', 'bane', 'gash', 'dor', 'wick', 'thorn', 'rend', 'grin', 'hammer'];
+  const EPITHET = ['Bane of Landlords', 'Eater of Lunches', 'Who Honks at Kings', 'the Unreasonable',
+    'Scourge of Paperwork', 'Breaker of Shins', 'the Very Loud', 'Doom of Small Goblins', 'Friend to No One',
+    'the Last Excuse', 'Who Audits the Gods', 'the Ill-Advised', 'Ender of Brunch', 'Terror of Geese'];
+  const ROMAN = ['II', 'III', 'IV', 'VII', 'IX', 'XII', 'XL', 'MMX'];
+  const WHAT = ['THE GOOSE', 'IT', 'A SWORD?', 'THE LAST INVOICE', 'BONK', 'MOM', 'THE GOOD ONE', 'NO', 'THE ENDING',
+    'A DOOR', 'UNCLE', 'THE MOON, BUT SHARP'];
+
+  const fit = (s, max) => (s.length <= max ? s : s.slice(0, max).replace(/[\s,]+\S*$/, ''));
+  const elementWord = w => {
+    const e = w.element || null;
+    const n = e && (e.name || e.n || e.label);
+    return typeof n === 'string' && n.length <= 10 ? n.toLowerCase().replace(/(^|[\s-])([a-z])/g, (x, p, c) => p + c.toUpperCase()) : null;
+  };
+  const relicName = () => pick(SYL_A) + pick(SYL_B);
+
+  function build(w, q, base) {
+    if (q <= 1) return [`${pick(COND)} ${base}`, 22];
+    if (q <= 3) return [`${pick(ADJ)} ${base} of ${pick(OF)}`, 30];
+    if (q <= 5) {
+      const pre = elementWord(w) || pick(GRAND);
+      return [Math.random() < 0.5 ? `${pre} ${pick(ADJ)} ${base} of ${pick(OF_GRAND)}` : `${pre} ${base} of ${pick(OF_GRAND)}`, 36];
+    }
+    if (q <= 7) return [`${relicName()}, ${pick(EPITHET)}`, 38];
+    if (q <= 9) return [`${relicName()} ${pick(ROMAN)}, ${pick(EPITHET)}`, 40];
+    const b0 = (BASE[w.type] || BASE.sword)[0].toUpperCase();
+    return [`${pick(WHAT)} (${b0.endsWith("S") ? "SOME" : "A"} ${b0})`, 40];
+  }
+  function nameFor(w) {
+    const q = Math.max(0, Math.min(10, Number(rarityRank(w)) || 0));
+    let last = '';
+    // re-roll until a whole name fits its budget (never cut a phrase in half)
+    for (let i = 0; i < 12; i++) {
+      const [nm, max] = build(w, q, pick(BASE[w.type] || BASE.sword));
+      if (nm.length <= max) return nm;
+      last = nm;
+    }
+    return fit(last, 40);
+  }
+
+  // Name once, lock the property, rebuild only if the rarity changes afterwards.
+  function christen(w) {
+    if (!w || typeof w !== 'object' || w.kind === 'armor' || !w.type || w.__named) return w;
+    if (/^QA /.test(String(w.name || ''))) return w; // self-test weapons keep their tags
+    let nm = nameFor(w),
+      rar = w.rar;
+    Object.defineProperty(w, '__named', { value: true, enumerable: false });
+    Object.defineProperty(w, 'name', {
+      enumerable: true,
+      configurable: true,
+      get() {
+        if (w.rar !== rar) {
+          rar = w.rar;
+          nm = nameFor(w);
+        }
+        return nm;
+      },
+      set() {} // later "// suffix" appends from older systems are ignored
+    });
+    return w;
+  }
+  const wrap = fn =>
+    function (...args) {
+      return christen(fn.apply(this, args));
+    };
+  makeW = wrap(makeW);
+  makeExactRankWeapon = wrap(makeExactRankWeapon);
+  makeDeathOfferWeapon = wrap(makeDeathOfferWeapon);
+  makeFunnyIntroWeapon = wrap(makeFunnyIntroWeapon);
+  makeEarlyWeapon = wrap(makeEarlyWeapon);
+  makeUpgradeW = wrap(makeUpgradeW);
+  globalThis.CWM_NAMES = { nameFor, christen };
+})();
+;
+
+/* ---- systems/37-text-budget.js ---- */
+// Floating-text budget and compact numbers (phase 4). Replaces the pixel renderer's overlap
+// stopgap as the main readability rule.
+//   - Hits on the same enemy within 0.3 s merge into one rising number instead of a pile.
+//   - At most 8 damage numbers and 2 callouts (3 if one is big), stacked, on screen; duplicate callouts within 1.2 s dropped.
+//   - Numbers are compact: 999, 12.3K, 4.5M, 6.7B ... and then joke units when truly absurd.
+(() => {
+  if (globalThis.CWM_FMT) return;
+  const JOKE = ['GAZILLION', 'BAJILLION', 'KAJILLION', 'TOO MANY', 'YES'];
+  function fmt(n) {
+    n = Math.max(0, Math.round(Number(n) || 0));
+    if (n < 1000) return String(n);
+    const units = ['K', 'M', 'B', 'T'];
+    let u = -1,
+      v = n;
+    while (v >= 1000 && u < units.length - 1) {
+      v /= 1000;
+      u++;
+    }
+    if (v >= 1000) return JOKE[Math.min(JOKE.length - 1, Math.floor(Math.log10(v) / 3) - 1)];
+    return (v < 10 ? v.toFixed(1) : String(Math.round(v))).replace(/\.0$/, '') + units[u];
+  }
+  globalThis.CWM_FMT = fmt;
+  const S = { merged: 0, droppedDamage: 0, droppedCallouts: 0 };
+  globalThis.CWM_TEXT = S;
+
+  const damagePop0 = damagePop;
+  damagePop = function (e, n, crit = false, col = '#fff') {
+    const now = time;
+    const prev = T.findLast?.(t => t.kind === 'damage' && t.eid === e?.id && now - t.born < 0.3 && t.life > 0);
+    if (prev && !crit) {
+      prev.total += n;
+      prev.s = fmt(prev.total);
+      prev.life = Math.max(prev.life, prev.max * 0.85);
+      S.merged++;
+      return;
+    }
+    const before = T.length;
+    const r = damagePop0(e, n, crit, col);
+    const t = T[T.length - 1];
+    if (T.length > before && t && t.kind === 'damage') {
+      t.eid = e?.id;
+      t.born = now;
+      t.total = n;
+      t.s = fmt(n);
+    }
+    const dmg = T.filter(x => x.kind === 'damage');
+    while (dmg.length > 8) {
+      const old = dmg.shift();
+      T.splice(T.indexOf(old), 1);
+      S.droppedDamage++;
+    }
+    return r;
+  };
+
+  const recent = new Map();
+  const txt0 = txt;
+  txt = function (x, y, s, col = '#fff', big = false) {
+    const key = String(s);
+    if (now() - (recent.get(key) || -9) < 1.2) {
+      S.droppedCallouts++;
+      return;
+    }
+    const callouts = T.filter(t => t.kind !== 'damage' && t.life > 0);
+    if (callouts.length >= (big ? 3 : 2)) {
+      if (!big) {
+        S.droppedCallouts++;
+        return;
+      }
+      const drop = callouts.find(t => !t.big) || callouts[0];
+      T.splice(T.indexOf(drop), 1);
+    }
+    recent.set(key, now());
+    if (recent.size > 80) recent.clear();
+    const before = T.length;
+    const r = txt0(x, y, s, col, big);
+    const t = T.length > before ? T[T.length - 1] : null;
+    // stack instead of overlapping: nudge up past any nearby callout
+    if (t && typeof t.y === 'number') {
+      for (let guard = 0; guard < 4; guard++) {
+        const hit = T.find(o => o !== t && o.kind !== 'damage' && o.life > 0 && Math.abs(o.x - t.x) < 200 && Math.abs(o.y - t.y) < 26);
+        if (!hit) break;
+        t.y = hit.y - 28;
+      }
+    }
+    return r;
+  };
+  function now() {
+    return typeof time === 'number' ? time : performance.now() / 1000;
+  }
 })();
 ;
 

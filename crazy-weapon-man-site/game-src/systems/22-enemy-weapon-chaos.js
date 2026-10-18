@@ -159,7 +159,7 @@
     if (e && !e.boss) {
       e.__funnyName = e.label = funnyName(type, elite);
       C.names++;
-      e.__headline = !!elite || e.__nightMutant === 'ABOMINATION' || Math.random() < 0.22;
+      e.__headline = !!elite || e.__nightMutant === 'ABOMINATION' || Math.random() < 0.06; // text budget: plates are rare
       if (e.__headline) C.headliners++;
     }
     return r;
@@ -180,7 +180,7 @@
   function headlinerVisible(e) {
     if (!e?.__headline || e.dead || e.boss || e.x + e.w < 0 || e.x > W) return false;
     const alive = E.filter(x => x && !x.dead && !x.boss).length,
-      max = alive >= 16 ? 1 : alive >= 10 ? 2 : 3;
+      max = alive >= 8 ? 1 : 2;
     const pool = E.filter(x => x && !x.dead && !x.boss && x.__headline && x.x + x.w >= 0 && x.x <= W).sort(
       (a, b) =>
         (b.__nightMutant === 'ABOMINATION') - (a.__nightMutant === 'ABOMINATION') ||
@@ -205,8 +205,8 @@
     for (const ln of lines) mw = Math.max(mw, X.measureText(ln).width);
     mw = Math.min(330, mw + 20);
     const h = lines.length * 17 + 8;
-    X.globalAlpha = 0.9;
-    X.fillStyle = '#05080de8';
+    X.globalAlpha = 1; // solid panel: translucent boxes stipple in pixel mode
+    X.fillStyle = '#1a1428';
     X.strokeStyle = col;
     X.lineWidth = 1.5;
     X.beginPath();

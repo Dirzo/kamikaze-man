@@ -54,7 +54,10 @@
     "systems/31-pixel-hud.js",
     "systems/32-game-feel.js",
     "systems/33-chiptune.js",
-    "systems/34-chipmusic.js"
+    "systems/34-chipmusic.js",
+    "systems/35-balance-probe.js",
+    "systems/36-weapon-names.js",
+    "systems/37-text-budget.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [
