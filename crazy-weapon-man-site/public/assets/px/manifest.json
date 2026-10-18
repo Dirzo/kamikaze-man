@@ -598,11 +598,89 @@
   }
  },
  "backgrounds": {
-  "graveyard": "bg-graveyard.png"
+  "graveyard": "bg-graveyard.png",
+  "disco-crypt": "bg-disco-crypt.png",
+  "volcano": "bg-volcano.png",
+  "feast-hall": "bg-feast-hall.png",
+  "cathedral": "bg-cathedral.png",
+  "frozen-peaks": "bg-frozen-peaks.png",
+  "storm-forge": "bg-storm-forge.png",
+  "witch-cottage": "bg-witch-cottage.png",
+  "citadel": "bg-citadel.png",
+  "armory-vault": "bg-armory-vault.png"
  },
- "slab": {
-  "w": 27,
-  "h": 15,
-  "cap": 9
+ "zones": [
+  "graveyard",
+  "disco-crypt",
+  "volcano",
+  "feast-hall",
+  "cathedral",
+  "frozen-peaks",
+  "storm-forge",
+  "witch-cottage",
+  "citadel",
+  "armory-vault"
+ ],
+ "slabs": {
+  "graveyard": {
+   "file": "slab-graveyard.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "disco-crypt": {
+   "file": "slab-disco-crypt.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "volcano": {
+   "file": "slab-volcano.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "feast-hall": {
+   "file": "slab-feast-hall.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "cathedral": {
+   "file": "slab-cathedral.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "frozen-peaks": {
+   "file": "slab-frozen-peaks.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "storm-forge": {
+   "file": "slab-storm-forge.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "witch-cottage": {
+   "file": "slab-witch-cottage.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "citadel": {
+   "file": "slab-citadel.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "armory-vault": {
+   "file": "slab-armory-vault.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  }
  }
 }

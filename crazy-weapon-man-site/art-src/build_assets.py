@@ -5,8 +5,8 @@
 Files:
   hero.png             frames (17x25 each, facing right): idle, run1, run2, jump
   enemy-<type>.png     frames facing right: walk1, walk2, hit (white flash)
-  slab.png             floating-platform 3-slice: left cap | middle | right cap
-  bg-<zone>.png        480x270 zone backdrop including the ground line
+  slab-<zone>.png      floating-platform 3-slice per zone: left cap | middle | right cap
+  bg-<zone>.png        480x270 zone backdrop including the ground line (zones.py)
   manifest.json        frame sizes and counts, read by game-src/systems/30-pixel-renderer.js
 """
 import json
@@ -14,6 +14,7 @@ import os
 from PIL import Image
 from pixel import sprite, outlined, flip, RGB, HERO, HERO_KEY, CHICKEN, CHICKEN_KEY, GREMLIN, GREMLIN_KEY
 import scene
+from zones import ZONES
 from pixel import PAL
 from font import G as GLYPHS
 
@@ -73,14 +74,16 @@ def main():
         strip(frames).save(os.path.join(OUT, f'enemy-{etype}.png'))
         man['enemies'][etype] = {'w': f1.width, 'h': f1.height, 'frames': ['walk1', 'walk2', 'hit']}
 
-    slab = scene.platform(25)  # 27px wide with outline: 9 | 9 | 9
-    slab.save(os.path.join(OUT, 'slab.png'))
-    man['slab'] = {'w': slab.width, 'h': slab.height, 'cap': 9}
-
-    bg = scene.background()
-    scene.ground(bg)
-    bg.save(os.path.join(OUT, 'bg-graveyard.png'))
-    man['backgrounds']['graveyard'] = 'bg-graveyard.png'
+    # zone backdrops + per-zone platform slabs (3-slice: 9 | 9 | 9)
+    man['zones'] = []
+    man['slabs'] = {}
+    for key, bg_fn, slab_fn in ZONES:
+        bg_fn().save(os.path.join(OUT, f'bg-{key}.png'))
+        man['backgrounds'][key] = f'bg-{key}.png'
+        sl = slab_fn(25)
+        sl.save(os.path.join(OUT, f'slab-{key}.png'))
+        man['slabs'][key] = {'file': f'slab-{key}.png', 'w': sl.width, 'h': sl.height, 'cap': 9}
+        man['zones'].append(key)
 
     with open(os.path.join(OUT, 'manifest.json'), 'w') as f:
         json.dump(man, f, indent=1)

@@ -18,7 +18,6 @@
   const PW = 480,
     PH = 270,
     S = PW / W;
-  const ZONE_ART = { 0: 'graveyard' }; // zone index -> backdrop key (more zones as art lands)
   const SNAP = !params.has('nosnap');
 
   const PX = {
@@ -28,6 +27,12 @@
     stats: { frames: 0, snapMs: 0, heroDraws: 0, enemyDraws: 0, textDraws: 0, textCulled: 0, bgDraws: 0 }
   };
   globalThis.CWM_PX = PX;
+  // Art preview: jump to a zone's backdrop and platform layout (used by screenshot checks).
+  PX.previewZone = n => {
+    zoneI = Math.max(0, Math.min(Z.length - 1, n | 0));
+    applyMap(zoneI);
+    return Z[zoneI].name;
+  };
   PX.state = () => ({ x: pl.x, y: pl.y, w: pl.w, h: pl.h, on: pl.on, vy: pl.vy, G, zone: zoneI });
 
   // ---- canvas setup --------------------------------------------------------------------
@@ -221,7 +226,7 @@
   };
 
   // ---- assets ----------------------------------------------------------------------------
-  const ART = { hero: null, enemies: {}, bg: {}, slab: null, man: null };
+  const ART = { hero: null, enemies: {}, bg: {}, slabs: {}, zones: [], man: null };
   const loadImg = src =>
     new Promise((res, rej) => {
       const im = new Image();
@@ -252,8 +257,15 @@
         const im = await loadImg(base + 'enemy-' + type + '.png');
         ART.enemies[type] = { im, ...info };
       }
-      for (const [key, file] of Object.entries(man.backgrounds)) ART.bg[key] = await loadImg(base + file);
-      ART.slab = { im: await loadImg(base + 'slab.png'), ...man.slab };
+      ART.zones = man.zones || [];
+      await Promise.all(
+        Object.entries(man.backgrounds).map(async ([key, file]) => (ART.bg[key] = await loadImg(base + file)))
+      );
+      await Promise.all(
+        Object.entries(man.slabs || {}).map(
+          async ([key, info]) => (ART.slabs[key] = { im: await loadImg(base + info.file), ...info })
+        )
+      );
       PX.ready = true;
       document.documentElement.dataset.cwmPx = 'ready';
     } catch (e) {
@@ -277,22 +289,29 @@
   // ---- backdrop + platforms ------------------------------------------------------------
   const drawBg0 = drawBg;
   drawBg = function () {
-    const key = ZONE_ART[zoneI];
+    const key = ART.zones[zoneI];
     const im = PX.ready && key && ART.bg[key];
     if (!im) return drawBg0();
     X.drawImage(im, 0, 0, W, H);
     if (mapScene && mapScene.water) {
-      const wv = mapScene.water;
-      X.fillStyle = PAL.length ? '#2f5fbf' : wv.col;
-      X.fillRect(wv.x, G - 6, wv.w, H - G + 6);
+      // Water pit: wave line, lighter surface band, deep water below (all palette colours).
+      const wv = mapScene.water,
+        u = 1 / S;
+      X.fillStyle = '#1d2b6b';
+      X.fillRect(wv.x, G - 4 * u, wv.w, H - G + 4 * u);
+      X.fillStyle = '#2f5fbf';
+      X.fillRect(wv.x, G - 4 * u, wv.w, 14 * u);
       X.fillStyle = '#5aa6f0';
-      X.fillRect(wv.x, G - 6, wv.w, 3);
+      X.fillRect(wv.x, G - 4 * u, wv.w, 2 * u);
+      X.fillStyle = '#a8dcfd';
+      for (let x = wv.x + ((time * 30) % (8 * u)); x < wv.x + wv.w - 3 * u; x += 8 * u)
+        X.fillRect(x, G - 5 * u, 3 * u, u);
     }
     if (chaosEvent === 'lava') {
       X.fillStyle = '#c4363e';
       X.fillRect(0, G + 8, W, H - G - 8);
     }
-    const sl = ART.slab,
+    const sl = ART.slabs[key] || ART.slabs[ART.zones[0]],
       cap = sl.cap,
       mid = sl.w - cap * 2;
     for (const p of platforms) {
