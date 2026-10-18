@@ -5,10 +5,46 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 ## Roadmap (16-bit noobscrub update)
 
 1. **Consolidate the code** — done (2026-10-18), no visible change.
-2. **16-bit art foundation** — 480×270 internal resolution, fixed palette, pixel font, sprite atlases; redraw player, enemies, bosses, 9 weapon types, tiles, parallax, VFX. Starts with a style sheet for approval. See `docs/STYLE.md`.
-3. **UI/HUD** — framed pixel panels, compact edge HUD, restyled title / shop / level-up / death / leaderboard / Museum.
+2. **16-bit art foundation** (done 2026-10-18) — 480×270 internal resolution, fixed palette, pixel font, sprite atlases; redraw player, enemies, bosses, 9 weapon types, tiles, parallax, VFX. Starts with a style sheet for approval. See `docs/STYLE.md`.
+3. **UI/HUD** (done 2026-10-18) — framed pixel panels, compact edge HUD, restyled title / shop / level-up / death / leaderboard / Museum.
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
+
+## 2026-10-18 — Phase 3: pixel HUD and themed screens
+
+**Done** (branch `noobscrub-16bit/phase3-hud`, stacked on phase 2)
+- `art-src/build_font.py` builds **Noobscrub 5x7**, a webfont from the same glyphs as the canvas font (`public/assets/fonts/noobscrub-5x7.woff2`; 8 font px per em, so use 16/24/32/48px for crisp 2x/3x/4x/6x). Reusable for other noobscrub games.
+- `game-src/systems/31-pixel-hud.js`: canvas HUD drawn after each frame — framed bottom bar (HP, special cooldown, weapon icon + name + DPS, shards, level + XP), zone + wave + rift label top-left, kill count top-right, boss name + bar, "NEW WEAPON +x% DPS" toast and "LEVEL UP!" toast.
+- `game-src/shell/pixel-theme.css` (only under `html.px`, so `?nopx` keeps the old UI): hides the HTML in-play HUD (weapon card, run status, wave line, shard bank, juice pop-ups, boss bar); pixel font everywhere snapped to 16px+; no rounded corners/blur/soft shadows; wood-and-gold framed panels and cards via `border-image` (`public/assets/px/ui/*.png` from `build_assets.py`); framed buttons (red "hot" for primary), inputs, bars; title, museum, leaderboard, black market, boon, death offer, shard forge, zone intro, banners, pause all themed.
+- Renderer: screen-sized translucent overlays blend + palette-snap instead of stippling.
+
+**Not verified by screenshot** (themed by selector, need a real trigger): boon cards with content, death offer / D20, shard forge, pause panel.
+
+**Next — phase 4 (gameplay polish)**: floating-text budget (replace the overlap stopgap), dark label boxes behind legacy text, modern-sounding weapon/trait name parts, Dark-trait rework, hit-stop/screenshake tuning, chiptune SFX, balance via bot runs; also the leaderboard submission bug.
+
+## 2026-10-18 — Phase 2: pixel renderer in the game
+
+**Approved direction:** palette as-is; mean hero (heavy brow, flat scowl, scar, dark tank); fantasy settings only, never modern/suburban; keep the jokes with a fantasy twist. The Sword Graveyard is the template style. See `docs/STYLE.md`.
+
+**Done**
+- Zones, boss crews and enemy aliases renamed to fantasy versions with the same jokes (e.g. The Sword Graveyard, Disco Crypt of Compliance, Bone Dragon Feast Hall, Dad's Storm Forge, Grandma's Armed Witch Cottage, The Hostile Takeover Citadel, The Sentient Armory Vault).
+- `game-src/systems/30-pixel-renderer.js` (last system, outermost): canvas is 480x270 with a fixed 0.375 world->pixel scale, CSS `image-rendering: pixelated`; shadows off; all canvas text drawn in the pixel font; every frame snapped to the 32-colour palette; in-world text that would overlap other text is skipped (stopgap until the phase-4 text budget). `?nopx` turns it all off.
+- Hooks in core: `playerDraw` calls `CWM_PX.heroBody()` (body sprite; arm + weapon stay procedural), `creature()` calls `CWM_PX.enemyBody()` (sprite where one exists, else legacy). Pixel art exists for: zone 1 backdrop, platforms (3-slice mossy slab), hero (idle/run/jump), Tactical Bomb Chicken (`bombchicken`), Loose Ammo Gremlin (`crawler`).
+- Art pipeline: `python3 crazy-weapon-man-site/art-src/build_assets.py` writes `public/assets/px/` (PNGs + `manifest.json` with palette and font glyphs; the game reads both from there). `scene.py` still renders the style sheet.
+- `tests/smoke.sh`: legacy self-tests run with `nopx`; new check that the pixel renderer reports ready.
+
+**Art pass done (same day)**
+- All 10 zones: backdrop + ground + platform slab each (`art-src/zones.py`); citadel and forge redone as castle/smithy to keep everything fantasy.
+- All 16 regular enemies (`art-src/enemies.py`, shared colour key; walk1/walk2/white hit frame).
+- All 6 bosses (`art-src/bosses.py`; breathe frame, hit frame, enraged flicker); core `drawBoss` defers to `CWM_PX.bossBody`.
+- 9 held weapon types + 2 loot-drop icons (`art-src/weapons.py`): magenta marker pixels recoloured in game to 3 palette shades of the rarity colour; higher rarities scale in whole-pixel steps (1x/2x/3x). Hooks: `CWM_PX.weaponBody`, `CWM_PX.dropBody`.
+- Translucent effects (fill/stroke with alpha) draw as a 4x4 Bayer stipple in the nearest palette colour instead of blending, so every legacy glow/ring/trail stays on-palette. `?nodither` turns this off.
+- Preview hooks for screenshots: `CWM_PX.previewZone(n)`, `previewBoss(kind)`, `previewWeapon(type, rank)`.
+
+**Next**
+- Phase 3: replace the HTML HUD panels with the framed pixel bar; restyle title/shop/level-up/death/leaderboard/Museum screens.
+- Phase 4: floating-text budget (the stopgap overlap rule is in the renderer), the dark boxes behind legacy text labels, trait/weapon-name jokes that are still modern (e.g. "Parking Enforcement", "Forklift").
+- Check the per-frame palette snap on a real device (~0.5 ms readback alone in headless Chrome).
 
 ## 2026-10-18 — Phase 1: consolidation
 

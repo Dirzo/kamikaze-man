@@ -764,6 +764,7 @@
     X.textAlign = 'left';
   }
   function drawBoss(e) {
+    if (globalThis.CWM_PX && globalThis.CWM_PX.bossBody(e)) return;
     let q = e.hp / e.max;
     X.save();
     X.translate(e.x + e.w / 2, e.y + e.h / 2);

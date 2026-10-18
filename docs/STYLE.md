@@ -14,6 +14,12 @@ one enemy, one tile strip, one HUD frame, the font) for approval before any bulk
 | 04 champion codex | Roster of ~16×24 px heroes on a navy panel: each readable by silhouette + 1 accent colour; names in small pixel text underneath; highlighted entries go gold. |
 | 05 night forest camp | Moody night palette (indigo → violet → cyan accents), layered parallax trees, warm light sources (fire, lanterns) as the focal colour. Minimal corner HUD: hearts top-left, currency below, item slot top-right. |
 
+## Direction notes (from review)
+
+- **Settings are fantasy, never modern.** No city skylines, suburbs, offices, parking lots or other everyday-modern backdrops. Think ruins, mountains, floating castles, crystals, braziers, giant buried weapons.
+- **The hero is mean, not derpy:** heavy angry brow, narrow eyes, flat scowl, cheek scar, dark tank with weapon strap, wrapped forearms.
+- Palette approved as-is.
+
 ## Rules (proposed)
 
 - **Resolution:** render the game at 480×270 internal pixels, integer-scaled with nearest-neighbour (4× at 1080p). No sub-pixel positions on sprites; no blur or soft shadows on game sprites.

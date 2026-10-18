@@ -695,9 +695,9 @@
       base =
         ED[type].name ||
         {
-          stalker: 'Parking-Lot Hacker',
+          stalker: 'Graveyard Hacker',
           crawler: 'Floor Gremlin',
-          brute: 'Axe Landlord',
+          brute: 'Axe Landlord of the Keep',
           wraith: 'Fireball Ghost',
           maw: 'Pretzel Maw',
           flyer: 'Sky Problem',
@@ -705,7 +705,7 @@
           taxman: 'Combat Auditor',
           mimic: 'Definitely Normal Treasure Chest',
           eyeball: 'Management Eye',
-          bombchicken: 'Tactical Chicken'
+          bombchicken: 'Tactical Bomb Chicken'
         }[type] ||
         type,
       b = theme.aliases?.[type] || base;

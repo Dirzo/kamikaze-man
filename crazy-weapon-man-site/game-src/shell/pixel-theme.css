@@ -1,0 +1,268 @@
+/* noobscrub 16-bit theme (phase 3). Applies only while the pixel renderer is active (html.px),
+   so ?nopx still shows the original UI. Font: art-src/build_font.py -> assets/fonts. */
+@font-face {
+  font-family: 'Noobscrub';
+  src: url('/assets/fonts/noobscrub-5x7.woff2') format('woff2');
+  font-display: block;
+}
+
+/* ---- in-play HTML HUD replaced by the canvas HUD (systems/31-pixel-hud.js) ---- */
+html.px #fsHud,
+html.px #cwmShardBankHud,
+html.px #cwmJuiceHud,
+html.px #styleHud,
+html.px #killChainHud,
+html.px #augmentHud,
+html.px #shardHud,
+html.px .waveHud,
+html.px #cwmWaveHud,
+html.px #cwmWaveStackHud {
+  display: none !important;
+}
+
+/* ---- base: palette, pixel font, no soft UI anywhere ---- */
+html.px {
+  --ink: #1a1428; --night: #2b2442; --slate: #3e3a5c; --stone: #5d5a7a; --fog: #8a89a6; --mist: #c3c4d6;
+  --paper: #f4f1e8; --woodD: #5d2f14; --wood: #8a4f22; --gold: #ffc15a; --cream: #f8e08e; --orange: #f08a2c;
+  --red: #c4363e; --wine: #7a1f2b; --coral: #f06a52; --teal: #3bb8a8; --lime: #b7e27a; --ice: #a8dcfd;
+  --sky: #5aa6f0; --violet: #7a4bc2; --pink: #ff6fb5;
+  --panel: url('/assets/px/ui/panel.png') 8 fill / 8px stretch;
+  --card: url('/assets/px/ui/card.png') 8 fill / 8px stretch;
+  --btn: url('/assets/px/ui/btn.png') 6 fill / 6px stretch;
+  --btn-hot: url('/assets/px/ui/btn-hot.png') 6 fill / 6px stretch;
+  --btn-down: url('/assets/px/ui/btn-down.png') 4 fill / 4px stretch;
+  --input: url('/assets/px/ui/input.png') 4 fill / 4px stretch;
+  --outline: 2px 0 var(--ink), -2px 0 var(--ink), 0 2px var(--ink), 0 -2px var(--ink), 2px 2px var(--ink),
+    -2px 2px var(--ink), 2px -2px var(--ink), -2px -2px var(--ink), 0 4px var(--ink);
+}
+html.px body {
+  background: var(--ink) !important;
+  color: var(--paper);
+}
+html.px body,
+html.px body * {
+  font-family: 'Noobscrub', monospace !important;
+  letter-spacing: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  font-weight: 400 !important;
+  font-style: normal !important;
+  image-rendering: pixelated;
+}
+/* the font is drawn on an 8px grid: snap every size to 16 (2x) unless a rule below picks 24/32/48 */
+html.px body * { font-size: 16px !important; line-height: 1.5 !important; }
+html.px canvas { image-rendering: pixelated; }
+
+/* ---- page chrome around the stage ---- */
+html.px .wrap { max-width: none !important; padding: 8px 12px !important; }
+html.px .top { margin-bottom: 8px !important; }
+html.px .keys { color: var(--fog) !important; gap: 16px !important; }
+html.px .keys b { color: var(--cream) !important; }
+html.px .siteHeader { display: none !important; }
+html.px .stage {
+  border: 8px solid transparent !important;
+  border-image: var(--panel) !important;
+  background: var(--night) !important;
+}
+
+/* ---- buttons + inputs ---- */
+html.px button,
+html.px .btn,
+html.px .startBtn,
+html.px .museumBtn,
+html.px .cwmLandingLbBtn,
+html.px .modalClose,
+html.px .cwmMarketClose,
+html.px .shardBtn,
+html.px .forgeRollBtn,
+html.px .forgeKeepBtn,
+html.px .deathTake,
+html.px .deathLeave {
+  border: 6px solid transparent !important;
+  border-image: var(--btn) !important;
+  background: none !important;
+  color: var(--paper) !important;
+  padding: 4px 12px !important;
+  text-transform: uppercase;
+  cursor: pointer;
+  filter: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+html.px button:hover,
+html.px .btn:hover { color: var(--cream) !important; }
+html.px button:active { border-image: var(--btn-down) !important; border-width: 6px !important; }
+html.px .startBtn,
+html.px .deathTake,
+html.px .forgeRollBtn {
+  border-image: var(--btn-hot) !important;
+  color: var(--paper) !important;
+  font-size: 24px !important;
+  padding: 6px 20px !important;
+  text-shadow: var(--outline) !important;
+}
+html.px button:disabled { opacity: 0.45 !important; }
+html.px input,
+html.px select {
+  border: 4px solid transparent !important;
+  border-image: var(--input) !important;
+  background: none !important;
+  color: var(--paper) !important;
+  padding: 4px 8px !important;
+  outline: none !important;
+}
+
+/* ---- framed panels (every modal / overlay card) ---- */
+html.px .titleInner,
+html.px .boonInner,
+html.px .deathOfferInner,
+html.px .shardForgeInner,
+html.px .modalPanel,
+html.px .cwmPausePanel,
+html.px .cwmMarket,
+html.px .cwmLbModal > div,
+html.px .lockInner,
+html.px .banner,
+html.px .waveIntro,
+html.px .bossIntro,
+html.px #cwmLevelSplash,
+html.px .synergyBadge,
+html.px .directorStamp,
+html.px .msg {
+  border: 8px solid transparent !important;
+  border-image: var(--panel) !important;
+  background: none !important;
+  color: var(--paper) !important;
+}
+html.px .boonCard,
+html.px .deathOfferCard,
+html.px .deathOfferPreview,
+html.px .museumItem,
+html.px .bossCard,
+html.px .lockCard,
+html.px .cwmShopCard,
+html.px .forgeResult,
+html.px .forgeInfo,
+html.px .handleBox,
+html.px .card,
+html.px .fsAttr,
+html.px .cwmPauseBox,
+html.px .lbrow {
+  border: 8px solid transparent !important;
+  border-image: var(--card) !important;
+  background: none !important;
+}
+html.px .titleScreen,
+html.px .boonScreen,
+html.px .deathOffer,
+html.px .shardForge,
+html.px .modalOverlay,
+html.px .lockScreen,
+html.px .zone {
+  background: rgba(26, 20, 40, 0.86) !important;
+}
+
+/* ---- headings & emphasis ---- */
+html.px .gameTitle {
+  font-size: 48px !important;
+  line-height: 1.1 !important;
+  color: var(--gold) !important;
+  -webkit-text-fill-color: var(--gold) !important;
+  background: none !important;
+  text-shadow: 4px 0 var(--ink), -4px 0 var(--ink), 0 4px var(--ink), 0 -4px var(--ink), 4px 4px var(--ink),
+    -4px 4px var(--ink), 4px -4px var(--ink), -4px -4px var(--ink), 0 8px var(--woodD) !important;
+}
+html.px .zone .zn,
+html.px .bossIntro .bossIntroName,
+html.px #bossIntroName,
+html.px .boonTitle,
+html.px .deathOfferTitle,
+html.px .shardForgeTitle,
+html.px .cwmMarket h2,
+html.px .modalHead h2,
+html.px .lockTitle,
+html.px .cwmPauseTitle,
+html.px #cwmLevelSplash .l,
+html.px .banner .n,
+html.px .waveIntroName {
+  font-size: 32px !important;
+  line-height: 1.2 !important;
+  color: var(--gold) !important;
+  -webkit-text-fill-color: var(--gold) !important;
+  background: none !important;
+  text-shadow: var(--outline) !important;
+}
+html.px .boonName,
+html.px .deathOfferName,
+html.px .forgeResultName,
+html.px .cwmShopName,
+html.px .d20Num,
+html.px .forgeD20Num,
+html.px #fsWName {
+  font-size: 24px !important;
+  text-shadow: var(--outline) !important;
+}
+html.px .titleKicker,
+html.px .waveIntroTag,
+html.px .boonKicker,
+html.px .deathOfferKicker,
+html.px .shardForgeKicker,
+html.px .cwmMarketKicker,
+html.px #cwmLevelSplash .k,
+html.px .banner .r,
+html.px .zone .ey {
+  color: var(--cream) !important;
+}
+html.px .titleIntro,
+html.px .boonDesc,
+html.px .deathOfferFlavor,
+html.px .cwmMarketSub,
+html.px .titleControls,
+html.px .zone .zs,
+html.px #cwmLevelSplash .d,
+html.px .banner .e {
+  color: var(--mist) !important;
+}
+html.px .titleWeaponRain,
+html.px .titleRule,
+html.px .d20Halo { display: none !important; }
+
+/* bars inside HTML screens */
+html.px .bar,
+html.px .shardBar,
+html.px .waveIntroBar,
+html.px .bossBar {
+  background: var(--night) !important;
+  border: 2px solid var(--ink) !important;
+  height: 10px !important;
+}
+html.px .fill,
+html.px .shardBar > *,
+html.px .waveIntroBar > *,
+html.px .bossBar > * {
+  background: var(--gold) !important;
+}
+/* the boss bar is drawn in the canvas HUD */
+html.px .bossHud { display: none !important; }
+
+/* ---- fixes after the first screenshot pass ---- */
+html.px .titleInner:before,
+html.px .titleInner:after,
+html.px #cwmBuildStamp,
+html.px .metaLicense { display: none !important; }
+html.px .titleInner { padding: 24px 32px !important; }
+html.px .cwmLbBrowser { background: rgba(26, 20, 40, 0.9) !important; }
+html.px .cwmLbShell {
+  border: 8px solid transparent !important;
+  border-image: var(--panel) !important;
+  background: none !important;
+}
+html.px .cwmLbTitle { font-size: 24px !important; color: var(--gold) !important; text-shadow: var(--outline) !important; }
+html.px .cwmLbListPane { border-right: 2px solid var(--slate) !important; }
+html.px .cwmLbRow { border-bottom: 2px solid var(--slate) !important; background: none !important; }
+html.px .cwmLbDps { color: var(--gold) !important; }
+html.px #zt { font-size: 32px !important; color: var(--gold) !important; text-shadow: var(--outline) !important; }
+html.px #zs { color: var(--mist) !important; }
