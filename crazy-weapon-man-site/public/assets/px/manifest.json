@@ -1041,6 +1041,60 @@
    "h": 9,
    "gx": 2,
    "gy": 5
+  },
+  "sword-awakened": {
+   "w": 31,
+   "h": 10,
+   "gx": 3,
+   "gy": 6
+  },
+  "dagger-awakened": {
+   "w": 20,
+   "h": 9,
+   "gx": 2,
+   "gy": 5
+  },
+  "katana-awakened": {
+   "w": 31,
+   "h": 8,
+   "gx": 3,
+   "gy": 4
+  },
+  "hammer-awakened": {
+   "w": 26,
+   "h": 13,
+   "gx": 3,
+   "gy": 8
+  },
+  "staff-awakened": {
+   "w": 29,
+   "h": 9,
+   "gx": 4,
+   "gy": 5
+  },
+  "nunchucks-awakened": {
+   "w": 25,
+   "h": 10,
+   "gx": 3,
+   "gy": 3
+  },
+  "bow-awakened": {
+   "w": 12,
+   "h": 22,
+   "gx": 5,
+   "gy": 11
+  },
+  "shuriken-awakened": {
+   "w": 15,
+   "h": 14,
+   "gx": 7,
+   "gy": 7
+  },
+  "wand-awakened": {
+   "w": 21,
+   "h": 10,
+   "gx": 3,
+   "gy": 5
   }
  },
  "ui": {

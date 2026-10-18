@@ -1,81 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1428">
+<meta name="description" content="A pixel-art combat roguelike. Start with rusty steel. Finish with a weapon the moon should worry about.">
 <title>Crazy Weapon Man</title>
-<link rel="stylesheet" href="/styles.css?v=1d527dd937">
+<style>
+@font-face{font-family:Noobscrub;src:url('/assets/fonts/noobscrub-5x7.woff2') format('woff2');font-display:swap}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#1a1428;color:#f4f1e8;overflow:hidden}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-family:Noobscrub,monospace}
+#bar{display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 max(8px,env(safe-area-inset-right));gap:6px;min-height:32px}
+#brand{font-size:16px;color:#ffc15a;letter-spacing:1px}#tools{display:flex;gap:4px}
+button{font:16px Noobscrub,monospace;color:#c3c4d6;background:#2b2442;border:2px solid #5d5a7a;padding:7px 10px 5px;cursor:pointer;touch-action:none}
+button:hover,button:focus-visible{color:#ffc15a;border-color:#ffc15a;outline:none}button:active{background:#3e3a5c}
+#stage{position:relative;line-height:0;box-shadow:0 0 0 2px #3e3a5c,0 0 0 4px #1a1428}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+#start{position:absolute;left:50%;top:59%;transform:translateX(-50%);color:#1a1428;background:#ffc15a;border-color:#f8e08e;font-size:24px;padding:10px 24px 8px;white-space:nowrap}
+#status{position:absolute;inset:40% 5% auto;text-align:center;font:16px Noobscrub,monospace;color:#f06a52;line-height:1.5;pointer-events:none}
+#touch{display:none;width:min(960px,100%);justify-content:space-between;padding:0 10px env(safe-area-inset-bottom);gap:12px;user-select:none}
+#touch div{display:flex;gap:6px;align-items:center}#touch button{min-width:44px;min-height:44px;font-size:16px}#touch .attack{color:#ffc15a;border-color:#ffc15a}
+#hint{font-size:16px;color:#8a89a6;text-align:center;height:16px}
+@media(pointer:coarse){#touch{display:flex}#hint{display:none}#brand{font-size:16px}#tools button{padding:6px;font-size:16px}}
+@media(max-width:600px){#brand{display:none}#tools{width:100%;justify-content:center}#bar{min-height:30px}#touch{gap:4px;padding:0 4px}#touch div{gap:4px}#touch button{padding:5px;min-width:38px}#start{font-size:16px;padding:8px 16px}}
+</style>
 </head>
 <body>
-<header class="siteHeader"><div class="brand">CRAZY <span>WEAPON</span> MAN</div><div class="siteLinks"><a class="sitePill hot" href="#game">PLAY</a><span class="sitePill">LOCAL HALL OF FAME</span><span class="sitePill">v0.9.8 • MONSTER LESSON WAVES</span></div></header>
-<div class="wrap">
-  <div class="top">
-    <div class="keys"><span><b>Move</b> ← →</span><span><b>Jump</b> Alt</span><span><b>Attack</b> Ctrl</span><span><b>Skill</b> A</span><span><b>Dash</b> Shift</span><span><b>Drop</b> ↓</span></div>
-    <div><button class="btn" id="fullscreen">Fullscreen</button> <button class="btn" id="sound">Sound: ON</button> <button class="btn" id="pause">Pause</button> <button class="btn" id="restart">Restart</button></div>
-  </div>
-  <div class="grid">
-    <main>
-      <div class="stage" id="gameStage">
-        <canvas id="game" width="1280" height="720"></canvas>
-        <div class="titleScreen" id="titleScreen"><div class="titleWeaponRain"></div><div class="titleInner">
-          <div class="titleKicker">AN EXTREMELY RESPONSIBLE ACTION RPG</div>
-          <div class="gameTitle">Crazy<br>Weapon Man</div>
-          <div class="titleIntro">Crazy Weapon Man starts at <strong>Level 1</strong> with a deeply unimpressive Training Sword. He is <strong>crazy for weapons</strong>, has no loyalty or build plan, and cares about one thing: <strong>the highest DPS number currently available.</strong> The rarity ladder begins humble and eventually stops making legal sense.</div>
-          <div class="titleRule">RULE OF THE RUN: if you pick up a weapon with higher estimated DPS, Crazy Weapon Man immediately equips it. No exceptions. No sentimental swords.</div>
-          <div class="titleBest">LOCAL DPS CHAMPION<b id="titleBest">No weapon has earned the throne yet.</b></div><div class="handleBox"><label for="playerName">LEADERBOARD HANDLE</label><input id="playerName" maxlength="20" value="Anonymous Lunatic" autocomplete="nickname" /></div>
-          <button class="startBtn" id="startGame">BEGIN THE DPS PROBLEM</button><button class="museumBtn" id="openMuseum">MUSEUM OF BAD DECISIONS</button><div class="metaLicense" id="metaLicense">WEIRDNESS LICENSE Lv. 0</div>
-          <div class="titleControls">← → move &nbsp; • &nbsp; Alt jump &nbsp; • &nbsp; Ctrl attack &nbsp; • &nbsp; A weapon skill &nbsp; • &nbsp; Shift dash<br>Music begins when the run starts.<br><span class="mobileTitleHint">Phones/tablets: left-thumb joystick • flick sideways to dash • right hold attacks • double-tap right for skill. Landscape recommended.</span><br><strong style="color:#8fffd8">OFFLINE BUILD — NO INTERNET OR SERVER REQUIRED</strong></div>
-        </div></div>
-        <div class="fsHud" id="fsHud">
-          <div class="fsTop">
-            <div class="fsWeapon"><canvas id="fsWArt" width="300" height="190"></canvas><div class="fsWeaponCopy"><div class="fsLabel">CURRENT OBSESSION • HIGHEST DPS WINS</div><div class="fsWName" id="fsWName"></div><div class="fsDps" id="fsDps"></div><div class="fsMeta" id="fsMeta"></div><div class="fsAttrs" id="fsAttrs"></div></div></div>
-            <div class="fsVitals"><div class="fsVRow"><span>HP</span><div class="fsBar"><i class="fsHp" id="fsHp"></i></div><span id="fsHpT"></span></div><div class="fsVRow"><span>MANA</span><div class="fsBar"><i class="fsMp" id="fsMp"></i></div><span id="fsMpT"></span></div><div class="fsVRow"><span>XP</span><div class="fsBar"><i class="fsXp" id="fsXp"></i></div><span id="fsXpT"></span></div><div class="fsVRow"><span>RIFT</span><div class="fsBar"><i class="fsMastery" id="fsMastery"></i></div><span id="fsMasteryT"></span></div><div class="fsVRow"><span>LV</span><div></div><span id="fsLv"></span></div></div>
-          </div>
-          <div class="fsUpgrade" id="fsUpgrade"><div class="u1">DPS UPGRADE DETECTED</div><div class="u2" id="fsUpgradeName"></div><div class="u3" id="fsUpgradeGain"></div></div>
-          <div class="fsBottom"><div class="fsKey"><b>CTRL</b> ATTACK</div><div class="fsKey"><b>A</b> WEAPON SKILL</div><div class="fsKey"><b>SHIFT</b> DASH</div><div class="fsKey"><b>ALT</b> JUMP</div></div>
-          <div class="fsZone"><b id="fsZone"></b><br><span id="fsKills"></span></div>
-        </div>
-        <div class="rotateHint">LANDSCAPE RECOMMENDED • DESKTOP IS STILL THE MAIN EVENT</div>
-        <div class="mobileControls" id="mobileControls" aria-label="Dynamic mobile game controls">
-          <div class="dynamicStick" id="mStick"><div class="dynamicKnob" id="mStickKnob"></div></div>
-          <div class="dynamicAttack" id="mAttackOrb">ATTACK<small>HOLD • 2× SKILL</small></div>
-          <div class="thumbHint left">LEFT THUMB • MOVE / FLICK = DASH</div><div class="thumbHint right">RIGHT THUMB • HOLD ATTACK / DOUBLE TAP SKILL</div>
-        </div>
-        <div class="waveIntro" id="waveIntro"><div class="waveIntroTop"><div class="waveIntroTag" id="waveIntroTag">NEW ENEMY</div><div class="waveIntroCount" id="waveIntroCount">WAVE 1</div></div><div class="waveIntroName" id="waveIntroName"></div><div class="waveIntroHow" id="waveIntroHow"></div><div class="waveIntroHint" id="waveIntroHint"></div><div class="waveIntroBar"><i id="waveIntroFill"></i></div></div>
-        <div class="banner" id="banner"><div class="r" id="br"></div><div class="n" id="bn"></div><div class="e" id="be"></div></div>
-        <div class="bossHud" id="bossHud"><div class="bossName" id="bossName"></div><div class="bossSub" id="bossSub"></div><div class="bossBar"><div class="bossFill" id="bossFill"></div></div></div>
-        <div class="bossIntro" id="bossIntro"><div><div class="tiny">BOSS ENCOUNTER</div><div class="big" id="bossIntroName"></div><div class="line" id="bossIntroLine"></div><div class="quote" id="bossIntroQuote"></div></div></div>
-        <div class="boonScreen" id="boonScreen"><div class="boonInner"><div class="boonKicker">BOSS DEFEATED • CHOOSE ONE TERRIBLE LIFE DECISION</div><div class="boonTitle">PICK A BOON</div><div class="boonSub" id="boonSub"></div><div class="boonChoices" id="boonChoices"></div></div></div>
-        <div class="deathOffer" id="deathOffer"><div class="deathOfferInner"><div class="deathOfferKicker">BOSS DEATH INTERVENTION • LAST-STAND ROULETTE</div><div class="deathOfferTitle" id="deathOfferTitle">AS YOU BEGIN TO PASS OUT...</div><div class="deathOfferBody" id="deathOfferBody">Something shiny rolls out from under a corpse. It is a magical D20. Obviously you should trust it with your life.</div><div class="fateStage"><div class="d20Halo"><div class="magicD20" id="magicD20"><span class="d20Num" id="d20Num">?</span></div></div><div class="d20Result" id="d20Result">YOUR FATE HAS NOT BEEN AUDITED YET</div></div><div class="deathOfferPreview" id="deathOfferPreview"><canvas id="deathOfferArt" width="280" height="180"></canvas><div class="deathOfferCard"><div class="deathOfferLabel">THE D20 HAS MANIFESTED THIS WEAPON</div><div class="deathOfferName" id="deathOfferName"></div><div class="deathOfferStats" id="deathOfferStats"></div><div class="deathOfferFlavor" id="deathOfferFlavor"></div></div></div><div class="deathOfferBtns"><button class="deathTake" id="deathOfferTake">ROLL THE SHINY MAGICAL D20</button><button class="deathLeave" id="deathOfferLeave">REFUSE DESTINY • FADE OUT</button></div><div class="deathOfferNote">Every face has a different fate. Natural 1 still saves you. Natural 20 is an irresponsible amount of protagonist energy.</div></div></div>
-        <div class="styleHud" id="styleHud"><div class="styleLabel">SLAUGHTER COMBO</div><div class="styleGrade" id="styleGrade">WARMING UP</div><div class="styleLabel" id="styleText">0 COMBO • Crazy Weapon Man believes in you.</div><div class="styleLine"><i id="styleFill"></i></div></div><div class="killChainHud" id="killChainHud"><div class="killChainTop"><div class="killChainTag">RAPID KILL CHAIN</div><div class="killChainTime" id="killChainTime">0.0s</div></div><div class="killChainCount" id="killChainCount">×0</div><div class="killChainBonus" id="killChainBonus">+0 SLAUGHTER</div><div class="killChainBar"><i id="killChainFill"></i></div></div><div class="augmentHud" id="augmentHud"><div class="augmentTop"><div class="augmentTag">TEMPORARY MUTATION</div><div class="augmentTime" id="augmentTime">0.0s</div></div><div class="augmentName" id="augmentName">NONE</div><div class="augmentDesc" id="augmentDesc"></div><div class="augmentBar"><i id="augmentFill"></i></div></div><div class="shardHud" id="shardHud"><div class="shardTop"><div class="shardTag">SALVAGED WEAPON SHARDS</div><div class="shardCount" id="shardCount">0 / 100</div></div><div class="shardName">D20 WEAPON FORGE</div><div class="shardDesc" id="shardDesc">Weaker weapons become shards. 100 unlocks a fate roll; bank more for better rarity odds.</div><div class="shardBar"><i id="shardFill"></i></div><button class="shardBtn" id="shardRollOpen">ROLL D20 WITH SHARDS</button></div><div class="shardForge" id="shardForge"><div class="shardForgeInner"><div class="shardForgeKicker">RECYCLED BAD DECISIONS • MAGICAL D20</div><div class="shardForgeTitle" id="shardForgeTitle">WEAPON SHARD FORGE</div><div class="shardForgeSub" id="shardForgeSub">Your pile of inferior weapons has become a gambling problem.</div><div class="forgeRow"><div class="forgeD20" id="forgeD20"><div class="forgeD20Num" id="forgeD20Num">?</div></div><div class="forgeInfo"><div class="forgeBank" id="forgeBank">100 SHARDS</div><div class="forgeQuality" id="forgeQuality"></div><div class="forgeOdds" id="forgeOdds"></div><div class="forgeResult" id="forgeResult"><div class="forgeResultName" id="forgeResultName"></div><div class="forgeResultMeta" id="forgeResultMeta"></div><div class="forgeResultCompare" id="forgeResultCompare"></div></div></div></div><div class="forgeBtns"><button class="forgeRollBtn" id="forgeRollBtn">ROLL THE SHARD D20</button><button class="forgeKeepBtn" id="forgeKeepBtn">KEEP COLLECTING</button></div></div></div>
-        <div class="synergyBadge" id="synergyBadge"><b id="synergyName"></b><span id="synergyDesc"></span></div>
-        <div class="directorStamp" id="directorStamp"></div>
-        <div class="zone" id="zone"><div><div class="ey">RIFT TRAVERSED</div><div class="zn" id="zt"></div><div class="zs" id="zs"></div></div></div>
-      </div>
-      <div class="touch"><button data-hold="left">←</button><button data-hold="right">→</button><button data-tap="jump">Alt</button><button data-tap="attack">Ctrl</button><button data-tap="skill">A</button><button data-tap="dash">Shift</button></div>
-      <div class="msg" id="msg">DPS is the only religion here. Higher number = immediately equipped.</div>
-    </main>
-    <aside class="side">
-      <section class="card"><div class="row"><b>Crazy Weapon Man</b><span id="zoneLabel">Ashen Yard</span></div><div style="height:8px"></div><div class="row"><span>HP</span><span id="hpT"></span></div><div class="bar"><div class="fill" id="hp"></div></div><div class="row"><span>Mana</span><span id="manaT"></span></div><div class="bar"><div class="fill" id="mana"></div></div><div class="row"><span>XP</span><span id="xpT"></span></div><div class="bar"><div class="fill" id="xp"></div></div><div class="stats" id="stats"></div></section>
-      <section class="card"><h3 style="margin:0 0 9px">Current Weapon</h3><div class="weapon"><div class="type" id="wType"></div><div class="name" id="wName"></div><div class="wframe"><canvas id="wArt" width="280" height="180"></canvas></div><div class="wchips" id="wInfo"></div></div></section>
-      <section class="card"><div class="row"><b>Area Mastery</b><span id="mastT">0%</span></div><div class="bar"><div class="fill" id="mastery"></div></div><div class="small">Fast clears and one-shots open the next zone. Enemies get nastier, not just fatter HP bars.</div></section>
-      <section class="card" id="leaderboardCard"><div class="row"><h3 style="margin:0 0 9px">Local DPS Hall of Fame</h3><span class="globalStatus" id="globalStatus">OFFLINE • SAVED LOCALLY</span></div><div class="leaderboard" id="leaderboard"><div class="lbempty">Collect something irresponsible.</div></div></section><section class="card bossCard"><h3 style="margin:0 0 9px">Bosses</h3><div class="bossList"><div class="bossEntry"><b>Crazy Weapon Man Jr.</b><span>Copies your weapon obsession, swaps fighting styles mid-fight, and gets increasingly offended by your DPS.</span></div><div class="bossEntry"><b>Crazy Boss Man</b><span>Weaponizes meetings, performance reviews, budget cuts, restructuring, and the phrase “we’re a family here.”</span></div><div class="bossEntry"><b>Crazy Weapon Man Sr.</b><span>The original bad influence. Treats terrible weapon advice like sacred family tradition.</span></div><div class="bossEntry"><b>Crazy Weapon Grandma</b><span>Weaponizes casseroles, guilt, ricochets, and the phrase “you look thin.”</span></div><div class="bossEntry"><b>Crazy CEO Man</b><span>Privatizes platforms, performs hostile takeovers, and fires golden layoffs.</span></div><div class="bossEntry"><b>THE WEAPON ITSELF</b><span>A sentient pile of every terrible idea you equipped. It has learned your habits.</span></div></div></section>
-      <section class="card"><h3 style="margin:0 0 9px">Loot Feed</h3><div class="feed" id="feed"><div class="feeditem">No upgrades yet.</div></div></section>
-    </aside>
-  </div>
-</div>
-<div class="modalOverlay" id="museumModal"><div class="modalPanel"><div class="modalHead"><div><div class="titleKicker">PERSISTENT LOCAL COLLECTION</div><h2>MUSEUM OF BAD DECISIONS</h2></div><button class="modalClose" id="closeMuseum">CLOSE</button></div><div class="small" id="museumMeta"></div><div class="museumGrid" id="museumGrid"></div></div></div>
-<script src="/game.js?v=b0b7ae895c"></script>
-<script src="/addons/01-patch-version.js?v=b9199e7ac5"></script>
-<script src="/addons/02-leaderboard-inspector.js?v=43791bc53f"></script>
-<script src="/addons/03-online-leaderboard.js?v=ed7a2a99be"></script>
-<script src="/addons/05-gameplay-clarity.js?v=abb92f15f1"></script>
-<script src="/addons/06-clarity-hotfix.js?v=38c6f7e726"></script>
-<script src="/addons/07-graphics-overhaul.js?v=e90b6e1c20"></script>
-<script src="/addons/08-leaderboard-browser.js?v=b082fe0c36"></script>
-<script src="/addons/11-arsenal-presentation.js?v=8c12bfadec"></script>
-<script src="/addons/12-arsenal-hud.js?v=c2b1be17c6"></script>
-<script src="/addons/13-leaderboard-selfcheck.js?v=48de00d7d6"></script>
-<script src="/addons/14-arsenal-selfcheck.js?v=27e7cb4315"></script>
-</body>
-</html>
+<header id="bar"><span id="brand">NOOBSCRUB / CRAZY WEAPON MAN</span><nav id="tools" aria-label="Game settings">
+<button id="b-sound" tabindex="-1">Sound: On</button><button id="b-music" tabindex="-1">Music: On</button><button id="b-pause" tabindex="-1">Pause</button><button id="b-restart" tabindex="-1">Restart</button><button id="b-full" tabindex="-1">Fullscreen</button>
+</nav></header>
+<main id="stage"><canvas id="screen" width="480" height="270" aria-label="Crazy Weapon Man game. Arrows move, X jumps, Z attacks, C special, Shift dashes." tabindex="0">Your browser needs Canvas to play Crazy Weapon Man.</canvas><button id="start">START RUN</button><div id="status" role="status" aria-live="polite"></div></main>
+<div id="hint">MOVE ARROWS / AD &nbsp; JUMP X / ALT &nbsp; ATTACK Z / CTRL &nbsp; SPECIAL C / SPACE &nbsp; DASH SHIFT</div>
+<div id="touch" aria-label="Touch controls"><div><button data-action="left" aria-label="Move left">LEFT</button><button data-action="right" aria-label="Move right">RIGHT</button><button data-action="down" aria-label="Drop or swap">DOWN</button></div><div><button data-action="dash">DASH</button><button data-action="jump">JUMP</button><button class="attack" data-action="attack">HIT</button><button data-action="special">SKILL</button></div></div>
+<script type="module" src="/src/main.js?v=e5d1b61cc2"></script>
+</body></html>
