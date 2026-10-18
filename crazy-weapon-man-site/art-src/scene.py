@@ -219,7 +219,7 @@ def background():
     big_sword(bg, 92, GROUND - 14, 74)
     big_sword(bg, 372, GROUND - 18, 60)
     ridge(bg, 190, 14, 30, 'ink', 21)
-    ruin_arch(bg, 214)
+    # (ruin arch left out: in-game it read as a platform you could not stand on)
     brazier(bg, 52)
     brazier(bg, 448)
     crystals(bg, 300)

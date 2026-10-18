@@ -10,12 +10,22 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
-## 2026-10-18 — Phase 2: style sheet (awaiting approval)
+## 2026-10-18 — Phase 2: pixel renderer in the game (in progress)
 
-- Branch `noobscrub-16bit/phase2-style-sheet`. Art is generated from code in `crazy-weapon-man-site/art-src/` (`pixel.py` palette + sprite fill maps with auto 1px outline, `font.py` 5x7 pixel font, `scene.py` builds the sheet). Run `python3 crazy-weapon-man-site/art-src/scene.py` (needs Pillow).
-- Output in `docs/style-sheet/`: `mock-frame.png` (zone 1 at 480x270, shown 4x), `style-sheet.png` (palette, hero, Tactical Chicken, Prototype Sword Intern, gem, sword, asphalt + platform tiles, font, HUD).
-- Sprite sizes match current hitboxes at 480/1280 scale (player 16x24 incl. outline), so gameplay feel is unchanged.
-- Next: on approval, port the palette/font/sprite pipeline into the game renderer (low-res canvas, nearest-neighbour upscale), then redraw remaining enemies, bosses, zones and weapon types.
+**Approved direction:** palette as-is; mean hero (heavy brow, flat scowl, scar, dark tank); fantasy settings only, never modern/suburban; keep the jokes with a fantasy twist. The Sword Graveyard is the template style. See `docs/STYLE.md`.
+
+**Done**
+- Zones, boss crews and enemy aliases renamed to fantasy versions with the same jokes (e.g. The Sword Graveyard, Disco Crypt of Compliance, Bone Dragon Feast Hall, Dad's Storm Forge, Grandma's Armed Witch Cottage, The Hostile Takeover Citadel, The Sentient Armory Vault).
+- `game-src/systems/30-pixel-renderer.js` (last system, outermost): canvas is 480x270 with a fixed 0.375 world->pixel scale, CSS `image-rendering: pixelated`; shadows off; all canvas text drawn in the pixel font; every frame snapped to the 32-colour palette; in-world text that would overlap other text is skipped (stopgap until the phase-4 text budget). `?nopx` turns it all off.
+- Hooks in core: `playerDraw` calls `CWM_PX.heroBody()` (body sprite; arm + weapon stay procedural), `creature()` calls `CWM_PX.enemyBody()` (sprite where one exists, else legacy). Pixel art exists for: zone 1 backdrop, platforms (3-slice mossy slab), hero (idle/run/jump), Tactical Bomb Chicken (`bombchicken`), Loose Ammo Gremlin (`crawler`).
+- Art pipeline: `python3 crazy-weapon-man-site/art-src/build_assets.py` writes `public/assets/px/` (PNGs + `manifest.json` with palette and font glyphs; the game reads both from there). `scene.py` still renders the style sheet.
+- `tests/smoke.sh`: legacy self-tests run with `nopx`; new check that the pixel renderer reports ready.
+
+**Next**
+- Backdrops for the other 6 map styles (zone -> backdrop map is `ZONE_ART` in the renderer).
+- Sprites for the remaining 16 enemy types and the 6 bosses; weapon sprites for the 9 weapon types (currently procedural vectors snapped to the palette); drops/loot gems; pixel FX for slashes, hits, explosions.
+- Phase 3 replaces the HTML HUD panels (still the old glassy UI) with the framed pixel bar from the style sheet.
+- Check the per-frame palette snap on a real device (readback measured ~0.5 ms alone in headless Chrome).
 
 ## 2026-10-18 — Phase 1: consolidation
 

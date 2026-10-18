@@ -49,7 +49,8 @@
     "systems/26-combat-readability.js",
     "systems/27-chaos-showcase.js",
     "systems/28-attack-speed.js",
-    "systems/29-player-hp.js"
+    "systems/29-player-hp.js",
+    "systems/30-pixel-renderer.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [

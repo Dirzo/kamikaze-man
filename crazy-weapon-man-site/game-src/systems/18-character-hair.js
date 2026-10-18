@@ -112,7 +112,8 @@
   playerDraw = function () {
     const r = playerDraw0();
     try {
-      drawHair();
+      // The pixel renderer's hero sprite has its own hair.
+      if (!(globalThis.CWM_PX && globalThis.CWM_PX.ready)) drawHair();
     } catch (e) {
       if (!S.error) S.error = String(e);
     }

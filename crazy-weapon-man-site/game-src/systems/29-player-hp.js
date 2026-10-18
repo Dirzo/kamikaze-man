@@ -17,6 +17,18 @@
     lag += (hp - lag) * 0.12;
     lag = clamp(lag);
     S.draws++;
+    if (globalThis.CWM_PX && globalThis.CWM_PX.ready) {
+      // Pixel mode: a slim bar over the head, no name tag (the HUD carries the numbers).
+      const bw = 48,
+        by = pl.y - 22;
+      X.fillStyle = '#1a1428';
+      X.fillRect(cx - bw / 2 - 3, by - 3, bw + 6, 9);
+      X.fillStyle = '#7a1f2b';
+      X.fillRect(cx - bw / 2, by, bw * lag, 3);
+      X.fillStyle = hp < 0.3 ? '#f06a52' : '#c4363e';
+      X.fillRect(cx - bw / 2, by, bw * hp, 3);
+      return true;
+    }
     X.save();
     X.textAlign = 'center';
     X.textBaseline = 'bottom';
