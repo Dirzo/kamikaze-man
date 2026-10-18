@@ -286,7 +286,8 @@
     else dy -= 7 * k; // alphabetic / bottom
     // Readability rule until the phase-4 text budget: skip text that would land on text already
     // drawn this frame (earlier draws win: world labels, then the player, then floating text).
-    if (X.globalAlpha < 0.35 || textRects.length >= 14) {
+    // PX.forceText: speech bubbles always print (they draw their own solid box)
+    if (!PX.forceText && (X.globalAlpha < 0.35 || textRects.length >= 14)) {
       PX.stats.textCulled++;
       return;
     }
@@ -294,7 +295,7 @@
       ry = Math.round(dy) - 1,
       rw = cv.width,
       rh = cv.height;
-    for (const r of textRects) {
+    if (!PX.forceText) for (const r of textRects) {
       const ox = Math.min(rx + rw, r[0] + r[2]) - Math.max(rx, r[0]),
         oy = Math.min(ry + rh, r[1] + r[3]) - Math.max(ry, r[1]);
       if (ox > 1 && oy > 1 && ox * oy > rw * rh * 0.08) {

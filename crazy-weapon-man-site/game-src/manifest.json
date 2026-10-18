@@ -57,7 +57,8 @@
     "systems/34-chipmusic.js",
     "systems/35-balance-probe.js",
     "systems/36-weapon-names.js",
-    "systems/37-text-budget.js"
+    "systems/37-text-budget.js",
+    "systems/38-geese-sleepers.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [

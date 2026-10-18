@@ -596,6 +596,15 @@
     "hit"
    ]
   },
+  "goose": {
+   "w": 20,
+   "h": 20,
+   "frames": [
+    "walk1",
+    "walk2",
+    "hit"
+   ]
+  },
   "stalker": {
    "w": 16,
    "h": 19,

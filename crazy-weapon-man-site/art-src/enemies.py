@@ -30,6 +30,28 @@ ENEMIES = {
     'bombchicken': (_remap(CHICKEN, _CH), {'rows': {15: '......y..y.....', 16: '.....yy.yy.....'}}),
     'crawler': (_remap(GREMLIN, _GR), {'rows': {13: '...hh..hh.....', 14: '..hhh..hhh....'}}),
 
+    # War Goose: a furious goose in a dented iron helmet. Honks. Bites. Has no regrets.
+    'goose': ([
+        '...KsK............',
+        '..sssss...........',
+        '..smsss...........',
+        '..KKKKKm..........',
+        'ooxwrewm..........',
+        'oooowwwm..........',
+        '...wwwm...........',
+        '...wwwm...........',
+        '...wwwm...........',
+        '...wwwwm.....mm...',
+        '...wwwwwwwwwwwwm..',
+        '...wwwwwwwwwwwwwmf',
+        '...wwwmmmmmwwwwmf.',
+        '....wwmffffmwwmf..',
+        '.....wwwwwwwwmf...',
+        '.......ffffff.....',
+        '.......o..o.......',
+        '......oo.oo.......',
+    ], {'rows': {16: '......o....o......', 17: '.....oo...oo......'}}),
+
     # Graveyard Hacker / Prototype Sword Apprentice: hooded bandit with a dagger, glowing eyes.
     'stalker': ([
         '....eeeee.....',
