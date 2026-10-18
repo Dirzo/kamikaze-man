@@ -274,7 +274,8 @@
   const creature0 = creature;
   creature = function (e) {
     const r = creature0(e);
-    drawEnemyStyle(e);
+    // the pixel sprites carry their own look; these procedural accents only cluttered them
+    if (!(globalThis.CWM_PX && globalThis.CWM_PX.ready)) drawEnemyStyle(e);
     drawHpBar(e);
     return r;
   };

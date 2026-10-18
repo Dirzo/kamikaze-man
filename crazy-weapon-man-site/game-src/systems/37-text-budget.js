@@ -1,7 +1,7 @@
 // Floating-text budget and compact numbers (phase 4). Replaces the pixel renderer's overlap
 // stopgap as the main readability rule.
-//   - Hits on the same enemy within 0.3 s merge into one rising number instead of a pile.
-//   - At most 8 damage numbers and 2 callouts (3 if one is big), stacked, on screen; duplicate callouts within 1.2 s dropped.
+//   - Hits on the same enemy stack upward in a column (MapleStory style), merging after 5 lines.
+//   - At most 12 damage numbers and 2 callouts (3 if one is big), stacked, on screen; duplicate callouts within 1.2 s dropped.
 //   - Numbers are compact: 999, 12.3K, 4.5M, 6.7B ... and then joke units when truly absurd.
 (() => {
   if (globalThis.CWM_FMT) return;
@@ -24,13 +24,26 @@
   globalThis.CWM_TEXT = S;
 
   const damagePop0 = damagePop;
+  // MapleStory-style: hits on the same enemy stack upward in a column (each number its own line)
+  // instead of scattering; after 5 lines in a burst they merge into the top one.
   damagePop = function (e, n, crit = false, col = '#fff') {
     const now = time;
-    const prev = T.findLast?.(t => t.kind === 'damage' && t.eid === e?.id && now - t.born < 0.3 && t.life > 0);
-    if (prev && !crit) {
-      prev.total += n;
-      prev.s = fmt(prev.total);
-      prev.life = Math.max(prev.life, prev.max * 0.85);
+    const stack = T.filter(t => t.kind === 'damage' && t.eid === e?.id && now - t.born < 0.6 && t.life > 0);
+    // chip damage (ticks, splash under 4% of the enemy's health) doesn't get its own number
+    if (!crit && e && e.max && n < e.max * 0.04) {
+      const top = stack[stack.length - 1];
+      if (top) {
+        top.total += n;
+        top.s = fmt(top.total);
+      }
+      S.merged++;
+      return;
+    }
+    if (stack.length >= 5 && !crit) {
+      const top = stack[stack.length - 1];
+      top.total += n;
+      top.s = fmt(top.total);
+      top.life = Math.max(top.life, top.max * 0.85);
       S.merged++;
       return;
     }
@@ -42,9 +55,18 @@
       t.born = now;
       t.total = n;
       t.s = fmt(n);
+      if (stack.length) {
+        const prev = stack[stack.length - 1];
+        t.x = prev.x;
+        t.y = prev.y - 26;
+        t.vx = 0;
+      } else {
+        t.x = e.x + e.w / 2;
+        t.vx = 0;
+      }
     }
     const dmg = T.filter(x => x.kind === 'damage');
-    while (dmg.length > 8) {
+    while (dmg.length > 12) {
       const old = dmg.shift();
       T.splice(T.indexOf(old), 1);
       S.droppedDamage++;

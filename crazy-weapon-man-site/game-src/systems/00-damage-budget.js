@@ -88,10 +88,8 @@
         n = Math.max(1, Math.round(allowed - sw.dealt));
       if (allowed < sw.raw - 0.5) ST.bent++;
       if (allowed - sw.dealt < 0.5) {
-        // budget for this swing is spent: a token tick keeps the hit feel
-        sw.dealt += 1;
-        const r = hitE0(e, 1, o);
-        return r;
+        // budget for this swing is spent: the extra hit does nothing (no number, no push, no procs)
+        return 0;
       }
       sw.dealt += n;
       // standouts may exceed the core's 52% impact cap; everything else stays under it anyway
