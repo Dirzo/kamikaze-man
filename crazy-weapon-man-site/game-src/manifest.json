@@ -21,6 +21,7 @@
     "core/18-mobile.js"
   ],
   "systems": [
+    "systems/00a-hit-hook.js",
     "systems/00-damage-budget.js",
     "systems/01-elemental-weapons.js",
     "systems/02-arsenal-expansion.js",
@@ -61,7 +62,8 @@
     "systems/37-text-budget.js",
     "systems/38-geese-sleepers.js",
     "systems/39-weapon-curve.js",
-    "systems/40-weapon-looks.js"
+    "systems/40-weapon-looks.js",
+    "systems/41-arcade-combat.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [

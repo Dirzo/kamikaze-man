@@ -381,10 +381,14 @@ function creature(e) {
   let pulse = 1 + Math.sin(time * 6 + e.anim) * 0.04,
     hit = (e.hitT || 0) > 0 ? clamp((e.hitT || 0) / 0.22, 0, 1) : 0,
     recoil = (e.recoilT || 0) > 0 ? clamp((e.recoilT || 0) / 0.26, 0, 1) : 0;
-  X.translate(-(e.hitDir || 0) * recoil * 9, 0);
-  X.rotate(-(e.hitDir || 0) * recoil * 0.12);
-  X.scale(pulse * (1 + hit * 0.14), pulse * (1 - hit * 0.18));
-  if (e.themeCol) {
+  // pixel mode: crisp sprites, no squash/tilt; the arcade knockback (systems/41) carries the hit
+  const pxOn = !!(globalThis.CWM_PX && globalThis.CWM_PX.ready);
+  if (!pxOn) {
+    X.translate(-(e.hitDir || 0) * recoil * 9, 0);
+    X.rotate(-(e.hitDir || 0) * recoil * 0.12);
+    X.scale(pulse * (1 + hit * 0.14), pulse * (1 - hit * 0.18));
+  }
+  if (e.themeCol && !pxOn) {
     X.save();
     X.globalAlpha = e.elite ? 0.24 : 0.11;
     X.strokeStyle = e.themeCol;
@@ -872,7 +876,7 @@ function creature(e) {
     }
     X.shadowBlur = 0;
   }
-  if (e.elite) {
+  if (e.elite && !pxOn) {
     X.strokeStyle = '#ff5c69';
     X.lineWidth = 2;
     X.globalAlpha = 0.8;
@@ -881,7 +885,19 @@ function creature(e) {
     X.stroke();
   }
   X.restore();
-  if (e.state === 'wind' && !e.dead) {
+  if (e.state === 'wind' && !e.dead && pxOn) {
+    // arcade wind-up tell: a blinking "!" over the head instead of a ground circle
+    let p = 1 - e.st / d.wind;
+    if (p > 0.5 || Math.floor(time * 12) % 2 === 0) {
+      const cx = Math.round(e.x + e.w / 2),
+        top = e.y - 30;
+      X.fillStyle = '#1a1428';
+      X.fillRect(cx - 5, top - 3, 10, 27);
+      X.fillStyle = p > 0.6 ? '#f4f1e8' : '#c4363e';
+      X.fillRect(cx - 2, top, 5, 13);
+      X.fillRect(cx - 2, top + 16, 5, 5);
+    }
+  } else if (e.state === 'wind' && !e.dead) {
     let p = 1 - e.st / d.wind;
     X.strokeStyle = `rgba(255,65,65,${0.28 + 0.65 * p})`;
     X.lineWidth = 3;
