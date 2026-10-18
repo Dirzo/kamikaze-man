@@ -593,7 +593,8 @@
   const draw0 = draw;
   draw = function () {
     textRects = [];
-    X.setTransform(S, 0, 0, S, 0, 0);
+    // whole-pixel screenshake offset from systems/32-game-feel.js (world layer only; HUD is drawn later)
+    X.setTransform(S, 0, 0, S, PX.shakeX || 0, PX.shakeY || 0);
     X.imageSmoothingEnabled = false;
     const r = draw0();
     X.setTransform(1, 0, 0, 1, 0, 0);
