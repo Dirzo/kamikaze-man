@@ -21121,17 +21121,30 @@ function render() {
     if (lines.length === 2 && lines[1].length > max + 8) lines[1] = lines[1].slice(0, max + 6) + '…';
     return lines;
   }
+  // which enemies get a nameplate this frame (computed once per frame, not once per enemy)
+  let plateFrame = -1,
+    plateSet = new Set();
   function headlinerVisible(e) {
     if (!e?.__headline || e.dead || e.boss || e.x + e.w < 0 || e.x > W) return false;
-    const alive = E.filter(x => x && !x.dead && !x.boss).length,
-      max = alive >= 8 ? 1 : 2;
-    const pool = E.filter(x => x && !x.dead && !x.boss && x.__headline && x.x + x.w >= 0 && x.x <= W).sort(
-      (a, b) =>
-        (b.__nightMutant === 'ABOMINATION') - (a.__nightMutant === 'ABOMINATION') ||
-        (b.elite ? 1 : 0) - (a.elite ? 1 : 0) ||
-        a.id - b.id
-    );
-    return pool.slice(0, max).includes(e);
+    const f = typeof time === 'number' ? time : 0;
+    if (f !== plateFrame) {
+      plateFrame = f;
+      let alive = 0;
+      const pool = [];
+      for (const x of E) {
+        if (!x || x.dead || x.boss) continue;
+        alive++;
+        if (x.__headline && x.x + x.w >= 0 && x.x <= W) pool.push(x);
+      }
+      pool.sort(
+        (a, b) =>
+          (b.__nightMutant === 'ABOMINATION') - (a.__nightMutant === 'ABOMINATION') ||
+          (b.elite ? 1 : 0) - (a.elite ? 1 : 0) ||
+          a.id - b.id
+      );
+      plateSet = new Set(pool.slice(0, alive >= 8 ? 1 : 2));
+    }
+    return plateSet.has(e);
   }
   function drawFunnyPlate(e) {
     if (!headlinerVisible(e)) return;
@@ -22800,7 +22813,11 @@ function render() {
   const PW = 480,
     PH = 270,
     S = PW / W;
-  const SNAP = !params.has('nosnap');
+  // Palette: colours are snapped when they are set (fillStyle/strokeStyle/gradient stops), not by
+  // reading the frame back. The old per-frame readback (?snapframe) forced the browser to finish
+  // drawing synchronously and stalled the GPU every frame, which was most of the lag.
+  const SNAP = params.has('snapframe');
+  const SNAP_STYLES = !params.has('nosnap');
 
   const PX = {
     active: true,
@@ -22965,6 +22982,62 @@ function render() {
       }
     };
   }
+  // ---- snap colours as they are set ----
+  const snapCache = new Map();
+  function snapStyle(v) {
+    if (typeof v !== 'string' || !LUT || !SNAP_STYLES) return v;
+    let hit = snapCache.get(v);
+    if (hit) return hit;
+    const a = styleAlpha(v),
+      hex = paletteHex(v);
+    if (a >= 0.999) hit = hex;
+    else {
+      const [r, g, b] = hexRgb(hex);
+      hit = `rgba(${r},${g},${b},${+a.toFixed(3)})`;
+    }
+    if (snapCache.size > 800) snapCache.clear();
+    snapCache.set(v, hit);
+    return hit;
+  }
+  const raw = { fillStyle: X.fillStyle, strokeStyle: X.strokeStyle },
+    rawStack = [];
+  for (const prop of ['fillStyle', 'strokeStyle']) {
+    const desc = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, prop);
+    Object.defineProperty(X, prop, {
+      configurable: true,
+      get: () => raw[prop], // callers (and the dither below) see what they set
+      set: v => {
+        raw[prop] = v;
+        desc.set.call(X, snapStyle(v));
+      }
+    });
+  }
+  // save/restore must carry the raw styles too
+  {
+    const save0 = X.save.bind(X),
+      restore0 = X.restore.bind(X);
+    X.save = () => {
+      rawStack.push(raw.fillStyle, raw.strokeStyle);
+      save0();
+    };
+    X.restore = () => {
+      if (rawStack.length) {
+        raw.strokeStyle = rawStack.pop();
+        raw.fillStyle = rawStack.pop();
+      }
+      restore0();
+    };
+  }
+  for (const fn of ['createLinearGradient', 'createRadialGradient']) {
+    const base = X[fn].bind(X);
+    X[fn] = (...a) => {
+      const g = base(...a),
+        add = g.addColorStop.bind(g);
+      g.addColorStop = (o, c) => add(o, snapStyle(c));
+      return g;
+    };
+  }
+
   if (!params.has('nodither')) {
     X.fill = dithered('fillStyle', X.fill.bind(X));
     X.fillRect = dithered('fillStyle', X.fillRect.bind(X));

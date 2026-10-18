@@ -177,17 +177,30 @@
     if (lines.length === 2 && lines[1].length > max + 8) lines[1] = lines[1].slice(0, max + 6) + '…';
     return lines;
   }
+  // which enemies get a nameplate this frame (computed once per frame, not once per enemy)
+  let plateFrame = -1,
+    plateSet = new Set();
   function headlinerVisible(e) {
     if (!e?.__headline || e.dead || e.boss || e.x + e.w < 0 || e.x > W) return false;
-    const alive = E.filter(x => x && !x.dead && !x.boss).length,
-      max = alive >= 8 ? 1 : 2;
-    const pool = E.filter(x => x && !x.dead && !x.boss && x.__headline && x.x + x.w >= 0 && x.x <= W).sort(
-      (a, b) =>
-        (b.__nightMutant === 'ABOMINATION') - (a.__nightMutant === 'ABOMINATION') ||
-        (b.elite ? 1 : 0) - (a.elite ? 1 : 0) ||
-        a.id - b.id
-    );
-    return pool.slice(0, max).includes(e);
+    const f = typeof time === 'number' ? time : 0;
+    if (f !== plateFrame) {
+      plateFrame = f;
+      let alive = 0;
+      const pool = [];
+      for (const x of E) {
+        if (!x || x.dead || x.boss) continue;
+        alive++;
+        if (x.__headline && x.x + x.w >= 0 && x.x <= W) pool.push(x);
+      }
+      pool.sort(
+        (a, b) =>
+          (b.__nightMutant === 'ABOMINATION') - (a.__nightMutant === 'ABOMINATION') ||
+          (b.elite ? 1 : 0) - (a.elite ? 1 : 0) ||
+          a.id - b.id
+      );
+      plateSet = new Set(pool.slice(0, alive >= 8 ? 1 : 2));
+    }
+    return plateSet.has(e);
   }
   function drawFunnyPlate(e) {
     if (!headlinerVisible(e)) return;
