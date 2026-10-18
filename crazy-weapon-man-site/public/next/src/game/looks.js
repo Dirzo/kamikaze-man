@@ -177,14 +177,14 @@ export function lookOf(w, frame = 0) {
         if (rnd() < 0.6) put(m[0], m[1] + 2, pack('grass'));
       }
     }
-  if ((c === 'Stolen' || c === 'Borrowed' || c === 'Discount') && (guard.length || handle.length)) {
+  if ((c === 'Stolen' || c === 'Borrowed' || c === 'Bargain') && (guard.length || handle.length)) {
     const gx = guard.length ? guard[guard.length >> 1][0] : handle[handle.length - 1][0];
     const gy = Math.max(...(guard.length ? guard : handle).map(p => p[1]));
     put(gx, gy + 1, pack('fog'));
     put(gx, gy + 2, pack('paper'));
     put(gx + 1, gy + 2, pack('paper'));
     put(gx, gy + 3, pack('paper'));
-    put(gx + 1, gy + 3, pack(c === 'Discount' ? 'red' : 'paper'));
+    put(gx + 1, gy + 3, pack(c === 'Bargain' ? 'red' : 'paper'));
   }
   if (adj === 'Bitey') for (const m of bottom) if ((m[0] + m[1]) % 2 === 0 && m[0] < tip[0]) put(m[0], m[1] + 1, pack('paper'));
   if (adj === 'Spiteful')

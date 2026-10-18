@@ -25,19 +25,19 @@ const BOSSES = {
     speed: 46
   },
   bossman: {
-    name: 'CRAZY BOSS MAN',
-    patterns: ['stomp', 'fan', 'summon:taxman'],
-    intro: ['YOU ARE LATE FOR YOUR REVIEW', 'LET US CIRCLE BACK ON YOUR FACE'],
-    phase: ['THIS IS GOING IN YOUR FILE', 'MANDATORY OVERTIME!'],
-    defeat: 'I... AM... DOWNSIZED',
+    name: 'OGRE KING GRUMBLEFOOT',
+    patterns: ['stomp', 'fan', 'summon:crawler'],
+    intro: ['WHO DARES WAKE THE KING', 'I HAVE EATEN BIGGER HEROES'],
+    phase: ['THAT WAS MY GOOD CROWN!', 'GUARDS! ...WHERE ARE MY GUARDS'],
+    defeat: 'NO... DESSERT... FOR ME',
     bolt: 'gold',
     speed: 30
   },
   bosssr: {
     name: 'CRAZY WEAPON MAN SR.',
     patterns: ['anvils', 'charge', 'strikes'],
-    intro: ['WHO TOUCHED MY THERMOSTAT', 'HI HUNGRY, I AM DAD'],
-    phase: ['DO NOT MAKE ME TURN THIS FORGE AROUND', 'BACK IN MY DAY WE HAD TWO WEAPONS'],
+    intro: ['WHO LEFT THE FORGE DOOR OPEN', 'HI HUNGRY, I AM DAD'],
+    phase: ['DO NOT MAKE ME TURN THIS FORGE AROUND', 'BACK IN MY DAY WE SHARED ONE SWORD'],
     defeat: 'GO ASK YOUR MOTHER',
     bolt: 'sky',
     speed: 40
@@ -52,11 +52,11 @@ const BOSSES = {
     speed: 28
   },
   bossceo: {
-    name: 'THE CEO',
+    name: 'THE USURPER KING',
     patterns: ['coins', 'charge', 'summon:shieldbro', 'slam'],
-    intro: ['YOUR POSITION HAS BEEN ELIMINATED', 'I OWN THESE STAIRS. AND YOU.'],
-    phase: ['GOLDEN PARACHUTE ENGAGED', 'HOSTILE TAKEOVER!'],
-    defeat: 'MY SHAREHOLDERS WILL HEAR OF THIS',
+    intro: ['BOW BEFORE YOUR NEW KING', 'I STOLE THIS CROWN FAIR AND SQUARE'],
+    phase: ['MORE GOLD! MORE GUARDS!', 'THE TREASURY FIGHTS FOR ME'],
+    defeat: 'THE CROWN... WAS ALWAYS... TOO TIGHT',
     bolt: 'gold',
     speed: 44
   },
@@ -64,7 +64,7 @@ const BOSSES = {
     name: 'THE SENTIENT ARMORY',
     patterns: ['swordrain', 'charge', 'fan', 'strikes'],
     intro: ['I AM EVERY WEAPON YOU DROPPED', 'YOU SOLD MY COUSIN FOR SHARDS'],
-    phase: ['THE INVENTORY IS FULL', 'I HAVE LEARNED YOUR BUILD'],
+    phase: ['THE RACKS ARE EMPTY. I AM THE RACKS.', 'I KNOW ALL YOUR MOVES'],
     defeat: 'EQUIP... ME...',
     bolt: 'violet',
     speed: 50
@@ -80,7 +80,7 @@ export function startBoss(kind) {
   const D = BOSSES[kind],
     art = A.bosses[kind],
     z = world.zone;
-  const hp = refHP(z) * 10;
+  const hp = refHP(z) * 14;
   done = false;
   outroT = 0;
   hazards.length = 0;
@@ -110,7 +110,7 @@ export function startBoss(kind) {
     phase: 1,
     queue: [],
     elite: true,
-    xp: 60 + z * 25,
+    xp: 40 + z * 20,
     anim: 0,
     bubble: null,
     dead: false

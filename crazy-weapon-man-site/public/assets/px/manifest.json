@@ -742,7 +742,8 @@
   "storm-forge": "bg-storm-forge.png",
   "witch-cottage": "bg-witch-cottage.png",
   "citadel": "bg-citadel.png",
-  "armory-vault": "bg-armory-vault.png"
+  "armory-vault": "bg-armory-vault.png",
+  "mushroom-hollow": "bg-mushroom-hollow.png"
  },
  "bosses": {
   "bossjr": {
@@ -1078,7 +1079,8 @@
   "storm-forge",
   "witch-cottage",
   "citadel",
-  "armory-vault"
+  "armory-vault",
+  "mushroom-hollow"
  ],
  "slabs": {
   "graveyard": {
@@ -1137,6 +1139,12 @@
   },
   "armory-vault": {
    "file": "slab-armory-vault.png",
+   "w": 27,
+   "h": 15,
+   "cap": 9
+  },
+  "mushroom-hollow": {
+   "file": "slab-mushroom-hollow.png",
    "w": 27,
    "h": 15,
    "cap": 9

@@ -258,7 +258,7 @@ const SCALES = {
 };
 const DRUMS = {
   march: 'K.h.S.h.K.hKS.h.',
-  disco: 'K.h.K.hSK.h.K.hS',
+  groove: 'K.h.K.hSK.h.K.hS',
   drive: 'K.hKS.hKK.hKS.hS',
   jig: 'K..hS..hK..hS.hh',
   slow: 'K.......S.....h.',

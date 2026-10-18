@@ -9,25 +9,25 @@ export const ZONES = [
   {
     id: 'graveyard',
     name: 'The Sword Graveyard',
-    sub: 'Prototype weapons stuck in old battlefields. Mind the apprentices.',
+    sub: 'A field of swords nobody came back for. Mind the bandits.',
     pool: ['stalker', 'crawler', 'goose', 'bombchicken'],
     platforms: L1,
     boss: null,
     music: { key: 52, scale: 'minor', bpm: 132, prog: [0, 5, 2, 6], drums: 'march' }
   },
   {
-    id: 'disco-crypt',
-    name: 'Disco Crypt of Compliance',
-    sub: 'Weapon testing moved underground after the noise complaints.',
+    id: 'mushroom-hollow',
+    name: 'Mushroom Hollow',
+    sub: 'The toadstools gossip. A few of them bite.',
     pool: ['crawler', 'wizard', 'shieldbro', 'blinker', 'bombchicken', 'goose'],
     platforms: L2,
     boss: null,
-    music: { key: 57, scale: 'dorian', bpm: 124, prog: [0, 3, 0, 4], drums: 'disco' }
+    music: { key: 57, scale: 'dorian', bpm: 124, prog: [0, 3, 0, 4], drums: 'groove' }
   },
   {
     id: 'volcano',
-    name: 'Tax Audit Volcano',
-    sub: 'Jr. is just beyond the crater. No safety scrolls were filed.',
+    name: 'The Cranky Volcano',
+    sub: 'Jr. is waiting past the crater. He brought the big sword.',
     pool: ['brute', 'roller', 'shieldbro', 'bombchicken', 'wizard'],
     platforms: L3,
     boss: 'bossjr',
@@ -36,7 +36,7 @@ export const ZONES = [
   {
     id: 'feast-hall',
     name: 'Bone Dragon Feast Hall',
-    sub: 'Every skeleton has a council summons. Most of them are hungry.',
+    sub: 'The skeletons have been eating for three hundred years. Still hungry.',
     pool: ['taxman', 'shieldbro', 'blinker', 'mimic', 'sniper', 'goose'],
     platforms: L4,
     boss: null,
@@ -45,7 +45,7 @@ export const ZONES = [
   {
     id: 'cathedral',
     name: 'Cathedral of Bad Ideas',
-    sub: 'Management calls it an alignment ritual. The architecture calls it a threat.',
+    sub: 'The bells ring backwards and the gargoyles judge your footwork.',
     pool: ['taxman', 'wizard', 'summoner', 'shieldbro', 'sniper', 'eyeball'],
     platforms: L1,
     boss: null,
@@ -54,7 +54,7 @@ export const ZONES = [
   {
     id: 'frozen-peaks',
     name: 'Frozen Meat Peaks',
-    sub: 'A frozen fortress, hostile and aggressively KPI-driven. Boss Man waits.',
+    sub: 'A frozen fortress on a mountain of ham. The Ogre King is hungry.',
     pool: ['taxman', 'sniper', 'roller', 'summoner', 'shieldbro', 'mimic'],
     platforms: L3,
     boss: 'bossman',
@@ -63,7 +63,7 @@ export const ZONES = [
   {
     id: 'storm-forge',
     name: "Dad's Storm Forge",
-    sub: 'Runaway anvils and Dad-level safety advice. Sr. is tuning something loud.',
+    sub: 'Runaway anvils and fatherly advice. Sr. is hammering something loud.',
     pool: ['brute', 'roller', 'bombchicken', 'mimic', 'shieldbro', 'sniper', 'stalker'],
     platforms: L2,
     boss: 'bosssr',
@@ -80,8 +80,8 @@ export const ZONES = [
   },
   {
     id: 'citadel',
-    name: 'The Hostile Takeover Citadel',
-    sub: 'Every floor is a performance review. The CEO owns the stairs.',
+    name: "The Usurper's Citadel",
+    sub: 'Someone stole the crown, the castle and most of the stairs.',
     pool: ['taxman', 'shieldbro', 'sniper', 'blinker', 'roller', 'eyeball'],
     platforms: L1,
     boss: 'bossceo',

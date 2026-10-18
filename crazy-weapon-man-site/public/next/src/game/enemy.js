@@ -7,7 +7,7 @@ import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy } from './physics.js';
 import { ENEMIES, ELITE_TITLES, LINES } from '../data/enemies.js';
-import { refHP, refDmg, ELITE_HP, ELITE_DMG } from '../data/curve.js';
+import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
 import { hurtHero, tickStatus, explode } from './combat.js';
 import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
@@ -22,7 +22,7 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
   const w = Math.max(8, Math.round((art.w - 2) * 0.72)),
     h = art.h - 2;
   const z = world.zone;
-  const hp = Math.round(refHP(z) * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)));
+  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)));
   const e = {
     id: newId(),
     type,
@@ -52,7 +52,7 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     flash: 0,
     spawnT: asleep || d.kind === 'mimic' ? 0 : 0.45,
     onGround: false,
-    xp: Math.round((3 + z * 2) * (elite ? 4 : 1)),
+    xp: Math.round((2 + z) * (elite ? 3 : 1)),
     cool: 0.6 + Math.random() * 0.8,
     honkT: 1 + Math.random() * 3,
     grumbleT: 8 + Math.random() * 6,
@@ -140,6 +140,21 @@ export function updateEnemy(e, dt) {
     say(e, pickLine(LINES.grumble), 2);
   }
 
+  // spread out: same-level enemies don't stand inside each other (keeps every monster readable)
+  if (!e.air && (e.state === 'idle' || e.state === 'recover')) {
+    for (const o of world.enemies) {
+      if (o === e || o.dead || o.air || o.boss || Math.abs(o.y - e.y) > 8) continue;
+      const d = cx(e) - cx(o),
+        min = (e.w + o.w) * 0.5 + 2;
+      if (Math.abs(d) < min) e.x += (Math.sign(d) || (e.id > o.id ? 1 : -1)) * Math.min(40, (min - Math.abs(d)) * 6) * dt;
+    }
+  }
+  // personal space: ground enemies don't stand inside the hero either
+  if (!e.air && e.state !== 'attack' && Math.abs(hero.y + hero.h - (e.y + e.h)) < 10) {
+    const d = cx(e) - cx(hero),
+      min = (e.w + hero.w) * 0.5 + 3;
+    if (Math.abs(d) < min) e.x += (Math.sign(d) || -hero.face) * Math.min(80, (min - Math.abs(d)) * 10) * dt;
+  }
   e.st -= dt;
   e.cool -= dt;
   switch (e.state) {
@@ -160,6 +175,16 @@ export function updateEnemy(e, dt) {
       break;
   }
   physics();
+}
+
+// leftover sleepers and hidden mimics come out on their own so a wave can always finish
+export function rouse(e) {
+  if (e.state === 'sleep') wakeUp(e);
+  else if (e.state === 'disguised') {
+    e.disguised = false;
+    e.state = 'idle';
+    say(e, pickLine(LINES.mimic), 1.6, true);
+  }
 }
 
 function wakeUp(e) {
@@ -189,7 +214,7 @@ function think(e, dt, dxh, dist, toward, slow) {
     case 'shield':
     case 'mimic':
       if (dist < d.range + 6 && sameLevel && e.cool <= 0) windup(e, d.wind);
-      else e.vx = toward * e.speed * slow * (dist < 14 ? 0 : 1);
+      else e.vx = toward * e.speed * slow * (dist < (e.w + hero.w) * 0.5 + 4 ? 0 : 1);
       if (e.kind === 'shield' && dist < 60) e.vx *= 0.6;
       break;
     case 'blink':
@@ -367,19 +392,13 @@ export function drawEnemy(e, t) {
   // elite marker: small gold chevron
   if (e.elite) {
     const mx = Math.round(cx(e)),
-      my = sy - 4;
+      my = sy - 15;
     rect(mx - 3, my - 1, 7, 4, C.ink);
     rect(mx - 2, my, 5, 1, C.gold);
     rect(mx - 1, my + 1, 3, 1, C.gold);
   }
-  // health bar once damaged (elites always)
-  if (e.hp < e.max || e.elite) {
-    const bw = Math.max(10, e.w),
-      bx = Math.round(cx(e) - bw / 2),
-      by = sy - (e.elite ? 8 : 4);
-    rect(bx - 1, by - 1, bw + 2, 4, C.ink);
-    rect(bx, by, Math.round((bw * Math.max(0, e.hp)) / e.max), 2, e.elite ? C.gold : C.red);
-  }
+  // health bar once damaged (elites always): outlined, with a lagging "damage taken" segment
+  if (e.hp < e.max || e.elite) healthBar(e, sy, t);
   // wind-up tell: blinking "!"
   if (e.state === 'wind') {
     const p = 1 - e.st / (e.d.wind || 0.5);
@@ -398,6 +417,19 @@ export function drawEnemy(e, t) {
       text('z', Math.round(e.x + e.w * 0.7 + p * 10 + i * 2), Math.round(e.y - 4 - p * 18), C.mist, { k: i === 2 ? 2 : 1 });
     }
   }
+}
+
+export function healthBar(e, sy, t) {
+  const bw = Math.max(16, Math.min(34, e.w + 6)),
+    bx = Math.round(cx(e) - bw / 2),
+    by = sy - (e.elite ? 10 : 6);
+  const frac = Math.max(0, e.hp) / e.max;
+  e.hpShown = e.hpShown == null ? frac : Math.max(frac, e.hpShown - 0.012);
+  rect(bx - 1, by - 1, bw + 2, 5, C.ink);
+  rect(bx, by, bw, 3, C.wine);
+  rect(bx, by, Math.round(bw * e.hpShown), 3, C.cream);
+  rect(bx, by, Math.round(bw * frac), 3, e.elite ? C.orange : C.red);
+  rect(bx, by, Math.round(bw * frac), 1, e.elite ? C.gold : C.coral);
 }
 
 function aimLine(e, t) {

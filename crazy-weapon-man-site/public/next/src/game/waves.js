@@ -3,7 +3,7 @@ import { W, GROUND } from '../config.js';
 import { world } from './world.js';
 import { ZONES, WAVES_PER_ZONE, bossSong } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
-import { spawnEnemy } from './enemy.js';
+import { spawnEnemy, rouse } from './enemy.js';
 import { callout } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
 import { C } from '../config.js';
@@ -88,6 +88,12 @@ export function updateWaves(dt) {
       if (D.toSpawn > 0 && D.spawnT <= 0 && alive < D.maxAlive) {
         spawnOne();
         D.spawnT = rand(0.7, 1.3);
+      }
+      // nothing left but sleepers/mimics (or a long lull): they wake up and come to you
+      if (D.toSpawn <= 0 && alive > 0) {
+        const hidden = world.enemies.filter(e => !e.dead && (e.state === 'sleep' || e.state === 'disguised'));
+        D.lull = hidden.length === alive ? (D.lull || 0) + dt : 0;
+        if (D.lull > 2.5) for (const e of hidden) rouse(e);
       }
       if (D.toSpawn <= 0 && alive === 0) {
         D.phase = 'clear';

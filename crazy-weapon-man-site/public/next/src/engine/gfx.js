@@ -11,7 +11,7 @@ X.imageSmoothingEnabled = false;
 
 // Integer CSS scaling to fit the window.
 function fit() {
-  const k = Math.max(1, Math.floor(Math.min(innerWidth / W, innerHeight / H)));
+  const k = Math.max(1, Math.floor(Math.min(innerWidth / W, (innerHeight - 46) / H))); // room for the button bar
   canvas.style.width = W * k + 'px';
   canvas.style.height = H * k + 'px';
 }

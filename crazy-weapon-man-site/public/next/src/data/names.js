@@ -2,11 +2,11 @@
 // and the words it used (the "look"), which looks.js turns into palette, details and particles.
 //   q0-1  "Rusty Sword" / "Rusty Blazing Sword"         <= 22
 //   q2-3  "Haunted Katana of Mild Peril"                 <= 30
-//   q4-5  "Starfire Royal Hammer of Unpaid Fines"        <= 36
-//   q6-7  "Bonkreaver, Bane of Landlords"                <= 38  named relics
-//   q8-9  "Honkmourn IX, Who Audits the Gods"            <= 40
+//   q4-5  "Starfire Royal Hammer of Endless Soup"        <= 36
+//   q6-7  "Bonkreaver, Bane of Goblins"                  <= 38  named relics
+//   q8-9  "Honkmourn IX, Who Pokes the Gods"             <= 40
 //   q10   "THE GOOSE (A SWORD)"
-// Standouts are named two tiers grander (min tier 4).
+// Standouts are named one tier grander (capped by the zone's ceiling).
 import { ELEMENTS } from './weapons.js';
 
 export const BASE = {
@@ -20,22 +20,22 @@ export const BASE = {
   staff: ['Staff', 'Stave', 'Scepter', 'Walking Stick'],
   hammer: ['Hammer', 'Maul', 'Mallet', 'Bonker']
 };
-const COND = ['Rusty', 'Chipped', 'Borrowed', 'Damp', 'Dented', 'Wobbly', 'Pointy', 'Used', 'Stolen', 'Bent', 'Discount', 'Loose',
+const COND = ['Rusty', 'Chipped', 'Borrowed', 'Damp', 'Dented', 'Wobbly', 'Pointy', 'Used', 'Stolen', 'Bent', 'Bargain', 'Loose',
   'Sticky', 'Musty', 'Plain', 'Spare', 'Sad', 'Cracked'];
 const ADJ = ['Haunted', 'Grumpy', 'Cursed', 'Sneaky', 'Spiteful', 'Shiny', 'Feral', 'Smug', 'Jittery', 'Honking', 'Moody', 'Bitey',
   'Rowdy', 'Gloomy', 'Brave-ish', 'Forbidden', 'Suspicious', 'Overbrewed'];
-const OF = ['Mild Peril', 'Regret', 'Bees', 'Soup', 'Taxes', 'Bad Ideas', 'Paperwork', 'Tuesdays', 'the Goose', 'Second Thoughts',
-  'Loud Noises', 'Questionable Ethics', 'Late Fees', 'Poor Choices', 'Minor Doom', 'Snacks'];
+const OF = ['Mild Peril', 'Regret', 'Bees', 'Soup', 'Turnips', 'Bad Ideas', 'Wet Socks', 'Tuesdays', 'the Goose', 'Second Thoughts',
+  'Loud Noises', 'Questionable Ethics', 'Mild Curses', 'Poor Choices', 'Minor Doom', 'Snacks'];
 const GRAND = ['Royal', 'Ancient', 'Eldritch', 'Dread', 'Sacred', 'Infernal', 'Celestial', 'Unholy', 'Mighty'];
-const OF_GRAND = ['Unpaid Fines', 'the Last Goose', 'Endless Audits', 'a Thousand Bonks', 'Total Overkill', 'the Angry Moon',
-  'Doom, Mostly', 'Unspeakable Snacks', 'the Ninth Invoice', 'Very Loud Thunder'];
+const OF_GRAND = ['a Thousand Grudges', 'the Last Goose', 'Endless Soup', 'a Thousand Bonks', 'Total Overkill', 'the Angry Moon',
+  'Doom, Mostly', 'Unspeakable Snacks', 'the Ninth Moon', 'Very Loud Thunder'];
 const SYL_A = ['Grim', 'Bonk', 'Honk', 'Mor', 'Skal', 'Vex', 'Thun', 'Gor', 'Brin', 'Krag', 'Zul', 'Dread', 'Snor', 'Glum'];
 const SYL_B = ['brand', 'reaver', 'fang', 'mourn', 'bane', 'gash', 'dor', 'wick', 'thorn', 'rend', 'grin', 'hammer'];
-const EPITHET = ['Bane of Landlords', 'Eater of Lunches', 'Who Honks at Kings', 'the Unreasonable', 'Scourge of Paperwork',
-  'Breaker of Shins', 'the Very Loud', 'Doom of Small Goblins', 'Friend to No One', 'the Last Excuse', 'Who Audits the Gods',
-  'the Ill-Advised', 'Ender of Brunch', 'Terror of Geese'];
+const EPITHET = ['Bane of Goblins', 'Eater of Lunches', 'Who Honks at Kings', 'the Unreasonable', 'Scourge of Snails',
+  'Breaker of Shins', 'the Very Loud', 'Doom of Small Goblins', 'Friend to No One', 'the Last Excuse', 'Who Pokes the Gods',
+  'the Ill-Advised', 'Ender of Feasts', 'Terror of Geese'];
 const ROMAN = ['II', 'III', 'IV', 'VII', 'IX', 'XII', 'XL', 'MMX'];
-const WHAT = ['THE GOOSE', 'IT', 'A SWORD?', 'THE LAST INVOICE', 'BONK', 'MOM', 'THE GOOD ONE', 'NO', 'THE ENDING', 'A DOOR',
+const WHAT = ['THE GOOSE', 'IT', 'A SWORD?', 'THE LAST SPOON', 'BONK', 'MOM', 'THE GOOD ONE', 'NO', 'THE ENDING', 'A DOOR',
   'UNCLE', 'THE MOON, BUT SHARP'];
 
 const pick = (a, r) => a[Math.floor(r() * a.length)];
@@ -87,8 +87,8 @@ function build(type, q, base, family, r) {
 }
 
 // r: random function (0..1). Returns { name, look }.
-export function nameWeapon(type, q, family, standout, r = Math.random) {
-  const tier = standout ? Math.min(10, Math.max(q + 2, 4)) : q;
+export function nameWeapon(type, q, family, standout, r = Math.random, cap = 10) {
+  const tier = standout ? Math.min(cap, q + 1) : q;
   let last = null;
   for (let i = 0; i < 14; i++) {
     const [nm, max, look] = build(type, tier, pick(BASE[type], r), family, r);
