@@ -33,9 +33,10 @@
     applyMap(zoneI);
     return Z[zoneI].name;
   };
-  PX.previewWeapon = (type, rank = 0) => {
+  PX.previewWeapon = (type, rank = 0, trait = '') => {
     const w = makeExactRankWeapon(pl.lv, rank);
     w.type = type;
+    if (trait) w.traits = [...(w.traits || []), TRAITS.find(t => t.code === trait)].filter(Boolean);
     pl.weapon = w;
     return w.rar + ' ' + type;
   };

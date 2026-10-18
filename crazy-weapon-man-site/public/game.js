@@ -12551,28 +12551,45 @@ function drawWeaponWorldFX() {
     X.restore();
   }
   if (hasTrait(w, 'dark')) {
+    // Night falls around the hero: a wide pocket of light, two stepped rings of darkness that
+    // never go fully black, and glowing eyes on anything lurking out in the dark.
     X.save();
     let gx = pl.x + pl.w / 2,
       gy = pl.y + pl.h / 2,
-      gr = X.createRadialGradient(gx, gy, 55, gx, gy, 270);
-    gr.addColorStop(0, 'rgba(0,0,0,0)');
-    gr.addColorStop(0.42, 'rgba(5,2,12,.18)');
-    gr.addColorStop(0.72, 'rgba(2,0,8,.72)');
-    gr.addColorStop(1, 'rgba(0,0,0,.96)');
-    X.fillStyle = gr;
-    X.fillRect(0, 0, W, H);
-    X.globalAlpha = 0.72;
-    X.strokeStyle = '#6e50ff';
-    X.shadowBlur = 12;
-    X.shadowColor = '#4c32d9';
-    X.lineWidth = 2;
-    for (let i = 0; i < 6; i++) {
-      let a = time * 0.45 + (i * Math.PI) / 3;
+      inner = 250 + Math.sin(time * 2) * 8,
+      outer = 420;
+    X.fillStyle = '#1a1428';
+    X.globalAlpha = 0.35;
+    X.beginPath();
+    X.rect(0, 0, W, H);
+    X.arc(gx, gy, inner, 0, Math.PI * 2, true);
+    X.fill('evenodd');
+    X.globalAlpha = 0.3;
+    X.beginPath();
+    X.rect(0, 0, W, H);
+    X.arc(gx, gy, outer, 0, Math.PI * 2, true);
+    X.fill('evenodd');
+    X.globalAlpha = 0.85;
+    X.strokeStyle = '#7a4bc2';
+    X.lineWidth = 3;
+    for (let i = 0; i < 3; i++) {
+      let a = time * 0.45 + (i * Math.PI * 2) / 3;
       X.beginPath();
-      X.arc(gx, gy, 105 + i * 10, a, a + 1.1);
+      X.arc(gx, gy, inner, a, a + 0.7);
       X.stroke();
     }
-    X.shadowBlur = 0;
+    X.globalAlpha = 1;
+    for (const e of E) {
+      if (e.dead || e.state === 'spawn') continue;
+      let ex = e.x + e.w / 2,
+        ey = e.y + e.h * 0.28;
+      if (Math.hypot(ex - gx, ey - gy) < inner) continue;
+      let blink = Math.sin(time * 3 + (e.anim || 0) * 7) > -0.92;
+      if (!blink) continue;
+      X.fillStyle = e.boss ? '#c4363e' : '#ffc15a';
+      X.fillRect(ex - 8, ey, 5, 4);
+      X.fillRect(ex + 3, ey, 5, 4);
+    }
     X.restore();
   }
   if (hasTrait(w, 'speedy') && Math.abs(pl.vx) > 80) {
@@ -22617,9 +22634,10 @@ function render() {
     applyMap(zoneI);
     return Z[zoneI].name;
   };
-  PX.previewWeapon = (type, rank = 0) => {
+  PX.previewWeapon = (type, rank = 0, trait = '') => {
     const w = makeExactRankWeapon(pl.lv, rank);
     w.type = type;
+    if (trait) w.traits = [...(w.traits || []), TRAITS.find(t => t.code === trait)].filter(Boolean);
     pl.weapon = w;
     return w.rar + ' ' + type;
   };
