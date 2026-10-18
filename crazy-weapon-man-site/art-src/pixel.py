@@ -73,33 +73,34 @@ def scale(im, k):
 
 # ---- Characters -----------------------------------------------------------------
 HERO_KEY = {'L': 'gold', 'H': 'orange', 'h': 'rust', 'r': 'red', 'R': 'wine', 's': 'skin', 'd': 'skinM',
-            'D': 'skinD', 'e': 'ink', 'E': 'paper', 'm': 'wine', 'w': 'paper', 'g': 'mist', 'b': 'wood',
-            'B': 'gold', 'p': 'slate', 'q': 'night', 'k': 'night', 'K': 'stone'}
-# Crazy Weapon Man: wild orange spikes, red headband, white tee, navy trousers. Facing right.
+            'D': 'skinD', 'e': 'ink', 'E': 'paper', 'm': 'wine', 'k': 'night', 'K': 'slate', 'b': 'wood',
+            'B': 'woodD', 'g': 'mist', 'G': 'fog', 'p': 'slate', 'q': 'night', 'x': 'stone'}
+# Crazy Weapon Man: swept-back orange spikes, red headband, heavy angry brow, scar, flat scowl,
+# dark tank with a weapon strap, wrapped forearms, red sash. Facing right.
 HERO = [
-    '...L..L...L....',
-    '..LH.LHH.LHL...',
-    '.LHHLHHHLHHHL..',
-    '.HHHHHHHHHHHHL.',
-    'hHHHHHHHHHHHHH.',
-    'hhrrrrrrrrrrrH.',
-    'hRRRRRRRRRRRrh.',
-    'hhsssssssssssh.',
-    'hhsdssssEeseEe.',
-    '.hsdssssEeseEe.',
-    '.hsdssssssssss.',
-    '..sddssssmEEEm.',
-    '...dddsssmmmd..',
-    '....bwwwwwwd...',
-    '...gwwwwwwwwd..',
-    '..sgwwwwwwwwss.',
-    '..sggwwwwwwgss.',
-    '...gggwwwwgg...',
-    '....bbbBbbbb...',
+    'L...L...L......',
+    'HL..HL..HHL....',
+    'HHHLHHHLHHHL...',
+    'hHHHHHHHHHHHHL.',
+    'hhHHHHHHHHHHHH.',
+    'hhrrrrrrrrrrrr.',
+    'hRRRRRRRRRRRRR.',
+    'hhsssssseesseee',
+    'hhssssssEeeseEe',
+    '.hsdDsssssssss.',
+    '.hsdsDsssssssd.',
+    '..sdsssssssssd.',
+    '...ddssseeeee..',
+    '....dddddddd...',
+    '...kkkkbkkkK...',
+    '..skkkkkbkkKss.',
+    '..gKkkkkkbkKgg.',
+    '..gGKkkkkkbKgG.',
+    '....rrRrrrrR...',
     '....pppqpppq...',
     '....ppq..ppq...',
     '....ppq..ppq...',
-    '...kkKk..kkKk..',
+    '...BbbB..BbbB..',
 ]
 
 CHICKEN_KEY = {'r': 'red', 'S': 'gold', 'x': 'mist', 'w': 'paper', 'g': 'mist', 'G': 'fog', 'c': 'red', 'C': 'wine', 'y': 'gold', 'Y': 'orange',
@@ -125,29 +126,25 @@ CHICKEN = [
     '......yy.yy....',
 ]
 
-INTERN_KEY = {'s': 'skin', 'd': 'skinM', 'D': 'skinD', 'a': 'woodD', 'A': 'wood', 'e': 'ink', 'E': 'paper',
-              'c': 'teal', 'C': 'pine', 'l': 'lime', 't': 'navy', 'T': 'blue', 'p': 'slate', 'q': 'night',
-              'k': 'night', 'K': 'stone', 'm': 'skinD', 'x': 'mist', 'X': 'fog'}
-# Prototype Sword Intern: lanyard, oversized hoodie, a sword taped to a broom. Faces left.
-INTERN = [
-    '....aaaaaa....',
-    '...aAAAAAAa...',
-    '..aAAAAAAAAa..',
-    '..aaAAAAAaaa..',
-    '..eEsseEsssa..',
-    '..eEsseEssda..',
-    '..ssssssssda..',
-    '...smmmssdd...',
-    '....ddddddd...',
-    '...ccccccccC..',
-    '..cccclccccCC.',
-    '.sccccTlccccCs',
-    '.sCcccTcccccCs',
-    '..CCcccccccCC.',
-    '...CCccccCCC..',
-    '....pppqpqq...',
-    '....ppq..pq...',
-    '...kkK...kkK..',
+GREMLIN_KEY = {'g': 'grass', 'G': 'leaf', 'h': 'pine', 'l': 'lime', 'e': 'red', 'E': 'coral', 't': 'paper',
+               'm': 'ink', 'y': 'gold', 'Y': 'orange', 'b': 'woodD', 'B': 'wood'}
+# Loose Ammo Gremlin: bat ears, red eyes, needle teeth, hugging a brass shell. Faces left.
+GREMLIN = [
+    'G..........G..',
+    'gG........Gg..',
+    'ggGhhhhhhGgg..',
+    '.gggggggggggh.',
+    '.gEegggEegggh.',
+    '.ggeggggegggh.',
+    '.gmtmtmtmgggh.',
+    '..gmmmmmmggh..',
+    '...hgggggh....',
+    '..ggYyyyyGgg..',
+    '.gg.Yyyyy.Ggh.',
+    '...lYyyyylh...',
+    '...lllllllh...',
+    '....hh..hh....',
+    '...hhh..hhh...',
 ]
 
 # ---- Loot gem (rarity colour swapped at runtime) -----------------------------------

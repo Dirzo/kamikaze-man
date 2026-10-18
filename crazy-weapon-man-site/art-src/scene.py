@@ -1,6 +1,6 @@
 """Builds the phase-2 style sheet for approval:
 
-  docs/style-sheet/mock-frame.png   a 480x270 in-game frame (zone 1) scaled 4x to 1920x1080
+  docs/style-sheet/mock-frame.png   a 480x270 in-game frame (zone 1 proposal) scaled 4x to 1920x1080
   docs/style-sheet/style-sheet.png  palette, sprites, tiles, font and HUD on one page
 
 Run: python3 crazy-weapon-man-site/art-src/scene.py
@@ -8,7 +8,7 @@ Run: python3 crazy-weapon-man-site/art-src/scene.py
 import os
 import random
 from PIL import Image, ImageDraw
-from pixel import PAL, RGB, sprite, outlined, flip, scale, HERO, HERO_KEY, CHICKEN, CHICKEN_KEY, INTERN, INTERN_KEY, \
+from pixel import PAL, RGB, sprite, outlined, flip, scale, HERO, HERO_KEY, CHICKEN, CHICKEN_KEY, GREMLIN, GREMLIN_KEY, \
     GEM, GEM_KEY, SWORD, SWORD_KEY
 from font import draw_text, text_width
 
@@ -37,54 +37,155 @@ def dither_band(img, y0, y1, top, bottom):
 
 
 # ---- Tiles --------------------------------------------------------------------------
-def tile_asphalt_top(line=False):
-    t = Image.new('RGBA', (16, 16), c('slate'))
+def tile_grass_top(sword=False):
+    """Grass lip over dark earth with stones (ref 05). Blades poke 2px above the tile."""
+    t = Image.new('RGBA', (16, 18), (0, 0, 0, 0))
     px = t.load()
+    for y in range(2, 18):
+        for x in range(16):
+            px[x, y] = c('night')
     for x in range(16):
-        px[x, 0] = c('paper')
-        px[x, 1] = c('mist')
-        px[x, 2] = c('fog')
-        px[x, 3] = c('stone')
-        px[x, 4] = c('ink')
-    for _ in range(9):
-        px[rnd.randrange(16), rnd.randrange(6, 16)] = c('stone')
-    for _ in range(4):
-        px[rnd.randrange(16), rnd.randrange(6, 16)] = c('night')
-    if line:
-        for y in range(5, 16):
-            for x in (6, 7, 8):
-                px[x, y] = c('gold' if x < 8 else 'orange')
+        px[x, 2] = c('lime')
+        px[x, 3] = c('grass')
+        px[x, 4] = c('grass' if x % 5 else 'leaf')
+        px[x, 5] = c('leaf')
+        if x % 3 != 1:
+            px[x, 6] = c('pine')
+    for x in (1, 6, 11, 14):
+        px[x, 1] = c('lime')
+        if x % 2:
+            px[x, 0] = c('lime')
+    for _ in range(3):
+        sx, sy = rnd.randrange(1, 14), rnd.randrange(9, 16)
+        px[sx, sy] = c('stone')
+        px[sx + 1, sy] = c('slate')
+    for _ in range(5):
+        px[rnd.randrange(16), rnd.randrange(8, 18)] = c('woodD')
     return t
 
 
-def tile_asphalt():
-    t = Image.new('RGBA', (16, 16), c('slate'))
+def tile_earth():
+    t = Image.new('RGBA', (16, 16), c('night'))
     px = t.load()
-    for _ in range(10):
-        px[rnd.randrange(16), rnd.randrange(16)] = c('stone')
+    for _ in range(4):
+        sx, sy = rnd.randrange(15), rnd.randrange(16)
+        px[sx, sy] = c('slate')
+        px[sx + 1, sy] = c('ink')
     for _ in range(6):
-        px[rnd.randrange(16), rnd.randrange(16)] = c('night')
+        px[rnd.randrange(16), rnd.randrange(16)] = c('woodD')
     return t
 
 
 def platform(w):
-    """Floating concrete slab with hazard-striped ends, 8px tall, outlined."""
-    p = Image.new('RGBA', (w, 7), c('fog'))
+    """Floating ruin slab: mossy top, cut stone blocks, hanging vines."""
+    h = 9
+    p = Image.new('RGBA', (w, h + 4), (0, 0, 0, 0))
     px = p.load()
+    for y in range(2, h):
+        for x in range(w):
+            px[x, y] = c('fog' if y < 5 else 'stone')
     for x in range(w):
-        px[x, 0] = c('paper')
-        px[x, 1] = c('mist')
-        px[x, 5] = c('stone')
-        px[x, 6] = c('stone')
-        if x % 7 == 3:
-            px[x, 3] = c('stone')
-    for x in list(range(0, 8)) + list(range(w - 8, w)):
-        for y in range(2, 5):
-            px[x, y] = c('gold' if (x + y) // 2 % 2 else 'ink')
+        px[x, 0] = c('lime') if x % 4 else c('grass')
+        px[x, 1] = c('grass') if x % 3 else c('leaf')
+        px[x, h - 1] = c('slate')
+    for x in range(0, w, 8):
+        for y in range(2, h - 1):
+            px[x, y] = c('slate')
+    for x in range(4, w, 8):
+        px[x, 5] = c('slate')
+    for vx in range(3, w - 2, 11):
+        for vy in range(h, h + 2 + vx % 3):
+            px[vx, vy] = c('leaf')
     return outlined(p)
 
 
-# ---- Background (zone 1: Municipal Sword Parking Lot, dusk) ---------------------------------
+# ---- Background (zone 1 proposal: the Sword Graveyard at dusk) ---------------------------------
+def poly(img, pts, col):
+    ImageDraw.Draw(img).polygon(pts, fill=c(col))
+
+
+def ridge(img, base, amp, step, col, seed, rim=None):
+    r = random.Random(seed)
+    pts, x, y = [(0, GROUND)], 0, base
+    while x <= W + step:
+        y = base - r.randrange(0, amp)
+        pts.append((x, y))
+        x += step + r.randrange(-step // 3, step // 3 + 1)
+    pts.append((W, GROUND))
+    poly(img, pts, col)
+    if rim:  # 1px rim light on the left-facing slopes
+        px = img.load()
+        for i in range(1, len(pts) - 2):
+            (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+            if y1 < y0:
+                continue
+            for xx in range(int(x0), int(x1)):
+                yy = int(y0 + (y1 - y0) * (xx - x0) / max(1, x1 - x0))
+                if 0 <= xx < W and 0 <= yy < H:
+                    px[xx, yy] = c(rim)
+
+
+def big_sword(img, x, tip_y, length, lean=0):
+    """Giant sword buried point-down: 9px blade with fuller, crossguard, grip, pommel."""
+    px = img.load()
+    for i in range(length):
+        y = tip_y - i
+        half = min(4, 1 + i // 3)  # tapered tip at the bottom
+        for dx in range(-half, half + 1):
+            xx = x + dx
+            if 0 <= xx < W and 0 <= y < H:
+                col = 'ink' if abs(dx) == half else ('mist' if dx == -half + 1 else ('stone' if dx == 0 else 'fog'))
+                px[xx, y] = c(col)
+    top = tip_y - length
+    rect(img, x - 12, top - 4, 25, 5, 'ink')
+    rect(img, x - 11, top - 3, 23, 3, 'gold')
+    rect(img, x - 11, top - 1, 23, 1, 'orange')
+    rect(img, x - 2, top - 17, 5, 13, 'ink')
+    rect(img, x - 1, top - 16, 3, 12, 'wood')
+    for gy in range(top - 15, top - 4, 3):
+        rect(img, x - 1, gy, 3, 1, 'woodD')
+    rect(img, x - 3, top - 22, 7, 6, 'ink')
+    rect(img, x - 2, top - 21, 5, 4, 'red')
+    img.putpixel((x - 1, top - 20), c('coral'))
+
+
+def brazier(img, x):
+    rect(img, x - 1, GROUND - 22, 3, 22, 'night')
+    rect(img, x - 6, GROUND - 25, 13, 4, 'stone')
+    rect(img, x - 5, GROUND - 21, 11, 1, 'slate')
+    flame = ['..y....', '.yoy.y.', '.yoooy.', 'yoorooy', '.orrro.']
+    for fy, row in enumerate(flame):
+        for fx, ch in enumerate(row):
+            if ch != '.':
+                img.putpixel((x - 3 + fx, GROUND - 30 + fy), c({'y': 'gold', 'o': 'orange', 'r': 'red'}[ch]))
+    for _ in range(14):
+        a, d = rnd.uniform(0, 6.28), rnd.randrange(8, 22)
+        import math
+        xx, yy = int(x + d * math.cos(a)), int(GROUND - 26 + d * math.sin(a) * .7)
+        if 0 <= xx < W and yy < GROUND:
+            img.putpixel((xx, yy), c('cream' if d < 14 else 'gold'))
+
+
+def crystals(img, x):
+    for dx, h in ((0, 9), (3, 13), (6, 7)):
+        for i in range(h):
+            for w_ in range(3 - (i * 3 // h)):
+                xx = x + dx + w_
+                img.putpixel((xx, GROUND - 1 - i), c('teal' if w_ else 'ice'))
+
+
+def ruin_arch(img, x):
+    for px_ in (x, x + 34):
+        rect(img, px_, GROUND - 46, 9, 46, 'slate')
+        for y in range(GROUND - 46, GROUND, 6):
+            rect(img, px_, y, 9, 1, 'night')
+        rect(img, px_ + 1, GROUND - 46, 2, 46, 'stone')
+    rect(img, x - 2, GROUND - 52, 26, 7, 'slate')
+    rect(img, x - 2, GROUND - 52, 26, 1, 'stone')
+    rect(img, x, GROUND - 47, 4, 3, 'leaf')
+    rect(img, x + 30, GROUND - 47, 13, 2, 'leaf')
+
+
 def background():
     bg = Image.new('RGBA', (W, H), c('indigo'))
     bands = [(0, 'indigo'), (46, 'violet'), (88, 'pink'), (118, 'coral'), (140, 'orange'), (156, 'gold')]
@@ -92,73 +193,54 @@ def background():
         y1 = bands[i + 1][0] if i + 1 < len(bands) else GROUND
         dither_band(bg, y0, y1, col, bands[i + 1][1] if i + 1 < len(bands) else col)
     d = ImageDraw.Draw(bg)
-    # sun
-    d.ellipse([300, 120, 372, 192], fill=c('cream'))
-    d.ellipse([306, 126, 366, 186], fill=c('paper'))
-    # stars
     for _ in range(26):
         x, y = rnd.randrange(W), rnd.randrange(0, 60)
         bg.putpixel((x, y), c('mist' if rnd.random() < .7 else 'paper'))
-    # flat clouds (two tones, hard edges)
-    for cx, cy, cw in ((40, 62, 70), (190, 74, 54), (330, 56, 90), (420, 92, 44), (110, 104, 50)):
+    for cx, cy, cw in ((40, 62, 70), (190, 74, 54), (330, 56, 90), (110, 104, 50)):
         top, low = ('pink', 'violet') if cy < 88 else ('cream', 'coral')
         rect(bg, cx, cy, cw, 4, top)
         rect(bg, cx + 6, cy - 3, cw - 20, 3, top)
         rect(bg, cx + 14, cy - 5, cw // 3, 2, top)
         rect(bg, cx + 4, cy + 4, cw - 6, 2, low)
-    # far skyline
-    x = -4
-    while x < W:
-        bw, bh = rnd.randrange(18, 40), rnd.randrange(30, 78)
-        top = 176 - bh
-        rect(bg, x, top, bw, GROUND - top, 'night')
-        if rnd.random() < .4:
-            rect(bg, x + bw // 2 - 1, top - 8, 2, 8, 'night')
-        for wy in range(top + 4, 172, 6):
-            for wx in range(x + 3, x + bw - 3, 5):
-                if rnd.random() < .22:
-                    rect(bg, wx, wy, 2, 3, 'gold' if rnd.random() < .8 else 'cream')
-        x += bw + rnd.randrange(1, 6)
-    # near skyline band
-    x = -10
-    while x < W:
-        bw, bh = rnd.randrange(24, 54), rnd.randrange(14, 36)
-        rect(bg, x, 186 - bh, bw, GROUND - (186 - bh), 'ink')
-        x += bw + rnd.randrange(0, 10)
-    # chain-link fence along the lot
-    for fx in range(0, W, 2):
-        for fy in range(184, GROUND):
-            if (fx + fy) % 6 == 0:
-                bg.putpixel((fx, fy), c('stone'))
-    for fx in range(0, W, 40):
-        rect(bg, fx, 180, 2, GROUND - 180, 'slate')
-    rect(bg, 0, 180, W, 1, 'slate')
-    # lamp posts with warm light pools
-    for lx in (60, 252, 436):
-        rect(bg, lx, 128, 3, GROUND - 128, 'night')
-        rect(bg, lx - 6, 126, 12, 3, 'night')
-        rect(bg, lx - 5, 129, 10, 2, 'gold')
-        for y in range(131, GROUND):
-            half = (y - 131) // 3 + 4
-            for x in range(lx + 1 - half, lx + 2 + half):
-                if 0 <= x < W and x % 4 == (y // 2) % 4 and y % 2 == 0:
-                    bg.putpixel((x, y), c('cream', 255))
-    # parking sign
-    rect(bg, 132, 150, 2, GROUND - 150, 'stone')
-    sign = Image.new('RGBA', (14, 14), c('blue'))
-    draw_text(sign, 4, 3, 'P', 'paper', shadow=False)
-    bg.alpha_composite(outlined(sign), (125, 138))
+    d.ellipse([290, 118, 362, 190], fill=c('cream'))
+    d.ellipse([296, 124, 356, 184], fill=c('paper'))
+    # floating island with a ruined tower (far right)
+    poly(bg, [(392, 74), (452, 74), (444, 84), (430, 96), (418, 100), (404, 90)], 'night')
+    rect(bg, 392, 72, 61, 2, 'leaf')
+    rect(bg, 412, 44, 14, 30, 'night')
+    rect(bg, 410, 40, 18, 5, 'night')
+    for tx in (410, 416, 422):
+        rect(bg, tx, 36, 3, 4, 'night')
+    rect(bg, 411, 45, 1, 28, 'stone')
+    rect(bg, 417, 54, 3, 4, 'gold')
+    # mountain ranges: far (violet), mid (night, rim lit), near hills (ink)
+    ridge(bg, 160, 34, 26, 'violet', 3)
+    ridge(bg, 180, 28, 22, 'night', 11, rim='stone')
+    big_sword(bg, 92, GROUND - 14, 74)
+    big_sword(bg, 372, GROUND - 18, 60)
+    ridge(bg, 190, 14, 30, 'ink', 21)
+    ruin_arch(bg, 214)
+    brazier(bg, 52)
+    brazier(bg, 448)
+    crystals(bg, 300)
+    crystals(bg, 140)
+    # small swords stuck in the field
+    for sx, sh, lean in ((178, 14, 1), (262, 11, -1), (412, 16, 2)):
+        for i in range(sh):
+            xx = sx + lean * i // sh
+            bg.putpixel((xx, GROUND - 1 - i), c('mist'))
+            bg.putpixel((xx + 1, GROUND - 1 - i), c('fog'))
+        rect(bg, sx + lean - 2, GROUND - sh - 1, 6, 1, 'gold')
+        rect(bg, sx + lean, GROUND - sh - 4, 2, 3, 'wood')
     return bg
 
 
 def ground(img):
-    x = 0
-    while x < W:
-        img.alpha_composite(tile_asphalt_top(line=(x // 16) % 5 == 2), (x, GROUND))
-        x += 16
+    for x in range(0, W, 16):
+        img.alpha_composite(tile_grass_top(), (x, GROUND - 2))
     for y in range(GROUND + 16, H, 16):
         for x in range(0, W, 16):
-            img.alpha_composite(tile_asphalt(), (x, y))
+            img.alpha_composite(tile_earth(), (x, y))
 
 
 # ---- HUD ------------------------------------------------------------------------------
@@ -261,7 +343,7 @@ def mock_frame():
 
     hero = outlined(sprite(HERO, HERO_KEY))
     chicken = outlined(sprite(CHICKEN, CHICKEN_KEY))
-    intern = outlined(sprite(INTERN, INTERN_KEY))
+    gremlin = outlined(sprite(GREMLIN, GREMLIN_KEY))
     sword = outlined(sprite(SWORD, SWORD_KEY))
     gem = outlined(sprite(GEM, GEM_KEY))
 
@@ -271,12 +353,12 @@ def mock_frame():
     slash(img, hx + 22, GROUND - 13)
     img.alpha_composite(chicken, (hx + 34, GROUND - chicken.height + 1))
     img.alpha_composite(chicken, (300, GROUND - chicken.height + 1))
-    img.alpha_composite(intern, (330, GROUND - intern.height + 1))
-    img.alpha_composite(intern, (395, 140 - intern.height + 1))
+    img.alpha_composite(gremlin, (330, GROUND - gremlin.height + 1))
+    img.alpha_composite(gremlin, (395, 140 - gremlin.height + 1))
     img.alpha_composite(flip(chicken), (120, GROUND - chicken.height + 1))
     glow(img, gem, 166, GROUND - 16, 'ice')
     # enemy HP pips
-    for ex, ey, f in ((hx + 34, GROUND - 22, .35), (300, GROUND - 22, 1), (330, GROUND - 24, .8), (395, 140 - 24, 1)):
+    for ex, ey, f in ((hx + 34, GROUND - 22, .35), (300, GROUND - 22, 1), (330, GROUND - 21, .8), (395, 140 - 21, 1)):
         rect(img, ex + 1, ey, 16, 3, 'ink')
         rect(img, ex + 2, ey + 1, int(14 * f), 1, 'lime')
     # floating text: small numbers, big crits, short callouts
@@ -286,7 +368,7 @@ def mock_frame():
     draw_text(img, 300, GROUND - 34, 'BOMB?', 'coral')
     draw_text(img, 154, GROUND - 30, 'RARE!', 'ice')
     # zone label (ref 03 'COURTYARD') + wave line
-    draw_text(img, 6, 5, 'MUNICIPAL SWORD PARKING LOT', 'paper')
+    draw_text(img, 6, 5, 'THE SWORD GRAVEYARD', 'paper')
     draw_text(img, 6, 15, 'WAVE 1  12 LEFT', 'mist')
     hud(img)
     return img
@@ -308,7 +390,7 @@ def style_sheet(frame):
     # sprites at 2x
     draw_text(pg, 8, 94, 'CHARACTERS  1PX OUTLINE', 'cream')
     x = 8
-    for spr in (sprite(HERO, HERO_KEY), sprite(CHICKEN, CHICKEN_KEY), sprite(INTERN, INTERN_KEY)):
+    for spr in (sprite(HERO, HERO_KEY), sprite(CHICKEN, CHICKEN_KEY), sprite(GREMLIN, GREMLIN_KEY)):
         s = scale(outlined(spr), 3)
         rect(pg, x - 2, 104, s.width + 4, 78, 'slate')
         pg.alpha_composite(s, (x, 180 - s.height))
@@ -320,7 +402,7 @@ def style_sheet(frame):
     # tiles at 3x
     draw_text(pg, 260, 94, 'TILES', 'cream')
     tx = 260
-    for t in (tile_asphalt_top(), tile_asphalt_top(True), tile_asphalt()):
+    for t in (tile_grass_top(), tile_grass_top(), tile_earth()):
         pg.alpha_composite(scale(t, 3), (tx, 104))
         tx += 50
     pg.alpha_composite(scale(platform(40), 3), (260, 158))
