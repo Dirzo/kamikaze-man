@@ -323,7 +323,7 @@
       max: o.crit ? 0.22 : 0.12,
       r: o.crit ? 34 : 19
     });
-    if (e.hp <= 0) killE(e, n >= before, o.sourceMod || null, o.sourceDam || n);
+    if (e.hp <= 0) killE(e, n >= before && before >= e.max, o.sourceMod || null, o.sourceDam || n); // one-shot = from full health
     return n;
   }
   function crit(e, b = 0.0) {

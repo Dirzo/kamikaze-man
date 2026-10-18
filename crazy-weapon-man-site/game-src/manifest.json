@@ -21,6 +21,7 @@
     "core/18-mobile.js"
   ],
   "systems": [
+    "systems/00-damage-budget.js",
     "systems/01-elemental-weapons.js",
     "systems/02-arsenal-expansion.js",
     "systems/03-rarity-progression.js",
@@ -58,7 +59,8 @@
     "systems/35-balance-probe.js",
     "systems/36-weapon-names.js",
     "systems/37-text-budget.js",
-    "systems/38-geese-sleepers.js"
+    "systems/38-geese-sleepers.js",
+    "systems/39-weapon-curve.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [

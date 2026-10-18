@@ -66,6 +66,11 @@
   }
   function nameFor(w) {
     const q = Math.max(0, Math.min(10, Number(rarityRank(w)) || 0));
+    // standouts (1 in 5 drops, see 00-damage-budget.js) get names a couple of tiers grander
+    if (w.__standout) return nameAt(w, Math.min(10, Math.max(q + 2, 4)));
+    return nameAt(w, q);
+  }
+  function nameAt(w, q) {
     let last = '';
     // re-roll until a whole name fits its budget (never cut a phrase in half)
     for (let i = 0; i < 12; i++) {

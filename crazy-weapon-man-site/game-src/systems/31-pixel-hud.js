@@ -162,7 +162,7 @@
 
     // new-weapon toast (auto-equip)
     if (w !== lastW) {
-      if (lastW && dps > lastDps) toast = { name: w.name, hex: nameHex, gain: Math.round((dps / Math.max(1, lastDps) - 1) * 100), t: 2.6 };
+      if (lastW && dps > lastDps) toast = { name: w.name, hex: nameHex, standout: !!w.__standout, gain: Math.round((dps / Math.max(1, lastDps) - 1) * 100), t: 2.6 };
       lastW = w;
     }
     lastDps = dps;
@@ -174,7 +174,7 @@
       r(PW / 2 - tw / 2 - 1, ty - 1, tw + 2, 24, 'ink');
       r(PW / 2 - tw / 2, ty, tw, 22, 'night');
       r(PW / 2 - tw / 2, ty, tw, 1, 'gold');
-      PX.text('NEW WEAPON  +' + toast.gain + '% DPS', PW / 2, ty + 3, COL.gold, 1, 'center');
+      PX.text((toast.standout ? 'STANDOUT WEAPON!  +' : 'NEW WEAPON  +') + toast.gain + '% DPS', PW / 2, ty + 3, toast.standout ? COL.lime || COL.gold : COL.gold, 1, 'center');
       PX.text(name, PW / 2, ty + 12, toast.hex === COL.ink ? COL.paper : toast.hex, 1, 'center');
     }
     // level-up toast (replaces the HTML level splash, which lived in the hidden juice HUD)
