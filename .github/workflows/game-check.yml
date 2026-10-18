@@ -21,5 +21,6 @@ jobs:
           node --check crazy-weapon-man-site/src/index.js
           node --check crazy-weapon-man-site/public/game.js
           for f in crazy-weapon-man-site/public/addons/*.js; do node --check "$f"; done
+          for f in $(find crazy-weapon-man-site/public/next/src -name '*.js'); do node --check "$f"; done
       - name: In-game self-tests
         run: bash crazy-weapon-man-site/tests/smoke.sh

@@ -1,0 +1,260 @@
+// Crazy Weapon Man (next): boot, fixed-step loop, scenes (title, play, pause, over, won).
+import { W, H, STEP, C, GROUND } from './config.js';
+import { input } from './engine/input.js';
+import { loadAssets, A } from './engine/assets.js';
+import { X, rect, text, textWidth, panel, dither, worldLayer, screenLayer, frame } from './engine/gfx.js';
+import { audioOn, music, sfx, toggleMusic, toggleSound, audioSettings } from './engine/audio.js';
+import { world, resetWorld } from './game/world.js';
+import { createHero, updateHero, drawHero } from './game/hero.js';
+import { updateEnemy, drawEnemy, updateBolts, drawBolts } from './game/enemy.js';
+import { updateShots, drawShots } from './game/shots.js';
+import { updateDrops, drawDrops, drawNearDrop } from './game/drops.js';
+import { updateWaves, startZone } from './game/waves.js';
+import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
+import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx } from './game/fx.js';
+import { drawBubbles } from './game/bubbles.js';
+import { drawHud } from './game/hud.js';
+import { drawForge } from './game/forge.js';
+import { ZONES, TITLE_MUSIC } from './data/zones.js';
+import { rarityColour } from './game/looks.js';
+import { fmt } from './data/curve.js';
+
+let scene = 'loading',
+  sceneT = 0,
+  loadFrac = 0,
+  clock = 0;
+
+// ---------------------------------------------------------------- scenes
+function startRun() {
+  resetWorld();
+  clearFx();
+  clearBoss();
+  world.hero = createHero();
+  startZone(0);
+  scene = 'play';
+  sceneT = 0;
+}
+
+function update(dt) {
+  clock += dt;
+  sceneT += dt;
+  input.poll(clock);
+  if (input.anyKey()) audioOn();
+  music.tick();
+  if (scene === 'title') {
+    if (input.take('confirm') | input.take('jump')) {
+      audioOn();
+      sfx.ui(true);
+      startRun();
+    }
+    return;
+  }
+  if (scene === 'over' || scene === 'won') {
+    if (sceneT > 1 && input.take('confirm') | input.take('jump')) startRun();
+    return;
+  }
+  if (scene === 'pause') {
+    if (input.take('pause') | input.take('confirm')) scene = 'play';
+    return;
+  }
+  // ---- play ----
+  if (input.take('pause')) {
+    scene = 'pause';
+    return;
+  }
+  if (feel.stop > 0) {
+    feel.stop -= dt;
+    return; // hit-stop: the world holds its breath
+  }
+  world.t += dt;
+  if (!world.forge) updateHero(world.hero, dt);
+  for (const e of world.enemies) e.boss ? updateBoss(e, dt) : updateEnemy(e, dt);
+  world.enemies = world.enemies.filter(e => !e.dead || e.deathT > 0);
+  if (world.boss && world.boss.dead && world.boss.deathT <= 0) world.boss = null;
+  updateShots(dt);
+  updateBolts(dt);
+  updateHazards(dt);
+  updateDrops(dt);
+  updateWaves(dt);
+  updateFx(dt);
+  if (world.phase === 'dead') {
+    world.deadT = (world.deadT || 0) + dt;
+    if (world.deadT > 1.6) {
+      scene = 'over';
+      sceneT = 0;
+      music.stop();
+    }
+  }
+  if (world.phase === 'won') {
+    scene = 'won';
+    sceneT = 0;
+  }
+}
+
+// ---------------------------------------------------------------- drawing
+function drawSlab(zone, p) {
+  const sl = A.slabs[zone];
+  if (!sl) return rect(p.x, p.y, p.w, 6, C.stone);
+  const cap = sl.cap,
+    y0 = p.y - 2;
+  X.drawImage(sl.im, 0, 0, cap, sl.h, p.x, y0, cap, sl.h);
+  const mid = sl.w - cap * 2;
+  for (let x = p.x + cap; x < p.x + p.w - cap; x += mid) {
+    const seg = Math.min(mid, p.x + p.w - cap - x);
+    X.drawImage(sl.im, cap, 0, seg, sl.h, x, y0, seg, sl.h);
+  }
+  X.drawImage(sl.im, sl.w - cap, 0, cap, sl.h, p.x + p.w - cap, y0, cap, sl.h);
+}
+
+function drawWorld(t) {
+  const Z = ZONES[world.zone];
+  worldLayer();
+  X.drawImage(A.bg[Z.id], 0, 0);
+  for (const p of world.platforms) drawSlab(Z.id, p);
+  drawDrops(t);
+  drawHazards(t);
+  for (const e of world.enemies) if (e.dead) e.boss ? drawBoss(e, t) : drawEnemy(e, t);
+  for (const e of world.enemies) if (!e.dead) e.boss ? drawBoss(e, t) : drawEnemy(e, t);
+  drawBolts();
+  drawHero(world.hero, t);
+  drawShots(t);
+  drawParticles();
+  drawSparks();
+  drawNumbers();
+  drawBubbles();
+  drawNearDrop(t);
+  screenLayer();
+}
+
+function drawTitle(t) {
+  X.drawImage(A.bg.graveyard, 0, 0);
+  dither(0, 0, W, H, C.ink, 6);
+  const bob = Math.round(Math.sin(t * 2) * 2);
+  text('CRAZY', W / 2, 44 + bob, C.orange, { align: 'center', k: 4 });
+  text('WEAPON MAN', W / 2, 78 + bob, C.gold, { align: 'center', k: 4 });
+  // hero standing on the ground
+  const Hh = A.hero;
+  frame(Hh.im, Hh.frames[Math.floor(t * 2) % 2 ? 'idle' : 'windup'], Hh.w, Hh.h, W / 2 - 8, GROUND - 24, false);
+  if (Math.floor(t * 2) % 2) text('PRESS START', W / 2, 148, C.paper, { align: 'center', k: 2 });
+  const lines = [
+    'MOVE  ARROWS / A D        JUMP  ALT / X        ATTACK  CTRL / Z',
+    'SPECIAL  SPACE / C        DASH  SHIFT / V      DROP / SWAP  DOWN',
+    'GAMEPAD: A JUMP  X ATTACK  Y SPECIAL  B DASH  START PAUSE'
+  ];
+  lines.forEach((l, i) => text(l, W / 2, 222 + i * 11, C.mist, { align: 'center' }));
+  text('PREVIEW BUILD', W - 4, H - 10, C.stone, { align: 'right' });
+}
+
+function drawPause() {
+  dither(0, 0, W, H, C.ink, 10);
+  panel('panel', W / 2 - 120, 60, 240, 130);
+  text('PAUSED', W / 2, 72, C.gold, { align: 'center', k: 2 });
+  const rows = [
+    ['MOVE', 'ARROWS / A D'],
+    ['JUMP', 'ALT / X  (DOWN+JUMP: DROP)'],
+    ['ATTACK', 'CTRL / Z'],
+    ['SPECIAL', 'SPACE / C'],
+    ['DASH', 'SHIFT / V'],
+    ['SWAP WEAPON', 'DOWN ON A DROP'],
+    ['MUSIC / SOUND', `M ${audioSettings.music ? 'ON' : 'OFF'} / N ${audioSettings.sound ? 'ON' : 'OFF'}`]
+  ];
+  rows.forEach(([a, b], i) => {
+    text(a, W / 2 - 108, 96 + i * 12, C.mist);
+    text(b, W / 2 + 108, 96 + i * 12, C.paper, { align: 'right' });
+  });
+  text('ESC TO RESUME', W / 2, 178, C.lime, { align: 'center' });
+}
+
+function drawEnd(won) {
+  dither(0, 0, W, H, C.ink, 11);
+  panel('panel', W / 2 - 140, 50, 280, 150);
+  text(won ? 'THE ARMORY FALLS' : 'YOU DIED', W / 2, 62, won ? C.gold : C.red, { align: 'center', k: 2 });
+  const h = world.hero;
+  const rows = [
+    ['ZONE', `${world.zone + 1}  ${ZONES[world.zone].name}`],
+    ['KILLS', fmt(world.kills)],
+    ['LEVEL', String(h ? h.lv : 1)],
+    ['SHARDS', fmt(world.shards)]
+  ];
+  rows.forEach(([a, b], i) => {
+    text(a, W / 2 - 128, 90 + i * 12, C.mist);
+    text(b, W / 2 + 128, 90 + i * 12, C.paper, { align: 'right' });
+  });
+  text('BEST WEAPON', W / 2, 146, C.mist, { align: 'center' });
+  const best = world.best || (h && h.weapon);
+  if (best) text(best.name, W / 2, 157, best.standout ? C.gold : rarityColour(best.q), { align: 'center' });
+  if (sceneT > 1 && Math.floor(sceneT * 2) % 2) text('PRESS START TO GO AGAIN', W / 2, 182, C.lime, { align: 'center' });
+}
+
+function render() {
+  screenLayer();
+  const t = clock;
+  if (scene === 'loading') {
+    rect(0, 0, W, H, C.ink);
+    rect(W / 2 - 60, H / 2, 120, 4, C.night);
+    rect(W / 2 - 60, H / 2, Math.round(120 * loadFrac), 4, C.gold);
+    return;
+  }
+  if (scene === 'title') return drawTitle(t);
+  drawWorld(world.t);
+  drawHud(world.t);
+  drawForge(world.t);
+  if (scene === 'pause') drawPause();
+  if (scene === 'over') drawEnd(false);
+  if (scene === 'won') drawEnd(true);
+}
+
+// ---------------------------------------------------------------- loop
+let last = performance.now(),
+  acc = 0;
+function loop(now) {
+  acc += Math.min(0.1, (now - last) / 1000);
+  last = now;
+  while (acc >= STEP) {
+    if (scene !== 'loading') update(STEP);
+    acc -= STEP;
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+addEventListener('keydown', e => {
+  if (e.code === 'KeyM') toggleMusic();
+  if (e.code === 'KeyN') toggleSound();
+});
+
+requestAnimationFrame(loop);
+loadAssets(f => (loadFrac = f))
+  .then(() => {
+    scene = 'title';
+    music.play('title', TITLE_MUSIC);
+  })
+  .catch(err => {
+    console.error(err);
+    scene = 'loading';
+  });
+
+// debug hooks for tests
+import { makeWeapon } from './game/loot.js';
+import { heroMaxHp } from './data/curve.js';
+import { startBoss } from './game/bosses.js';
+window.CWM_NEXT = {
+  world,
+  get scene() {
+    return scene;
+  },
+  startRun,
+  A,
+  // debug: start at zone z with a matching hero (and optionally go straight to its boss)
+  jump(z, { boss = false, type = null } = {}) {
+    startRun();
+    const h = world.hero;
+    h.lv = 1 + z * 3;
+    h.maxHp = h.hp = heroMaxHp(h.lv);
+    h.weapon = makeWeapon(z, { q: Math.min(10, z + 1), type, standout: false });
+    startZone(z);
+    if (boss && ZONES[z].boss) {
+      world.director.phase = 'boss';
+      startBoss(ZONES[z].boss);
+    }
+  }
+};

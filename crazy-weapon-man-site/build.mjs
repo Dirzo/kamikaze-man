@@ -46,13 +46,13 @@ const html = read('shell/shell.html')
   .replace('<!--SCRIPTS-->', [`<script src="/game.js?v=${hash(game)}"></script>`, ...addonTags].join('\n'));
 files.set('index.html', html);
 
-// Everything in public/ that the build does not produce (other than assets/) is stale.
+// Everything in public/ that the build does not produce (other than assets/ and next/) is stale.
 const listOut = (dir, base = '') =>
   fs.existsSync(dir)
     ? fs.readdirSync(dir, { withFileTypes: true }).flatMap(d =>
         d.isDirectory() ? listOut(path.join(dir, d.name), base + d.name + '/') : [base + d.name])
     : [];
-const stale = listOut(OUT).filter(f => !files.has(f) && !f.startsWith('assets/'));
+const stale = listOut(OUT).filter(f => !files.has(f) && !f.startsWith('assets/') && !f.startsWith('next/')); // next/ is the new game (its own source)
 const changed = [...files].filter(([f, s]) => !fs.existsSync(path.join(OUT, f)) || fs.readFileSync(path.join(OUT, f), 'utf8') !== s).map(([f]) => f);
 
 if (check) {
