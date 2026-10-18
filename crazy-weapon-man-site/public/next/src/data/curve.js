@@ -4,7 +4,7 @@
 // Weapon hit (normal):       refHP(home) * share(q) * type.hit * move multiplier
 // Weapon hit (standout):     refHP(home) * 1.25 * move multiplier  -> one-shots its home zone,
 //                            2 hits in the next zone (~1.9x health), ~4 after
-// share(q) = 0.26 + 0.02q    -> a sword takes 3-4 hits on a home-zone enemy
+// share(q) = 0.26 + 0.02q    -> a sword (hit 1.25) takes ~3 hits on a home-zone enemy
 export const refHP = z => Math.round(30 * Math.pow(1.9, Math.max(0, z)));
 export const refDmg = z => Math.round(9 * Math.pow(1.3, Math.max(0, z))); // enemy hit on the hero
 export const share = q => 0.26 + 0.02 * q;

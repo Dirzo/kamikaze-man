@@ -1,20 +1,22 @@
 // Weapon types, rarities, elements. Per-hit damage = refHP(home zone) * share(q) * hit * move mult
 // (see curve.js), so faster weapons hit lighter and every type has similar damage per second.
 //
+// Attack pace is deliberately unhurried (no mashing): each combo finisher adds RECOVERY on top.
 // melee fields: cd (s between swings), reach/height (hitbox px in front of the hand), knock (px push)
 // ranged fields: speed (px/s), pierce, homing
 export const TYPES = {
-  sword: { melee: true, cd: 0.36, reach: 27, height: 24, hit: 1.0, knock: 20, combo: ['slashDown', 'slashUp', 'slashBig'], special: 'whirl', specialName: 'WHIRLWIND', cool: 5 },
-  dagger: { melee: true, cd: 0.2, reach: 18, height: 14, hit: 0.52, knock: 10, combo: ['stab', 'stab', 'stabBig'], special: 'flurry', specialName: 'FLURRY', cool: 4.5 },
-  katana: { melee: true, cd: 0.3, reach: 32, height: 18, hit: 0.86, knock: 18, combo: ['slashDown', 'stab', 'slashBig'], special: 'iai', specialName: 'IAI DASH', cool: 4.5 },
-  hammer: { melee: true, cd: 0.62, reach: 25, height: 28, hit: 1.75, knock: 32, hop: true, combo: ['smash', 'smash', 'smashBig'], special: 'quake', specialName: 'QUAKE', cool: 6 },
-  nunchucks: { melee: true, cd: 0.22, reach: 22, height: 20, hit: 0.56, knock: 12, combo: ['spin', 'spin', 'spinBig'], special: 'cyclone', specialName: 'CYCLONE', cool: 5.5 },
-  staff: { melee: true, cd: 0.42, reach: 36, height: 14, hit: 1.05, knock: 24, combo: ['stab', 'slashUp', 'stabBig'], special: 'vault', specialName: 'VAULT SLAM', cool: 5.5 },
-  bow: { melee: false, cd: 0.42, hit: 1.0, knock: 14, speed: 320, pierce: 0, special: 'volley', specialName: 'VOLLEY', cool: 5 },
-  shuriken: { melee: false, cd: 0.28, hit: 0.62, knock: 10, speed: 250, pierce: 1, spin: true, special: 'storm', specialName: 'STAR STORM', cool: 5 },
-  wand: { melee: false, cd: 0.34, hit: 0.82, knock: 12, speed: 190, pierce: 0, homing: 3, special: 'nova', specialName: 'NOVA', cool: 5.5 }
+  sword: { melee: true, cd: 0.5, reach: 27, height: 24, hit: 1.25, knock: 20, combo: ['slashDown', 'slashUp', 'slashBig'], special: 'whirl', specialName: 'WHIRLWIND', cool: 5 },
+  dagger: { melee: true, cd: 0.3, reach: 18, height: 14, hit: 0.66, knock: 10, combo: ['stab', 'stab', 'stabBig'], special: 'flurry', specialName: 'FLURRY', cool: 4.5 },
+  katana: { melee: true, cd: 0.42, reach: 32, height: 18, hit: 1.08, knock: 18, combo: ['slashDown', 'stab', 'slashBig'], special: 'iai', specialName: 'IAI DASH', cool: 4.5 },
+  hammer: { melee: true, cd: 0.85, reach: 25, height: 28, hit: 2.2, knock: 32, hop: true, combo: ['smash', 'smash', 'smashBig'], special: 'quake', specialName: 'QUAKE', cool: 6 },
+  nunchucks: { melee: true, cd: 0.32, reach: 22, height: 20, hit: 0.72, knock: 12, combo: ['spin', 'spin', 'spinBig'], special: 'cyclone', specialName: 'CYCLONE', cool: 5.5 },
+  staff: { melee: true, cd: 0.56, reach: 36, height: 14, hit: 1.3, knock: 24, combo: ['stab', 'slashUp', 'stabBig'], special: 'vault', specialName: 'VAULT SLAM', cool: 5.5 },
+  bow: { melee: false, cd: 0.6, hit: 1.25, knock: 14, speed: 320, pierce: 0, special: 'volley', specialName: 'VOLLEY', cool: 5 },
+  shuriken: { melee: false, cd: 0.4, hit: 0.8, knock: 10, speed: 250, pierce: 1, spin: true, special: 'storm', specialName: 'STAR STORM', cool: 5 },
+  wand: { melee: false, cd: 0.48, hit: 1.05, knock: 12, speed: 190, pierce: 0, homing: 3, special: 'nova', specialName: 'NOVA', cool: 5.5 }
 };
 export const TYPE_LIST = Object.keys(TYPES);
+export const RECOVERY = 0.3; // extra pause after the last hit of a combo
 
 // combo moves: damage multiplier, swing arc (degrees from -> to, 0 = forward), duration split
 export const MOVES = {
