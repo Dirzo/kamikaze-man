@@ -17,6 +17,7 @@ import { openForge, updateForge } from './forge.js';
 const rand = (a, b) => a + Math.random() * (b - a);
 
 export function startZone(z) {
+  world.nearDrop = null;
   clearBoss();
   world.echoes.length = 0;
   world.shots.length = 0;

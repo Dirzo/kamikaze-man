@@ -3,7 +3,7 @@
 import { C, W } from '../config.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
-import { text, panel, fitText, dither } from '../engine/gfx.js';
+import { text, panel, fitText, dither, rect, textWidth } from '../engine/gfx.js';
 import { world } from './world.js';
 import { nameWeapon } from '../data/names.js';
 import { rarityColour } from './looks.js';
@@ -86,7 +86,7 @@ export function drawForge(t) {
   if (F.draft) return drawDraft(F, t);
   const h = world.hero,
     c = costs();
-  dither(0, 0, W, 240, C.ink, 9);
+  rect(0, 0, W, 242, C.ink);
   panel('panel', W / 2 - 150, 40, 300, 164);
   text('THE FORGE', W / 2, 52, C.gold, { align: 'center', k: 2 });
   text(`SHARDS: ${world.shards}`, W / 2, 72, C.ice, { align: 'center' });
@@ -108,6 +108,7 @@ export function drawForge(t) {
 }
 
 function updateDraft(F) {
+  if (F.t > 0.35 && input.take('jump')) { F.draft = false; F.sel = 0; F.t = 0; return false; }
   if (input.take('left') || input.take('up')) F.sel = (F.sel + 2) % 3;
   if (input.take('right') || input.take('down')) F.sel = (F.sel + 1) % 3;
   if (F.t > 0.35 && (input.take('confirm') | input.take('attack'))) {
@@ -117,19 +118,30 @@ function updateDraft(F) {
   return false;
 }
 function drawDraft(F, t) {
-  dither(0, 0, W, 242, C.ink, 13);
+  rect(0, 0, W, 242, C.ink);
   text('PICK YOUR NEXT BAD IDEA', W / 2, 46, C.gold, { align: 'center', k: 2 });
   text('ONE FREE WEAPON. CHOOSE YOUR BUILD.', W / 2, 68, C.mist, { align: 'center' });
   F.offers.forEach((w, i) => {
     const x = 12 + i * 156, on = F.sel === i;
     panel(on ? 'btn-hot' : 'panel', x, 86, 144, 110);
     drawItem(w, x + 72, 126, t);
-    text(fitText(w.name, 130), x + 72, 139, rarityColour(w.q), { align: 'center' });
+    const lines = wrapName(w.name);
+    lines.forEach((line, n) => text(line, x + 72, 134 + n * 10, rarityColour(w.q), {align:'center'}));
     text(Math.round(dps(w)) + ' DPS', x + 72, 155, C.paper, { align: 'center' });
     text(mutationLabel(w), x + 72, 171, C.lime, { align: 'center' });
     if (on) text('> TAKE THIS <', x + 72, 183, C.gold, { align: 'center' });
   });
   const chosen = F.offers[F.sel];
   text(chosen.mutation ? MUTATIONS[chosen.mutation].desc : 'KEEP MOVING. WATCH WIND-UPS. COUNTERATTACK.', W / 2, 202, C.mist, {align:'center'});
-  text('LEFT / RIGHT: CHOOSE    ATTACK: TAKE', W / 2, 214, C.paper, { align: 'center' });
+  text('LEFT/RIGHT: CHOOSE   ATTACK: TAKE   JUMP: KEEP', W / 2, 214, C.paper, { align: 'center' });
+}
+
+function wrapName(name) {
+  const lines = [''];
+  for (const word of name.split(' ')) {
+    const n = lines.length - 1, next = lines[n] ? lines[n] + ' ' + word : word;
+    if (textWidth(next) > 130 && lines[n] && n === 0) lines.push(word);
+    else lines[n] = next;
+  }
+  return lines.map(s => fitText(s, 130));
 }
