@@ -52,7 +52,6 @@ export function updateHero(h, dt) {
   }
 
   const ax = input.axis();
-  const busy = !!h.attack;
   // dash
   if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
     h.dashT = HERO.dashTime;
@@ -74,10 +73,13 @@ export function updateHero(h, dt) {
   }
   // run
   if (h.hurtT <= 0) {
-    const target = ax * HERO.speed * (busy && h.onGround ? 0.35 : 1);
+    const target = ax * HERO.speed;
     const a = ax ? HERO.accel : HERO.friction;
     h.vx += Math.sign(target - h.vx) * Math.min(Math.abs(target - h.vx), a * dt);
-    if (ax && !busy) h.face = ax;
+    if (ax) {
+      if (h.face !== ax) h.trail = null; // a turn starts a fresh blade trail
+      h.face = ax;
+    }
   }
   // jump / drop-through
   h.coyote = h.onGround ? HERO.coyote : Math.max(0, h.coyote - dt);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { makeWeapon, trainingSword, dps, hitDamage } from '../game-src/game/loot.js';
 import { TYPE_UNLOCKS, ELEMENT_UNLOCKS, MUTATIONS, availableTypes, availableElements, availableMutations, maxRarity, enemyPool, waveBudget } from '../game-src/data/progression.js';
-import { TYPES, MOVES } from '../game-src/data/weapons.js';
+import { TYPES, MOVES, RECOVERY } from '../game-src/data/weapons.js';
 import { activeWindow, attackBox, canAttack } from '../game-src/game/attack-rules.js';
 import { refHP, ENEMY_HP } from '../game-src/data/curve.js';
 import { ZONES } from '../game-src/data/zones.js';
@@ -56,4 +56,10 @@ test('one-way platforms permit jumping up, landing and deliberate drop-through',
   const p=[{x:20,y:120,w:100}], b={x:50,y:90,w:11,h:22,vx:0,vy:150};
   for(let i=0;i<4;i++) move(b,1/60,p); assert.equal(b.y,98); assert.equal(b.onGround,true);
   b.y+=2; move(b,1/60,p,{dropThrough:true}); assert.ok(b.y>98);
+});
+
+test('all nine attacks and finisher recovery run exactly 25% faster',()=>{
+  const before={sword:0.34,dagger:0.24,katana:0.32,hammer:0.58,nunchucks:0.26,staff:0.4,bow:0.44,shuriken:0.3,wand:0.36};
+  for(const [type,cd] of Object.entries(before)) assert.ok(Math.abs(cd/TYPES[type].cd-1.25)<1e-10);
+  assert.ok(Math.abs(0.12/RECOVERY-1.25)<1e-10);
 });

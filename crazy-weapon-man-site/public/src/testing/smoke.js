@@ -12,7 +12,7 @@ import { startZone, updateWaves } from '../game/waves.js';
 import { openForge, updateForge } from '../game/forge.js';
 import { ZONES } from '../data/zones.js';
 import { MUTATIONS } from '../data/progression.js';
-import { C, STEP, GROUND } from '../config.js';
+import { C, STEP, GROUND, HERO } from '../config.js';
 import { lookOf } from '../game/looks.js';
 import { feel, clearFx } from '../game/fx.js';
 
@@ -23,7 +23,7 @@ export function runSmoke(game) {
   let clock=0;
   const key=(code,on)=>window.dispatchEvent(new KeyboardEvent(on?'keydown':'keyup',{code,bubbles:true}));
   const poll=()=>input.poll(clock+=STEP);
-  const reset=()=>{key('KeyZ',false);key('ArrowRight',false);key('KeyX',false);key('KeyV',false);poll();game.startRun();world.enemies=[];world.director=null;world.hero.inv=0;clearFx();};
+  const reset=()=>{key('KeyZ',false);key('ArrowRight',false);key('ArrowLeft',false);key('KeyX',false);key('KeyV',false);poll();game.startRun();world.enemies=[];world.director=null;world.hero.inv=0;clearFx();};
   check('all nine weapons render with awakened silhouettes',()=>{
     for(const type of Object.keys(game.types)) {const w=makeWeapon(9,{type,q:8});w.mutation='orbit';ok(lookOf(w).cv.width>0);}
   });
@@ -32,6 +32,17 @@ export function runSmoke(game) {
     updateHero(h,STEP);ok(h.attack===first,'attack overwritten');
     let last=first;for(let i=0;i<150;i++){poll();updateHero(h,STEP);if(h.attack && h.attack!==last){swings++;last=h.attack;}}
     ok(swings>=5,'held attack stopped');key('KeyZ',false);poll();
+  });
+  check('move at full speed and turn without cancelling a live attack',()=>{
+    reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'hammer',q:0,standout:false});
+    h.vx=HERO.speed;key('ArrowRight',true);key('KeyZ',true);poll();updateHero(h,STEP);
+    const attack=h.attack,x=h.x;key('KeyZ',false);poll();updateHero(h,STEP);
+    ok(h.attack===attack && h.vx===HERO.speed && h.x>x,'attack slowed movement');
+    key('ArrowRight',false);key('ArrowLeft',true);poll();updateHero(h,STEP);
+    ok(h.face===-1 && h.attack===attack,'turn cancelled or locked attack');
+    for(let i=0;i<8;i++){poll();updateHero(h,STEP);}
+    ok(h.vx<0 && h.attack===attack,'cannot reverse movement mid-animation');
+    key('ArrowLeft',false);poll();
   });
   check('one swing hits each enemy once, never during wind-up',()=>{
     reset();const h=world.hero,e=spawnEnemy('crawler',h.x+23,GROUND);e.spawnT=0;e.hp=e.max=10000;

@@ -1,5 +1,11 @@
 # Crazy Weapon Man — work log
 
+## 2026-10-18 — faster attacks and free attack movement
+
+- Every weapon's attack interval and finisher recovery is divided by 1.25: 25% more attacks per second, including animation and projectile release timing.
+- Removed the grounded attack movement penalty and facing lock. Movement accelerates normally during a swing; turning updates the pose and live hitbox, preserves the attack's hit set, and resets the old-facing blade trail.
+- Added exact cadence checks and a real-browser regression for running and reversing during one attack.
+
 ## 2026-10-18 — crisp combat cleanup (PR #12)
 
 - Promoted the existing modular rebuild from `/next/` to `/`; source now lives in `game-src/`, built to `public/src/`. The previous 42-patch runtime and addons are isolated in `legacy-src/` and `public/legacy/` for comparison.
