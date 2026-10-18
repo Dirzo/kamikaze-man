@@ -131,7 +131,7 @@ export function drawHud(t) {
   for (let i = world.toasts.length - 1; i >= 0; i--) {
     const to = world.toasts[i];
     if (to.kind === 'weapon') {
-      const l1 = (to.standout ? 'STANDOUT WEAPON!  +' : 'NEW WEAPON  +') + to.gain + '% DPS';
+      const l1 = (to.standout ? 'STANDOUT WEAPON!  +' : 'NEW WEAPON  +') + to.gain + '% POWER';
       const l2 = fitText(to.name, 300);
       const tw = Math.max(textWidth(l1), textWidth(l2)) + 14;
       panel('card', W / 2 - tw / 2, ty, tw, 24);

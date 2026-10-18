@@ -41,7 +41,7 @@ export function updateShots(dt) {
     runEmitters(s.emitters, () => ({ x: s.x + 3, y: s.y + 2 }), 1.2);
     if (s.type === 'wand' && Math.random() < 0.6) emit(s.x + 2, s.y + 2, 'dot', s.light);
     for (const e of world.enemies) {
-      if (e.dead || s.hit.has(e) || !overlap(s, e)) continue;
+      if (e.dead || e.spawnT > 0 || s.hit.has(e) || !overlap(s, e)) continue;
       s.hit.add(e);
       hitEnemy(e, s.dmg, { crit: s.crit, dir: Math.sign(s.vx) || 1, knock: s.knock, element: s.element, sparkCol: s.light });
       if (!s.proc) impactMutation(world.hero, e, s);

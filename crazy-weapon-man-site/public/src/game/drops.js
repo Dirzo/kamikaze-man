@@ -6,7 +6,7 @@ import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
 import { move, overlap, cx, cy } from './physics.js';
-import { dps } from './loot.js';
+import { dps, powerScore } from './loot.js';
 import { lookOf, overlays, runEmitters, frameOfLook, rarityColour } from './looks.js';
 import { MUTATIONS } from '../data/progression.js';
 import { toast } from './progress.js';
@@ -16,7 +16,7 @@ import { dropWeapon } from './combat.js';
 export function equip(item) {
   const h = world.hero,
     old = h.weapon;
-  const gain = Math.round((dps(item) / Math.max(1, dps(old)) - 1) * 100);
+  const gain = Math.round((powerScore(item) / Math.max(1, powerScore(old)) - 1) * 100);
   h.weapon = item;
   h.combo = 0;
   h.attackCount = 0;
@@ -47,7 +47,7 @@ export function updateDrops(dt) {
       continue;
     }
     if (d.t > 0.4 && !h.dead && overlap({ x: h.x - 4, y: h.y, w: h.w + 8, h: h.h }, d)) {
-      const better = dps(d.item) > dps(h.weapon) * 1.001;
+      const better = powerScore(d.item) > powerScore(h.weapon) * 1.001;
       if (better && !d.declined && !h.attack && !h.special && h.dashT <= 0) {
         const old = equip(d.item);
         world.drops.splice(i, 1);
@@ -157,9 +157,9 @@ export function drawNearDrop(t) {
   if (!d) return;
   const h = world.hero;
   const item = d.item,
-    gain = Math.round((dps(item) / Math.max(1, dps(h.weapon)) - 1) * 100);
+    gain = Math.round((powerScore(item) / Math.max(1, powerScore(h.weapon)) - 1) * 100);
   const name = fitText(item.name, 200);
-  const line2 = `${gain >= 0 ? '+' : ''}${gain}% DPS   DOWN: SWAP`;
+  const line2 = `${gain >= 0 ? '+' : ''}${gain}% POWER   DOWN: SWAP`;
   const w = Math.max(textWidth(name), textWidth(line2)) + 10;
   const x = Math.round(Math.max(4, Math.min(476 - w, cx(d) - w / 2))),
     y = Math.round(d.y - 34);

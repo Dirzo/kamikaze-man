@@ -6,7 +6,7 @@ import { refHP, share, STANDOUT_SHARE, standoutChance } from '../data/curve.js';
 import { maxRarity, availableTypes, availableElements, availableMutations } from '../data/progression.js';
 let uid = 1;
 
-// highest rarity that can drop in a zone (elites +1, bosses +2): zone 1 tops out at Uncommon, the
+// All sources share the zone ceiling: zone 1 tops out at Uncommon; the
 // absurd tier only shows up at the very end
 export const maxQ = maxRarity;
 
@@ -57,3 +57,10 @@ export function dps(w) {
   return hitDamage(w) * mult / (T.cd + (T.melee ? RECOVERY / 3 : 0));
 }
 export const rarityName = w => RARITY[w.q].name;
+
+// Estimated utility for auto-equip. Preserve build-defining powers against tiny raw-DPS gains.
+// The HUD still reports actual direct DPS. Proc damage and control are explicit utility premiums.
+export function powerScore(w) {
+  const bonus = {echo:1.18,seeker:1.3,eruption:1.28,orbit:1.3,cataclysm:1.45}[w.mutation] || 1;
+  return dps(w) * bonus * (w.family ? 1.12 : 1);
+}

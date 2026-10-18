@@ -21,3 +21,8 @@ assert 'data-smoke="pass"' in s, 'Browser regression failure: inspect dom.html a
 PY
 "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1460,950 \
   --virtual-time-budget=3000 --screenshot="$OUT/title.png" "http://127.0.0.1:$PORT/" 2>>"$OUT/chrome.log"
+
+for scene in combat forge late; do
+  "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1460,950 \
+    --virtual-time-budget=3000 --screenshot="$OUT/$scene.png" "http://127.0.0.1:$PORT/?capture=$scene" 2>>"$OUT/chrome.log"
+done

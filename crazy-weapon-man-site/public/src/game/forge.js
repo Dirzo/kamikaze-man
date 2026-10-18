@@ -10,13 +10,16 @@ import { rarityColour } from './looks.js';
 import { toast } from './progress.js';
 import { dps, makeWeapon } from './loot.js';
 import { equip, drawItem } from './drops.js';
-import { maxRarity, mutationLabel, MUTATIONS } from '../data/progression.js';
+import { maxRarity, mutationLabel, MUTATIONS, availableTypes } from '../data/progression.js';
 
 let uidBase = 100000;
 export function openForge() {
   const zone = Math.min(9, world.zone + 1);
   // A free choice between three next-zone weapons, followed by the shard workshop.
-  world.forge = { sel: 0, msg: '', t: 0, draft: true, offers: [0, 1, 2].map((_, i) => makeWeapon(zone, { q: maxRarity(world.zone), type: i === 0 ? world.hero.weapon.type : null, standout: false })) };
+  const types = availableTypes(zone).filter(t => t !== world.hero.weapon.type);
+  const picks = [world.hero.weapon.type];
+  while (picks.length < 3) picks.push(types.splice(Math.floor(Math.random() * types.length), 1)[0]);
+  world.forge = { sel: 0, msg: '', t: 0, draft: true, offers: picks.map(type => makeWeapon(zone, { q: maxRarity(world.zone), type, standout: false })) };
 }
 const costs = () => ({ heal: 8 + world.zone * 4, reforge: 20 + world.zone * 8 });
 

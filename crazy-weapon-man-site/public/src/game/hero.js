@@ -160,7 +160,7 @@ function updateAttack(h, dt, T) {
   if (p >= activeStart && p <= activeEnd) {
     const box = attackBox(h, T, a.move);
     for (const e of world.enemies) {
-      if (e.dead || a.hit.has(e) || !overlap(box, e)) continue;
+      if (e.dead || e.spawnT > 0 || a.hit.has(e) || !overlap(box, e)) continue;
       a.hit.add(e);
       const crit = rollCrit(h);
       const dmg = hitDamage(h.weapon) * a.move.mult * (crit ? CRIT.mult : 1);

@@ -21,6 +21,7 @@ import { drawSlash } from './game/slash.js';
 import { updateEvolution, drawEvolution } from './game/evolution.js';
 import { fmt } from './data/curve.js';
 
+let capture = false;
 let scene = 'loading',
   sceneT = 0,
   loadFrac = 0,
@@ -39,6 +40,7 @@ function startRun() {
 }
 
 function update(dt) {
+  if (capture) return;
   clock += dt;
   sceneT += dt;
   input.poll(clock);
@@ -121,7 +123,6 @@ function drawWorld(t) {
   const Z = ZONES[world.zone];
   worldLayer();
   X.drawImage(A.bg[Z.id], 0, 0);
-  dither(0, 0, W, GROUND, C.ink, 5); // dim the backdrop so characters read clearly
   for (const p of world.platforms) drawSlab(Z.id, p);
   drawDrops(t);
   drawHazards(t);
@@ -142,7 +143,6 @@ function drawWorld(t) {
 
 function drawTitle(t) {
   X.drawImage(A.bg.graveyard, 0, 0);
-  dither(0, 0, W, H, C.ink, 6);
   const bob = Math.round(Math.sin(t * 2) * 2);
   text('CRAZY', W / 2, 44 + bob, C.orange, { align: 'center', k: 4 });
   text('WEAPON MAN', W / 2, 78 + bob, C.gold, { align: 'center', k: 4 });
@@ -289,6 +289,8 @@ loadAssets(f => (loadFrac = f))
     document.documentElement.dataset.cwm = 'ready';
     scene = 'title';
     music.play('title', TITLE_MUSIC);
+    const captureName = new URLSearchParams(location.search).get('capture');
+    if (captureName) import('./testing/capture.js').then(m => m.captureScene(debug, captureName));
     if (new URLSearchParams(location.search).has('smoke')) import('./testing/smoke.js').then(m => m.runSmoke(debug));
   })
   .catch(err => {
@@ -354,6 +356,7 @@ function animSheet(zoom = 3) {
 }
 const debug = {
   types: WTYPES,
+  snapshot(fn) { startRun(); fn(); capture = true; },
   updateShots,
   update,
   render,
