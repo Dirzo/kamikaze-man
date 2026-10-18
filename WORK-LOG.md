@@ -1,5 +1,17 @@
 # Crazy Weapon Man — work log
 
+## 2026-10-18 — crisp combat cleanup (PR #12)
+
+- Promoted the existing modular rebuild from `/next/` to `/`; source now lives in `game-src/`, built to `public/src/`. The previous 42-patch runtime and addons are isolated in `legacy-src/` and `public/legacy/` for comparison.
+- Fixed attack overwrite, held combo input, dash immunity, equipment changes during swings, stale Forge/death/effect state, and boss elemental status ticks. Shared contact geometry drives slash visuals and melee damage.
+- Added a single introduction schedule for weapon types, rarity, elements, five gameplay mutations, and enemy counters. Guaranteed opening reward and seven-kill dry-drop protection. Free three-weapon drafts between zones.
+- Added nine original awakened pixel weapon sprites in `art-src/awakening.py`, three slash frames, touch controls, viewport fitting, boss charge tells and platform pursuit.
+- Node validation: six suites pass, including 20,000 random loot samples. Browser regression suite runs in GitHub Actions and covers actual asset rendering, held combos, per-swing hits, dash, auto-equip safety, all mutations, all six bosses, Forge/reset and all ten zone transitions.
+- Compatibility: native game does not include the legacy armor/meta/Museum/leaderboard UI. Those remain at `/legacy/`; saves and API/database code are untouched. PR #12 is the review boundary before replacing production.
+
+---
+
+
 Handoff notes so any session can pick up where the last one stopped. Newest first.
 
 ## Roadmap (16-bit noobscrub update)

@@ -138,6 +138,11 @@ export function drawHud(t) {
       text(l1, W / 2, ty + 4, to.standout ? C.lime : C.gold, { align: 'center' });
       text(l2, W / 2, ty + 13, to.standout ? C.gold : to.col, { align: 'center' });
       ty += 28;
+    } else if (to.kind === 'power') {
+      panel('card', W / 2 - 142, ty, 284, 32);
+      text(to.label + ' UNLOCKED', W / 2, ty + 5, C.gold, {align:'center'});
+      text(to.desc, W / 2, ty + 18, C.paper, {align:'center'});
+      ty += 36;
     } else if (to.kind === 'level') {
       panel('card', W / 2 - 60, ty, 120, 32);
       text('LEVEL UP!', W / 2, ty + 5, C.gold, { align: 'center', k: 2 });

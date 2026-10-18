@@ -6,7 +6,7 @@ import { burst } from './fx.js';
 
 export function toast(kind, data) {
   world.toasts = world.toasts.filter(t => t.kind !== kind);
-  world.toasts.push({ kind, ...data, t: kind === 'level' ? 2.2 : 2.8 });
+  world.toasts.push({ kind, ...data, t: kind === 'power' ? 4.5 : kind === 'level' ? 2.2 : 2.8 });
 }
 
 export function gainXp(n) {

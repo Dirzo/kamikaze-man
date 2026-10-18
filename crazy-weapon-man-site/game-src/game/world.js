@@ -5,6 +5,7 @@ export const world = {
   wave: 0,
   hero: null,
   enemies: [],
+  seenMutations: new Set(),
   echoes: [],
   shots: [], // hero projectiles
   bolts: [], // enemy projectiles
@@ -33,7 +34,8 @@ export function resetWorld() {
     killsSinceDrop: 0,
     nextId: 1,
     enemies: [],
-    echoes: [],
+    seenMutations: new Set(),
+  echoes: [],
   shots: [],
     bolts: [],
     drops: [],

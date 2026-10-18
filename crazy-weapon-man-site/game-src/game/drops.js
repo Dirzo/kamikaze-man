@@ -8,6 +8,7 @@ import { world } from './world.js';
 import { move, overlap, cx, cy } from './physics.js';
 import { dps } from './loot.js';
 import { lookOf, overlays, runEmitters, frameOfLook, rarityColour } from './looks.js';
+import { MUTATIONS } from '../data/progression.js';
 import { toast } from './progress.js';
 import { burst, emit } from './fx.js';
 import { dropWeapon } from './combat.js';
@@ -22,6 +23,10 @@ export function equip(item) {
   h.orbitTick = 0;
   h.attack = null;
   toast('weapon', { name: item.name, col: rarityColour(item.q), gain, standout: item.standout });
+  if (item.mutation && !world.seenMutations.has(item.mutation)) {
+    world.seenMutations.add(item.mutation);
+    toast('power', { ...MUTATIONS[item.mutation] });
+  }
   sfx.pickup();
   burst(cx(h), h.y + 6, 10, 'twinkle', [lookOf(item).light, 'paper']);
   if (!world.best || dps(item) > dps(world.best)) world.best = item;

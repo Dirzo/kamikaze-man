@@ -10,7 +10,7 @@ import { rarityColour } from './looks.js';
 import { toast } from './progress.js';
 import { dps, makeWeapon } from './loot.js';
 import { equip, drawItem } from './drops.js';
-import { maxRarity, mutationLabel } from '../data/progression.js';
+import { maxRarity, mutationLabel, MUTATIONS } from '../data/progression.js';
 
 let uidBase = 100000;
 export function openForge() {
@@ -56,7 +56,7 @@ export function updateForge(dt) {
     }
     if (o === 'reforge') {
       const w = h.weapon;
-      if (w.q >= maxRarity(world.zone + 1) && w.home >= Math.min(9, world.zone + 1)) F.msg = 'AT THIS ZONE'S LIMIT';
+      if (w.q >= maxRarity(world.zone + 1) && w.home >= Math.min(9, world.zone + 1)) F.msg = "AT THIS ZONE'S LIMIT";
       else if (world.shards < c.reforge) F.msg = 'NOT ENOUGH SHARDS';
       else {
         world.shards -= c.reforge;
@@ -126,5 +126,7 @@ function drawDraft(F, t) {
     text(mutationLabel(w), x + 72, 171, C.lime, { align: 'center' });
     if (on) text('> TAKE THIS <', x + 72, 183, C.gold, { align: 'center' });
   });
+  const chosen = F.offers[F.sel];
+  text(chosen.mutation ? MUTATIONS[chosen.mutation].desc : 'KEEP MOVING. WATCH WIND-UPS. COUNTERATTACK.', W / 2, 202, C.mist, {align:'center'});
   text('LEFT / RIGHT: CHOOSE    ATTACK: TAKE', W / 2, 214, C.paper, { align: 'center' });
 }
