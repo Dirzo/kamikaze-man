@@ -10,6 +10,13 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
+## 2026-10-18 — Phase 2: style sheet (awaiting approval)
+
+- Branch `noobscrub-16bit/phase2-style-sheet`. Art is generated from code in `crazy-weapon-man-site/art-src/` (`pixel.py` palette + sprite fill maps with auto 1px outline, `font.py` 5x7 pixel font, `scene.py` builds the sheet). Run `python3 crazy-weapon-man-site/art-src/scene.py` (needs Pillow).
+- Output in `docs/style-sheet/`: `mock-frame.png` (zone 1 at 480x270, shown 4x), `style-sheet.png` (palette, hero, Tactical Chicken, Prototype Sword Intern, gem, sword, asphalt + platform tiles, font, HUD).
+- Sprite sizes match current hitboxes at 480/1280 scale (player 16x24 incl. outline), so gameplay feel is unchanged.
+- Next: on approval, port the palette/font/sprite pipeline into the game renderer (low-res canvas, nearest-neighbour upscale), then redraw remaining enemies, bosses, zones and weapon types.
+
 ## 2026-10-18 — Phase 1: consolidation
 
 **What changed**
