@@ -10,6 +10,22 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
+## 2026-10-18 — The rebuild: Crazy Weapon Man next (/next/)
+
+Playtest verdict on the old build: "built in layers that are eating the game away". Decision: a clean
+new game reusing the art and the core loop; the live game stays up until the new one is better.
+
+**Done (v1 preview)**
+- `public/next/`: plain ES modules, no build step, one 60 Hz fixed-step loop, one state object; see `public/next/README.md`.
+- Everything native, nothing patched: hero (run, variable jump, coyote time, drop-through, dash), 9 weapon types with 3-hit combos or projectiles and a special each, 17 enemy behaviours (melee, ranged, bomb, shield, blink, summon, sniper, roller, mimic, flyers), geese, sleeper elites with speech bubbles, 10 elements with effects, 6 bosses with pattern queues/phases/hazards, 10 zones x 4 waves, XP/levels, shards and the Forge, weapon names/looks, standout drops, arcade knockback, hit sparks, stacked damage numbers, hit-stop, pixel screenshake, chiptune SFX and music, keyboard + gamepad.
+- Damage curve designed in (`src/data/curve.js`): enemy health ~1.9x per zone; normal weapons 3-4 hits at home, standouts one-shot at home and take 2 hits next zone.
+- New hero frames (wind-up, attack, hurt, dash, fall) from `art-src/build_next.py`.
+- Bot playtest: 60 fps, no errors, ~75 s per zone, bosses beatable.
+- `build.mjs` now leaves `public/next/` alone; CI syntax-checks the new modules.
+
+**Next**
+- Human playtest, then tune; leaderboard; replace the live game at `/` when it's better.
+
 ## 2026-10-18 — Phase 4 (part 3): weapons look like their names
 
 **Done**
