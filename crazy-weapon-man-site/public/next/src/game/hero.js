@@ -5,7 +5,7 @@ import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy } from './physics.js';
-import { TYPES, MOVES } from '../data/weapons.js';
+import { TYPES, MOVES, RECOVERY } from '../data/weapons.js';
 import { CRIT, heroMaxHp } from '../data/curve.js';
 import { hitDamage, trainingSword } from './loot.js';
 import { hitEnemy } from './combat.js';
@@ -96,7 +96,7 @@ export function updateHero(h, dt) {
     h.jumpHeld = false;
   }
   // attack / special
-  if (input.pressed('attack', 0.2) && h.cd <= 0 && h.hurtT <= 0) {
+  if (input.pressed('attack', 0.12) && h.cd <= 0 && h.hurtT <= 0) {
     input.consume('attack');
     startAttack(h, T);
   }
@@ -135,6 +135,7 @@ function startAttack(h, T) {
   }
   const mv = MOVES[T.combo[h.combo]];
   h.attack = { move: mv, moveName: T.combo[h.combo], t: 0, dur: T.cd * mv.dur, hit: new Set() };
+  h.cd = h.attack.dur * 0.9 + (h.combo === T.combo.length - 1 ? RECOVERY : 0); // finisher has end lag
   h.comboT = h.attack.dur + 0.3;
 }
 
