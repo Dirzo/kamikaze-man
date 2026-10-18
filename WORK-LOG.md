@@ -10,6 +10,19 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
+## 2026-10-18 — Phase 4 (part 2): music, names, text budget, geese, balance
+
+**Done**
+- Chiptune music (`systems/34-chipmusic.js`): 4-channel sequencer (pulse lead, pulse arpeggio, triangle bass, noise drums), a seeded 16-bar song per zone with its own key/mode/tempo, faster harmonic-minor boss tracks.
+- Weapon names (`systems/36-weapon-names.js`): one name per weapon, built from its rarity, 22–40 characters (was median 100, max 210). Tiers: "Wobbly Longsword" → "Bitey Katana of Late Fees" → "Faultline Star of Endless Audits" → "Bonkreaver, the Unreasonable" → "Glumbane III, the Very Loud" → "THE LAST INVOICE (A SWORD)". The HUD scrolls names that don't fit.
+- Text budget (`systems/37-text-budget.js`): compact numbers (12.3K, 4.5M … GAZILLION), hits on one enemy merge into one number, at most 8 numbers and 2 stacked callouts. Enemy labels only for elites/mutators; nameplates rare; one short trait tag instead of the full list.
+- War Goose enemy (new sprite) and sleeper elites (`systems/38-geese-sleepers.js`): ~1 in 10 ground spawns is a goose that honks on wind-up; ~1 in 4 ground elites spawns asleep, wakes when hit or approached, and talks in speech bubbles.
+- Balance (`systems/00-damage-budget.js`, `systems/39-weapon-curve.js`): every swing has a damage budget against each non-boss enemy, measured against the zone the weapon was found in. Normal weapons take 3–5 swings in their zone and fade after. 1 in 5 drops is a standout: one-shots at home, 2 swings in the next zone, ~4 after. Measured with `CWM_BUDGET.arena()` (standouts at home: ~60–70% one-swing kills; next zone: 2–3 swings, no one-swing kills). The HUD DPS and auto-equip follow the budget. "ONE-SHOT" now means a kill from full health.
+
+**Next**
+- Bosses still take the raw (inflated) damage under their own caps; check boss fight length in a full run.
+- Leaderboard submission bug (logged in phase 1).
+
 ## 2026-10-18 — Phase 4 (part 1): names, Dark trait, game feel, chiptune
 
 **Done** (branch `noobscrub-16bit/phase4-polish`, stacked on phase 3)
