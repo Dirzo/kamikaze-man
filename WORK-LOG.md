@@ -10,6 +10,14 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
+## 2026-10-18 — Phase 4 (part 3): weapons look like their names
+
+**Done**
+- `systems/36-weapon-names.js` records the words each name used (`w.__look`); element weapons now usually say so even at low tiers ("Rusty Blazing Sword"), so the effects match the name.
+- 28 new held-weapon sprites, one per base word (Longsword, Claymore, Shiv, Stiletto, Nodachi, Odachi, Flails, Chain Sticks, Disc, Longbow, Warbow, Twig, Scepter, Walking Stick, Maul, Mallet, Bonker, ...) in `art-src/weapons.py` `VARIANTS`.
+- `systems/40-weapon-looks.js`: palette by word (element > grand word > adjective > condition > rarity), baked details (rust, chips, cracks, dents, bends, goo, price tags, teeth, spikes, grumpy eyes, sunglasses, chains, moss, jewels, goose beak), motion (Wobbly, Loose, Jittery, Rowdy, Sad), pixel particles (embers, frost, sparks, bubbles, drips, ghosts, curse smoke, steam, rain, notes, confetti), relic auras, orbiting runes on numbered relics, rainbow top tier, gold sparkle on standouts. Slashes and projectiles take the weapon's colour and leave its particles. Drops show the weapon itself; the HUD icon uses the look. Legacy aura circles are skipped while the pixel art is up.
+- Debug: `CWM_PX.looks.equip({type, base, cond|adj|grand|family, ...})`, `CWM_PX.looks.sheet(specs)`.
+
 ## 2026-10-18 — Phase 4 (part 2): music, names, text budget, geese, balance
 
 **Done**

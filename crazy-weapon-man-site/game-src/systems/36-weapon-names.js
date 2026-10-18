@@ -45,61 +45,109 @@
     'A DOOR', 'UNCLE', 'THE MOON, BUT SHARP'];
 
   const fit = (s, max) => (s.length <= max ? s : s.slice(0, max).replace(/[\s,]+\S*$/, ''));
-  const elementWord = w => {
+  const titleCase = n => n.toLowerCase().replace(/(^|[\s-])([a-z])/g, (x, p, c) => p + c.toUpperCase());
+  const elemOf = w => {
     const e = w.element || null;
-    const n = e && (e.name || e.n || e.label);
-    return typeof n === 'string' && n.length <= 10 ? n.toLowerCase().replace(/(^|[\s-])([a-z])/g, (x, p, c) => p + c.toUpperCase()) : null;
+    if (!e) return null;
+    const n = e.name || e.n || e.label;
+    return {
+      family: e.family || e.id || null,
+      word: typeof n === 'string' && n.length <= 10 ? titleCase(n) : null,
+      prefix: typeof e.prefix === 'string' ? e.prefix : null
+    };
   };
   const relicName = () => pick(SYL_A) + pick(SYL_B);
 
+  // Returns [name, max length, look]. The look records which words were used, so the weapon can be
+  // drawn the way it is named (systems/40-weapon-looks.js): a Rusty Sword is rusty, a Haunted one
+  // trails ghosts, a Starfire one throws embers, relics glow.
   function build(w, q, base) {
-    if (q <= 1) return [`${pick(COND)} ${base}`, 22];
-    if (q <= 3) return [`${pick(ADJ)} ${base} of ${pick(OF)}`, 30];
-    if (q <= 5) {
-      const pre = elementWord(w) || pick(GRAND);
-      return [Math.random() < 0.5 ? `${pre} ${pick(ADJ)} ${base} of ${pick(OF_GRAND)}` : `${pre} ${base} of ${pick(OF_GRAND)}`, 36];
+    const el0 = elemOf(w),
+      // element weapons say so in the name most of the time (variety for the rest)
+      el = el0 && Math.random() < 0.65 ? el0 : null,
+      look = { q, base, family: el0 ? el0.family : null };
+    if (q <= 1) {
+      look.cond = pick(COND);
+      if (el && el.prefix) {
+        look.elemNamed = true;
+        const a = `${look.cond} ${el.prefix} ${base}`;
+        return [a.length <= 22 ? a : `${el.prefix} ${base}`, 22, look];
+      }
+      return [`${look.cond} ${base}`, 22, look];
     }
-    if (q <= 7) return [`${relicName()}, ${pick(EPITHET)}`, 38];
-    if (q <= 9) return [`${relicName()} ${pick(ROMAN)}, ${pick(EPITHET)}`, 40];
+    if (q <= 3) {
+      look.of = pick(OF);
+      if (el && el.prefix) {
+        look.elemNamed = true;
+        return [`${el.prefix} ${base} of ${look.of}`, 30, look];
+      }
+      look.adj = pick(ADJ);
+      return [`${look.adj} ${base} of ${look.of}`, 30, look];
+    }
+    if (q <= 5) {
+      look.of = pick(OF_GRAND);
+      let pre;
+      if (el && el.word) {
+        pre = el.word;
+        look.elemNamed = true;
+      } else pre = look.grand = pick(GRAND);
+      if (Math.random() < 0.5) {
+        look.adj = pick(ADJ);
+        return [`${pre} ${look.adj} ${base} of ${look.of}`, 36, look];
+      }
+      return [`${pre} ${base} of ${look.of}`, 36, look];
+    }
+    look.relic = relicName();
+    look.epithet = pick(EPITHET);
+    look.elemNamed = !!el;
+    if (q <= 7) return [`${look.relic}, ${look.epithet}`, 38, look];
+    look.roman = pick(ROMAN);
+    if (q <= 9) return [`${look.relic} ${look.roman}, ${look.epithet}`, 40, look];
+    look.what = pick(WHAT);
     const b0 = (BASE[w.type] || BASE.sword)[0].toUpperCase();
-    return [`${pick(WHAT)} (${b0.endsWith("S") ? "SOME" : "A"} ${b0})`, 40];
+    look.base = (BASE[w.type] || BASE.sword)[0];
+    return [`${look.what} (${b0.endsWith('S') ? 'SOME' : 'A'} ${b0})`, 40, look];
   }
   function nameFor(w) {
     const q = Math.max(0, Math.min(10, Number(rarityRank(w)) || 0));
     // standouts (1 in 5 drops, see 00-damage-budget.js) get names a couple of tiers grander
-    if (w.__standout) return nameAt(w, Math.min(10, Math.max(q + 2, 4)));
-    return nameAt(w, q);
+    const r = nameAt(w, w.__standout ? Math.min(10, Math.max(q + 2, 4)) : q);
+    r.look.standout = !!w.__standout;
+    return r;
   }
   function nameAt(w, q) {
-    let last = '';
+    let last = null;
     // re-roll until a whole name fits its budget (never cut a phrase in half)
     for (let i = 0; i < 12; i++) {
-      const [nm, max] = build(w, q, pick(BASE[w.type] || BASE.sword));
-      if (nm.length <= max) return nm;
-      last = nm;
+      const [nm, max, look] = build(w, q, pick(BASE[w.type] || BASE.sword));
+      if (nm.length <= max) return { nm, look };
+      last = { nm: fit(nm, 40), look };
     }
-    return fit(last, 40);
+    return last;
   }
 
   // Name once, lock the property, rebuild only if the rarity changes afterwards.
   function christen(w) {
     if (!w || typeof w !== 'object' || w.kind === 'armor' || !w.type || w.__named) return w;
     if (/^QA /.test(String(w.name || ''))) return w; // self-test weapons keep their tags
-    let nm = nameFor(w),
+    let cur = nameFor(w),
       rar = w.rar;
+    const refresh = () => {
+      if (w.rar !== rar) {
+        rar = w.rar;
+        cur = nameFor(w);
+      }
+      return cur;
+    };
     Object.defineProperty(w, '__named', { value: true, enumerable: false });
     Object.defineProperty(w, 'name', {
       enumerable: true,
       configurable: true,
-      get() {
-        if (w.rar !== rar) {
-          rar = w.rar;
-          nm = nameFor(w);
-        }
-        return nm;
-      },
+      get: () => refresh().nm,
       set() {} // later "// suffix" appends from older systems are ignored
     });
+    // which words the name used (drives the weapon's look); not enumerable, so saves skip it
+    Object.defineProperty(w, '__look', { enumerable: false, configurable: true, get: () => refresh().look });
     return w;
   }
   const wrap = fn =>
@@ -112,5 +160,5 @@
   makeFunnyIntroWeapon = wrap(makeFunnyIntroWeapon);
   makeEarlyWeapon = wrap(makeEarlyWeapon);
   makeUpgradeW = wrap(makeUpgradeW);
-  globalThis.CWM_NAMES = { nameFor, christen };
+  globalThis.CWM_NAMES = { nameFor, nameAt, christen, BASE };
 })();

@@ -104,13 +104,15 @@
     PX.text(ready ? 'READY' : rem.toFixed(1) + 'S', 171, cy, ready ? COL.lime : COL.mist);
 
     // Weapon: tinted sprite, name in rarity colour (trimmed), DPS
-    const ic = PX.weaponIcon(w.type, w.col);
+    const ic = PX.weaponIconFor ? PX.weaponIconFor(w) : PX.weaponIcon(w.type, w.col);
     let nx = 218;
     if (ic) {
-      const ih = Math.min(ic.h, 9),
-        iw = Math.round((ic.w * ih) / ic.h);
+      const k = Math.min(1, 10 / ic.h, 24 / ic.w),
+        ih = Math.max(1, Math.round(ic.h * k)),
+        iw = Math.max(1, Math.round(ic.w * k));
+      X.imageSmoothingEnabled = false;
       X.drawImage(ic.cv, nx, cy + 3 - Math.floor(ih / 2), iw, ih);
-      nx += Math.min(iw, 22) + 4;
+      nx += iw + 4;
     }
     const dps = Math.round(estimateDPS(w));
     const dpsText = (globalThis.CWM_FMT ? CWM_FMT(dps) : dps) + ' DPS',

@@ -566,6 +566,12 @@
     return t.trimEnd() + '..';
   };
   PX.paletteHex = s => paletteHex(s);
+  // internals for systems/40-weapon-looks.js
+  PX.afterWorld = [];
+  PX._art = ART;
+  PX._hexRgb = hexRgb;
+  PX._snapRgb = (r, g, b) => snapRgb(r, g, b);
+  PX._lutReady = () => !!LUT;
   PX.weaponIcon = (type, col) => {
     const a = ART.weapons[type];
     return a && LUT ? { cv: tinted(type, a, paletteHex(col)), w: a.w, h: a.h } : null;
@@ -604,6 +610,12 @@
     X.imageSmoothingEnabled = false;
     const r = draw0();
     X.setTransform(1, 0, 0, 1, 0, 0);
+    // extra world-layer painters (device pixels, before the palette snap), e.g. weapon-look particles
+    for (const f of PX.afterWorld) {
+      try {
+        f();
+      } catch (_) {}
+    }
     snapFrame();
     PX.stats.frames++;
     return r;

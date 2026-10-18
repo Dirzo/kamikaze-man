@@ -60,7 +60,8 @@
     "systems/36-weapon-names.js",
     "systems/37-text-budget.js",
     "systems/38-geese-sleepers.js",
-    "systems/39-weapon-curve.js"
+    "systems/39-weapon-curve.js",
+    "systems/40-weapon-looks.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [
