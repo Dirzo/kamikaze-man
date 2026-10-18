@@ -53,7 +53,8 @@
     "systems/30-pixel-renderer.js",
     "systems/31-pixel-hud.js",
     "systems/32-game-feel.js",
-    "systems/33-chiptune.js"
+    "systems/33-chiptune.js",
+    "systems/34-chipmusic.js"
   ],
   "boot": "core/99-boot.js",
   "addons": [

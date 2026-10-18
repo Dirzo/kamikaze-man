@@ -43,10 +43,10 @@
   }
 
   // steps: [[freq, frames], ...]; vol: start volume; decay: volume lost per frame (stepped)
-  function chip(steps, { wave = 'p25', vol = 0.05, decay = 0.004, delay = 0 } = {}) {
+  function chip(steps, { wave = 'p25', vol = 0.05, decay = 0.004, delay = 0, at = null, out = 'sfx' } = {}) {
     const a = ready();
     if (!a) return;
-    const t0 = a.currentTime + 0.005 + delay + offset,
+    const t0 = (at != null ? at : a.currentTime + 0.005 + delay) + offset,
       o = a.createOscillator(),
       g = a.createGain();
     if (wave === 'tri') o.type = 'triangle';
@@ -66,16 +66,16 @@
     }
     g.gain.setValueAtTime(0, t);
     o.connect(g);
-    g.connect(SND.comp);
+    g.connect(out === 'music' && SND.musicGain ? SND.musicGain : SND.comp);
     o.start(t0);
     o.stop(t + 0.02);
   }
 
   // noise burst: rate = playback speed (higher = brighter), stepped decay, optional pitch drop per frame
-  function hiss(frames, { vol = 0.05, rate = 1, drop = 0, short = false, delay = 0 } = {}) {
+  function hiss(frames, { vol = 0.05, rate = 1, drop = 0, short = false, delay = 0, at = null, out = 'sfx' } = {}) {
     const a = ready();
     if (!a) return;
-    const t0 = a.currentTime + 0.005 + delay + offset,
+    const t0 = (at != null ? at : a.currentTime + 0.005 + delay) + offset,
       s = a.createBufferSource(),
       g = a.createGain();
     s.buffer = short ? lfsr.short : lfsr.long;
@@ -92,7 +92,7 @@
     }
     g.gain.setValueAtTime(0, t);
     s.connect(g);
-    g.connect(SND.comp);
+    g.connect(out === 'music' && SND.musicGain ? SND.musicGain : SND.comp);
     s.start(t0);
     s.stop(t + 0.02);
   }
@@ -236,6 +236,55 @@
     arp([55, 60, 64, 67, 72], 4, { wave: 'tri', vol: 0.06, decay: 0.0008 });
   };
 
+  function toWav(buf) {
+    const sr = buf.sampleRate,
+      d = buf.getChannelData(0),
+      n = d.length,
+      bytes = new Uint8Array(44 + n * 2),
+      v = new DataView(bytes.buffer);
+    const wr = (o, s) => [...s].forEach((c, i) => (bytes[o + i] = c.charCodeAt(0)));
+    wr(0, 'RIFF');
+    v.setUint32(4, 36 + n * 2, true);
+    wr(8, 'WAVEfmt ');
+    v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true);
+    v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true);
+    v.setUint32(28, sr * 2, true);
+    v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true);
+    wr(36, 'data');
+    v.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.max(-1, Math.min(1, d[i])) * 32767, true);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode(...bytes.subarray(i, i + 32768));
+    return btoa(bin);
+  }
+  // Run fn with SND pointed at an offline context; returns the rendered WAV (base64).
+  async function renderOffline(seconds, fn) {
+    const off = new OfflineAudioContext(1, Math.ceil(44100 * seconds), 44100);
+    const saved = { ctx: SND.ctx, comp: SND.comp, musicGain: SND.musicGain, on: SND.on, musicOn: SND.musicOn, waves, lfsr };
+    SND.ctx = off;
+    SND.comp = off.createGain();
+    SND.comp.gain.value = 1.6;
+    SND.comp.connect(off.destination);
+    SND.musicGain = off.createGain();
+    SND.musicGain.gain.value = 0.7;
+    SND.musicGain.connect(off.destination);
+    SND.on = true;
+    waves = null;
+    lfsr = null;
+    try {
+      fn(off);
+    } finally {
+      offset = 0;
+      Object.assign(SND, { ctx: saved.ctx, comp: saved.comp, musicGain: saved.musicGain, on: saved.on, musicOn: saved.musicOn });
+      waves = saved.waves;
+      lfsr = saved.lfsr;
+    }
+    return toWav(await off.startRendering());
+  }
+
   // Offline preview: renders every effect end to end into a WAV (base64) for listening checks.
   async function preview() {
     const sr = 44100,
@@ -310,5 +359,5 @@
     return { wav: btoa(bin), order: list.map(x => x[0]), gap };
   }
 
-  globalThis.CWM_CHIPTUNE = { chip, hiss, preview, version: 'phase4' };
+  globalThis.CWM_CHIPTUNE = { chip, hiss, preview, renderOffline, version: 'phase4' };
 })();
