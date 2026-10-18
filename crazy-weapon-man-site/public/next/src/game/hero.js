@@ -2,8 +2,6 @@
 // shots, one special per weapon type, and drawing the held weapon from the front hand.
 import { HERO, C, GROUND } from '../config.js';
 import { input } from '../engine/input.js';
-import { A } from '../engine/assets.js';
-import { X, frame, view } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy } from './physics.js';
@@ -12,10 +10,9 @@ import { CRIT, heroMaxHp } from '../data/curve.js';
 import { hitDamage, trainingSword } from './loot.js';
 import { hitEnemy } from './combat.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
-import { lookOf, motion, overlays, runEmitters, frameOfLook } from './looks.js';
+import { lookOf } from './looks.js';
+import { drawHeroAnimated, fireAt } from './anim.js';
 
-// resting weapon angle (degrees, 0 = forward, negative = up) by type
-const REST = { sword: -60, katana: -55, dagger: 35, hammer: -70, nunchucks: 70, staff: -80, bow: 0, shuriken: 10, wand: -35 };
 
 export function createHero() {
   return {
@@ -43,6 +40,7 @@ export function updateHero(h, dt) {
   h.dashCd = Math.max(0, h.dashCd - dt);
   h.comboT = Math.max(0, h.comboT - dt);
   h.dropT = Math.max(0, h.dropT - dt);
+  h.castT = Math.max(0, (h.castT || 0) - dt);
   h.animT += dt;
 
   // special moves take over movement while they run
@@ -130,13 +128,13 @@ function startAttack(h, T) {
   h.cd = T.cd;
   sfx.attack(w.type, w.q);
   if (!T.melee) {
-    shoot(h, T, 0);
-    h.attack = { ranged: true, t: 0, dur: Math.min(0.22, T.cd) };
+    // the shot leaves when the animation releases it (bow string, throw, wand flick)
+    h.attack = { ranged: true, t: 0, dur: Math.max(0.3, T.cd * 0.95), fired: false, fireAt: fireAt(w.type) };
     h.comboT = T.cd + 0.25;
     return;
   }
   const mv = MOVES[T.combo[h.combo]];
-  h.attack = { move: mv, t: 0, dur: T.cd * mv.dur, hit: new Set() };
+  h.attack = { move: mv, moveName: T.combo[h.combo], t: 0, dur: T.cd * mv.dur, hit: new Set() };
   h.comboT = h.attack.dur + 0.3;
 }
 
@@ -153,6 +151,10 @@ function updateAttack(h, dt, T) {
   const a = h.attack;
   a.t += dt;
   if (a.ranged) {
+    if (!a.fired && a.t / a.dur >= a.fireAt) {
+      a.fired = true;
+      shoot(h, T, 0);
+    }
     if (a.t >= a.dur) h.attack = null;
     return;
   }
@@ -231,6 +233,7 @@ function startSpecial(h, T) {
     case 'volley':
       for (let i = -2; i <= 2; i++) shoot(h, T, i * 0.12, 0.9);
       h.special = null;
+      h.castT = 0.3;
       break;
     case 'storm':
       for (let i = 0; i < 8; i++) {
@@ -241,12 +244,14 @@ function startSpecial(h, T) {
         h.face = f;
       }
       h.special = null;
+      h.castT = 0.3;
       break;
     case 'nova':
       areaHit(h, 70, 1.5, { knock: 40, hop: true });
       ringBurst(cx(h), cy(h), 30, lookOf(h.weapon).light);
       shake(0.4);
       h.special = null;
+      h.castT = 0.3;
       break;
   }
 }
@@ -372,75 +377,5 @@ function updateSpecial(h, dt) {
 
 // ---------------------------------------------------------------- draw
 export function drawHero(h, t) {
-  const H = A.hero;
-  let f = 'idle';
-  if (h.dead) f = 'hurt';
-  else if (h.hurtT > 0) f = 'hurt';
-  else if (h.dashT > 0 || (h.special && h.special.kind === 'iai' && h.special.t < 0.16)) f = 'dash';
-  else if (h.attack && !h.attack.ranged) f = h.attack.t / h.attack.dur < 0.2 ? 'windup' : 'attack';
-  else if (h.attack) f = 'attack';
-  else if (!h.onGround) f = h.vy < 0 ? 'jump' : 'fall';
-  else if (Math.abs(h.vx) > 12) f = Math.floor(h.animT * 9) % 2 ? 'run1' : 'run2';
-  if (h.inv > 0 && !h.special && h.dashT <= 0 && Math.floor(t * 20) % 2 && !h.dead) return drawWeapon(h, t, f, true);
-  const sx = Math.round(cx(h) - H.w / 2),
-    sy = Math.round(h.y + h.h - 24);
-  const flip = h.face < 0;
-  const behind = h.weapon.type === 'bow' ? false : f === 'windup';
-  if (behind) drawWeapon(h, t, f);
-  frame(H.im, H.frames[f], H.w, H.h, sx, sy, flip);
-  if (!behind) drawWeapon(h, t, f);
-}
-
-function drawWeapon(h, t, f, onlyParticles = false) {
-  const H = A.hero,
-    w = h.weapon,
-    L = lookOf(w, frameOfLook(w.look, t)),
-    T = TYPES[w.type];
-  const g = H.grip[f] || H.grip.idle;
-  const sx = Math.round(cx(h) - H.w / 2),
-    sy = Math.round(h.y + h.h - 24);
-  const gx = h.face > 0 ? sx + g[0] : sx + H.w - 1 - g[0],
-    gy = sy + g[1];
-  let ang = REST[w.type] ?? -45,
-    push = 0;
-  const a = h.attack;
-  if (a && !a.ranged) {
-    const p = Math.min(1, a.t / a.dur),
-      e = p < 0.2 ? 0 : Math.min(1, (p - 0.2) / 0.45);
-    const k = 1 - Math.pow(1 - e, 3);
-    ang = a.move.from + (a.move.to - a.move.from) * k;
-    if (a.move.thrust) push = Math.sin(Math.min(1, e) * Math.PI) * a.move.thrust;
-  } else if (a && a.ranged) ang = 0;
-  if (h.special) {
-    const s = h.special;
-    if (s.kind === 'whirl' || s.kind === 'cyclone') ang = (s.t * 1400) % 360;
-    else if (s.kind === 'flurry') {
-      ang = 0;
-      push = Math.abs(Math.sin(s.t * 40)) * 10;
-    } else if (s.kind === 'iai') ang = s.t < 0.16 ? 20 : -20;
-    else if (s.kind === 'quake' || s.kind === 'vault') ang = s.slam ? 60 : -150;
-  }
-  if (h.dashT > 0) ang = 20;
-  const k = (w.look.grand === 'Mighty' || w.look.what) && L.w <= 22 ? 2 : 1;
-  X.save();
-  X.translate(gx + h.face * push, gy);
-  X.scale(h.face, 1);
-  X.rotate((ang * Math.PI) / 180);
-  motion(w.look, t, k);
-  if (!onlyParticles) {
-    if (w.look.adj === 'Sneaky' && Math.floor(t * 3) % 3 === 0) X.globalAlpha = 0.5;
-    X.drawImage(L.cv, -L.gx * k, -L.gy * k, L.w * k, L.h * k);
-    X.globalAlpha = 1;
-    overlays(L, w.look, t, k, (px, py) => [(px - L.gx) * k, (py - L.gy) * k]);
-  }
-  // particles from random blade pixels (world coordinates)
-  // the transform maps to device pixels (world + screenshake); particles live in world space
-  const m = X.getTransform();
-  runEmitters(L.emitters, () => {
-    const mk = L.marks[Math.floor(Math.random() * L.marks.length)];
-    if (!mk) return null;
-    const p = m.transformPoint(new DOMPoint((mk[0] + 0.5 - L.gx) * k, (mk[1] + 0.5 - L.gy) * k));
-    return { x: p.x - view.ox, y: p.y - view.oy };
-  });
-  X.restore();
+  drawHeroAnimated(h, t);
 }
