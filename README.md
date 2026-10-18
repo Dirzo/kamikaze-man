@@ -1,5 +1,7 @@
 # KAMIKAZE MAN — Four-Class Prototype
 
+> The live web game, **Crazy Weapon Man**, is in `crazy-weapon-man-site/` (see its README and `WORK-LOG.md`). The Godot project below is the original prototype.
+
 A keyboard-first 2D action roguelike prototype for Godot 4.
 
 ## Controls

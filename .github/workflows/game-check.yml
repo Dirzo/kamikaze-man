@@ -1,0 +1,25 @@
+name: Game check
+
+on:
+  push:
+    branches: [crazy-weapon-man-web]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Built output matches game-src
+        run: node crazy-weapon-man-site/build.mjs --check
+      - name: Syntax
+        run: |
+          node --check crazy-weapon-man-site/src/index.js
+          node --check crazy-weapon-man-site/public/game.js
+          for f in crazy-weapon-man-site/public/addons/*.js; do node --check "$f"; done
+      - name: In-game self-tests
+        run: bash crazy-weapon-man-site/tests/smoke.sh
