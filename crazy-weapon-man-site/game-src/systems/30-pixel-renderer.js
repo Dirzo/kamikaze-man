@@ -18,7 +18,11 @@
   const PW = 480,
     PH = 270,
     S = PW / W;
-  const SNAP = !params.has('nosnap');
+  // Palette: colours are snapped when they are set (fillStyle/strokeStyle/gradient stops), not by
+  // reading the frame back. The old per-frame readback (?snapframe) forced the browser to finish
+  // drawing synchronously and stalled the GPU every frame, which was most of the lag.
+  const SNAP = params.has('snapframe');
+  const SNAP_STYLES = !params.has('nosnap');
 
   const PX = {
     active: true,
@@ -183,6 +187,62 @@
       }
     };
   }
+  // ---- snap colours as they are set ----
+  const snapCache = new Map();
+  function snapStyle(v) {
+    if (typeof v !== 'string' || !LUT || !SNAP_STYLES) return v;
+    let hit = snapCache.get(v);
+    if (hit) return hit;
+    const a = styleAlpha(v),
+      hex = paletteHex(v);
+    if (a >= 0.999) hit = hex;
+    else {
+      const [r, g, b] = hexRgb(hex);
+      hit = `rgba(${r},${g},${b},${+a.toFixed(3)})`;
+    }
+    if (snapCache.size > 800) snapCache.clear();
+    snapCache.set(v, hit);
+    return hit;
+  }
+  const raw = { fillStyle: X.fillStyle, strokeStyle: X.strokeStyle },
+    rawStack = [];
+  for (const prop of ['fillStyle', 'strokeStyle']) {
+    const desc = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, prop);
+    Object.defineProperty(X, prop, {
+      configurable: true,
+      get: () => raw[prop], // callers (and the dither below) see what they set
+      set: v => {
+        raw[prop] = v;
+        desc.set.call(X, snapStyle(v));
+      }
+    });
+  }
+  // save/restore must carry the raw styles too
+  {
+    const save0 = X.save.bind(X),
+      restore0 = X.restore.bind(X);
+    X.save = () => {
+      rawStack.push(raw.fillStyle, raw.strokeStyle);
+      save0();
+    };
+    X.restore = () => {
+      if (rawStack.length) {
+        raw.strokeStyle = rawStack.pop();
+        raw.fillStyle = rawStack.pop();
+      }
+      restore0();
+    };
+  }
+  for (const fn of ['createLinearGradient', 'createRadialGradient']) {
+    const base = X[fn].bind(X);
+    X[fn] = (...a) => {
+      const g = base(...a),
+        add = g.addColorStop.bind(g);
+      g.addColorStop = (o, c) => add(o, snapStyle(c));
+      return g;
+    };
+  }
+
   if (!params.has('nodither')) {
     X.fill = dithered('fillStyle', X.fill.bind(X));
     X.fillRect = dithered('fillStyle', X.fillRect.bind(X));
