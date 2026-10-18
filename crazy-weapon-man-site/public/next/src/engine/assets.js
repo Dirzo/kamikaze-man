@@ -37,7 +37,7 @@ export async function loadAssets(onProgress = () => {}) {
   add(
     img(NEXT_ASSETS + 'hero.png').then(im => {
       const h = next.hero;
-      A.hero = { im, w: h.w, h: h.h, frames: Object.fromEntries(h.frames.map((f, i) => [f, i])), grip: h.grip };
+      A.hero = { im, w: h.w, h: h.h, frames: Object.fromEntries(h.frames.map((f, i) => [f, i])), shoulders: h.shoulders };
     })
   );
   for (const [type, info] of Object.entries(man.enemies)) add(img(PX_ASSETS + `enemy-${type}.png`).then(im => (A.enemies[type] = { im, ...info })));

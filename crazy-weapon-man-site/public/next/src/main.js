@@ -237,6 +237,55 @@ loadAssets(f => (loadFrac = f))
 import { makeWeapon } from './game/loot.js';
 import { heroMaxHp } from './data/curve.js';
 import { startBoss } from './game/bosses.js';
+import { drawHeroAnimated } from './game/anim.js';
+import { TYPES as WTYPES, MOVES } from './data/weapons.js';
+// debug: contact sheet of every weapon style's poses -> data URL
+function animSheet(zoom = 3) {
+  const types = Object.keys(WTYPES);
+  const cols = ['idle', 'run', 'jump', 'fall', 'dash', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'b2', 'c2'];
+  const cw = 60,
+    ch = 60;
+  const sheet = document.createElement('canvas');
+  sheet.width = cw * cols.length * zoom;
+  sheet.height = ch * types.length * zoom;
+  const g = sheet.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  types.forEach((type, r) => {
+    cols.forEach((c, i) => {
+      const h = createHero();
+      h.weapon = makeWeapon(3, { type, q: 3, standout: false });
+      h.x = 192;
+      h.y = 140;
+      h.onGround = true;
+      h.inv = 0;
+      const T = WTYPES[type];
+      if (c === 'run') {
+        h.vx = 90;
+        h.animT = 0.15;
+      } else if (c === 'jump') {
+        h.onGround = false;
+        h.vy = -100;
+      } else if (c === 'fall') {
+        h.onGround = false;
+        h.vy = 100;
+      } else if (c === 'dash') h.dashT = 0.1;
+      else if (c[0] === 'a' || c[0] === 'b' || c[0] === 'c') {
+        const step = c[0] === 'a' ? 0 : c[0] === 'b' ? 1 : 2;
+        const p = c[0] === 'a' ? [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] : 0.5;
+        if (T.melee) {
+          const mn = T.combo[step];
+          h.attack = { move: MOVES[mn], moveName: mn, t: p, dur: 1, hit: new Set() };
+        } else h.attack = { ranged: true, t: p, dur: 1, fired: true };
+      }
+      X.setTransform(1, 0, 0, 1, 0, 0);
+      X.fillStyle = C.slate;
+      X.fillRect(170, 120, cw, ch);
+      drawHeroAnimated(h, 1.0);
+      g.drawImage(X.canvas, 170, 120, cw, ch, i * cw * zoom, r * ch * zoom, cw * zoom, ch * zoom);
+    });
+  });
+  return sheet.toDataURL();
+}
 window.CWM_NEXT = {
   world,
   get scene() {
@@ -244,6 +293,7 @@ window.CWM_NEXT = {
   },
   startRun,
   A,
+  animSheet,
   // debug: start at zone z with a matching hero (and optionally go straight to its boss)
   jump(z, { boss = false, type = null } = {}) {
     startRun();

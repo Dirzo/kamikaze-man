@@ -10,6 +10,12 @@ Handoff notes so any session can pick up where the last one stopped. Newest firs
 4. **Gameplay polish** — floating-text budget, one loot banner at a time, Dark-trait rework, hit-stop and screenshake tuning, chiptune SFX, balance via bot runs.
 5. **Ship** each phase via a preview branch and PR into `crazy-weapon-man-web` (auto-deploys).
 
+## 2026-10-18 — next: weapon-integrated hero animation
+
+- The hero body is now drawn without arms (`art-src/build_next.py`: armless frames + breathing, 3-step run, lean, wind-back, crouch, planted stance, shoulder points per frame). `src/game/anim.js` draws both arms from the shoulders to hands posed per weapon style, with the weapon in the front hand (two-handed styles put the back hand on the handle).
+- Each style has its own idle, run, jump/fall, dash, hurt, combo and special poses: sword arcs, reverse-grip dagger jabs, two-handed katana (chudan guard, overhead cut, sweep), hammer (head-down rest, overhead lift, crouching slam), nunchuck twirls and shoulder spins, mid-shaft staff thrusts/sweeps/spin, bow draw (string pulled to the back hand, nocked arrow, release), shuriken throw from behind the head, wand flick.
+- Ranged shots now leave at the release frame. Weapons are rotated with a RotSprite-style sampler cached at 32 angles; fast swings leave a pixel smear.
+
 ## 2026-10-18 — The rebuild: Crazy Weapon Man next (/next/)
 
 Playtest verdict on the old build: "built in layers that are eating the game away". Decision: a clean
