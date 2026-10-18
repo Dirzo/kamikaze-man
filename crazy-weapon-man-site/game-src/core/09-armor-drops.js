@@ -30,7 +30,7 @@
         move: 0
       },
       {
-        name: 'EXECUTIVE VISOR',
+        name: 'ROYAL VISOR',
         desc: 'Quarterly earnings are up. Restraint is down.',
         armor: 9,
         damage: 0.08,
@@ -95,8 +95,8 @@
         move: 24
       },
       {
-        name: 'EXECUTIVE FLAK VEST',
-        desc: 'Boardroom protection for hostile workplace takeovers.',
+        name: 'ROYAL FLAK VEST',
+        desc: 'Throne-room protection for hostile kingdom takeovers.',
         armor: 18,
         damage: 0.12,
         speed: 0.08,
@@ -115,7 +115,7 @@
     ],
     feet: [
       {
-        name: 'ROCKET BOOTS',
+        name: 'GRIFFON BOOTS',
         desc: 'The floor becomes more of a scheduling suggestion.',
         armor: 7,
         damage: 0.04,
@@ -125,7 +125,7 @@
       },
       {
         name: 'STEEL-TOE GREAVES',
-        desc: 'Kick the problem until the spreadsheet agrees.',
+        desc: 'Kick the problem until the ledger agrees.',
         armor: 15,
         damage: 0.08,
         speed: 0.05,

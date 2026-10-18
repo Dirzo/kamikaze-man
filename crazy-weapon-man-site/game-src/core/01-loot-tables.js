@@ -70,7 +70,7 @@
       'Sword-Shaped Liability',
       'Emergency Cutlery',
       'Curb Stomper',
-      'Long Knife of HR'
+      'Long Knife Of Grievances'
     ],
     dagger: [
       'Dagger',
@@ -81,7 +81,7 @@
       'Pocket Menace',
       'Tiny Crime',
       'Stabby Receipt',
-      'Lunch Break Shiv',
+      'Mead Break Shiv',
       'Needle of Regret',
       'Backspace'
     ],
@@ -90,8 +90,8 @@
       'Payroll Nunchucks',
       'Chain Complaint',
       'Double Bonk',
-      'HR Flails',
-      'Lunch Break Nunchucks',
+      'Grievance Flails',
+      'Mead Break Nunchucks',
       'Spinning Liability',
       'Two-Stick Problem',
       'Concussion Necklace',
@@ -99,10 +99,10 @@
     ],
     katana: [
       'Katana',
-      'Office Samurai',
+      'Scriptorium Samurai',
       'Overtime Katana',
       'Performance Review Blade',
-      'Long Meeting Ender',
+      'Long Council Ender',
       'Payroll Ronin',
       'Quarterly Cut',
       'Iaido Incident',
@@ -127,7 +127,7 @@
       'Ninja Receipt',
       'Throwing Problem',
       'Payroll Star',
-      'Five-Point HR Complaint',
+      'Five-Point Guild Grievance',
       'Spinny Liability',
       'Pocket Windmill',
       'Tax Star',
@@ -140,10 +140,10 @@
       'Hex Wand',
       'Spirit Wand',
       'Spark Wand',
-      'OSHA Wand',
-      'Parking Ticket Wand',
+      'Guild-Safety Wand',
+      'Toll Writ Wand',
       'Wizard Stick',
-      'Microwave Wand',
+      'Dragon-Oven Wand',
       'Compliance Rod',
       'Questionable Pointer'
     ],
@@ -156,8 +156,8 @@
       'Morbidly Obese Staff',
       'Payroll Staff',
       'Weather Stick',
-      'Wizard Rebar',
-      'Staff Meeting',
+      'Wizard Iron-Bar',
+      'Staff Council',
       'Long Problem'
     ],
     hammer: [
@@ -166,7 +166,7 @@
       'Stonebreaker',
       'Judgement Hammer',
       'Crusher',
-      'HR Complaint',
+      'Guild Grievance',
       'Municipal Hammer',
       'Concrete Opinion',
       'Bonk Engine',
@@ -187,14 +187,14 @@
     'Crooked',
     'Violent',
     'Unlicensed',
-    'Overcaffeinated',
+    'Over-Potioned',
     'Spiteful',
     'Jazz',
     'Aggressively Legal',
     'Emotionally Complicated',
     'Tax-Deductible',
     'Suspiciously Warm',
-    'Union-Made',
+    'Guild-Made',
     'Non-Euclidean',
     'Extremely Online',
     'Budget',
@@ -203,39 +203,39 @@
   const SUFFIXES = [
     'of Bad Decisions',
     'of Excessive Force',
-    'of the Parking Authority',
+    'of the Toll-Bridge Authority',
     'of Unscheduled Maintenance',
     'of Mild Panic',
     'of Weaponized Accounting',
     'of Questionable Intent',
     'of Greater Bonking',
     'of the Last Brain Cell',
-    'of OSHA Noncompliance',
+    'of Guild-Safety Noncompliance',
     'of Recursive Problems',
     'of the Tuesday Incident',
     'of Unpaid Overtime',
     'of Extremely Local Weather',
-    'of the Forbidden Food Court'
+    'of the Forbidden Feast Hall'
   ];
   const NAME_CHAOS = [
-    'OSHA-Adjacent',
-    'Parking-Lot Approved',
+    'Guild-Safety-Adjacent',
+    'Courtyard Approved',
     'Unsupervised',
     'Probably Legal',
     'Break-Room Certified',
     'Emotionally Overclocked',
     'Management-Resistant',
-    'Forklift Compatible',
+    'Siege-Ox Compatible',
     'After-Hours',
-    'Warranty-Void',
+    'Blessing-Void',
     'Suspiciously Motivated',
     'Municipally Questionable',
     'Aggressively Portable',
     'Payroll-Disputed',
     'Liability-Shaped',
-    'Meeting-Proof',
+    'Council-Proof',
     'Raccoon-Endorsed',
-    'Microwave-Adjacent',
+    'Dragon-Oven-Adjacent',
     'Deeply Unnecessary',
     'Budget-Unlimited'
   ];
@@ -313,7 +313,7 @@
       desc: 'attacks bounce into extra targets'
     },
     {
-      n: 'Nuclear',
+      n: 'Meteoric',
       code: 'nuclear',
       dam: 1.18,
       crit: 0,
@@ -340,7 +340,7 @@
       desc: 'the weapon attacks things by itself'
     },
     {
-      n: 'Plasma',
+      n: 'Starfire',
       code: 'plasma',
       dam: 1.1,
       crit: 0.025,
@@ -443,12 +443,12 @@
       desc: 'every few attacks honk a spectral weapon into somebody else'
     },
     {
-      n: 'Microwaved',
+      n: 'Oven-Blasted',
       code: 'microwaved',
       dam: 1.09,
       spd: 1.04,
       aoe: 1.16,
-      desc: 'periodically erupts into deeply unsafe plasma leftovers'
+      desc: 'periodically erupts into deeply unsafe starfire leftovers'
     },
     {
       n: 'Divorced',
@@ -464,7 +464,7 @@
       dam: 1.02,
       spd: 1.18,
       aoe: 1.04,
-      desc: 'somehow comfortable enough to become a workplace concern'
+      desc: 'somehow comfortable enough to become a kingdom concern'
     },
     {
       n: 'Loud',
@@ -483,12 +483,12 @@
       desc: 'occasionally attacks the wrong direction and somehow hits something'
     },
     {
-      n: 'Dishwasher Safe',
+      n: 'Cauldron Safe',
       code: 'dishwasher',
       dam: 1.03,
       spd: 1.06,
       aoe: 1.08,
-      desc: 'gets inexplicably stronger around water and industrial soup'
+      desc: 'gets inexplicably stronger around water and forge-grade soup'
     },
     {
       n: 'Emotionally Available',
@@ -598,7 +598,7 @@
 
   const META_TRAITS = [
     {
-      n: 'Quantumly Dubious',
+      n: 'Arcanely Dubious',
       code: 'quantum',
       dam: 1.06,
       spd: 1.08,
@@ -606,7 +606,7 @@
       desc: 'attacks sometimes occur twice because causality has poor supervision'
     },
     {
-      n: 'Internet Explorer Compatible',
+      n: 'Carrier-Pigeon Compatible',
       code: 'iexplorer',
       dam: 1.24,
       spd: 0.74,
@@ -660,7 +660,7 @@
     ],
     nunchucks: [
       ['chainstorm', 'every third combo becomes a spinning chain storm'],
-      ['blender', 'rapid hits drag enemies into the nunchuck blender'],
+      ['blender', 'rapid hits drag enemies into the nunchuck millstone'],
       ['orbitalkarate', 'ghost nunchucks orbit you and bonk independently']
     ],
     katana: [

@@ -1958,7 +1958,7 @@ function draw() {
               ? 'HOSTILE TAKEOVER THRONE ROOM'
               : bossMode === 'weapon'
                 ? 'THE ARMORY HAS BECOME SENTIENT'
-                : 'EXECUTIVE PERFORMANCE CHAMBER',
+                : 'ROYAL PERFORMANCE CHAMBER',
       W / 2,
       190
     );
@@ -2241,7 +2241,7 @@ function render() {
   U.fsMasteryT.textContent = riftReady ? 'OPEN' : `${stageClears}/${stageGoal()}`;
   U.fsLv.textContent = pl.lv;
   U.fsZone.textContent = Z[zoneI].name;
-  U.fsKills.textContent = `${kills} kills • ${ones} one-shots • ${tempAugment ? 'AUGMENT ' + tempAugment.name + ' ' + tempAugment.t.toFixed(1) + 's' : superT > 0 ? 'D20 ' + superRoll + ' • SUPER SAIYAN ' + superT.toFixed(1) + 's' : approachLabel()}`;
+  U.fsKills.textContent = `${kills} kills • ${ones} one-shots • ${tempAugment ? 'AUGMENT ' + tempAugment.name + ' ' + tempAugment.t.toFixed(1) + 's' : superT > 0 ? 'D20 ' + superRoll + ' • ASCENDED ' + superT.toFixed(1) + 's' : approachLabel()}`;
   if (bossMode) {
     let be = E.find(e => e.boss && !e.dead);
     if (be) {

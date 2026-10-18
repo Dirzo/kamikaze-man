@@ -39,6 +39,12 @@
     pl.weapon = w;
     return w.rar + ' ' + type;
   };
+  PX.sampleNames = (n = 40) => {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(makeW(pl.lv + i).name);
+    for (const t of Object.keys(ED)) if (!ED[t].boss) out.push(enemyName(t, Math.random() < 0.4));
+    return out;
+  };
   PX.previewBoss = kind => {
     startBoss(kind);
     return bossMode;

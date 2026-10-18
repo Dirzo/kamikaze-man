@@ -8,16 +8,16 @@
   const choice = a => a[Math.floor(Math.random() * a.length)];
 
   const GRAY_PREFIX = [
-    'Clearance-Bin',
+    'Bargain-Barrel',
     'Previously Returned',
     'Mildly Bent',
-    'Warranty-Void',
-    'Parking-Lot Special',
-    'Wet-Cardboard',
-    'One-Star Reviewed',
+    'Blessing-Void',
+    'Courtyard Special',
+    'Wet-Parchment',
+    'One-Star Bard-Reviewed',
     'Manager Refused',
     'Found Near a Dumpster',
-    'Factory-Reject',
+    'Smithy-Reject',
     'Loose-Handle',
     'Budget-Cut',
     'Probably a Prop',
@@ -47,16 +47,16 @@
     'Acceptable From Far Away',
     'Barely Within Spec',
     'Good Enough for Night Shift',
-    'Warranty Pending',
+    'Blessing Pending',
     'Quality-Control Adjacent',
     'Improved by Accident'
   ];
   const GRAY_SUFFIX = [
     '— FINAL SALE',
     'with One Good Screw',
-    'of the Recall Notice',
+    'of the Royal Recall',
     'of Immediate Regret',
-    'of Questionable Warranty',
+    'of Questionable Blessing',
     'from the Lost-and-Found',
     'of Poor Life Choices',
     'with Cosmetic Structural Damage',
@@ -76,8 +76,8 @@
     'with the Better Handle',
     'of Moderate Improvement',
     'Now With Fewer Sparks',
-    'of the Second Purchase Order',
-    'with a Real Serial Number',
+    'of the Second Requisition Scroll',
+    'with a Real Maker’s Mark',
     'of Nearly Acceptable Craftsmanship',
     'Approved Pending Review',
     'with Only Minor Concerns',
@@ -117,7 +117,7 @@
     },
     {
       id: 'dull',
-      name: 'Factory Dull',
+      name: 'Smithy Dull',
       desc: 'Deals less base damage. The edge inspection was conducted by optimism.',
       weight: 1.0,
       static: true

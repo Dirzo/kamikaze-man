@@ -6,7 +6,7 @@
     },
     {
       id: 'eliteunion',
-      name: 'ELITE UNION MEETING',
+      name: 'ELITE GUILD COUNCIL',
       desc: 'Too many enemies have benefits now. Several are elite.'
     },
     {
@@ -89,7 +89,7 @@
   const TERRAIN = [
     {
       id: 'conveyor',
-      name: 'UNION CONVEYOR FLOOR',
+      name: 'GUILD MILLWHEEL FLOOR',
       msg: 'The floor has joined organized labor and is moving sideways.'
     },
     { id: 'ice', name: 'LIABILITY ICE', msg: 'Stopping is now more of a long-term goal than an action.' },
@@ -323,7 +323,7 @@
     {
       id: 'disco',
       name: 'DISCO EMERGENCY',
-      msg: 'Everything gets faster because apparently this is a nightclub now.'
+      msg: 'Everything gets faster because apparently this is a tavern now.'
     },
     {
       id: 'lava',

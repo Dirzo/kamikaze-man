@@ -181,7 +181,7 @@
       nextBoss: 'bossman',
       map: 3,
       pool: ['taxman', 'shieldbro', 'blinker', 'mimic', 'sniper'],
-      sub: 'Management has privatized the feast hall. Every skeleton now has a meeting summons.',
+      sub: 'Management has privatized the feast hall. Every skeleton now has a council summons.',
       a: '#11131e',
       b: '#32384f',
       h: '#8c93b3',
@@ -208,7 +208,7 @@
       boss: 'bossman',
       map: 5,
       pool: ['taxman', 'sniper', 'roller', 'summoner', 'shieldbro', 'mimic'],
-      sub: 'The executive retreat is a frozen mountain fortress, hostile and aggressively KPI-driven. Boss Man is next.',
+      sub: 'The royal retreat is a frozen mountain fortress, hostile and aggressively KPI-driven. Boss Man is next.',
       a: '#0d1c2a',
       b: '#35647d',
       h: '#9de4ff',
@@ -250,7 +250,7 @@
       boss: 'ceo',
       map: 0,
       pool: ['taxman', 'shieldbro', 'sniper', 'blinker', 'roller', 'eyeball'],
-      sub: 'Every floor is a performance review. The CEO owns the floating staircases and most of your lunch break.',
+      sub: 'Every floor is a performance review. The CEO owns the floating staircases and most of your mead break.',
       a: '#17130b',
       b: '#51451d',
       h: '#ffd24f',
@@ -279,7 +279,7 @@
       traits: ['caffeine', 'confetti', 'rabbitlauncher', 'sneeze'],
       aliases: {
         stalker: 'Prototype Sword Apprentice',
-        crawler: 'Loose Ammo Gremlin',
+        crawler: 'Loose Arrow Gremlin',
         blinker: 'Teleporting Training Golem',
         bombchicken: 'Tactical Bomb Chicken',
         wizard: 'Particle-Effect Apprentice',
@@ -342,10 +342,10 @@
       aliases: {
         taxman: 'Senior Revenue Executioner',
         shieldbro: 'Golden-Parachute Knight',
-        sniper: 'Boardroom Crossbowman',
+        sniper: 'Throne-Room Crossbowman',
         blinker: 'Restructuring Shade',
-        roller: 'Executive Throne of Violence',
-        eyeball: 'Shareholder Scrying Orb'
+        roller: 'Royal Throne of Violence',
+        eyeball: 'Court Noble Scrying Orb'
       }
     },
     weapon: {
@@ -526,7 +526,7 @@
     } else if (mz === 1) {
       scene.kind = 'sewerriver';
       let rx = v === 0 ? 500 : v === 1 ? 230 : 760;
-      scene.water = { x: rx, w: 260, col: '#36f0b9', name: 'NEON SEWAGE' };
+      scene.water = { x: rx, w: 260, col: '#36f0b9', name: 'WITCHLIGHT SEWAGE' };
       if (v === 0) {
         add(90, 505, 190);
         add(350, 440, 130);
@@ -569,7 +569,7 @@
         add(880, 435, 170);
         add(1080, 535, 120);
       }
-      scene.water = { x: v === 2 ? 430 : 570, w: 170, col: '#ff5426', name: 'UNION LAVA' };
+      scene.water = { x: v === 2 ? 430 : 570, w: 170, col: '#ff5426', name: 'GUILD LAVA' };
     } else if (mz === 3) {
       scene.kind = 'boneravine';
       scene.water = { x: v === 0 ? 520 : v === 1 ? 170 : 860, w: 220, col: '#65718c', name: 'SOUP RAVINE' };
@@ -763,7 +763,7 @@
       'Sword-Shaped Liability',
       'Emergency Cutlery',
       'Curb Stomper',
-      'Long Knife of HR'
+      'Long Knife Of Grievances'
     ],
     dagger: [
       'Dagger',
@@ -774,7 +774,7 @@
       'Pocket Menace',
       'Tiny Crime',
       'Stabby Receipt',
-      'Lunch Break Shiv',
+      'Mead Break Shiv',
       'Needle of Regret',
       'Backspace'
     ],
@@ -783,8 +783,8 @@
       'Payroll Nunchucks',
       'Chain Complaint',
       'Double Bonk',
-      'HR Flails',
-      'Lunch Break Nunchucks',
+      'Grievance Flails',
+      'Mead Break Nunchucks',
       'Spinning Liability',
       'Two-Stick Problem',
       'Concussion Necklace',
@@ -792,10 +792,10 @@
     ],
     katana: [
       'Katana',
-      'Office Samurai',
+      'Scriptorium Samurai',
       'Overtime Katana',
       'Performance Review Blade',
-      'Long Meeting Ender',
+      'Long Council Ender',
       'Payroll Ronin',
       'Quarterly Cut',
       'Iaido Incident',
@@ -820,7 +820,7 @@
       'Ninja Receipt',
       'Throwing Problem',
       'Payroll Star',
-      'Five-Point HR Complaint',
+      'Five-Point Guild Grievance',
       'Spinny Liability',
       'Pocket Windmill',
       'Tax Star',
@@ -833,10 +833,10 @@
       'Hex Wand',
       'Spirit Wand',
       'Spark Wand',
-      'OSHA Wand',
-      'Parking Ticket Wand',
+      'Guild-Safety Wand',
+      'Toll Writ Wand',
       'Wizard Stick',
-      'Microwave Wand',
+      'Dragon-Oven Wand',
       'Compliance Rod',
       'Questionable Pointer'
     ],
@@ -849,8 +849,8 @@
       'Morbidly Obese Staff',
       'Payroll Staff',
       'Weather Stick',
-      'Wizard Rebar',
-      'Staff Meeting',
+      'Wizard Iron-Bar',
+      'Staff Council',
       'Long Problem'
     ],
     hammer: [
@@ -859,7 +859,7 @@
       'Stonebreaker',
       'Judgement Hammer',
       'Crusher',
-      'HR Complaint',
+      'Guild Grievance',
       'Municipal Hammer',
       'Concrete Opinion',
       'Bonk Engine',
@@ -880,14 +880,14 @@
     'Crooked',
     'Violent',
     'Unlicensed',
-    'Overcaffeinated',
+    'Over-Potioned',
     'Spiteful',
     'Jazz',
     'Aggressively Legal',
     'Emotionally Complicated',
     'Tax-Deductible',
     'Suspiciously Warm',
-    'Union-Made',
+    'Guild-Made',
     'Non-Euclidean',
     'Extremely Online',
     'Budget',
@@ -896,39 +896,39 @@
   const SUFFIXES = [
     'of Bad Decisions',
     'of Excessive Force',
-    'of the Parking Authority',
+    'of the Toll-Bridge Authority',
     'of Unscheduled Maintenance',
     'of Mild Panic',
     'of Weaponized Accounting',
     'of Questionable Intent',
     'of Greater Bonking',
     'of the Last Brain Cell',
-    'of OSHA Noncompliance',
+    'of Guild-Safety Noncompliance',
     'of Recursive Problems',
     'of the Tuesday Incident',
     'of Unpaid Overtime',
     'of Extremely Local Weather',
-    'of the Forbidden Food Court'
+    'of the Forbidden Feast Hall'
   ];
   const NAME_CHAOS = [
-    'OSHA-Adjacent',
-    'Parking-Lot Approved',
+    'Guild-Safety-Adjacent',
+    'Courtyard Approved',
     'Unsupervised',
     'Probably Legal',
     'Break-Room Certified',
     'Emotionally Overclocked',
     'Management-Resistant',
-    'Forklift Compatible',
+    'Siege-Ox Compatible',
     'After-Hours',
-    'Warranty-Void',
+    'Blessing-Void',
     'Suspiciously Motivated',
     'Municipally Questionable',
     'Aggressively Portable',
     'Payroll-Disputed',
     'Liability-Shaped',
-    'Meeting-Proof',
+    'Council-Proof',
     'Raccoon-Endorsed',
-    'Microwave-Adjacent',
+    'Dragon-Oven-Adjacent',
     'Deeply Unnecessary',
     'Budget-Unlimited'
   ];
@@ -1006,7 +1006,7 @@
       desc: 'attacks bounce into extra targets'
     },
     {
-      n: 'Nuclear',
+      n: 'Meteoric',
       code: 'nuclear',
       dam: 1.18,
       crit: 0,
@@ -1033,7 +1033,7 @@
       desc: 'the weapon attacks things by itself'
     },
     {
-      n: 'Plasma',
+      n: 'Starfire',
       code: 'plasma',
       dam: 1.1,
       crit: 0.025,
@@ -1136,12 +1136,12 @@
       desc: 'every few attacks honk a spectral weapon into somebody else'
     },
     {
-      n: 'Microwaved',
+      n: 'Oven-Blasted',
       code: 'microwaved',
       dam: 1.09,
       spd: 1.04,
       aoe: 1.16,
-      desc: 'periodically erupts into deeply unsafe plasma leftovers'
+      desc: 'periodically erupts into deeply unsafe starfire leftovers'
     },
     {
       n: 'Divorced',
@@ -1157,7 +1157,7 @@
       dam: 1.02,
       spd: 1.18,
       aoe: 1.04,
-      desc: 'somehow comfortable enough to become a workplace concern'
+      desc: 'somehow comfortable enough to become a kingdom concern'
     },
     {
       n: 'Loud',
@@ -1176,12 +1176,12 @@
       desc: 'occasionally attacks the wrong direction and somehow hits something'
     },
     {
-      n: 'Dishwasher Safe',
+      n: 'Cauldron Safe',
       code: 'dishwasher',
       dam: 1.03,
       spd: 1.06,
       aoe: 1.08,
-      desc: 'gets inexplicably stronger around water and industrial soup'
+      desc: 'gets inexplicably stronger around water and forge-grade soup'
     },
     {
       n: 'Emotionally Available',
@@ -1291,7 +1291,7 @@
 
   const META_TRAITS = [
     {
-      n: 'Quantumly Dubious',
+      n: 'Arcanely Dubious',
       code: 'quantum',
       dam: 1.06,
       spd: 1.08,
@@ -1299,7 +1299,7 @@
       desc: 'attacks sometimes occur twice because causality has poor supervision'
     },
     {
-      n: 'Internet Explorer Compatible',
+      n: 'Carrier-Pigeon Compatible',
       code: 'iexplorer',
       dam: 1.24,
       spd: 0.74,
@@ -1353,7 +1353,7 @@
     ],
     nunchucks: [
       ['chainstorm', 'every third combo becomes a spinning chain storm'],
-      ['blender', 'rapid hits drag enemies into the nunchuck blender'],
+      ['blender', 'rapid hits drag enemies into the nunchuck millstone'],
       ['orbitalkarate', 'ghost nunchucks orbit you and bonk independently']
     ],
     katana: [
@@ -1636,15 +1636,15 @@
     [60, 'VERY NICE!', 'The numbers are beginning to smile.'],
     [110, 'YOU ARE COOKING', 'Something irresponsible is happening.'],
     [180, 'CERTIFIED PROBLEM', 'Local enemies have filed paperwork.'],
-    [280, 'ABSOLUTE MENACE', 'This is becoming a workplace incident.'],
+    [280, 'ABSOLUTE MENACE', 'This is becoming a kingdom incident.'],
     [420, 'WEAPON ENTHUSIAST', 'Excellent form. Questionable intent.'],
-    [620, 'HR HAS BEEN NOTIFIED', 'HR cannot physically reach you.'],
-    [900, 'LOCAL LEGEND', 'Nearby monsters are updating their resumes.'],
+    [620, 'THE GUILD HAS BEEN NOTIFIED', 'The guild cannot physically reach you.'],
+    [900, 'LOCAL LEGEND', 'Nearby monsters are rewriting their wills.'],
     [1250, 'DEEPLY UNREASONABLE', 'The combo is now making its own decisions.'],
     [1700, 'PLEASE CONTINUE', 'This is objectively excellent behavior.'],
     [2300, 'THIS IS ART', 'Violence has become a creative medium.'],
     [3100, 'SLAUGHTER SCHOLAR', 'You have done the research.'],
-    [4100, 'APOCALYPSE INTERN', 'Promoted without additional compensation.'],
+    [4100, 'APOCALYPSE APPRENTICE', 'Promoted without additional compensation.'],
     [5400, 'DPS PHILOSOPHER', 'You understand the number on a spiritual level.'],
     [7000, 'COMBO ARCHITECT', 'Every enemy is structural material now.'],
     [9000, 'UNEMPLOYABLE', 'A powerful career milestone.'],
@@ -2970,7 +2970,7 @@
     {
       id: 'tinynuke',
       name: 'POCKET-SIZED WAR CRIME',
-      desc: 'Suspiciously Tiny + Nuclear: very fast tiny attacks cause very non-tiny explosions.',
+      desc: 'Suspiciously Tiny + Meteoric: very fast tiny attacks cause very non-tiny explosions.',
       test: w => hasTrait(w, 'tiny') && w.material?.code === 'nuclear'
     },
     {
@@ -2993,7 +2993,7 @@
     },
     {
       id: 'wetboat',
-      name: 'MARITIME OSHA EXEMPTION',
+      name: 'MARITIME GUILD-SAFETY EXEMPTION',
       desc: 'Legally A Boat + water: attacks leave damaging wakes and gain absurd reach.',
       test: w => hasTrait(w, 'boat')
     },
@@ -3132,15 +3132,15 @@
     'PLOT ARMOR FROM TEMU',
     'A MIRACLE, SORT OF',
     'SECOND WIND',
-    'THE INTERN BELIEVES IN YOU',
+    'THE APPRENTICE BELIEVES IN YOU',
     'LUCKY ENOUGH',
     'THE SOUNDTRACK PICKS UP',
-    'THE CAMERA ZOOMS IN',
+    'THE BARD LEANS IN',
     'MAIN CHARACTER PROBATION',
     'MAIN CHARACTER STATUS',
     'THE BOSS LOOKS NERVOUS',
     'ANIME HAIR ACTIVATED',
-    'HR CANNOT STOP THIS',
+    'THE GUILD CANNOT STOP THIS',
     'THE BUDGET INCREASED',
     'PROTAGONIST PRIVILEGE',
     'THE THEME SONG HAS LYRICS NOW',
@@ -3151,12 +3151,12 @@
   const D20_FATE_LINES = [
     'The universe rolls its eyes, but it does technically revive you.',
     'This is not a good roll. It is, however, much better than being dead.',
-    'The armor is cardboard. The comeback is real.',
+    'The armor is parchment. The comeback is real.',
     'Someone in accounting accidentally approved a miracle.',
     'You inhale violence and stand back up.',
-    'An unpaid intern somewhere whispers: you got this.',
+    'An unpaid apprentice somewhere whispers: you got this.',
     'Not legendary. Not embarrassing. Proceed.',
-    'The boss can suddenly hear electric guitars.',
+    'The boss can suddenly hear battle lutes.',
     'There is now an unnecessary close-up of your eye.',
     'You have been granted temporary narrative importance.',
     'The story has decided you are probably the protagonist.',
@@ -3164,11 +3164,11 @@
     'Your hair is not actually longer, but spiritually it absolutely is.',
     'Human Resources has lost jurisdiction over this fight.',
     'The animation studio has found several extra dollars.',
-    'Physics is now taking your side in meetings.',
+    'Physics is now taking your side in councils.',
     'The chorus kicks in and your weapon starts glowing irresponsibly.',
     'Several forms were signed. None of them were read.',
     'This weapon may constitute a minor religious event.',
-    'The D20 screams. Reality files for PTO.'
+    'The D20 screams. Reality files for feast days.'
   ];
   function d20Fate(roll) {
     let minRanks = [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 9, 10, 11, 13, 20],
@@ -3446,7 +3446,7 @@
     pl.dcd = 0;
     pl.vx = 0;
     pl.vy = -120;
-    styleAdd(260 + roll * 42, roll === 20 ? 'NATURAL 20 SUPER SAIYAN' : `D20 COMEBACK • ${roll}`);
+    styleAdd(260 + roll * 42, roll === 20 ? 'NATURAL 20 ASCENDED' : `D20 COMEBACK • ${roll}`);
     txt(
       W / 2,
       126,
@@ -3458,10 +3458,10 @@
       W / 2,
       166,
       roll === 1
-        ? 'EMBARRASSING SUPER SAIYAN'
+        ? 'EMBARRASSING ASCENDED'
         : roll >= 17
-          ? 'SUPER SAIYAN: ANIME BUDGET'
-          : 'SUPER SAIYAN ACTIVATED',
+          ? 'ASCENDED: BARDIC BUDGET'
+          : 'ASCENDED ACTIVATED',
       '#fff176',
       true
     );
@@ -4416,7 +4416,7 @@
         move: 0
       },
       {
-        name: 'EXECUTIVE VISOR',
+        name: 'ROYAL VISOR',
         desc: 'Quarterly earnings are up. Restraint is down.',
         armor: 9,
         damage: 0.08,
@@ -4481,8 +4481,8 @@
         move: 24
       },
       {
-        name: 'EXECUTIVE FLAK VEST',
-        desc: 'Boardroom protection for hostile workplace takeovers.',
+        name: 'ROYAL FLAK VEST',
+        desc: 'Throne-room protection for hostile kingdom takeovers.',
         armor: 18,
         damage: 0.12,
         speed: 0.08,
@@ -4501,7 +4501,7 @@
     ],
     feet: [
       {
-        name: 'ROCKET BOOTS',
+        name: 'GRIFFON BOOTS',
         desc: 'The floor becomes more of a scheduling suggestion.',
         armor: 7,
         damage: 0.04,
@@ -4511,7 +4511,7 @@
       },
       {
         name: 'STEEL-TOE GREAVES',
-        desc: 'Kick the problem until the spreadsheet agrees.',
+        desc: 'Kick the problem until the ledger agrees.',
         armor: 15,
         damage: 0.08,
         speed: 0.05,
@@ -5192,7 +5192,7 @@
     },
     {
       id: 'eliteunion',
-      name: 'ELITE UNION MEETING',
+      name: 'ELITE GUILD COUNCIL',
       desc: 'Too many enemies have benefits now. Several are elite.'
     },
     {
@@ -5275,7 +5275,7 @@
   const TERRAIN = [
     {
       id: 'conveyor',
-      name: 'UNION CONVEYOR FLOOR',
+      name: 'GUILD MILLWHEEL FLOOR',
       msg: 'The floor has joined organized labor and is moving sideways.'
     },
     { id: 'ice', name: 'LIABILITY ICE', msg: 'Stopping is now more of a long-term goal than an action.' },
@@ -5509,7 +5509,7 @@
     {
       id: 'disco',
       name: 'DISCO EMERGENCY',
-      msg: 'Everything gets faster because apparently this is a nightclub now.'
+      msg: 'Everything gets faster because apparently this is a tavern now.'
     },
     {
       id: 'lava',
@@ -5766,7 +5766,7 @@
     col: '#8c55cc',
     shape: 'blinker',
     atk: 'blink',
-    name: 'Backstab Intern'
+    name: 'Backstab Apprentice'
   };
   ED.summoner = {
     w: 43,
@@ -5793,7 +5793,7 @@
     shape: 'sniper',
     atk: 'laser',
     bolt: '#ffdd77',
-    name: 'OSHA Sniper'
+    name: 'Guild-Safety Sniper'
   };
   ED.roller = {
     w: 48,
@@ -5806,7 +5806,7 @@
     col: '#7b8794',
     shape: 'roller',
     atk: 'charge',
-    name: 'Aggressive Office Wheel'
+    name: 'Aggressive Scriptorium Wheel'
   };
   ED.bossjr = {
     w: 92,
@@ -5931,15 +5931,15 @@
     },
     {
       id: 'coupon',
-      name: 'Coupon Shrapnel',
+      name: 'Voucher Shrapnel',
       tag: 'SAVE 15% OR DIE',
       col: '#ffe86d',
-      desc: 'detonates expired coupons in every direction'
+      desc: 'detonates expired tavern vouchers in every direction'
     },
     {
       id: 'caffeine',
-      name: 'Dangerously Caffeinated',
-      tag: 'TOO MUCH COFFEE',
+      name: 'Dangerously Over-Brewed',
+      tag: 'TOO MUCH MANA POTION',
       col: '#d7985e',
       desc: 'gets random bursts of irresponsible movement speed'
     },
@@ -5980,8 +5980,8 @@
     },
     {
       id: 'microwave',
-      name: 'Microwave Vision',
-      tag: 'MICROWAVE EYES',
+      name: 'Basilisk Vision',
+      tag: 'BASILISK EYES',
       col: '#ff9257',
       desc: 'fires a short-range heating beam after a warning'
     },
@@ -6283,13 +6283,13 @@
     'Unauthorized',
     'Regional',
     'Extremely Motivated',
-    'Union',
-    'Executive',
+    'Guild',
+    'Royal',
     'Interim',
     'Freelance',
     'Emotionally Unavailable',
     'Night Shift',
-    'Turbo',
+    'Gale-Powered',
     'Budget',
     'Acting'
   ];
@@ -6372,7 +6372,7 @@
       hint: 'Interrupt the green casting circle or prepare to dodge the summons.'
     },
     sniper: {
-      how: 'LASER SHOT — long wind-up with a targeting line, then a very fast bolt.',
+      how: 'Beam shot — long wind-up with a targeting line, then a very fast bolt.',
       hint: 'The line is the answer key. Move before the shot.'
     },
     roller: {
@@ -6579,13 +6579,13 @@
     ceo: {
       name: 'CRAZY CEO MAN',
       sub: 'OWNER OF THE ARENA • TARGET CLEAR 24%',
-      line: 'He has acquired the floor, the ceiling, and your lunch break.',
+      line: 'He has acquired the floor, the ceiling, and your mead break.',
       quote: '“YOUR BUILD HAS BEEN RESTRUCTURED.”'
     },
     weapon: {
       name: 'THE WEAPON ITSELF',
       sub: 'SENTIENT DPS EVENT • TARGET CLEAR 20%',
-      line: 'Every bad decision has finally unionized into one object.',
+      line: 'Every bad decision has finally guild-certified into one object.',
       quote: '“YOU WERE NEVER HOLDING ME. I WAS HOLDING YOU.”'
     }
   };
@@ -6601,7 +6601,7 @@
     if (kind === 'sr')
       return [
         { x: 70, y: 520, w: 180, h: 18, tag: 'dad shelf' },
-        { x: 315, y: 420, w: 180, h: 18, tag: 'garage bench' },
+        { x: 315, y: 420, w: 180, h: 18, tag: 'forge bench' },
         { x: 565, y: 500, w: 150, h: 18, tag: 'questionable ramp' },
         { x: 790, y: 385, w: 190, h: 18, tag: 'weapon attic' },
         { x: 1030, y: 500, w: 170, h: 18, tag: 'inheritance' }
@@ -6618,7 +6618,7 @@
       return [
         { x: 60, y: 515, w: 155, h: 18, tag: 'subsidiary' },
         { x: 275, y: 390, w: 170, h: 18, tag: 'board seat' },
-        { x: 520, y: 495, w: 165, h: 18, tag: 'stock option' },
+        { x: 520, y: 495, w: 165, h: 18, tag: 'royal stipend' },
         { x: 755, y: 365, w: 190, h: 18, tag: 'penthouse' },
         { x: 1040, y: 505, w: 150, h: 18, tag: 'golden parachute' }
       ];
@@ -6634,9 +6634,9 @@
     return bossArenaVariant === 0
       ? [
           { x: 90, y: 540, w: 190, h: 18, tag: 'cubicle' },
-          { x: 380, y: 455, w: 200, h: 18, tag: 'meeting table' },
-          { x: 700, y: 375, w: 185, h: 18, tag: 'executive deck' },
-          { x: 1000, y: 505, w: 180, h: 18, tag: 'HR' }
+          { x: 380, y: 455, w: 200, h: 18, tag: 'council table' },
+          { x: 700, y: 375, w: 185, h: 18, tag: 'high council deck' },
+          { x: 1000, y: 505, w: 180, h: 18, tag: 'THE GUILD' }
         ]
       : bossArenaVariant === 1
         ? [
@@ -6831,11 +6831,11 @@
     let type = curW().type;
     e.adaptType = type;
     if (type === 'bow' || type === 'shuriken') {
-      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: SHIELD INTERN', '#bde8ff', true);
+      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: SHIELD APPRENTICE', '#bde8ff', true);
       if (E.filter(x => !x.dead && x.type === 'shieldbro').length < 2)
         spawn('shieldbro', clamp(e.x - 170, 80, W - 180), false);
     } else if (type === 'hammer') {
-      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: OSHA AIRSPACE', '#ffcf73', true);
+      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: GUILD-SAFETY AIRSPACE', '#ffcf73', true);
       for (let i = 0; i < 2 + e.phase; i++)
         bossHazards.push({ k: 'jrMeteor', x: rand(80, W - 80), t: 0.55 + i * 0.12, hit: false });
     } else if (type === 'staff' || type === 'wand') {
@@ -7457,7 +7457,7 @@
     {
       id: 'coffee',
       icon: '☕',
-      name: 'DANGEROUS AMOUNT OF COFFEE',
+      name: 'DANGEROUS AMOUNT OF MANA POTION',
       desc: '+18% attack speed. -8 armor. Your hands have become theoretical.',
       apply: () => {
         pl.boonSpeed *= 1.18;
@@ -7498,7 +7498,7 @@
     {
       id: 'support',
       icon: '🪚',
-      name: 'EMOTIONAL SUPPORT CHAINSAW',
+      name: 'EMOTIONAL SUPPORT WAR-SCYTHE',
       desc: '+10% damage and +50% heal-on-kill. It listens. Loudly.',
       apply: () => {
         pl.boonDamage *= 1.1;
@@ -7508,7 +7508,7 @@
     {
       id: 'intern',
       icon: '📎',
-      name: 'UNPAID COMBAT INTERN',
+      name: 'UNPAID COMBAT APPRENTICE',
       desc: 'Every 6th attack fires an autonomous spectral projectile. No benefits.',
       apply: () => {
         pl.boonIntern = (pl.boonIntern || 0) + 1;
@@ -7517,8 +7517,8 @@
     {
       id: 'warranty',
       icon: '🧾',
-      name: 'QUESTIONABLE WARRANTY',
-      desc: 'Once per boss, lethal damage leaves you at 1 HP and voids the warranty immediately.',
+      name: 'QUESTIONABLE BLESSING',
+      desc: 'Once per boss, lethal damage leaves you at 1 HP and voids the blessing immediately.',
       apply: () => {
         pl.warranty = (pl.warranty || 0) + 1;
       }
@@ -7527,7 +7527,7 @@
       id: 'space',
       icon: '📏',
       name: 'PERSONAL SPACE VIOLATION',
-      desc: '+25% attack size and reach. HR has been notified but is hiding.',
+      desc: '+25% attack size and reach. The guild has been notified but is hiding.',
       apply: () => {
         pl.aoeMult *= 1.25;
       }
@@ -7575,7 +7575,7 @@
       id: 'soup',
       icon: '🥣',
       name: 'SOUP-BASED ECONOMY',
-      desc: 'Standing in rivers or industrial soup grants +20% damage instead of dignity.',
+      desc: 'Standing in rivers or forge-grade soup grants +20% damage instead of dignity.',
       apply: () => {
         pl.boonSoup = (pl.boonSoup || 0) + 1;
       }
@@ -7584,7 +7584,7 @@
       id: 'screaming',
       icon: '📢',
       name: 'SCREAMING IS A BUFF',
-      desc: 'Every 5th attack makes a radial shockwave. The weapon has discovered podcasts.',
+      desc: 'Every 5th attack makes a radial shockwave. The weapon has discovered bardic ballads.',
       apply: () => {
         pl.boonScream = (pl.boonScream || 0) + 1;
       }
@@ -7601,8 +7601,8 @@
     {
       id: 'ceilingfan',
       icon: '🌀',
-      name: 'INDUSTRIAL CEILING FAN',
-      desc: 'Airborne enemies take +20% damage and get launched harder. OSHA says no.',
+      name: 'FORGE-GRADE CEILING FAN',
+      desc: 'Airborne enemies take +20% damage and get launched harder. Guild-safety says no.',
       apply: () => {
         pl.boonAir = (pl.boonAir || 0) + 1;
       }
@@ -7620,7 +7620,7 @@
     {
       id: 'forklift',
       icon: '🏗️',
-      name: 'FORKLIFT CERTIFIED',
+      name: 'SIEGE-OX CERTIFIED',
       desc: 'Knockback +35%. Wall splats restore a little mana.',
       apply: () => {
         pl.boonForklift = (pl.boonForklift || 0) + 1;
@@ -7629,7 +7629,7 @@
     {
       id: 'feral',
       icon: '🦝',
-      name: 'PARKING-LOT RACCOON MENTOR',
+      name: 'COURTYARD RACCOON MENTOR',
       desc: 'Low HP grants attack speed because fear has left the building.',
       apply: () => {
         pl.boonRaccoon = (pl.boonRaccoon || 0) + 1;
@@ -7638,7 +7638,7 @@
     {
       id: 'union',
       icon: '🤝',
-      name: 'UNION-MANDATED SECOND DASH',
+      name: 'GUILD-MANDATED SECOND DASH',
       desc: 'Elite kills reduce dash cooldown immediately.',
       apply: () => {
         pl.boonUnion = (pl.boonUnion || 0) + 1;
@@ -9141,7 +9141,7 @@
           cc: cchance()
         });
       }
-      txt(pl.x + 17, pl.y - 36, 'GHOST SHIFT CLOCKED IN', '#d5ddff', false);
+      txt(pl.x + 17, pl.y - 36, 'GHOST SHIFT ON THE ROSTER', '#d5ddff', false);
     }
     if (hasTrait(w, 'jazzhands') && pl.combo % 5 === 0) {
       for (let i = 0; i < 8; i++) {
@@ -9345,7 +9345,7 @@
     if (q >= 7 && pl.combo % 5 === 0 && nearby.length) {
       let t = pick(nearby);
       boom(t.x + t.w / 2, t.y + t.h / 2, w.col, 135 + q * 9, 1);
-      txt(t.x, t.y - 35, 'OSHA VIOLATION', w.col, false);
+      txt(t.x, t.y - 35, 'GUILD-SAFETY VIOLATION', w.col, false);
     }
     if (q >= 8 && pl.combo % 4 === 0) {
       for (const e of nearby.slice(0, Math.min(5, q - 2))) {
@@ -9679,7 +9679,7 @@
       pl.warranty--;
       pl.hp = 1;
       pl.inv = 2;
-      txt(pl.x + 17, pl.y - 40, 'WARRANTY CLAIM APPROVED', '#fff176', true);
+      txt(pl.x + 17, pl.y - 40, 'BLESSING CLAIM APPROVED', '#fff176', true);
       return;
     }
     pl.hp -= h;
@@ -12636,7 +12636,7 @@ function draw() {
               ? 'HOSTILE TAKEOVER THRONE ROOM'
               : bossMode === 'weapon'
                 ? 'THE ARMORY HAS BECOME SENTIENT'
-                : 'EXECUTIVE PERFORMANCE CHAMBER',
+                : 'ROYAL PERFORMANCE CHAMBER',
       W / 2,
       190
     );
@@ -12919,7 +12919,7 @@ function render() {
   U.fsMasteryT.textContent = riftReady ? 'OPEN' : `${stageClears}/${stageGoal()}`;
   U.fsLv.textContent = pl.lv;
   U.fsZone.textContent = Z[zoneI].name;
-  U.fsKills.textContent = `${kills} kills • ${ones} one-shots • ${tempAugment ? 'AUGMENT ' + tempAugment.name + ' ' + tempAugment.t.toFixed(1) + 's' : superT > 0 ? 'D20 ' + superRoll + ' • SUPER SAIYAN ' + superT.toFixed(1) + 's' : approachLabel()}`;
+  U.fsKills.textContent = `${kills} kills • ${ones} one-shots • ${tempAugment ? 'AUGMENT ' + tempAugment.name + ' ' + tempAugment.t.toFixed(1) + 's' : superT > 0 ? 'D20 ' + superRoll + ' • ASCENDED ' + superT.toFixed(1) + 's' : approachLabel()}`;
   if (bossMode) {
     let be = E.find(e => e.boss && !e.dead);
     if (be) {
@@ -14110,8 +14110,8 @@ function render() {
       id: 'plasma',
       family: 'plasma',
       polarity: 'positive',
-      name: 'PLASMA',
-      prefix: 'Plasma-Forged',
+      name: 'STARFIRE',
+      prefix: 'Starfire-Forged',
       col: '#ff72f5',
       rarity: 2,
       dpsMult: 1.24,
@@ -14168,11 +14168,11 @@ function render() {
       family: 'plasma',
       polarity: 'negative',
       name: 'MELTDOWN',
-      prefix: 'Reactor-Breached',
+      prefix: 'Rune-Core-Breached',
       col: '#ff4bd6',
       rarity: 3,
       dpsMult: 1.38,
-      desc: 'miniature reactor failures that sometimes feed back into the operator'
+      desc: 'miniature rune-core failures that sometimes feed back into the operator'
     },
     {
       id: 'singularity',
@@ -14183,7 +14183,7 @@ function render() {
       col: '#7655ff',
       rarity: 3,
       dpsMult: 1.37,
-      desc: 'violent gravity wells with highly questionable workplace ergonomics'
+      desc: 'violent gravity wells with highly questionable kingdom ergonomics'
     },
     {
       id: 'blowback',
@@ -14222,7 +14222,7 @@ function render() {
         desc: 'slow, huge and deeply unnecessary'
       },
       {
-        name: 'Neon Saber',
+        name: 'Witchlight Saber',
         dam: 0.93,
         spd: 1.18,
         crit: 0.025,
@@ -14258,7 +14258,7 @@ function render() {
         desc: 'balanced heavy combat blade'
       },
       {
-        name: 'Executive Longknife',
+        name: 'Royal Longknife',
         dam: 0.98,
         spd: 1.12,
         crit: 0.035,
@@ -14381,7 +14381,7 @@ function render() {
     ],
     katana: [
       {
-        name: 'Neon Nodachi',
+        name: 'Witchlight Nodachi',
         dam: 1.18,
         spd: 0.9,
         crit: 0.03,
@@ -14414,7 +14414,7 @@ function render() {
         crit: 0.04,
         aoe: 1.03,
         scale: 1.08,
-        desc: 'dense industrial blade with violent launch'
+        desc: 'dense forge-grade blade with violent launch'
       },
       {
         name: 'Audit Blade',
@@ -14426,7 +14426,7 @@ function render() {
         desc: 'reliable crit-focused cutter'
       },
       {
-        name: 'Long Meeting Ender',
+        name: 'Long Council Ender',
         dam: 1.14,
         spd: 0.94,
         crit: 0.04,
@@ -14455,7 +14455,7 @@ function render() {
         desc: 'balanced modern bow'
       },
       {
-        name: 'Rebar Longbow',
+        name: 'Iron-Bar Longbow',
         dam: 1.12,
         spd: 0.94,
         crit: 0.02,
@@ -14576,7 +14576,7 @@ function render() {
         desc: 'slower heavy magic bolts'
       },
       {
-        name: 'Microwave Wand',
+        name: 'Dragon-Oven Wand',
         dam: 1.08,
         spd: 1.0,
         crit: 0.025,
@@ -14585,7 +14585,7 @@ function render() {
         desc: 'wide-area electromagnetic nonsense'
       },
       {
-        name: 'Wizard OSHA Violation',
+        name: 'Wizard Guild-Safety Violation',
         dam: 1.16,
         spd: 0.92,
         crit: 0.035,
@@ -14614,7 +14614,7 @@ function render() {
         desc: 'huge slow cluster-deleting focus'
       },
       {
-        name: 'Utility Pole',
+        name: 'Hitching Post',
         dam: 1.14,
         spd: 0.88,
         crit: 0.01,
@@ -14650,24 +14650,24 @@ function render() {
         desc: 'faster compact casting staff'
       },
       {
-        name: 'Wizard Rebar',
+        name: 'Wizard Iron-Bar',
         dam: 1.12,
         spd: 0.94,
         crit: 0.02,
         aoe: 1.1,
         scale: 1.1,
-        desc: 'industrial rod with excellent spell violence'
+        desc: 'forge-grade rod with excellent spell violence'
       }
     ],
     hammer: [
       {
-        name: 'Industrial Maul',
+        name: 'Forge-Grade Maul',
         dam: 1.15,
         spd: 0.92,
         crit: 0.015,
         aoe: 1.1,
         scale: 1.12,
-        desc: 'wide industrial impact head'
+        desc: 'wide forge-grade impact head'
       },
       {
         name: 'Pile Driver',
@@ -15169,8 +15169,8 @@ function render() {
 
   const BASE_NAMES = {
     sword: [
-      'Parking Meter Greatsword',
-      'Breakroom Claymore',
+      'Toll-Gate Greatsword',
+      'Mess Hall Claymore',
       'Liability Saber',
       'Municipal Guillotine',
       'Deadline Divider',
@@ -15178,7 +15178,7 @@ function render() {
       'Exit Interview Blade',
       'Cafeteria Executioner',
       'Budget Apocalypse',
-      'Forklift Longsword',
+      'Siege-Ox Longsword',
       'Unauthorized Broadsword',
       'Quarterly Results Cleaver'
     ],
@@ -15186,25 +15186,25 @@ function render() {
       'Stapler Shiv',
       'Expense Report Stiletto',
       'Pocket Lawsuit',
-      'Breakroom Fang',
+      'Mess Hall Fang',
       'Tiny Hostile Merger',
       'Emergency Letter Opener',
       'Audit Needle',
       'Probation Kris',
-      'Unpaid Intern Knife',
+      'Unpaid Apprentice Knife',
       'Desk Drawer Problem',
-      'HR Toothpick',
+      'The Guild Toothpick',
       'Micro Catastrophe'
     ],
     nunchucks: [
-      'OSHA Nunchucks',
+      'Guild-Safety Nunchucks',
       'Double Payroll Bonk',
       'Chain of Command',
       'Performance Review Flails',
       'Two-Factor Concussion',
       'Revolving Complaint',
       'LinkedIn Connection',
-      'Meeting Canceller',
+      'Council Canceller',
       'Rotating Liability',
       'Corporate Chucks'
     ],
@@ -15214,24 +15214,24 @@ function render() {
       'Overtime Wakizashi',
       'Audit Katana',
       'Railway Samurai Problem',
-      'HR Drawblade',
-      'Spreadsheet Slayer',
+      'The Guild Drawblade',
+      'Ledger Slayer',
       'Deadline Tachi',
-      'Neon Resignation',
-      'Boardroom Iaijutsu'
+      'Witchlight Resignation',
+      'Throne-Room Iaijutsu'
     ],
     bow: [
       'Foreclosure Longbow',
-      'Parking Enforcement Bow',
-      'Rebar Recurve',
+      'Toll-Bridge Enforcement Bow',
+      'Iron-Bar Recurve',
       'Compliance Compound',
       'Hostile Geometry',
-      'Spreadsheet Ballista',
+      'Ledger Ballista',
       'Budget Siege Bow',
-      'Arrow-Based Email',
+      'Arrow-Based Scroll',
       'Performance Improvement Bow',
       'Municipal Warbow',
-      'Overdraft Launcher'
+      'Debtor’s Launcher'
     ],
     shuriken: [
       'Quarterly Throwing Star',
@@ -15240,52 +15240,52 @@ function render() {
       'Payroll Shuriken',
       'Circular Reasoning',
       'Orbiting Complaint',
-      'Ninja Spreadsheet',
+      'Ninja Ledger',
       'Expense Report Star',
-      'Meeting Cancellation Disc',
+      'Council Cancellation Disc',
       'Rotating Tax Form'
     ],
     wand: [
-      'Microwave Wand',
-      'Parking Citation Wand',
-      'Wizard Flashlight',
-      'Union Arc Wand',
-      'Breakroom Scepter',
+      'Dragon-Oven Wand',
+      'Toll Citation Wand',
+      'Wizard Lantern',
+      'Guild Arc Wand',
+      'Mess Hall Scepter',
       'Overtime Pointer',
-      'Arcane Barcode Scanner',
+      'Arcane Tally-Rune Reader',
       'Liability Wand',
       'Budget Necromancy Stick',
       'Municipal Magic Rod',
-      'Questionable Laser Pointer',
-      'Forbidden Food Court Wand'
+      'Questionable Scrying Pointer',
+      'Forbidden Feast Hall Wand'
     ],
     staff: [
-      'Utility Pole of Power',
-      'Wizard Rebar',
+      'Hitching Post of Power',
+      'Wizard Iron-Bar',
       'Payroll Staff',
       'Municipal Lightning Rod',
-      'Long Meeting Staff',
+      'Long Council Staff',
       'Arc Furnace Scepter',
       'Storm Drain Staff',
       'Corporate Wizard Pole',
       'Emergency Conduit',
       'Weather Department Stick',
       'Budget Totem',
-      'Forklift Mage Staff'
+      'Siege-Ox Mage Staff'
     ],
     hammer: [
       'Performance Review Hammer',
       'Concrete Opinion',
       'Debt Restructurer',
       'Municipal Maul',
-      'Portable Workplace Accident',
+      'Portable Kingdom Accident',
       'Compliance Crusher',
       'Quarterly Pile Driver',
-      'Union Negotiator',
-      'Meeting Gavel XL',
+      'Guild Negotiator',
+      'Council Gavel XL',
       'Budget Demolition Tool',
-      'HR Complaint Hammer',
-      'Forklift Bonker'
+      'Guild Grievance Hammer',
+      'Siege-Ox Bonker'
     ]
   };
   for (const [type, names] of Object.entries(BASE_NAMES)) {
@@ -15298,16 +15298,16 @@ function render() {
     'Overqualified',
     'Underfunded',
     'Catastrophically Approved',
-    'Union-Certified',
+    'Guild-Certified',
     'Management-Resistant',
     'Municipally Enchanted',
     'Legally Distinct',
     'Extremely Taxable',
     'Unreasonably Polished',
-    'Aggressively Laminated',
+    'Aggressively Lacquered',
     'Performance-Managed',
     'Budget-Overrun',
-    'Executive-Grade',
+    'Royal-Grade',
     'Night-Shift',
     'Lunch-Break',
     'Overtime-Forged',
@@ -15316,8 +15316,8 @@ function render() {
     'Formally Escalated',
     'Noncompliant',
     'Backordered',
-    'Forklift-Compatible',
-    'OSHA-Adjacent',
+    'Siege-Ox-Compatible',
+    'Guild-Safety-Adjacent',
     'Deeply Unnecessary',
     'Hostilely Optimized',
     'Questionably Blessed',
@@ -15325,29 +15325,29 @@ function render() {
   ];
   const EXTRA_SUFFIXES = [
     'of Escalating Consequences',
-    'of the Final Email',
+    'of the Final Scroll',
     'of Mandatory Overtime',
     'of Unapproved Capital Spending',
-    'of the Broken Printer',
+    'of the Broken Scribe Golem',
     'of Hostile Procurement',
     'of the Third Shift',
     'of Catastrophic Synergy',
-    'of the Lost Purchase Order',
+    'of the Lost Requisition Scroll',
     'of Weaponized Compliance',
-    'of the Emergency Meeting',
+    'of the Emergency Council',
     'of Financial Violence',
     'of Questionable Governance',
     'of the Armory Vault',
     'of Zero Follow-Up Questions',
     'of Immediate Corrective Action',
-    'of the Forbidden Breakroom',
+    'of the Forbidden Mess Hall',
     'of Extremely Poor Judgment',
     'of the Municipal Budget Crisis',
     'of Unscheduled Career Development',
-    'of the Last Available Forklift',
+    'of the Last Available Siege-Ox',
     'of Advanced Bonking',
-    'of the Infinite Spreadsheet',
-    'of Several OSHA Findings'
+    'of the Infinite Ledger',
+    'of Several Guild-Safety Findings'
   ];
   for (const x of EXTRA_PREFIXES) if (!PF.includes(x)) PF.push(x);
   for (const x of EXTRA_SUFFIXES) if (!SUFFIXES.includes(x)) SUFFIXES.push(x);
@@ -15871,7 +15871,7 @@ function render() {
           spawnDrop(95 + col * 125, G - 165 - row * 72, w, false);
         }
         document.documentElement.dataset.cwmLootV31Showcase = counts.join(',');
-        U.msg.textContent = `PARKING LOT LOOT SAMPLE // ${counts[0]} COMMON • ${counts[1]} RARE • ${counts[2]} EPIC`;
+        U.msg.textContent = `CASTLE COURTYARD LOOT SAMPLE // ${counts[0]} COMMON • ${counts[1]} RARE • ${counts[2]} EPIC`;
       } catch (e) {
         document.documentElement.dataset.cwmLootV31ShowcaseError = String(e).slice(0, 160);
       }
@@ -15890,16 +15890,16 @@ function render() {
   const choice = a => a[Math.floor(Math.random() * a.length)];
 
   const GRAY_PREFIX = [
-    'Clearance-Bin',
+    'Bargain-Barrel',
     'Previously Returned',
     'Mildly Bent',
-    'Warranty-Void',
-    'Parking-Lot Special',
-    'Wet-Cardboard',
-    'One-Star Reviewed',
+    'Blessing-Void',
+    'Courtyard Special',
+    'Wet-Parchment',
+    'One-Star Bard-Reviewed',
     'Manager Refused',
     'Found Near a Dumpster',
-    'Factory-Reject',
+    'Smithy-Reject',
     'Loose-Handle',
     'Budget-Cut',
     'Probably a Prop',
@@ -15929,16 +15929,16 @@ function render() {
     'Acceptable From Far Away',
     'Barely Within Spec',
     'Good Enough for Night Shift',
-    'Warranty Pending',
+    'Blessing Pending',
     'Quality-Control Adjacent',
     'Improved by Accident'
   ];
   const GRAY_SUFFIX = [
     '— FINAL SALE',
     'with One Good Screw',
-    'of the Recall Notice',
+    'of the Royal Recall',
     'of Immediate Regret',
-    'of Questionable Warranty',
+    'of Questionable Blessing',
     'from the Lost-and-Found',
     'of Poor Life Choices',
     'with Cosmetic Structural Damage',
@@ -15958,8 +15958,8 @@ function render() {
     'with the Better Handle',
     'of Moderate Improvement',
     'Now With Fewer Sparks',
-    'of the Second Purchase Order',
-    'with a Real Serial Number',
+    'of the Second Requisition Scroll',
+    'with a Real Maker’s Mark',
     'of Nearly Acceptable Craftsmanship',
     'Approved Pending Review',
     'with Only Minor Concerns',
@@ -15999,7 +15999,7 @@ function render() {
     },
     {
       id: 'dull',
-      name: 'Factory Dull',
+      name: 'Smithy Dull',
       desc: 'Deals less base damage. The edge inspection was conducted by optimism.',
       weight: 1.0,
       static: true
@@ -17303,7 +17303,7 @@ function render() {
     e.__nightWhirlShot = 0;
     e.__nightWhirlHit = 0;
     e.__nightWhirlFinal = final;
-    announceBoss(e, final ? 'APOCALYPSE BLENDER' : 'WHIRLWIND PANIC', final ? '#ffffff' : '#ffce66');
+    announceBoss(e, final ? 'APOCALYPSE MILLSTONE' : 'WHIRLWIND PANIC', final ? '#ffffff' : '#ffce66');
   }
   function prisonLaserCombo(e) {
     prison(e, true);
@@ -17342,10 +17342,10 @@ function render() {
       whirlwind(e, 3.15 + phase * 0.2, false);
       laserFan(e, 4, 0.22);
     } else if (move === 'fan') {
-      announceBoss(e, 'PANIC LASER FAN', '#ff5a72');
+      announceBoss(e, 'PANIC BEAM FAN', '#ff5a72');
       laserFan(e, 5 + Math.min(2, phase), 0.28);
     } else if (move === 'grid') {
-      announceBoss(e, 'LASER GRID // DO NOT PANIC', '#ffdf67');
+      announceBoss(e, 'BEAM GRID // DO NOT PANIC', '#ffdf67');
       laserGrid(e);
     } else if (move === 'prison') {
       announceBoss(e, 'YOU ARE GOING TO JAIL', '#ff5577');
@@ -18789,7 +18789,7 @@ function render() {
       X.globalAlpha = 0.65;
       X.fillStyle = '#75eaff';
       X.font = '900 15px system-ui';
-      X.fillText('MUNICIPAL SWORD PARKING', 36, 92);
+      X.fillText('MUNICIPAL SWORD TOLL-BRIDGE', 36, 92);
       X.globalAlpha = 0.3;
       X.font = '800 11px system-ui';
       X.fillText('WEAPON VALIDATION • LEVEL P1', 38, 111);
@@ -20763,34 +20763,34 @@ function render() {
 
   const NAMES = {
     stalker: [
-      'Kevin From The Parking Lot',
+      'Kevin From The Castle Courtyard',
       'Greg With Your Catalytic Converter',
-      'Parking Enforcement Werewolf',
+      'Toll-Bridge Enforcement Werewolf',
       'Guy Who Definitely Knows Your VIN'
     ],
     crawler: [
       'Floor Gremlin With Benefits',
       'Wet Sock Supervisor',
-      'Unionized Basement Goblin',
+      'Guild-Certified Basement Goblin',
       'Todd From Under The Fridge'
     ],
     wizard: [
-      'Unlicensed Microwave Wizard',
+      'Unlicensed Dragon-Oven Wizard',
       'Craig, Wizard of Minor Inconvenience',
-      'Certified Forklift Necromancer',
-      'Derek the Spell Intern'
+      'Certified Siege-Ox Necromancer',
+      'Derek the Spell Apprentice'
     ],
     shieldbro: [
       'Assistant Manager of Blocking',
-      'OSHA-Compliant Human Door',
+      'Guild-Safety-Compliant Human Door',
       'Regional Shield Enthusiast',
       'Bradley, Portable Wall'
     ],
     maw: [
       'Pretzel Maw of Human Resources',
       'Hungry Payroll Mistake',
-      'Mouth With A 401(k)',
-      'Lunch Break Violation With Teeth'
+      'Mouth With A pension chest',
+      'Mead Break Violation With Teeth'
     ],
     brute: [
       'Axe Landlord From Craigslist',
@@ -20800,27 +20800,27 @@ function render() {
     ],
     taxman: [
       'Combat Auditor With Questions',
-      'IRS Battle Intern',
+      'IRS Battle Apprentice',
       'Receipts Goblin',
       'Senior Director of Surprise Fees'
     ],
     blinker: [
       'Teleporting Coward Greg',
-      'Quantum Hall Monitor',
+      'Arcane Hall Monitor',
       'Dave Who Was Just Behind You',
-      'Union Blink Supervisor'
+      'Guild Blink Supervisor'
     ],
     bombchicken: [
       'Tactical Chicken With Tenure',
       'Explosive Emotional Support Chicken',
-      'OSHA Rooster',
+      'Guild-Safety Rooster',
       'Poultry of Mass Destruction'
     ],
     roller: [
-      'Sentient Office Chair',
+      'Sentient Scriptorium Chair',
       'Payroll Roomba of Doom',
       'Wheel With Anger Issues',
-      'Unionized Murder Tire'
+      'Guild-Certified Murder Wheel'
     ],
     summoner: [
       'Middle Manager of More Problems',
@@ -20830,21 +20830,21 @@ function render() {
     ],
     wraith: [
       'Ghost of Mandatory Overtime',
-      'Former Employee Still Clocked In',
+      'Former Employee Still On The Roster',
       'Haunted Exit Interview',
-      'Spectral HR Complaint'
+      'Spectral Guild Grievance'
     ],
     mimic: [
       'Definitely Normal Benefits Package',
       'Chest That Read Your Search History',
-      'Totally Legal Vending Machine',
-      'Box With Teeth And PTO'
+      'Totally Legal Wishing Well',
+      'Box With Teeth And Feast Days'
     ],
     flyer: [
-      'Airborne Parking Ticket',
+      'Airborne Toll Writ',
       'Flying Liability Waiver',
       'Drone With A Personal Grudge',
-      'Sky Rat With Dental'
+      'Sky Rat With Tooth Coverage'
     ],
     eyeball: [
       'Management Eye Watching Your Break',
@@ -20854,7 +20854,7 @@ function render() {
     ],
     sniper: [
       'Long-Distance Micromanager',
-      'Remote Work Denial Specialist',
+      'Far-Tower Duty Denial Specialist',
       'Performance Improvement Marksman',
       'Guy Across The Map Named Steve'
     ]
@@ -20865,10 +20865,10 @@ function render() {
     'Interim',
     'Night-Shift',
     'Emotionally Unavailable',
-    'Union',
+    'Guild',
     'Freelance',
-    'Executive',
-    'Turbo',
+    'Royal',
+    'Gale-Powered',
     'Unauthorized',
     'Assistant Regional',
     'Budget'
@@ -20877,10 +20877,10 @@ function render() {
     '(No Appointment)',
     '— On Probation',
     '— Certified Somehow',
-    '— Has A Clipboard',
+    '— Has A Wax Tablet',
     '— Absolutely Not Insured',
     '— Final Warning',
-    '— Owns A Leaf Blower'
+    '— Owns A Gale Bellows'
   ];
 
   function funnyName(type, elite = false) {
@@ -21019,28 +21019,28 @@ function render() {
   const MUTATIONS = [
     {
       id: 'vacuum',
-      name: 'INDUSTRIAL VACUUM WARRANTY',
+      name: 'FORGE-GRADE BELLOWS BLESSING',
       every: 4,
       dps: 1.08,
       desc: 'every fourth impact sucks nearby enemies into the victim'
     },
     {
       id: 'pinball',
-      name: 'PINBALL LIABILITY CLAUSE',
+      name: 'BAGATELLE LIABILITY CLAUSE',
       every: 5,
       dps: 1.11,
       desc: 'every fifth impact ricochets damage through the nearest coworkers'
     },
     {
       id: 'moonshot',
-      name: 'MOONSHOT BUTTON',
+      name: 'MOONSHOT LEVER',
       every: 4,
       dps: 1.06,
       desc: 'occasionally sends the target vertically into upper management'
     },
     {
       id: 'microwave',
-      name: 'BREAKROOM MICROWAVE CORE',
+      name: 'MESS HALL DRAGON-OVEN CORE',
       every: 5,
       dps: 1.1,
       desc: 'periodically goes DING and cooks the entire immediate area'
@@ -21054,7 +21054,7 @@ function render() {
     },
     {
       id: 'copy',
-      name: 'HOSTILE COPY MACHINE',
+      name: 'HOSTILE COPYING SCRIPTORIUM',
       every: 5,
       dps: 1.1,
       desc: 'duplicates an impact because apparently one was not enough'
@@ -21068,7 +21068,7 @@ function render() {
     },
     {
       id: 'polarity',
-      name: 'REVERSIBLE GRAVITY WARRANTY',
+      name: 'REVERSIBLE GRAVITY BLESSING',
       every: 4,
       dps: 1.07,
       desc: 'alternates between violently pushing crowds away and dragging them back'
@@ -21156,7 +21156,7 @@ function render() {
     try {
       if (m.id === 'vacuum') {
         ring(x, y, w.col, 95, 3);
-        txt(x, y - 38, 'VACUUM WARRANTY', w.col, false);
+        txt(x, y - 38, 'BELLOWS BLESSING', w.col, false);
         for (const t of near.slice(0, 7)) {
           t.vx += Math.sign(x - (t.x + t.w / 2)) * 320;
           t.vy -= 70;
@@ -21171,7 +21171,7 @@ function render() {
           sec(t, 0.22);
           prev = t;
         }
-        txt(x, y - 38, 'PINBALL CLAUSE', w.col, false);
+        txt(x, y - 38, 'BAGATELLE CLAUSE', w.col, false);
       } else if (m.id === 'moonshot') {
         e.vy = -520;
         e.on = false;
@@ -21206,7 +21206,7 @@ function render() {
           sc: 1.2
         });
       } else if (m.id === 'banana') {
-        txt(x, y - 38, 'SLIPPERY WHEN UNIONIZED', '#fff46b', false);
+        txt(x, y - 38, 'SLIPPERY WHEN GUILD-CERTIFIED', '#fff46b', false);
         for (const t of [e, ...near.slice(0, 5)]) {
           t.stun = Math.max(t.stun || 0, 0.42);
           t.vx += rand(-260, 260);
@@ -22622,6 +22622,12 @@ function render() {
     w.type = type;
     pl.weapon = w;
     return w.rar + ' ' + type;
+  };
+  PX.sampleNames = (n = 40) => {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push(makeW(pl.lv + i).name);
+    for (const t of Object.keys(ED)) if (!ED[t].boss) out.push(enemyName(t, Math.random() < 0.4));
+    return out;
   };
   PX.previewBoss = kind => {
     startBoss(kind);

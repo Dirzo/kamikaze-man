@@ -455,7 +455,7 @@
     {
       id: 'tinynuke',
       name: 'POCKET-SIZED WAR CRIME',
-      desc: 'Suspiciously Tiny + Nuclear: very fast tiny attacks cause very non-tiny explosions.',
+      desc: 'Suspiciously Tiny + Meteoric: very fast tiny attacks cause very non-tiny explosions.',
       test: w => hasTrait(w, 'tiny') && w.material?.code === 'nuclear'
     },
     {
@@ -478,7 +478,7 @@
     },
     {
       id: 'wetboat',
-      name: 'MARITIME OSHA EXEMPTION',
+      name: 'MARITIME GUILD-SAFETY EXEMPTION',
       desc: 'Legally A Boat + water: attacks leave damaging wakes and gain absurd reach.',
       test: w => hasTrait(w, 'boat')
     },
@@ -617,15 +617,15 @@
     'PLOT ARMOR FROM TEMU',
     'A MIRACLE, SORT OF',
     'SECOND WIND',
-    'THE INTERN BELIEVES IN YOU',
+    'THE APPRENTICE BELIEVES IN YOU',
     'LUCKY ENOUGH',
     'THE SOUNDTRACK PICKS UP',
-    'THE CAMERA ZOOMS IN',
+    'THE BARD LEANS IN',
     'MAIN CHARACTER PROBATION',
     'MAIN CHARACTER STATUS',
     'THE BOSS LOOKS NERVOUS',
     'ANIME HAIR ACTIVATED',
-    'HR CANNOT STOP THIS',
+    'THE GUILD CANNOT STOP THIS',
     'THE BUDGET INCREASED',
     'PROTAGONIST PRIVILEGE',
     'THE THEME SONG HAS LYRICS NOW',
@@ -636,12 +636,12 @@
   const D20_FATE_LINES = [
     'The universe rolls its eyes, but it does technically revive you.',
     'This is not a good roll. It is, however, much better than being dead.',
-    'The armor is cardboard. The comeback is real.',
+    'The armor is parchment. The comeback is real.',
     'Someone in accounting accidentally approved a miracle.',
     'You inhale violence and stand back up.',
-    'An unpaid intern somewhere whispers: you got this.',
+    'An unpaid apprentice somewhere whispers: you got this.',
     'Not legendary. Not embarrassing. Proceed.',
-    'The boss can suddenly hear electric guitars.',
+    'The boss can suddenly hear battle lutes.',
     'There is now an unnecessary close-up of your eye.',
     'You have been granted temporary narrative importance.',
     'The story has decided you are probably the protagonist.',
@@ -649,11 +649,11 @@
     'Your hair is not actually longer, but spiritually it absolutely is.',
     'Human Resources has lost jurisdiction over this fight.',
     'The animation studio has found several extra dollars.',
-    'Physics is now taking your side in meetings.',
+    'Physics is now taking your side in councils.',
     'The chorus kicks in and your weapon starts glowing irresponsibly.',
     'Several forms were signed. None of them were read.',
     'This weapon may constitute a minor religious event.',
-    'The D20 screams. Reality files for PTO.'
+    'The D20 screams. Reality files for feast days.'
   ];
   function d20Fate(roll) {
     let minRanks = [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 7, 8, 8, 9, 10, 11, 13, 20],
@@ -931,7 +931,7 @@
     pl.dcd = 0;
     pl.vx = 0;
     pl.vy = -120;
-    styleAdd(260 + roll * 42, roll === 20 ? 'NATURAL 20 SUPER SAIYAN' : `D20 COMEBACK • ${roll}`);
+    styleAdd(260 + roll * 42, roll === 20 ? 'NATURAL 20 ASCENDED' : `D20 COMEBACK • ${roll}`);
     txt(
       W / 2,
       126,
@@ -943,10 +943,10 @@
       W / 2,
       166,
       roll === 1
-        ? 'EMBARRASSING SUPER SAIYAN'
+        ? 'EMBARRASSING ASCENDED'
         : roll >= 17
-          ? 'SUPER SAIYAN: ANIME BUDGET'
-          : 'SUPER SAIYAN ACTIVATED',
+          ? 'ASCENDED: BARDIC BUDGET'
+          : 'ASCENDED ACTIVATED',
       '#fff176',
       true
     );

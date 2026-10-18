@@ -178,7 +178,7 @@
       nextBoss: 'bossman',
       map: 3,
       pool: ['taxman', 'shieldbro', 'blinker', 'mimic', 'sniper'],
-      sub: 'Management has privatized the feast hall. Every skeleton now has a meeting summons.',
+      sub: 'Management has privatized the feast hall. Every skeleton now has a council summons.',
       a: '#11131e',
       b: '#32384f',
       h: '#8c93b3',
@@ -205,7 +205,7 @@
       boss: 'bossman',
       map: 5,
       pool: ['taxman', 'sniper', 'roller', 'summoner', 'shieldbro', 'mimic'],
-      sub: 'The executive retreat is a frozen mountain fortress, hostile and aggressively KPI-driven. Boss Man is next.',
+      sub: 'The royal retreat is a frozen mountain fortress, hostile and aggressively KPI-driven. Boss Man is next.',
       a: '#0d1c2a',
       b: '#35647d',
       h: '#9de4ff',
@@ -247,7 +247,7 @@
       boss: 'ceo',
       map: 0,
       pool: ['taxman', 'shieldbro', 'sniper', 'blinker', 'roller', 'eyeball'],
-      sub: 'Every floor is a performance review. The CEO owns the floating staircases and most of your lunch break.',
+      sub: 'Every floor is a performance review. The CEO owns the floating staircases and most of your mead break.',
       a: '#17130b',
       b: '#51451d',
       h: '#ffd24f',
@@ -276,7 +276,7 @@
       traits: ['caffeine', 'confetti', 'rabbitlauncher', 'sneeze'],
       aliases: {
         stalker: 'Prototype Sword Apprentice',
-        crawler: 'Loose Ammo Gremlin',
+        crawler: 'Loose Arrow Gremlin',
         blinker: 'Teleporting Training Golem',
         bombchicken: 'Tactical Bomb Chicken',
         wizard: 'Particle-Effect Apprentice',
@@ -339,10 +339,10 @@
       aliases: {
         taxman: 'Senior Revenue Executioner',
         shieldbro: 'Golden-Parachute Knight',
-        sniper: 'Boardroom Crossbowman',
+        sniper: 'Throne-Room Crossbowman',
         blinker: 'Restructuring Shade',
-        roller: 'Executive Throne of Violence',
-        eyeball: 'Shareholder Scrying Orb'
+        roller: 'Royal Throne of Violence',
+        eyeball: 'Court Noble Scrying Orb'
       }
     },
     weapon: {
@@ -523,7 +523,7 @@
     } else if (mz === 1) {
       scene.kind = 'sewerriver';
       let rx = v === 0 ? 500 : v === 1 ? 230 : 760;
-      scene.water = { x: rx, w: 260, col: '#36f0b9', name: 'NEON SEWAGE' };
+      scene.water = { x: rx, w: 260, col: '#36f0b9', name: 'WITCHLIGHT SEWAGE' };
       if (v === 0) {
         add(90, 505, 190);
         add(350, 440, 130);
@@ -566,7 +566,7 @@
         add(880, 435, 170);
         add(1080, 535, 120);
       }
-      scene.water = { x: v === 2 ? 430 : 570, w: 170, col: '#ff5426', name: 'UNION LAVA' };
+      scene.water = { x: v === 2 ? 430 : 570, w: 170, col: '#ff5426', name: 'GUILD LAVA' };
     } else if (mz === 3) {
       scene.kind = 'boneravine';
       scene.water = { x: v === 0 ? 520 : v === 1 ? 170 : 860, w: 220, col: '#65718c', name: 'SOUP RAVINE' };

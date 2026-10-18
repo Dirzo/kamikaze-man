@@ -18,8 +18,8 @@
       id: 'plasma',
       family: 'plasma',
       polarity: 'positive',
-      name: 'PLASMA',
-      prefix: 'Plasma-Forged',
+      name: 'STARFIRE',
+      prefix: 'Starfire-Forged',
       col: '#ff72f5',
       rarity: 2,
       dpsMult: 1.24,
@@ -76,11 +76,11 @@
       family: 'plasma',
       polarity: 'negative',
       name: 'MELTDOWN',
-      prefix: 'Reactor-Breached',
+      prefix: 'Rune-Core-Breached',
       col: '#ff4bd6',
       rarity: 3,
       dpsMult: 1.38,
-      desc: 'miniature reactor failures that sometimes feed back into the operator'
+      desc: 'miniature rune-core failures that sometimes feed back into the operator'
     },
     {
       id: 'singularity',
@@ -91,7 +91,7 @@
       col: '#7655ff',
       rarity: 3,
       dpsMult: 1.37,
-      desc: 'violent gravity wells with highly questionable workplace ergonomics'
+      desc: 'violent gravity wells with highly questionable kingdom ergonomics'
     },
     {
       id: 'blowback',
@@ -130,7 +130,7 @@
         desc: 'slow, huge and deeply unnecessary'
       },
       {
-        name: 'Neon Saber',
+        name: 'Witchlight Saber',
         dam: 0.93,
         spd: 1.18,
         crit: 0.025,
@@ -166,7 +166,7 @@
         desc: 'balanced heavy combat blade'
       },
       {
-        name: 'Executive Longknife',
+        name: 'Royal Longknife',
         dam: 0.98,
         spd: 1.12,
         crit: 0.035,
@@ -289,7 +289,7 @@
     ],
     katana: [
       {
-        name: 'Neon Nodachi',
+        name: 'Witchlight Nodachi',
         dam: 1.18,
         spd: 0.9,
         crit: 0.03,
@@ -322,7 +322,7 @@
         crit: 0.04,
         aoe: 1.03,
         scale: 1.08,
-        desc: 'dense industrial blade with violent launch'
+        desc: 'dense forge-grade blade with violent launch'
       },
       {
         name: 'Audit Blade',
@@ -334,7 +334,7 @@
         desc: 'reliable crit-focused cutter'
       },
       {
-        name: 'Long Meeting Ender',
+        name: 'Long Council Ender',
         dam: 1.14,
         spd: 0.94,
         crit: 0.04,
@@ -363,7 +363,7 @@
         desc: 'balanced modern bow'
       },
       {
-        name: 'Rebar Longbow',
+        name: 'Iron-Bar Longbow',
         dam: 1.12,
         spd: 0.94,
         crit: 0.02,
@@ -484,7 +484,7 @@
         desc: 'slower heavy magic bolts'
       },
       {
-        name: 'Microwave Wand',
+        name: 'Dragon-Oven Wand',
         dam: 1.08,
         spd: 1.0,
         crit: 0.025,
@@ -493,7 +493,7 @@
         desc: 'wide-area electromagnetic nonsense'
       },
       {
-        name: 'Wizard OSHA Violation',
+        name: 'Wizard Guild-Safety Violation',
         dam: 1.16,
         spd: 0.92,
         crit: 0.035,
@@ -522,7 +522,7 @@
         desc: 'huge slow cluster-deleting focus'
       },
       {
-        name: 'Utility Pole',
+        name: 'Hitching Post',
         dam: 1.14,
         spd: 0.88,
         crit: 0.01,
@@ -558,24 +558,24 @@
         desc: 'faster compact casting staff'
       },
       {
-        name: 'Wizard Rebar',
+        name: 'Wizard Iron-Bar',
         dam: 1.12,
         spd: 0.94,
         crit: 0.02,
         aoe: 1.1,
         scale: 1.1,
-        desc: 'industrial rod with excellent spell violence'
+        desc: 'forge-grade rod with excellent spell violence'
       }
     ],
     hammer: [
       {
-        name: 'Industrial Maul',
+        name: 'Forge-Grade Maul',
         dam: 1.15,
         spd: 0.92,
         crit: 0.015,
         aoe: 1.1,
         scale: 1.12,
-        desc: 'wide industrial impact head'
+        desc: 'wide forge-grade impact head'
       },
       {
         name: 'Pile Driver',

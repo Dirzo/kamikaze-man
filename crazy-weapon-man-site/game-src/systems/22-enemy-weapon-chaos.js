@@ -16,34 +16,34 @@
 
   const NAMES = {
     stalker: [
-      'Kevin From The Parking Lot',
+      'Kevin From The Castle Courtyard',
       'Greg With Your Catalytic Converter',
-      'Parking Enforcement Werewolf',
+      'Toll-Bridge Enforcement Werewolf',
       'Guy Who Definitely Knows Your VIN'
     ],
     crawler: [
       'Floor Gremlin With Benefits',
       'Wet Sock Supervisor',
-      'Unionized Basement Goblin',
+      'Guild-Certified Basement Goblin',
       'Todd From Under The Fridge'
     ],
     wizard: [
-      'Unlicensed Microwave Wizard',
+      'Unlicensed Dragon-Oven Wizard',
       'Craig, Wizard of Minor Inconvenience',
-      'Certified Forklift Necromancer',
-      'Derek the Spell Intern'
+      'Certified Siege-Ox Necromancer',
+      'Derek the Spell Apprentice'
     ],
     shieldbro: [
       'Assistant Manager of Blocking',
-      'OSHA-Compliant Human Door',
+      'Guild-Safety-Compliant Human Door',
       'Regional Shield Enthusiast',
       'Bradley, Portable Wall'
     ],
     maw: [
       'Pretzel Maw of Human Resources',
       'Hungry Payroll Mistake',
-      'Mouth With A 401(k)',
-      'Lunch Break Violation With Teeth'
+      'Mouth With A pension chest',
+      'Mead Break Violation With Teeth'
     ],
     brute: [
       'Axe Landlord From Craigslist',
@@ -53,27 +53,27 @@
     ],
     taxman: [
       'Combat Auditor With Questions',
-      'IRS Battle Intern',
+      'IRS Battle Apprentice',
       'Receipts Goblin',
       'Senior Director of Surprise Fees'
     ],
     blinker: [
       'Teleporting Coward Greg',
-      'Quantum Hall Monitor',
+      'Arcane Hall Monitor',
       'Dave Who Was Just Behind You',
-      'Union Blink Supervisor'
+      'Guild Blink Supervisor'
     ],
     bombchicken: [
       'Tactical Chicken With Tenure',
       'Explosive Emotional Support Chicken',
-      'OSHA Rooster',
+      'Guild-Safety Rooster',
       'Poultry of Mass Destruction'
     ],
     roller: [
-      'Sentient Office Chair',
+      'Sentient Scriptorium Chair',
       'Payroll Roomba of Doom',
       'Wheel With Anger Issues',
-      'Unionized Murder Tire'
+      'Guild-Certified Murder Wheel'
     ],
     summoner: [
       'Middle Manager of More Problems',
@@ -83,21 +83,21 @@
     ],
     wraith: [
       'Ghost of Mandatory Overtime',
-      'Former Employee Still Clocked In',
+      'Former Employee Still On The Roster',
       'Haunted Exit Interview',
-      'Spectral HR Complaint'
+      'Spectral Guild Grievance'
     ],
     mimic: [
       'Definitely Normal Benefits Package',
       'Chest That Read Your Search History',
-      'Totally Legal Vending Machine',
-      'Box With Teeth And PTO'
+      'Totally Legal Wishing Well',
+      'Box With Teeth And Feast Days'
     ],
     flyer: [
-      'Airborne Parking Ticket',
+      'Airborne Toll Writ',
       'Flying Liability Waiver',
       'Drone With A Personal Grudge',
-      'Sky Rat With Dental'
+      'Sky Rat With Tooth Coverage'
     ],
     eyeball: [
       'Management Eye Watching Your Break',
@@ -107,7 +107,7 @@
     ],
     sniper: [
       'Long-Distance Micromanager',
-      'Remote Work Denial Specialist',
+      'Far-Tower Duty Denial Specialist',
       'Performance Improvement Marksman',
       'Guy Across The Map Named Steve'
     ]
@@ -118,10 +118,10 @@
     'Interim',
     'Night-Shift',
     'Emotionally Unavailable',
-    'Union',
+    'Guild',
     'Freelance',
-    'Executive',
-    'Turbo',
+    'Royal',
+    'Gale-Powered',
     'Unauthorized',
     'Assistant Regional',
     'Budget'
@@ -130,10 +130,10 @@
     '(No Appointment)',
     '— On Probation',
     '— Certified Somehow',
-    '— Has A Clipboard',
+    '— Has A Wax Tablet',
     '— Absolutely Not Insured',
     '— Final Warning',
-    '— Owns A Leaf Blower'
+    '— Owns A Gale Bellows'
   ];
 
   function funnyName(type, elite = false) {
@@ -272,28 +272,28 @@
   const MUTATIONS = [
     {
       id: 'vacuum',
-      name: 'INDUSTRIAL VACUUM WARRANTY',
+      name: 'FORGE-GRADE BELLOWS BLESSING',
       every: 4,
       dps: 1.08,
       desc: 'every fourth impact sucks nearby enemies into the victim'
     },
     {
       id: 'pinball',
-      name: 'PINBALL LIABILITY CLAUSE',
+      name: 'BAGATELLE LIABILITY CLAUSE',
       every: 5,
       dps: 1.11,
       desc: 'every fifth impact ricochets damage through the nearest coworkers'
     },
     {
       id: 'moonshot',
-      name: 'MOONSHOT BUTTON',
+      name: 'MOONSHOT LEVER',
       every: 4,
       dps: 1.06,
       desc: 'occasionally sends the target vertically into upper management'
     },
     {
       id: 'microwave',
-      name: 'BREAKROOM MICROWAVE CORE',
+      name: 'MESS HALL DRAGON-OVEN CORE',
       every: 5,
       dps: 1.1,
       desc: 'periodically goes DING and cooks the entire immediate area'
@@ -307,7 +307,7 @@
     },
     {
       id: 'copy',
-      name: 'HOSTILE COPY MACHINE',
+      name: 'HOSTILE COPYING SCRIPTORIUM',
       every: 5,
       dps: 1.1,
       desc: 'duplicates an impact because apparently one was not enough'
@@ -321,7 +321,7 @@
     },
     {
       id: 'polarity',
-      name: 'REVERSIBLE GRAVITY WARRANTY',
+      name: 'REVERSIBLE GRAVITY BLESSING',
       every: 4,
       dps: 1.07,
       desc: 'alternates between violently pushing crowds away and dragging them back'
@@ -409,7 +409,7 @@
     try {
       if (m.id === 'vacuum') {
         ring(x, y, w.col, 95, 3);
-        txt(x, y - 38, 'VACUUM WARRANTY', w.col, false);
+        txt(x, y - 38, 'BELLOWS BLESSING', w.col, false);
         for (const t of near.slice(0, 7)) {
           t.vx += Math.sign(x - (t.x + t.w / 2)) * 320;
           t.vy -= 70;
@@ -424,7 +424,7 @@
           sec(t, 0.22);
           prev = t;
         }
-        txt(x, y - 38, 'PINBALL CLAUSE', w.col, false);
+        txt(x, y - 38, 'BAGATELLE CLAUSE', w.col, false);
       } else if (m.id === 'moonshot') {
         e.vy = -520;
         e.on = false;
@@ -459,7 +459,7 @@
           sc: 1.2
         });
       } else if (m.id === 'banana') {
-        txt(x, y - 38, 'SLIPPERY WHEN UNIONIZED', '#fff46b', false);
+        txt(x, y - 38, 'SLIPPERY WHEN GUILD-CERTIFIED', '#fff46b', false);
         for (const t of [e, ...near.slice(0, 5)]) {
           t.stun = Math.max(t.stun || 0, 0.42);
           t.vx += rand(-260, 260);

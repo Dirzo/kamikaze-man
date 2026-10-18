@@ -26,13 +26,13 @@
     ceo: {
       name: 'CRAZY CEO MAN',
       sub: 'OWNER OF THE ARENA • TARGET CLEAR 24%',
-      line: 'He has acquired the floor, the ceiling, and your lunch break.',
+      line: 'He has acquired the floor, the ceiling, and your mead break.',
       quote: '“YOUR BUILD HAS BEEN RESTRUCTURED.”'
     },
     weapon: {
       name: 'THE WEAPON ITSELF',
       sub: 'SENTIENT DPS EVENT • TARGET CLEAR 20%',
-      line: 'Every bad decision has finally unionized into one object.',
+      line: 'Every bad decision has finally guild-certified into one object.',
       quote: '“YOU WERE NEVER HOLDING ME. I WAS HOLDING YOU.”'
     }
   };
@@ -48,7 +48,7 @@
     if (kind === 'sr')
       return [
         { x: 70, y: 520, w: 180, h: 18, tag: 'dad shelf' },
-        { x: 315, y: 420, w: 180, h: 18, tag: 'garage bench' },
+        { x: 315, y: 420, w: 180, h: 18, tag: 'forge bench' },
         { x: 565, y: 500, w: 150, h: 18, tag: 'questionable ramp' },
         { x: 790, y: 385, w: 190, h: 18, tag: 'weapon attic' },
         { x: 1030, y: 500, w: 170, h: 18, tag: 'inheritance' }
@@ -65,7 +65,7 @@
       return [
         { x: 60, y: 515, w: 155, h: 18, tag: 'subsidiary' },
         { x: 275, y: 390, w: 170, h: 18, tag: 'board seat' },
-        { x: 520, y: 495, w: 165, h: 18, tag: 'stock option' },
+        { x: 520, y: 495, w: 165, h: 18, tag: 'royal stipend' },
         { x: 755, y: 365, w: 190, h: 18, tag: 'penthouse' },
         { x: 1040, y: 505, w: 150, h: 18, tag: 'golden parachute' }
       ];
@@ -81,9 +81,9 @@
     return bossArenaVariant === 0
       ? [
           { x: 90, y: 540, w: 190, h: 18, tag: 'cubicle' },
-          { x: 380, y: 455, w: 200, h: 18, tag: 'meeting table' },
-          { x: 700, y: 375, w: 185, h: 18, tag: 'executive deck' },
-          { x: 1000, y: 505, w: 180, h: 18, tag: 'HR' }
+          { x: 380, y: 455, w: 200, h: 18, tag: 'council table' },
+          { x: 700, y: 375, w: 185, h: 18, tag: 'high council deck' },
+          { x: 1000, y: 505, w: 180, h: 18, tag: 'THE GUILD' }
         ]
       : bossArenaVariant === 1
         ? [
@@ -278,11 +278,11 @@
     let type = curW().type;
     e.adaptType = type;
     if (type === 'bow' || type === 'shuriken') {
-      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: SHIELD INTERN', '#bde8ff', true);
+      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: SHIELD APPRENTICE', '#bde8ff', true);
       if (E.filter(x => !x.dead && x.type === 'shieldbro').length < 2)
         spawn('shieldbro', clamp(e.x - 170, 80, W - 180), false);
     } else if (type === 'hammer') {
-      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: OSHA AIRSPACE', '#ffcf73', true);
+      txt(e.x + e.w / 2, e.y - 54, 'COUNTER: GUILD-SAFETY AIRSPACE', '#ffcf73', true);
       for (let i = 0; i < 2 + e.phase; i++)
         bossHazards.push({ k: 'jrMeteor', x: rand(80, W - 80), t: 0.55 + i * 0.12, hit: false });
     } else if (type === 'staff' || type === 'wand') {
@@ -904,7 +904,7 @@
     {
       id: 'coffee',
       icon: '☕',
-      name: 'DANGEROUS AMOUNT OF COFFEE',
+      name: 'DANGEROUS AMOUNT OF MANA POTION',
       desc: '+18% attack speed. -8 armor. Your hands have become theoretical.',
       apply: () => {
         pl.boonSpeed *= 1.18;
@@ -945,7 +945,7 @@
     {
       id: 'support',
       icon: '🪚',
-      name: 'EMOTIONAL SUPPORT CHAINSAW',
+      name: 'EMOTIONAL SUPPORT WAR-SCYTHE',
       desc: '+10% damage and +50% heal-on-kill. It listens. Loudly.',
       apply: () => {
         pl.boonDamage *= 1.1;
@@ -955,7 +955,7 @@
     {
       id: 'intern',
       icon: '📎',
-      name: 'UNPAID COMBAT INTERN',
+      name: 'UNPAID COMBAT APPRENTICE',
       desc: 'Every 6th attack fires an autonomous spectral projectile. No benefits.',
       apply: () => {
         pl.boonIntern = (pl.boonIntern || 0) + 1;
@@ -964,8 +964,8 @@
     {
       id: 'warranty',
       icon: '🧾',
-      name: 'QUESTIONABLE WARRANTY',
-      desc: 'Once per boss, lethal damage leaves you at 1 HP and voids the warranty immediately.',
+      name: 'QUESTIONABLE BLESSING',
+      desc: 'Once per boss, lethal damage leaves you at 1 HP and voids the blessing immediately.',
       apply: () => {
         pl.warranty = (pl.warranty || 0) + 1;
       }
@@ -974,7 +974,7 @@
       id: 'space',
       icon: '📏',
       name: 'PERSONAL SPACE VIOLATION',
-      desc: '+25% attack size and reach. HR has been notified but is hiding.',
+      desc: '+25% attack size and reach. The guild has been notified but is hiding.',
       apply: () => {
         pl.aoeMult *= 1.25;
       }
@@ -1022,7 +1022,7 @@
       id: 'soup',
       icon: '🥣',
       name: 'SOUP-BASED ECONOMY',
-      desc: 'Standing in rivers or industrial soup grants +20% damage instead of dignity.',
+      desc: 'Standing in rivers or forge-grade soup grants +20% damage instead of dignity.',
       apply: () => {
         pl.boonSoup = (pl.boonSoup || 0) + 1;
       }
@@ -1031,7 +1031,7 @@
       id: 'screaming',
       icon: '📢',
       name: 'SCREAMING IS A BUFF',
-      desc: 'Every 5th attack makes a radial shockwave. The weapon has discovered podcasts.',
+      desc: 'Every 5th attack makes a radial shockwave. The weapon has discovered bardic ballads.',
       apply: () => {
         pl.boonScream = (pl.boonScream || 0) + 1;
       }
@@ -1048,8 +1048,8 @@
     {
       id: 'ceilingfan',
       icon: '🌀',
-      name: 'INDUSTRIAL CEILING FAN',
-      desc: 'Airborne enemies take +20% damage and get launched harder. OSHA says no.',
+      name: 'FORGE-GRADE CEILING FAN',
+      desc: 'Airborne enemies take +20% damage and get launched harder. Guild-safety says no.',
       apply: () => {
         pl.boonAir = (pl.boonAir || 0) + 1;
       }
@@ -1067,7 +1067,7 @@
     {
       id: 'forklift',
       icon: '🏗️',
-      name: 'FORKLIFT CERTIFIED',
+      name: 'SIEGE-OX CERTIFIED',
       desc: 'Knockback +35%. Wall splats restore a little mana.',
       apply: () => {
         pl.boonForklift = (pl.boonForklift || 0) + 1;
@@ -1076,7 +1076,7 @@
     {
       id: 'feral',
       icon: '🦝',
-      name: 'PARKING-LOT RACCOON MENTOR',
+      name: 'COURTYARD RACCOON MENTOR',
       desc: 'Low HP grants attack speed because fear has left the building.',
       apply: () => {
         pl.boonRaccoon = (pl.boonRaccoon || 0) + 1;
@@ -1085,7 +1085,7 @@
     {
       id: 'union',
       icon: '🤝',
-      name: 'UNION-MANDATED SECOND DASH',
+      name: 'GUILD-MANDATED SECOND DASH',
       desc: 'Elite kills reduce dash cooldown immediately.',
       apply: () => {
         pl.boonUnion = (pl.boonUnion || 0) + 1;
