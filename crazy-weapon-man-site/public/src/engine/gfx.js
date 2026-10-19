@@ -15,8 +15,9 @@ function fit() {
   const coarse = matchMedia('(any-pointer: coarse)').matches;
   const vw = window.visualViewport?.width || innerWidth, vh = window.visualViewport?.height || innerHeight;
   const landscape = vw > vh;
+  const bodyStyle=getComputedStyle(document.body),safeX=(parseFloat(bodyStyle.paddingLeft)||0)+(parseFloat(bodyStyle.paddingRight)||0);
   // Landscape leaves thumb gutters on both sides; portrait leaves the controls below the map.
-  const room = Math.min((vw - (coarse && landscape ? 280 : 8)) / W,
+  const room = Math.min((vw - safeX - (coarse && landscape ? 296 : 8)) / W,
     (vh - (coarse ? landscape ? 48 : 218 : 80)) / H);
   const k = coarse ? Math.max(0.2, room) : room >= 1 ? Math.floor(room) : Math.max(0.25, room);
   canvas.style.width = W * k + 'px';
