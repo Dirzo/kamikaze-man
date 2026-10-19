@@ -8,7 +8,7 @@ export function updateClimb(h,dt) {
   const dir=(input.held('down')?1:0)-(input.held('up')?1:0);
   if(!h.ladder && !h.climbLock && dir) {
     const feet=h.y+h.h;
-    h.ladder=world.map?.ladders.find(l=>Math.abs(h.x+h.w/2-l.x)<19 && feet>=l.top && h.y<l.bottom) || null;
+    h.ladder=world.map?.ladders.find(l=>Math.abs(h.x+h.w/2-l.x)<19 && feet>=l.top && h.y<l.bottom && (dir>0 || feet>l.exitY+4)) || null;
   }
   if(!h.ladder)return false;
   if(input.take('jump')) {
