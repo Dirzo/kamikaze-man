@@ -109,7 +109,7 @@ export function drawHud(t) {
   panel('panel', 4, 25, W - 8, 17);
   const nameScale = textWidth(w.name) <= W - 28 ? 1 : (W - 28) / textWidth(w.name);
   X.save(); X.translate(W / 2, 30); X.scale(nameScale, 1);
-  text(w.name, 0, 0, nameCol, {align:'center'}); X.restore();
+  text(w.name, 0, 0, C.paper, {align:'center'}); X.restore();
 
   // ---- boss bar ----
   const b = world.boss;
@@ -133,7 +133,7 @@ export function drawHud(t) {
   }
 
   // ---- toasts ----
-  let ty = b && !b.dead ? 46 : 28;
+  let ty = b && !b.dead ? 66 : 46;
   for (let i = world.toasts.length - 1; i >= 0; i--) {
     const to = world.toasts[i];
     if (to.kind === 'weapon') {
