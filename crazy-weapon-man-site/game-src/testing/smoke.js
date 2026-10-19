@@ -2,17 +2,18 @@
 import { input } from '../engine/input.js';
 import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
-import { spawnEnemy, updateEnemy } from '../game/enemy.js';
+import { spawnEnemy, updateEnemy, drawEnemy } from '../game/enemy.js';
 import { hitEnemy, hurtHero, dropWeapon } from '../game/combat.js';
-import { makeWeapon } from '../game/loot.js';
+import { makeWeapon, dps } from '../game/loot.js';
 import { updateDrops } from '../game/drops.js';
 import { updateEvolution, attackMutation, impactMutation } from '../game/evolution.js';
 import { startBoss, updateBoss, updateHazards, bossDone, clearBoss } from '../game/bosses.js';
 import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
-import { startZone, updateWaves, enemiesLeft } from '../game/waves.js';
+import { startZone, updateWaves, enemiesLeft, spawnSwarmBoss } from '../game/waves.js';
 import { openForge, updateForge } from '../game/forge.js';
-import { openInventory, updateInventory, stash, BAG_SIZE } from '../game/inventory.js';
+import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE } from '../game/inventory.js';
+import { SWARM_BOSSES } from '../data/swarm.js';
 import { quirkHit } from '../game/quirks.js';
 import { QUIRK_LIST } from '../data/quirks.js';
 import { proficiency, PROF_KEY } from '../data/proficiency.js';
@@ -21,6 +22,7 @@ import { MUTATIONS } from '../data/progression.js';
 import { C, STEP, GROUND, HERO } from '../config.js';
 import { lookOf } from '../game/looks.js';
 import { feel, clearFx } from '../game/fx.js';
+import { cx } from '../game/physics.js';
 
 export function runSmoke(game) {
   const results=[];
@@ -80,11 +82,10 @@ export function runSmoke(game) {
     reset();const h=world.hero;h.dashT=0.1;const hp=h.hp;hurtHero(30);ok(h.hp===hp);
     h.dashT=0;h.inv=0;h.attack={};hurtHero(10);ok(h.hp===hp-10 && !h.attack);
   });
-  check('equipping a drop never replaces an attack in progress',()=>{
-    reset();const h=world.hero,old=h.weapon;dropWeapon(h.x+6,h.y+10,makeWeapon(5,{q:6,type:'sword'}));
-    const d=world.drops[0];d.x=h.x;d.y=h.y+8;d.vx=d.vy=0;d.t=1;
+  check('DOWN-equipping a looted upgrade never replaces an attack in progress',()=>{
+    reset();const h=world.hero,old=h.weapon,w=makeWeapon(5,{q:6,type:'sword'});stash(w);world.quick={item:w,t:4};
     h.attack={};key('ArrowDown',true);poll();updateDrops(STEP);ok(h.weapon===old);
-    h.attack=null;updateDrops(STEP);key('ArrowDown',false);poll();ok(h.weapon!==old);
+    h.attack=null;updateDrops(STEP);key('ArrowDown',false);poll();ok(h.weapon===w);
   });
   check('all five mutations deal damage and terminate their pending effects',()=>{
     for(const mutation of Object.keys(MUTATIONS)) {
@@ -110,26 +111,67 @@ export function runSmoke(game) {
     world.forge.t=1;key('KeyZ',true);poll();updateForge(STEP);key('KeyZ',false);poll();ok(world.hero.weapon===before,'forge changed the weapon');
     game.startRun();ok(!world.forge && world.echoes.length===0 && !world.deadT);
   });
-  check('drops never auto-equip; DOWN equips, bags the old weapon and feeds Weapon Lust once',()=>{
+  check('drops hover, fly to you and auto-loot; DOWN equips a looted upgrade and feeds Weapon Lust',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});const old=h.weapon;
-    const better=makeWeapon(1,{type:'dagger',q:1,standout:true});dropWeapon(h.x+5,h.y,better);const d=world.drops.at(-1);d.x=h.x;d.y=h.y+h.h-d.h;d.t=1;d.vy=0;
-    updateDrops(STEP);ok(h.weapon===old && world.nearDrop===d,'better drop auto-equipped');
+    const better=makeWeapon(1,{type:'dagger',q:1,standout:true});dropWeapon(h.x+90,h.y,better);const d=world.drops.at(-1),y0=d.y;
+    let low=-1e9;for(let i=0;i<20;i++){updateDrops(STEP);low=Math.max(low,d.y);}
+    ok(low<=y0+4,'drop sank below where it spawned');
+    for(let i=0;i<180 && world.drops.includes(d);i++)updateDrops(STEP);
+    ok(!world.drops.includes(d) && world.bag.includes(better) && h.weapon===old,'drop was not auto-looted into the bag');
+    ok(world.quick && world.quick.item===better,'a better loot was not offered on DOWN');
     const dmg0=game.hitDamage(better);key('ArrowDown',true);poll();updateDrops(STEP);key('ArrowDown',false);poll();
-    ok(h.weapon===better && world.bag.includes(old),'DOWN did not equip and bag the old weapon');
+    ok(h.weapon===better && world.bag.includes(old) && !world.bag.includes(better),'DOWN did not equip the looted weapon');
     ok(h.lust>0 && h.newToyT>0 && game.hitDamage(better)>dmg0,'no Weapon Lust bonus for a new weapon');
-    const worse=makeWeapon(0,{type:'bow',q:0,standout:false});
-    stash(worse);worse.used=true;const lust=h.lust;
-    ok(openInventory() && world.inv,'bag did not open');world.inv.t=1;world.inv.sel=world.bag.indexOf(worse);
-    key('KeyZ',true);poll();updateInventory(STEP);key('KeyZ',false);poll();ok(h.weapon===worse && world.bag.includes(better),'equip from bag failed');
-    ok(h.lust===lust,'bag equips should not feed Weapon Lust');
-    world.inv.sel=world.bag.indexOf(better);const n=world.drops.length;key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();
-    ok(!world.bag.includes(better) && world.drops.length===n+1 && world.drops.at(-1).declined,'drop from bag failed');
-    world.inv.sel=world.bag.indexOf(old);const sh=world.shards;
-    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(world.bag.includes(old),'salvage did not ask to confirm');
-    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(!world.bag.includes(old) && world.shards>sh,'salvage failed');
+  });
+  check('the bag keeps the best DPS of each weapon type unless it is locked',()=>{
+    reset();const h=world.hero;
+    const a=makeWeapon(0,{type:'bow',q:0,standout:false}),b=makeWeapon(3,{type:'bow',q:4,standout:false}),c=makeWeapon(6,{type:'bow',q:8,standout:false});
+    ok(dps(a)<dps(b) && dps(b)<dps(c),'test weapons out of order');
+    autoLoot(a);autoLoot(b);ok(world.bag.includes(b) && !world.bag.includes(a),'weaker bow was kept');
+    let sh=world.shards;ok(autoLoot(a)==='salvaged' && world.shards>sh && world.bag.filter(w=>w&&w.type==='bow').length===1,'worse bow was not salvaged');
+    b.locked=true;autoLoot(c);ok(world.bag.includes(b) && world.bag.includes(c),'locked bow was replaced');
+    const d=makeWeapon(6,{type:'bow',q:9,standout:true});autoLoot(d);ok(world.bag.includes(b) && world.bag.includes(d) && !world.bag.includes(c),'unlocked bow was not upgraded');
+    ok(openInventory() && world.inv,'bag did not open');world.inv.t=1;world.inv.sel=world.bag.indexOf(d);
+    key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();ok(d.locked,'X did not lock');
+    sh=world.shards;key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();
+    ok(world.bag.includes(d) && world.shards===sh,'locked weapon was salvaged');
+    key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();ok(!d.locked,'X did not unlock');
+    const old=h.weapon;key('KeyZ',true);poll();updateInventory(STEP);key('KeyZ',false);poll();ok(h.weapon===d && !world.bag.includes(d),'equip from bag failed');
+    world.inv.sel=world.bag.indexOf(b);b.locked=false;sh=world.shards;
+    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(world.bag.includes(b),'salvage did not ask to confirm');
+    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(!world.bag.includes(b) && world.shards>sh,'salvage failed');
     for(let i=0;i<BAG_SIZE+2;i++) stash(makeWeapon(0,{q:0}));ok(world.bag.filter(Boolean).length===BAG_SIZE,'bag overfilled');
+    ok(autoLoot(makeWeapon(0,{type:'hammer',q:0}))!=='bagged' && world.bag.filter(Boolean).length===BAG_SIZE,'full bag overfilled on loot');
     key('KeyE',true);poll();updateInventory(STEP);key('KeyE',false);poll();ok(!world.inv,'E did not close the bag');
-    game.startRun();ok(world.bag.every(x=>!x) && !world.inv,'new run kept the old bag');
+    game.startRun();ok(world.bag.every(x=>!x) && !world.inv,'new run kept the old bag');void old;
+  });
+  check('every zone has its own swarm boss that spawns, fights and draws',()=>{
+    const names=new Set();
+    for(let z=0;z<ZONES.length;z++) {
+      reset();startZone(z);world.enemies.length=0;const h=world.hero;h.inv=1e9;
+      updateCamera(0,true);world.lock={x0:world.cameraX,x1:world.cameraX+480,y0:world.cameraY,feet:h.y+h.h};world.director.phase='survive';
+      const e=spawnSwarmBoss();ok(e && e.swarmBoss && world.boss===e && e.hp>0,'no swarm boss in zone '+(z+1));names.add(e.name);
+      for(let i=0;i<240;i++){world.t+=STEP;updateEnemy(e,STEP);h.inv=1e9;}
+      ok(Number.isFinite(e.x) && Number.isFinite(e.y) && !e.dead,'swarm boss broke in zone '+(z+1));
+      drawEnemy(e,1);
+    }
+    ok(names.size===ZONES.length,'swarm bosses are not unique per zone');
+  });
+  check('residents never walk off their platform on their own',()=>{
+    let tested=0;
+    for(const z of [0,3,6]) {
+      reset();startZone(z);for(const e of world.enemies)e.dead=true;world.enemies.length=0;
+      const p=world.platforms.find(p=>!p.solid && p.w>=40 && p.y<world.map.floorY-30);
+      if(!p) continue;tested++;
+      for(const type of ['stalker','roller','goose','wizard']) {
+        const e=spawnEnemy(type,p.x+p.w/2,p.y);e.spawnT=0;e.cool=0;
+        const h=world.hero;h.x=p.x+p.w+40;h.y=p.y+40-h.h;h.inv=100;
+        for(let i=0;i<300;i++){world.t+=STEP;updateEnemy(e,STEP);}
+        ok(e.onGround && e.platform===p && cx(e)>=p.x && cx(e)<=p.x+p.w,`${type} left its platform in zone ${z+1}`);
+        world.enemies.length=0;
+      }
+    }
+    ok(tested>0,'no one-way platform to test');
   });
   check('every quirk fires on cheap weapons and never recurses',()=>{
     for(const id of QUIRK_LIST) {
@@ -159,6 +201,7 @@ export function runSmoke(game) {
       for(let i=0;i<10000 && !world.forge && world.phase!=='won';i++) {
         for(const e of world.enemies) if(!e.boss) {e.dead=true;e.deathT=0;}
         world.enemies=world.enemies.filter(e=>e.boss); // resolve boss outro through its own handler
+        if(world.boss && world.boss.swarmBoss && world.boss.dead) world.boss=null;
         if(world.boss){world.hero.x=world.map.bossLeft+40;world.hero.y=world.map.bossFloor-world.hero.h;world.boss.dead=false;world.boss.hp=0;updateBoss(world.boss,STEP);for(let j=0;j<150;j++)updateBoss(world.boss,STEP);world.enemies=[];world.boss=null;}
         if(world.director.phase==='exit') {world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;}
         updateWaves(STEP);world.t+=STEP;
@@ -195,8 +238,15 @@ export function runSmoke(game) {
     let peak=0;for(let i=0;i<240;i++){updateWaves(STEP);peak=Math.max(peak,world.enemies.filter(e=>!e.dead).length);}
     ok(peak>=3,'swarm did not pour in');
     for(const e of world.enemies.filter(e=>e.swarm && !e.dead)) ok(e.x>=world.lock.x0 && e.x+e.w<=world.lock.x1,'swarm left the locked screen');
+    const foe=world.enemies.find(e=>e.swarm && !e.dead);foe.spawnT=0;foe.hp=foe.max=1e6;
+    hitEnemy(foe,1,{dir:1});hitEnemy(foe,1,{dir:1});ok(world.swarmCombo.n===2,'swarm hits did not build a combo');
+    const boosted=game.hitDamage(world.hero.weapon);world.swarmCombo.n=50;ok(game.hitDamage(world.hero.weapon)>boosted,'combo gave no damage');world.swarmCombo.n=2;
+    for(let i=0;i<200;i++)updateWaves(STEP);ok(world.swarmCombo.n===0,'combo did not fall off without hits');
     world.director.t=0;updateWaves(STEP);
-    ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead),'swarm did not end into the exit');
+    const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.swarmBoss && boss.scale>1 && boss.name===SWARM_BOSSES[0].name,'no swarm boss when the timer ran out');
+    for(let i=0;i<60;i++)updateWaves(STEP);ok(world.director.phase==='survive','swarm ended before its boss fell');
+    boss.spawnT=0;hitEnemy(boss,boss.hp+1,{dir:1});updateWaves(STEP);
+    ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead) && !world.swarmCombo,'swarm boss defeat did not open the exit');
     for(let i=0;i<90;i++)updateWaves(STEP);
     ok(!!world.forge,'cleared exit did not advance');
   });

@@ -8,7 +8,7 @@ import { world, resetWorld } from './game/world.js';
 import { createHero, updateHero, drawHero } from './game/hero.js';
 import { updateEnemy, drawEnemy, updateBolts, drawBolts } from './game/enemy.js';
 import { updateShots, drawShots } from './game/shots.js';
-import { updateDrops, drawDrops, drawNearDrop } from './game/drops.js';
+import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
 import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx } from './game/fx.js';
@@ -152,7 +152,6 @@ function drawWorld(t) {
   drawSparks();
   drawNumbers();
   drawBubbles();
-  drawNearDrop(t);
   screenLayer();
 }
 

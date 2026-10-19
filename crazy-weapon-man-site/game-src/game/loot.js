@@ -8,6 +8,7 @@ import { quirkFor } from '../data/quirks.js';
 import { profMult } from '../data/proficiency.js';
 import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
+import { comboMult } from '../data/swarm.js';
 let uid = 1;
 
 // All sources share the zone ceiling: zone 1 tops out at Uncommon; the
@@ -54,7 +55,7 @@ export function trainingSword() {
 export function hitDamage(w) {
   const T = TYPES[w.type],
     h = world.hero;
-  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) : 1);
+  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
 }
 // relative strength in the current zone (for the HUD and auto-equip): damage per second
 export function dps(w) {

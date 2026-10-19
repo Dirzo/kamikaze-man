@@ -52,6 +52,8 @@ export function resetWorld() {
     inv: null,
     lock: null,
     quirkCount: 0,
+    quick: null, // a just-looted weapon that beats yours: DOWN equips it
+    swarmCombo: null,
     pickups: [],
     platforms: [],
     director: null,

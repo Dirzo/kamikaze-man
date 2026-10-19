@@ -33,12 +33,15 @@ export function captureScene(game, mode) {
       h.attack=null;h.lust=70;h.newToyT=3;world.director={phase:'fight',t:0,bossStarted:true};
       for(const e of world.enemies) e.dead=true;
       for(let i=0;i<420;i++){world.t+=1/60;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
+      world.director.t=0; // timer out: the zone's swarm boss arrives
+      for(let i=0;i<90;i++){world.t+=1/60;h.inv=1;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
+      world.swarmCombo.n=37;world.swarmCombo.best=37;world.swarmCombo.t=1.4;
       h.inv=1;
     }
     if(mode==='bag') {
       h.attack=null;
       for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) stash(makeWeapon(z,{type,q,standout}));
-      openInventory();world.inv.sel=2;
+      world.bag[1].locked=true;openInventory();world.inv.sel=1;
     }
   });
   document.documentElement.dataset.capture='ready';

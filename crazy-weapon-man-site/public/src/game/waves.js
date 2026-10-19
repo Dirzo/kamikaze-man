@@ -1,6 +1,7 @@
 // Finite map director: enter -> clear every resident -> boss (if any) -> survival swarm -> open exit
 // -> Forge. While exploring there are no timer spawns; the remaining count includes undiscovered
-// enemies. The swarm locks the screen and pours enemies in until its timer runs out.
+// enemies. The swarm locks the screen and pours enemies in until its timer runs out, then the
+// zone's swarm boss arrives; beat it to open the exit. Hits during the swarm build a combo.
 import { W, GROUND, HERO, C } from '../config.js';
 import { world } from './world.js';
 import { ZONES, bossSong } from '../data/zones.js';
@@ -10,19 +11,24 @@ import { enemyPool } from '../data/progression.js';
 import { spawnEnemy } from './enemy.js';
 import { kill } from './combat.js';
 import { overlap } from './physics.js';
-import { callout } from './fx.js';
+import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
 import { startBoss, bossDone, clearBoss } from './bosses.js';
 import { makeWeapon } from './loot.js';
 import { dropWeapon } from './combat.js';
 import { openForge, updateForge } from './forge.js';
 import { updateCamera } from './camera.js';
+import { refHP, refDmg } from '../data/curve.js';
+import { COMBO, SWARM_BOSS, SWARM_BOSSES } from '../data/swarm.js';
+import { dropShards } from './combat.js';
+import { say } from './bubbles.js';
 
 export function startZone(z) {
   clearBoss();
   for(const key of ['echoes','shots','drops','pickups','enemies','bolts']) world[key].length=0;
   world.nearDrop=null;
   world.lock=null;
+  world.swarmCombo=null;
   world.zone=z;
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
   world.map=makeMap(z);
@@ -85,12 +91,29 @@ export function updateWaves(dt) {
 export const SURVIVE = { time: z => 30 + z * 2, alive: z => Math.min(22, 12 + z), every: z => Math.max(0.22, 0.5 - z * 0.025), hp: 0.55 };
 function startSurvival() {
   const D=world.director,h=world.hero;
-  D.phase='survive';D.t=SURVIVE.time(world.zone);D.spawnT=1;D.swarmKills=world.kills;
+  D.phase='survive';D.t=SURVIVE.time(world.zone);D.spawnT=1;D.swarmKills=world.kills;D.sboss=null;D.sbossT=0;
   updateCamera(0,true); // lock the screen the hero is standing in
   world.lock={x0:Math.round(world.cameraX),x1:Math.round(world.cameraX)+W,y0:Math.round(world.cameraY),feet:h.y+h.h};
+  world.swarmCombo={n:0,t:0,best:0,lost:0};
   world.bolts.length=0;
   sfx.clear();
   callout('SURVIVE!',W/2,104,C.coral,{big:true,life:120});
+}
+// a hit landed during the swarm: grow the combo and refill its timer
+export function comboHit() {
+  const c=world.swarmCombo;
+  if(!c || world.director?.phase!=='survive') return;
+  c.n++;c.best=Math.max(c.best,c.n);c.t=COMBO.window(c.n);
+  if(c.n%25===0) callout(`${c.n} COMBO!`,W/2,118,C.gold,{life:50});
+}
+function updateCombo(dt) {
+  const c=world.swarmCombo;
+  if(!c || c.n<=0) return;
+  c.t-=dt;
+  if(c.t<=0) {
+    if(c.n>=10) callout('COMBO DROPPED',W/2,118,C.coral,{life:50});
+    c.lost=c.n;c.n=0;
+  }
 }
 function swarmSpot(d) {
   const L=world.lock,h=world.hero,solids=world.map?.solids||[];
@@ -104,12 +127,38 @@ function swarmSpot(d) {
   const side=Math.random()<0.5?-1:1;
   return [Math.max(L.x0+12,Math.min(L.x1-12,h.x+side*110)),d.air?L.feet-70:L.feet];
 }
+// the zone's unique swarm boss: a giant, named resident with a boss bar
+export function spawnSwarmBoss() {
+  const D=world.director,L=world.lock,h=world.hero,z=world.zone,B=SWARM_BOSSES[z%SWARM_BOSSES.length];
+  const d=ENEMIES[B.type],side=h.x+h.w/2<(L.x0+L.x1)/2?1:-1;
+  const x=side>0?L.x1-50:L.x0+50,y=d.air?L.feet-70:L.feet;
+  const e=spawnEnemy(B.type,x,y,{elite:true,wave:4});
+  if(!e) return null;
+  const feet=e.y+e.h,mid=e.x+e.w/2;
+  e.w=Math.round(e.w*B.scale);e.h=Math.round(e.h*B.scale);
+  e.x=mid-e.w/2;e.y=d.air?y-e.h/2:feet-e.h;
+  e.scale=B.scale;e.swarm=e.swarmBoss=true;
+  e.d={...d,range:d.range*(d.kind==='melee'||d.kind==='shield'||d.kind==='blink'?B.scale:1)};
+  e.name=B.name;
+  e.max=e.hp=Math.round(refHP(z)*SWARM_BOSS.hp);
+  e.dmg=refDmg(z)*d.dmg*SWARM_BOSS.dmg;
+  e.xp*=5;
+  e.spawnT=0.9;
+  D.sboss=e;D.sbossT=0;
+  world.boss=e;
+  callout(B.name,W/2,104,C.gold,{big:true,life:140});
+  say(e,B.line,2.4,true);
+  shake(0.5);
+  return e;
+}
 function updateSurvival(dt) {
   const D=world.director,L=world.lock,h=world.hero;
   D.spawnT-=dt;
-  const alive=world.enemies.filter(e=>!e.dead && !e.boss).length;
-  if(D.t>0 && D.spawnT<=0 && alive<SURVIVE.alive(world.zone)) {
-    D.spawnT=SURVIVE.every(world.zone);
+  updateCombo(dt);
+  const alive=world.enemies.filter(e=>!e.dead && !e.boss && !e.swarmBoss).length;
+  const bossUp=!!D.sboss,cap=SURVIVE.alive(world.zone)*(bossUp?SWARM_BOSS.alive:1);
+  if(D.spawnT<=0 && alive<cap && !(bossUp && D.sboss.dead)) {
+    D.spawnT=SURVIVE.every(world.zone)*(bossUp?SWARM_BOSS.every:1);
     const pool=enemyPool(world.zone,4,ZONES[world.zone].pool).filter(t=>ENEMIES[t].kind!=='mimic');
     const type=pool[Math.floor(Math.random()*pool.length)],[x,y]=swarmSpot(ENEMIES[type]);
     const e=spawnEnemy(type,x,y,{elite:Math.random()<0.06,wave:4});
@@ -118,14 +167,25 @@ function updateSurvival(dt) {
   // the screen is the arena: nobody leaves it
   h.x=Math.max(L.x0+2,Math.min(L.x1-2-h.w,h.x));
   for(const e of world.enemies) if(!e.dead && e.swarm) e.x=Math.max(L.x0,Math.min(L.x1-e.w,e.x));
-  if(D.t<=0) {
-    for(const e of [...world.enemies]) if(!e.dead && !e.boss) kill(e,{dir:Math.sign(e.x-h.x)||1});
-    callout(`SURVIVED! ${world.kills-D.swarmKills} KILLS`,W/2,104,C.lime,{big:true,life:120});
-    world.lock=null;
-    openExit();
+  if(!bossUp) {
+    if(D.t<=0) spawnSwarmBoss() || endSurvival();
+    return;
   }
+  D.sbossT+=dt;
+  if(D.sboss.dead) endSurvival();
+}
+function endSurvival() {
+  const D=world.director,h=world.hero,c=world.swarmCombo||{best:0};
+  for(const e of [...world.enemies]) if(!e.dead && !e.boss) kill(e,{dir:Math.sign(e.x-h.x)||1});
+  const bonus=Math.floor(c.best/COMBO.shardsPer);
+  if(bonus>0) dropShards(h.x+h.w/2,h.y,Math.min(40,bonus));
+  callout(`SURVIVED! ${world.kills-D.swarmKills} KILLS  BEST COMBO ${c.best}`,W/2,104,C.lime,{big:true,life:150});
+  world.lock=null;
+  world.swarmCombo=null;
+  openExit();
 }
 export const survivalLeft=()=>world.director?.phase==='survive'?Math.max(0,world.director.t):0;
+export const swarmBossUp=()=>world.director?.phase==='survive' && !!world.director.sboss;
 
 function openExit() {
   const D=world.director;

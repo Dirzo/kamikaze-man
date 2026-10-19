@@ -1,6 +1,8 @@
 // Inventory and equipment windows (E / B / Tab, gamepad Back, or the Bag button). Two framed
 // windows over a paused game: EQUIPMENT (hero, weapon slot, weapon mastery) and INVENTORY
-// (a 24-slot bag of weapons, item details, equip / drop / salvage). Keyboard, pad, mouse and touch.
+// (a 24-slot bag of weapons, item details, equip / lock / salvage). Keyboard, pad, mouse and touch.
+// Drops are looted automatically: the bag keeps the highest-DPS weapon of each type and salvages
+// the rest for shards. Locked weapons are never replaced or salvaged.
 import { C, W, H } from '../config.js';
 import { X, canvas, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
@@ -9,9 +11,9 @@ import { world } from './world.js';
 import { dps, powerScore, rarityName } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { equip } from './drops.js';
-import { dropWeapon } from './combat.js';
+import { toast } from './progress.js';
+import { lustBoost } from './lust.js';
 import { drawHeroAnimated } from './anim.js';
-import { cx } from './physics.js';
 import { TYPE_LIST } from '../data/weapons.js';
 import { MUTATIONS } from '../data/progression.js';
 import { ELEMENTS } from '../data/weapons.js';
@@ -27,7 +29,7 @@ const INV = { x: 208, y: 6, w: 266, h: 230 }; // inventory window
 const GRID = { x: INV.x + 13, y: INV.y + 30 };
 const BTNS = [
   { id: 'equip', label: 'EQUIP', x: INV.x + 10, w: 66 },
-  { id: 'drop', label: 'DROP', x: INV.x + 82, w: 60 },
+  { id: 'lock', label: 'LOCK', x: INV.x + 82, w: 60 },
   { id: 'salvage', label: 'SALVAGE', x: INV.x + 148, w: 108 }
 ];
 const BTN_Y = INV.y + 208;
@@ -48,6 +50,46 @@ export function stash(w) {
   return true;
 }
 
+// auto-loot: keep the best unlocked weapon of each type, salvage the loser
+export function autoLoot(w) {
+  if (!w || w.name === 'Training Sword') return 'skip';
+  const col = w.standout ? C.gold : rarityColour(w.q);
+  const i = world.bag.findIndex(b => b && !b.locked && b.type === w.type);
+  const better = dps(w) > dps(world.hero.weapon);
+  let res;
+  if (i >= 0 && dps(world.bag[i]) >= dps(w)) {
+    world.shards += salvageValue(w);
+    toast('bag', { head: `SALVAGED +${salvageValue(w)} SHARDS`, name: w.name, col: C.fog });
+    return 'salvaged';
+  }
+  if (i >= 0) {
+    world.shards += salvageValue(world.bag[i]);
+    world.bag[i] = w;
+    world.bagNew = (world.bagNew || 0) + 1;
+    res = 'upgraded';
+  } else if (stash(w)) res = 'bagged';
+  else {
+    world.shards += salvageValue(w);
+    toast('bag', { head: `BAG FULL  +${salvageValue(w)} SHARDS`, name: w.name, col: C.fog });
+    return 'salvaged';
+  }
+  world.quick = better ? { item: w, t: 4 } : null;
+  toast('bag', { head: better ? 'BETTER WEAPON!  DOWN: EQUIP' : res === 'upgraded' ? `BEST ${typeName(w.type)} KEPT   E: OPEN` : 'INTO THE BAG   E: OPEN', name: w.name, col, hot: better });
+  return res;
+}
+
+// equip a bag weapon (the old one takes its slot); a weapon you have never held feeds Weapon Lust
+export function equipFromBag(i) {
+  const w = world.bag[i];
+  if (!w) return false;
+  const fresh = !w.used,
+    old = equip(w);
+  world.bag[i] = old && old.name !== 'Training Sword' ? old : null;
+  if (world.quick && world.quick.item === w) world.quick = null;
+  if (fresh) lustBoost(world.hero);
+  return true;
+}
+
 export function openInventory() {
   if (world.inv || world.forge || !world.hero || world.hero.dead) return false;
   const first = world.bag.findIndex(Boolean);
@@ -65,7 +107,6 @@ export const toggleInventory = () => (world.inv ? closeInventory() : openInvento
 
 function act(id) {
   const I = world.inv,
-    h = world.hero,
     w = world.bag[I.sel];
   if (!w) {
     I.msg = 'EMPTY SLOT';
@@ -73,19 +114,21 @@ function act(id) {
     return;
   }
   if (id === 'equip') {
-    const old = equip(w);
-    world.bag[I.sel] = old && old.name !== 'Training Sword' ? old : null;
+    equipFromBag(I.sel);
     I.msg = 'EQUIPPED';
     I.confirm = false;
-  } else if (id === 'drop') {
-    world.bag[I.sel] = null;
-    dropWeapon(cx(h), h.y, w);
-    const d = world.drops[world.drops.length - 1];
-    d.declined = true; // stays on the ground until you walk off it
-    I.msg = 'DROPPED AT YOUR FEET';
+  } else if (id === 'lock') {
+    w.locked = !w.locked;
+    I.msg = w.locked ? 'LOCKED: NEVER REPLACED OR SALVAGED' : 'UNLOCKED';
     I.confirm = false;
-    sfx.ui();
+    sfx.ui(w.locked);
   } else if (id === 'salvage') {
+    if (w.locked) {
+      I.msg = 'LOCKED - UNLOCK IT FIRST';
+      I.confirm = false;
+      sfx.ui();
+      return;
+    }
     if (!I.confirm) {
       I.confirm = true;
       I.msg = 'SALVAGE AGAIN TO CONFIRM';
@@ -119,7 +162,7 @@ export function updateInventory(dt) {
   if (input.take('down')) moveSel(COLS);
   if (I.t < 0.15) return;
   if (input.take('attack') | input.take('confirm')) act('equip');
-  else if (input.take('jump')) act('drop');
+  else if (input.take('jump')) act('lock');
   else if (input.take('special')) act('salvage');
   input.consume('dash');
 }
@@ -175,7 +218,16 @@ function slot(x, y, s, w, on, t) {
   if (w) {
     rect(x + 2, y + 2, s - 4, 1, edge); // rarity stripe
     icon(w, x + 2, y + 3, s - 4, s - 5, t);
+    if (w.locked) padlock(x + s - 8, y + s - 9);
   }
+}
+function padlock(x, y) {
+  rect(x, y, 7, 8, C.ink);
+  rect(x + 2, y + 1, 3, 1, C.gold);
+  rect(x + 1, y + 2, 1, 2, C.gold);
+  rect(x + 5, y + 2, 1, 2, C.gold);
+  rect(x + 1, y + 4, 5, 3, C.gold);
+  rect(x + 3, y + 5, 1, 1, C.ink);
 }
 function titleBar(r, s) {
   panel('panel', r.x, r.y, r.w, r.h);
@@ -257,11 +309,13 @@ export function drawInventory(t) {
   const tx = INV.x + 14;
   if (!it) {
     text('EMPTY SLOT', tx, dy + 2, C.fog);
-    text('WEAPONS YOU SWAP OUT LAND HERE.', tx, dy + 14, C.mist);
-    text('DOWN ON A DROP PUTS IT IN THE BAG.', tx, dy + 24, C.mist);
+    text('DROPS ARE LOOTED AUTOMATICALLY.', tx, dy + 14, C.mist);
+    text('THE BAG KEEPS THE BEST DPS OF EACH TYPE', tx, dy + 24, C.mist);
+    text('AND SALVAGES THE REST. LOCK TO KEEP ONE.', tx, dy + 34, C.mist);
   } else {
     const col = it.standout ? C.gold : rarityColour(it.q);
-    text(fitText(it.name, INV.w - 30), tx, dy + 2, col);
+    text(fitText(it.name, INV.w - (it.locked ? 44 : 30)), tx, dy + 2, col);
+    if (it.locked) padlock(INV.x + INV.w - 22, dy);
     text(`${it.standout ? 'STANDOUT ' : ''}${rarityName(it).toUpperCase()} ${typeName(it.type)}`, tx, dy + 12, C.mist);
     const gain = Math.round((powerScore(it) / Math.max(1, powerScore(w)) - 1) * 100);
     text(fmt(dps(it)) + ' DPS', tx, dy + 22, C.paper);
@@ -282,13 +336,13 @@ export function drawInventory(t) {
   for (const b of BTNS) {
     const hot = b.id === 'salvage' && I.confirm;
     panel(hot ? 'btn-hot' : 'btn', b.x, BTN_Y, b.w, 16);
-    const label = b.id === 'salvage' && it ? `${b.label} +${salvageValue(it)}` : b.label;
+    const label = b.id === 'salvage' && it ? `${b.label} +${salvageValue(it)}` : b.id === 'lock' && it && it.locked ? 'UNLOCK' : b.label;
     text(label, b.x + b.w / 2, BTN_Y + 5, it ? C.paper : C.fog, { align: 'center' });
   }
   if (I.msg) text(I.msg, INV.x + INV.w / 2, BTN_Y - 9, C.lime, { align: 'center' });
   rect(INV.x + 10, INV.y + INV.h + 4, 4, 2, C.sky);
   text(`${fmt(world.shards)} SHARDS`, INV.x + 18, INV.y + INV.h + 2, C.ice);
-  text('Z EQUIP  X DROP  C SALVAGE  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
+  text('Z EQUIP  X LOCK  C SALVAGE  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
 }
 
 function wrap(name, maxW) {

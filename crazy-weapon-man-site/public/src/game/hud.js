@@ -9,7 +9,8 @@ import { xpToLevel, fmt } from '../data/curve.js';
 import { dps } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { mutationLabel, MUTATIONS } from '../data/progression.js';
-import { enemiesLeft, survivalLeft } from './waves.js';
+import { enemiesLeft, survivalLeft, swarmBossUp } from './waves.js';
+import { COMBO, comboMult } from '../data/swarm.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
 
@@ -100,7 +101,7 @@ export function drawHud(t) {
     if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
     else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
     else if (D.phase === 'boss') sub = `${enemiesLeft()} LEFT - BOSS AT THE EXIT`;
-    else if (D.phase === 'survive') sub = 'SURVIVE THE SWARM';
+    else if (D.phase === 'survive') sub = swarmBossUp() ? 'BEAT THE SWARM BOSS' : 'SURVIVE THE SWARM';
     else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
     else if (D.phase === 'forge') sub = 'ZONE CLEAR';
   }
@@ -125,10 +126,22 @@ export function drawHud(t) {
   bar(32, 48, 60, 3, lust / 100, C.pink);
   if (h.newToyT > 0) text('NEW TOY!', 98, 46, Math.floor(t * 6) % 2 ? C.pink : C.paper);
   // ---- survival countdown ----
-  if (D && D.phase === 'survive') {
+  if (D && D.phase === 'survive' && !swarmBossUp()) {
     const s = Math.ceil(survivalLeft());
     text(String(s), W / 2, 48, s <= 5 ? C.coral : C.cream, { align: 'center', k: 3 });
     text('SURVIVE', W / 2, 74, C.mist, { align: 'center' });
+  }
+  // ---- swarm combo meter: drains while you're not hitting anything ----
+  const cb = world.swarmCombo;
+  if (D && D.phase === 'survive' && cb) {
+    const on = cb.n > 0,
+      x = 6;
+    text('COMBO', x, 57, on ? C.gold : C.fog);
+    text(on ? 'x' + cb.n : '-', x + 34, 54, on ? (cb.n >= 50 ? C.gold : C.cream) : C.fog, { k: 2 });
+    bar(x, 72, 80, 3, on ? cb.t / COMBO.window(cb.n) : 0, cb.t < 0.5 && Math.floor(t * 10) % 2 ? C.coral : C.gold);
+    const bonus = Math.round((comboMult(cb) - 1) * 100);
+    if (bonus > 0) text(`+${bonus}% DMG`, x, 79, C.lime);
+    else if (!on && cb.lost >= 10) text(`LOST x${cb.lost}`, x, 79, C.coral);
   }
   // ---- boss bar ----
   const b = world.boss;
@@ -169,10 +182,11 @@ export function drawHud(t) {
       text(to.desc, W / 2, ty + 18, C.paper, {align:'center'});
       ty += 36;
     } else if (to.kind === 'bag') {
-      const l2 = fitText(to.name, 300),
-        tw = Math.max(textWidth('INTO THE BAG   E: OPEN'), textWidth(l2)) + 14;
+      const l1 = to.head || 'INTO THE BAG   E: OPEN',
+        l2 = fitText(to.name, 300),
+        tw = Math.max(textWidth(l1), textWidth(l2)) + 14;
       panel('card', W / 2 - tw / 2, ty, tw, 24);
-      text('INTO THE BAG   E: OPEN', W / 2, ty + 4, C.ice, { align: 'center' });
+      text(l1, W / 2, ty + 4, to.hot ? (Math.floor(t * 6) % 2 ? C.lime : C.gold) : C.ice, { align: 'center' });
       text(l2, W / 2, ty + 13, to.col, { align: 'center' });
       ty += 28;
     } else if (to.kind === 'mastery') {

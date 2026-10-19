@@ -1,20 +1,17 @@
-// Weapon drops on the ground (walk over to compare, DOWN to equip; the old weapon goes in the bag,
-// and a weapon you have never held feeds the Weapon Lust meter),
+// Weapon drops (looted automatically into the bag; DOWN equips a just-looted upgrade),
 // and pickups (shards fly to you, hearts heal).
-import { C, GROUND } from '../config.js';
-import { X, rect, text, textWidth, fitText } from '../engine/gfx.js';
+import { C } from '../config.js';
+import { X, rect } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
-import { move, overlap, cx, cy, worldFloor } from './physics.js';
+import { move, cx, cy, worldFloor } from './physics.js';
 import { dps, powerScore } from './loot.js';
 import { lookOf, overlays, runEmitters, frameOfLook, rarityColour } from './looks.js';
 import { MUTATIONS } from '../data/progression.js';
 import { toast } from './progress.js';
 import { burst, emit } from './fx.js';
-import { dropWeapon } from './combat.js';
-import { stash } from './inventory.js';
-import { lustBoost } from './lust.js';
+import { autoLoot, equipFromBag } from './inventory.js';
 
 export function equip(item) {
   const h = world.hero,
@@ -37,27 +34,47 @@ export function equip(item) {
   return old;
 }
 
+// Weapon drops pop out, hover where they landed (no physics, so nothing slips through a floor or
+// off a ledge) and then fly to you and are looted into the bag.
+const POP = 0.35, HOME = 0.7;
 export function updateDrops(dt) {
   const h = world.hero;
   world.nearDrop = null;
   for (let i = world.drops.length - 1; i >= 0; i--) {
     const d = world.drops[i];
     d.t += dt;
-    d.life -= dt;
-    d.vx *= Math.pow(0.1, dt);
-    move(d, dt, world.platforms, { gravity: 600 });
-    if (d.life <= 0) {
-      world.drops.splice(i, 1);
+    if (d.t < POP) {
+      d.x += d.vx * dt;
+      d.vy += 600 * dt;
+      d.y += d.vy * dt;
       continue;
     }
-    if (d.t > 0.4 && !h.dead && overlap({ x: h.x - 4, y: h.y, w: h.w + 8, h: h.h }, d)) world.nearDrop = d;
+    if (d.hy == null) d.hy = d.y;
+    if (h.dead || d.t < HOME) {
+      d.y += (d.hy - d.y) * Math.min(1, dt * 10);
+      continue;
+    }
+    // fly to the hero, faster the longer it has been flying
+    const dx = cx(h) - cx(d),
+      dy = cy(h) - cy(d),
+      dist = Math.hypot(dx, dy),
+      sp = 120 + (d.t - HOME) * 520;
+    if (dist < 12) {
+      world.drops.splice(i, 1);
+      autoLoot(d.item);
+      sfx.pickup();
+      burst(cx(h), h.y + 6, 6, 'twinkle', [lookOf(d.item).light, 'paper']);
+      continue;
+    }
+    d.x += (dx / dist) * Math.min(dist, sp * dt);
+    d.y += (dy / dist) * Math.min(dist, sp * dt);
+    if (Math.random() < dt * 30) emit(cx(d), cy(d), 'twinkle', rarityColour(d.item.q));
   }
-  if (world.nearDrop && !h.attack && !h.special && h.dashT <= 0 && input.take('down', 0.15)) {
-    const d = world.nearDrop;
-    world.drops.splice(world.drops.indexOf(d), 1);
-    const fresh = !d.item.used;
-    dropOld(equip(d.item), d);
-    if (fresh) lustBoost(h);
+  if (world.quick) {
+    world.quick.t -= dt;
+    const i = world.bag.indexOf(world.quick.item);
+    if (world.quick.t <= 0 || i < 0) world.quick = null;
+    else if (!h.dead && !h.attack && !h.special && h.dashT <= 0 && input.take('down', 0.15)) equipFromBag(i);
   }
   // pickups
   for (let i = world.pickups.length - 1; i >= 0; i--) {
@@ -91,14 +108,6 @@ export function updateDrops(dt) {
     if (p.life <= 0 || p.y > worldFloor() + 20) world.pickups.splice(i, 1);
   }
 }
-function dropOld(old, d) {
-  if (old.name === 'Training Sword' || stash(old)) return;
-  dropWeapon(cx(d), d.y, old);
-  const n = world.drops[world.drops.length - 1];
-  n.declined = true;
-  n.life = 20;
-}
-
 // draw a weapon item lying on the ground (also used by the mimic's disguise)
 export function drawItem(item, x, y, t) {
   const L = lookOf(item, frameOfLook(item.look, t));
@@ -120,7 +129,6 @@ export function drawItem(item, x, y, t) {
 
 export function drawDrops(t) {
   for (const d of world.drops) {
-    if (d.life < 4 && Math.floor(t * 10) % 2) continue;
     drawItem(d.item, cx(d), d.y + d.h, t);
   }
   for (const p of world.pickups) {
@@ -145,23 +153,4 @@ export function drawDrops(t) {
       X.fillRect(x + 1, y + 1, 1, 1);
     }
   }
-}
-
-// compare card over the drop you're standing on
-export function drawNearDrop(t) {
-  const d = world.nearDrop;
-  if (!d) return;
-  const h = world.hero;
-  const item = d.item,
-    gain = Math.round((powerScore(item) / Math.max(1, powerScore(h.weapon)) - 1) * 100);
-  const name = fitText(item.name, 200);
-  const line2 = `${gain >= 0 ? '+' : ''}${gain}% POWER   DOWN: EQUIP${item.used ? '' : ' +LUST'}`;
-  const w = Math.max(textWidth(name), textWidth(line2)) + 10;
-  const x = Math.round(Math.max((world.cameraX || 0) + 4, Math.min((world.cameraX || 0) + 476 - w, cx(d) - w / 2))),
-    y = Math.round(d.y - 34);
-  rect(x - 1, y - 1, w + 2, 24, C.ink);
-  rect(x, y, w, 22, item.standout ? C.gold : rarityColour(item.q));
-  rect(x + 1, y + 1, w - 2, 20, C.night);
-  text(name, x + w / 2, y + 3, item.standout ? C.gold : rarityColour(item.q), { align: 'center' });
-  text(line2, x + w / 2, y + 12, gain >= 0 ? C.lime : C.coral, { align: 'center' });
 }

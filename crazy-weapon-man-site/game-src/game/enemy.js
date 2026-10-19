@@ -90,7 +90,7 @@ export function updateEnemy(e, dt) {
   // This keeps the whole route from collapsing into one giant horde at the entrance.
   if (world.map && (Math.abs(cx(hero)-cx(e))>320 || Math.abs(cy(hero)-cy(e))>115)) { e.vx=0; return; }
   const slow = e.chill > 0 ? 0.5 : 1;
-  const physics = () => move(e, dt, world.platforms, { air: e.air, gravity: 760, dropThrough: e.dropT > 0 });
+  const physics = () => move(e, dt, world.platforms, { air: e.air, gravity: 760 });
   // knockback slide, then friction while staggered
   if (e.kbT > 0) {
     e.kbT -= dt;
@@ -178,12 +178,18 @@ export function updateEnemy(e, dt) {
       if (e.st <= 0) e.state = 'idle';
       break;
   }
-  if (!e.air && e.onGround && e.state === 'idle') {
-    const dy = hero.y + hero.h - (e.y + e.h);
-    if (dy < -18 && dist < 80) { e.vy = -265; e.onGround = false; }
-    else if (dy > 18 && e.platform && !e.platform.solid) { e.dropT = 0.3; e.y += 2; }
+  // Residents own their platform: they never walk (or get nudged) off its edge on their own,
+  // so a sniper on a ledge stays a sniper on a ledge. Only knockback can throw them off.
+  if (!e.air && e.onGround && e.platform) {
+    const p = e.platform,
+      lo = p.x + 2 - e.w / 2,
+      hi = p.x + p.w - 2 - e.w / 2;
+    e.x = Math.max(lo, Math.min(hi, e.x));
+    if ((e.vx < 0 && e.x + e.vx * dt < lo) || (e.vx > 0 && e.x + e.vx * dt > hi)) {
+      e.vx = 0;
+      if (e.kind === 'roller' && e.state === 'attack') e.st = 0; // a barrel stops at the edge
+    }
   }
-  e.dropT = Math.max(0, (e.dropT || 0) - dt);
   physics();
 }
 
@@ -299,6 +305,12 @@ function attack(e, toward) {
         e.vx = e.face * 110;
         e.st = 0.2;
       }
+      // lunges stop at the platform edge instead of carrying the attacker off it
+      if (!e.air && e.platform) {
+        const p = e.platform,
+          room = e.face > 0 ? p.x + p.w - cx(e) : cx(e) - p.x;
+        e.vx = e.face * Math.min(Math.abs(e.vx), Math.max(0, room - 4) / 0.4);
+      }
       break;
     case 'bomb':
       explode(cx(e), cy(e), e.dmg, true);
@@ -394,6 +406,22 @@ export function drawEnemy(e, t) {
   if (e.spawnT > 0 && Math.floor(t * 30) % 2) return;
   if (e.dead && Math.floor(e.deathT * 30) % 2) return;
   if (e.state === 'disguised') return drawDisguise(e, t);
+  if (e.scale) {
+    // swarm bosses: the same resident drawn big, scaled about its feet
+    const fx = cx(e),
+      fy = e.y + e.h;
+    X.save();
+    X.translate(fx, fy);
+    X.scale(e.scale, e.scale);
+    X.translate(-fx, -fy);
+    drawBody(e, t, Math.round(fx - art.w / 2), Math.round(fy - (art.h - 1)), art);
+    X.restore();
+    if (e.state === 'wind' && e.kind === 'sniper' && !e.dead) aimLine(e, t);
+    return;
+  }
+  drawBody(e, t, sx, sy, art);
+}
+function drawBody(e, t, sx, sy, art) {
   let f = 0;
   if (e.flash > 0 || e.dead) f = 2;
   else if (Math.abs(e.vx) > 8 || e.air) f = Math.floor(e.anim * 8) % 2;
@@ -422,7 +450,7 @@ export function drawEnemy(e, t) {
     rect(mx - 1, my + 1, 3, 1, C.gold);
   }
   // health bar once damaged (elites always): outlined, with a lagging "damage taken" segment
-  if (e.hp < e.max || e.elite) healthBar(e, sy, t);
+  if ((e.hp < e.max || e.elite) && !e.swarmBoss) healthBar(e, sy, t);
   // wind-up tell: blinking "!"
   if (e.state === 'wind') {
     const p = 1 - e.st / (e.d.wind || 0.5);
@@ -433,7 +461,7 @@ export function drawEnemy(e, t) {
       rect(mx - 1, top, 3, 7, p > 0.6 ? C.paper : C.red);
       rect(mx - 1, top + 8, 3, 3, p > 0.6 ? C.paper : C.red);
     }
-    if (e.kind === 'sniper') aimLine(e, t);
+    if (e.kind === 'sniper' && !e.scale) aimLine(e, t);
   }
   if (e.state === 'sleep') {
     for (let i = 0; i < 3; i++) {

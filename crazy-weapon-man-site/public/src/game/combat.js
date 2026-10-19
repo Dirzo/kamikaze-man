@@ -10,6 +10,7 @@ import { ELEMENTS } from '../data/weapons.js';
 import { LINES } from '../data/enemies.js';
 import { gainXp, gainProficiency } from './progress.js';
 import { say } from './bubbles.js';
+import { comboHit } from './waves.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -57,8 +58,9 @@ export function hitEnemy(e, dmg, o = {}) {
     }
     shake(o.crit ? 0.32 : o.hop ? 0.3 : 0.1);
   }
+  if (!o.chip) comboHit();
   // knockback + stagger (not bosses)
-  if (!e.boss) {
+  if (!e.boss && !e.swarmBoss) {
     let push = o.knock || 0;
     if (o.crit) push *= 1.35;
     if (e.elite) push *= 0.75;
