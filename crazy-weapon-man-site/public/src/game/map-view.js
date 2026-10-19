@@ -2,7 +2,7 @@
 import { W, H, GROUND, C } from '../config.js';
 import { world } from './world.js';
 import { A } from '../engine/assets.js';
-import { X, rect, text, screenLayer, worldLayer } from '../engine/gfx.js';
+import { X, rect, text, textWidth, screenLayer, worldLayer } from '../engine/gfx.js';
 import { ZONES } from '../data/zones.js';
 export function drawMapBackdrop() {
   const bg=A.bg[ZONES[world.zone].id], camera=Math.round(world.cameraX||0);
@@ -39,11 +39,15 @@ export function drawMapExit(t) {
     rect(x-7,GROUND-23,14,5,C.wine);
     rect(x-2,GROUND-25,4,9,C.red);
   }
-  if(Math.abs(x-(world.cameraX||0)-W/2)<W/2+60)
-    text(open?'NEXT MAP >':'CLEAR ALL TO OPEN',x,GROUND-55,open?C.lime:C.mist,{align:'center'});
+  if(Math.abs(x-(world.cameraX||0)-W/2)<W/2+60) {
+    const label=open?'NEXT MAP >':'CLEAR ALL TO OPEN', half=textWidth(label)/2, cam=world.cameraX||0;
+    const labelX=Math.max(cam+half+6,Math.min(cam+W-half-6,x));
+    text(label,labelX,GROUND-55,open?C.lime:C.mist,{align:'center'});
+  }
 }
 export function drawRouteHud() {
   if(!world.map) return;
+  text('MAP '+(world.zone+1)+'/10 - '+world.map.name,8,216,C.mist);
   const x=8,y=229,w=W-16,scale=w/world.map.width;
   rect(x-1,y-2,w+2,9,C.ink);rect(x,y,w,5,C.slate);
   rect(x+(world.cameraX||0)*scale,y,Math.max(2,W*scale),5,C.stone);
