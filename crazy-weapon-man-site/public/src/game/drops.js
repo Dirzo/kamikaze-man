@@ -1,5 +1,5 @@
-// Weapon drops on the ground (walk over to compare; better ones auto-equip and the old one goes in
-// the bag, others go in the bag with DOWN, or swap when the bag is full),
+// Weapon drops on the ground (walk over to compare, DOWN to equip; the old weapon goes in the bag,
+// and a weapon you have never held feeds the Weapon Lust meter),
 // and pickups (shards fly to you, hearts heal).
 import { C, GROUND } from '../config.js';
 import { X, rect, text, textWidth, fitText } from '../engine/gfx.js';
@@ -14,10 +14,12 @@ import { toast } from './progress.js';
 import { burst, emit } from './fx.js';
 import { dropWeapon } from './combat.js';
 import { stash } from './inventory.js';
+import { lustBoost } from './lust.js';
 
 export function equip(item) {
   const h = world.hero,
     old = h.weapon;
+  item.used = true;
   const gain = Math.round((powerScore(item) / Math.max(1, powerScore(old)) - 1) * 100);
   h.weapon = item;
   h.combo = 0;
@@ -48,24 +50,14 @@ export function updateDrops(dt) {
       world.drops.splice(i, 1);
       continue;
     }
-    if (d.t > 0.4 && !h.dead && overlap({ x: h.x - 4, y: h.y, w: h.w + 8, h: h.h }, d)) {
-      const better = powerScore(d.item) > powerScore(h.weapon) * 1.001;
-      if (better && !d.declined && !h.attack && !h.special && h.dashT <= 0) {
-        const old = equip(d.item);
-        world.drops.splice(i, 1);
-        dropOld(old, d);
-        continue;
-      }
-      world.nearDrop = d;
-    } else if (d.declined && !overlap({ x: h.x - 8, y: h.y, w: h.w + 16, h: h.h }, d)) d.declined = false;
+    if (d.t > 0.4 && !h.dead && overlap({ x: h.x - 4, y: h.y, w: h.w + 8, h: h.h }, d)) world.nearDrop = d;
   }
   if (world.nearDrop && !h.attack && !h.special && h.dashT <= 0 && input.take('down', 0.15)) {
     const d = world.nearDrop;
     world.drops.splice(world.drops.indexOf(d), 1);
-    if (stash(d.item)) {
-      sfx.pickup();
-      toast('bag', { name: d.item.name, col: d.item.standout ? C.gold : rarityColour(d.item.q) });
-    } else dropOld(equip(d.item), d);
+    const fresh = !d.item.used;
+    dropOld(equip(d.item), d);
+    if (fresh) lustBoost(h);
   }
   // pickups
   for (let i = world.pickups.length - 1; i >= 0; i--) {
@@ -163,8 +155,7 @@ export function drawNearDrop(t) {
   const item = d.item,
     gain = Math.round((powerScore(item) / Math.max(1, powerScore(h.weapon)) - 1) * 100);
   const name = fitText(item.name, 200);
-  const full = !world.bag.includes(null);
-  const line2 = `${gain >= 0 ? '+' : ''}${gain}% POWER   DOWN: ${full ? 'SWAP (BAG FULL)' : 'BAG'}`;
+  const line2 = `${gain >= 0 ? '+' : ''}${gain}% POWER   DOWN: EQUIP${item.used ? '' : ' +LUST'}`;
   const w = Math.max(textWidth(name), textWidth(line2)) + 10;
   const x = Math.round(Math.max((world.cameraX || 0) + 4, Math.min((world.cameraX || 0) + 476 - w, cx(d) - w / 2))),
     y = Math.round(d.y - 34);

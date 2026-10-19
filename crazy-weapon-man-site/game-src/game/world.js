@@ -50,6 +50,7 @@ export function resetWorld() {
     bag: new Array(24).fill(null),
     bagNew: 0,
     inv: null,
+    lock: null,
     quirkCount: 0,
     pickups: [],
     platforms: [],

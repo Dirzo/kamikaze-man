@@ -80,11 +80,11 @@ export function runSmoke(game) {
     reset();const h=world.hero;h.dashT=0.1;const hp=h.hp;hurtHero(30);ok(h.hp===hp);
     h.dashT=0;h.inv=0;h.attack={};hurtHero(10);ok(h.hp===hp-10 && !h.attack);
   });
-  check('better drops do not replace an attack in progress',()=>{
+  check('equipping a drop never replaces an attack in progress',()=>{
     reset();const h=world.hero,old=h.weapon;dropWeapon(h.x+6,h.y+10,makeWeapon(5,{q:6,type:'sword'}));
     const d=world.drops[0];d.x=h.x;d.y=h.y+8;d.vx=d.vy=0;d.t=1;
-    h.attack={};updateDrops(STEP);ok(h.weapon===old);
-    h.attack=null;updateDrops(STEP);ok(h.weapon!==old);
+    h.attack={};key('ArrowDown',true);poll();updateDrops(STEP);ok(h.weapon===old);
+    h.attack=null;updateDrops(STEP);key('ArrowDown',false);poll();ok(h.weapon!==old);
   });
   check('all five mutations deal damage and terminate their pending effects',()=>{
     for(const mutation of Object.keys(MUTATIONS)) {
@@ -110,15 +110,18 @@ export function runSmoke(game) {
     world.forge.t=1;key('KeyZ',true);poll();updateForge(STEP);key('KeyZ',false);poll();ok(world.hero.weapon===before,'forge changed the weapon');
     game.startRun();ok(!world.forge && world.echoes.length===0 && !world.deadT);
   });
-  check('swapped-out and picked-up weapons land in the bag; bag equips, drops and salvages',()=>{
+  check('drops never auto-equip; DOWN equips, bags the old weapon and feeds Weapon Lust once',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});const old=h.weapon;
     const better=makeWeapon(1,{type:'dagger',q:1,standout:true});dropWeapon(h.x+5,h.y,better);const d=world.drops.at(-1);d.x=h.x;d.y=h.y+h.h-d.h;d.t=1;d.vy=0;
-    updateDrops(STEP);ok(h.weapon===better && world.bag.includes(old),'old weapon not stashed on auto-equip');
-    const worse=makeWeapon(0,{type:'bow',q:0,standout:false});dropWeapon(h.x,h.y,worse);const d2=world.drops.at(-1);d2.x=h.x;d2.y=h.y+h.h-d2.h;d2.t=1;d2.vy=0;
-    updateDrops(STEP);ok(world.nearDrop===d2,'compare card missing');key('ArrowDown',true);poll();updateDrops(STEP);key('ArrowDown',false);poll();
-    ok(world.bag.includes(worse) && h.weapon===better,'DOWN did not bag the drop');
+    updateDrops(STEP);ok(h.weapon===old && world.nearDrop===d,'better drop auto-equipped');
+    const dmg0=game.hitDamage(better);key('ArrowDown',true);poll();updateDrops(STEP);key('ArrowDown',false);poll();
+    ok(h.weapon===better && world.bag.includes(old),'DOWN did not equip and bag the old weapon');
+    ok(h.lust>0 && h.newToyT>0 && game.hitDamage(better)>dmg0,'no Weapon Lust bonus for a new weapon');
+    const worse=makeWeapon(0,{type:'bow',q:0,standout:false});
+    stash(worse);worse.used=true;const lust=h.lust;
     ok(openInventory() && world.inv,'bag did not open');world.inv.t=1;world.inv.sel=world.bag.indexOf(worse);
     key('KeyZ',true);poll();updateInventory(STEP);key('KeyZ',false);poll();ok(h.weapon===worse && world.bag.includes(better),'equip from bag failed');
+    ok(h.lust===lust,'bag equips should not feed Weapon Lust');
     world.inv.sel=world.bag.indexOf(better);const n=world.drops.length;key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();
     ok(!world.bag.includes(better) && world.drops.length===n+1 && world.drops.at(-1).declined,'drop from bag failed');
     world.inv.sel=world.bag.indexOf(old);const sh=world.shards;
@@ -188,7 +191,12 @@ export function runSmoke(game) {
     ok(world.director.phase==='fight' && !world.forge,'escaped with enemies left');
     ok(world.enemies.length===count && world.enemies.map(e=>e.id).join(',')===ids,'map respawned enemies');
     for(const e of world.enemies)e.dead=true;
-    updateWaves(STEP);ok(world.director.phase==='exit' && enemiesLeft()===0);
+    updateWaves(STEP);ok(world.director.phase==='survive' && world.lock,'clear did not start the survival swarm');
+    let peak=0;for(let i=0;i<240;i++){updateWaves(STEP);peak=Math.max(peak,world.enemies.filter(e=>!e.dead).length);}
+    ok(peak>=3,'swarm did not pour in');
+    for(const e of world.enemies.filter(e=>e.swarm && !e.dead)) ok(e.x>=world.lock.x0 && e.x+e.w<=world.lock.x1,'swarm left the locked screen');
+    world.director.t=0;updateWaves(STEP);
+    ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead),'swarm did not end into the exit');
     for(let i=0;i<90;i++)updateWaves(STEP);
     ok(!!world.forge,'cleared exit did not advance');
   });

@@ -1,7 +1,8 @@
-// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|late.
+// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|swarm|late.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
-import { startZone } from '../game/waves.js';
+import { startZone, updateWaves } from '../game/waves.js';
+import { updateEnemy } from '../game/enemy.js';
 import { spawnEnemy } from '../game/enemy.js';
 import { openForge } from '../game/forge.js';
 import { openInventory, stash } from '../game/inventory.js';
@@ -28,6 +29,12 @@ export function captureScene(game, mode) {
       const e=spawnEnemy(type,offset+x,y,{elite:type==='shieldbro',wave:3});e.spawnT=0;if(type==='crawler'){e.flash=0.1;e.faceUntil=world.t+.4;e.funnyFace=0;e.hp=e.max*0.4;}
     }
     if(mode==='forge') {openForge();world.forge.t=1;}
+    if(mode==='swarm') {
+      h.attack=null;h.lust=70;h.newToyT=3;world.director={phase:'fight',t:0,bossStarted:true};
+      for(const e of world.enemies) e.dead=true;
+      for(let i=0;i<420;i++){world.t+=1/60;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
+      h.inv=1;
+    }
     if(mode==='bag') {
       h.attack=null;
       for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) stash(makeWeapon(z,{type,q,standout}));

@@ -22,6 +22,7 @@ import { updateCamera } from './game/camera.js';
 import { drawMapBackdrop, drawMapExit, drawRouteHud } from './game/map-view.js';
 import { drawSlash } from './game/slash.js';
 import { updateEvolution, drawEvolution } from './game/evolution.js';
+import { updateLust } from './game/lust.js';
 import { fmt } from './data/curve.js';
 
 let capture = false;
@@ -91,6 +92,7 @@ function update(dt) {
   }
   world.t += dt;
   if (!world.forge) updateHero(world.hero, dt);
+  updateLust(world.hero, dt);
   for (const e of world.enemies) e.boss ? updateBoss(e, dt) : updateEnemy(e, dt);
   world.enemies = world.enemies.filter(e => !e.dead || e.deathT > 0);
   if (world.boss && world.boss.dead && world.boss.deathT <= 0) world.boss = null;

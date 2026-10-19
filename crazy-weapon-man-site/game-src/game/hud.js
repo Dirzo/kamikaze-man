@@ -9,7 +9,7 @@ import { xpToLevel, fmt } from '../data/curve.js';
 import { dps } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { mutationLabel, MUTATIONS } from '../data/progression.js';
-import { enemiesLeft } from './waves.js';
+import { enemiesLeft, survivalLeft } from './waves.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
 
@@ -100,6 +100,7 @@ export function drawHud(t) {
     if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
     else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
     else if (D.phase === 'boss') sub = `${enemiesLeft()} LEFT - BOSS AT THE EXIT`;
+    else if (D.phase === 'survive') sub = 'SURVIVE THE SWARM';
     else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
     else if (D.phase === 'forge') sub = 'ZONE CLEAR';
   }
@@ -118,6 +119,17 @@ export function drawHud(t) {
   X.save(); X.translate(W / 2, 30); X.scale(nameScale, 1);
   text(w.name, 0, 0, C.paper, {align:'center'}); X.restore();
 
+  // ---- weapon lust meter ----
+  const lust = h.lust || 0;
+  text('LUST', 6, 46, lust > 0 ? C.pink : C.fog);
+  bar(32, 48, 60, 3, lust / 100, C.pink);
+  if (h.newToyT > 0) text('NEW TOY!', 98, 46, Math.floor(t * 6) % 2 ? C.pink : C.paper);
+  // ---- survival countdown ----
+  if (D && D.phase === 'survive') {
+    const s = Math.ceil(survivalLeft());
+    text(String(s), W / 2, 48, s <= 5 ? C.coral : C.cream, { align: 'center', k: 3 });
+    text('SURVIVE', W / 2, 74, C.mist, { align: 'center' });
+  }
   // ---- boss bar ----
   const b = world.boss;
   if (b && !b.dead) {
@@ -140,7 +152,7 @@ export function drawHud(t) {
   }
 
   // ---- toasts ----
-  let ty = b && !b.dead ? 66 : 46;
+  let ty = D && D.phase === 'survive' ? 86 : b && !b.dead ? 66 : 46;
   for (let i = world.toasts.length - 1; i >= 0; i--) {
     const to = world.toasts[i];
     if (to.kind === 'weapon') {
