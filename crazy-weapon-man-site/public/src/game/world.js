@@ -54,6 +54,7 @@ export function resetWorld() {
     quirkCount: 0,
     quick: null, // a just-looted weapon that beats yours: DOWN equips it
     swarmCombo: null,
+    run: null, // speedrun clock, splits and damage log (speedrun.js)
     pickups: [],
     platforms: [],
     director: null,

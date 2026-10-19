@@ -24,6 +24,7 @@ import { drawSlash } from './game/slash.js';
 import { updateEvolution, drawEvolution } from './game/evolution.js';
 import { updateLust } from './game/lust.js';
 import { fmt } from './data/curve.js';
+import { newRun, tickRun, endRun, drawResults, RESULTS_TIME } from './game/speedrun.js';
 
 let capture = false;
 let scene = 'loading',
@@ -39,6 +40,7 @@ function startRun() {
   clearFx();
   clearBoss();
   world.hero = createHero();
+  newRun();
   startZone(0);
   scene = 'play';
   sceneT = 0;
@@ -60,7 +62,8 @@ function update(dt) {
     return;
   }
   if (scene === 'over' || scene === 'won') {
-    if (sceneT > 1 && (input.take('confirm') | input.take('jump'))) startRun();
+    // first press skips the results animation, the next one starts a new run
+    if (sceneT > 0.5 && (input.take('confirm') | input.take('jump'))) sceneT < RESULTS_TIME ? (sceneT = RESULTS_TIME) : startRun();
     return;
   }
   if (scene === 'pause') {
@@ -68,6 +71,7 @@ function update(dt) {
     return;
   }
   // ---- play ----
+  tickRun(dt); // the speedrun clock only stops for the pause menu
   if (world.inv) {
     updateInventory(dt); // the bag pauses the fight
     return;
@@ -110,12 +114,14 @@ function update(dt) {
     if (world.deadT > 1.6) {
       scene = 'over';
       sceneT = 0;
+      endRun(false);
       music.stop();
     }
   }
   if (world.phase === 'won') {
     scene = 'won';
     sceneT = 0;
+    endRun(true);
   }
 }
 
@@ -194,27 +200,6 @@ function drawPause() {
   text('ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
 }
 
-function drawEnd(won) {
-  dither(0, 0, W, H, C.ink, 11);
-  panel('panel', W / 2 - 140, 50, 280, 150);
-  text(won ? 'THE ARMORY FALLS' : 'YOU DIED', W / 2, 62, won ? C.gold : C.red, { align: 'center', k: 2 });
-  const h = world.hero;
-  const rows = [
-    ['ZONE', `${world.zone + 1}  ${ZONES[world.zone].name}`],
-    ['KILLS', fmt(world.kills)],
-    ['LEVEL', String(h ? h.lv : 1)],
-    ['SHARDS', fmt(world.shards)]
-  ];
-  rows.forEach(([a, b], i) => {
-    text(a, W / 2 - 128, 90 + i * 12, C.mist);
-    text(b, W / 2 + 128, 90 + i * 12, C.paper, { align: 'right' });
-  });
-  text('BEST WEAPON', W / 2, 146, C.mist, { align: 'center' });
-  const best = world.best || (h && h.weapon);
-  if (best) text(best.name, W / 2, 157, best.standout ? C.gold : rarityColour(best.q), { align: 'center' });
-  if (sceneT > 1 && Math.floor(sceneT * 2) % 2) text('PRESS START TO GO AGAIN', W / 2, 182, C.lime, { align: 'center' });
-}
-
 function render() {
   screenLayer();
   const t = clock;
@@ -231,10 +216,11 @@ function render() {
   drawForge(world.t);
   drawInventory(clock);
   if (scene === 'pause') drawPause();
-  if (scene === 'over') drawEnd(false);
-  if (scene === 'won') drawEnd(true);
+  if (scene === 'over') drawResults(false, sceneT, clock);
+  if (scene === 'won') drawResults(true, sceneT, clock);
   document.getElementById('start').hidden = scene !== 'over' && scene !== 'won';
   if (scene === 'over' || scene === 'won') document.getElementById('start').textContent = 'ANOTHER BAD IDEA';
+  document.getElementById('start').classList.toggle('results', scene === 'over' || scene === 'won');
 }
 
 // ---------------------------------------------------------------- loop
@@ -383,6 +369,9 @@ const debug = {
   types: WTYPES,
   hitDamage,
   snapshot(fn) { startRun(); fn(); capture = true; },
+  // show the end-of-run results screen, `T` seconds into its animation
+  results(won, T = RESULTS_TIME) { endRun(won); scene = won ? 'won' : 'over'; sceneT = T; },
+  sceneT: () => sceneT,
   updateShots,
   update,
   render,

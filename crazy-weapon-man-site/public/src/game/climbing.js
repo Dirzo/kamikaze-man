@@ -1,9 +1,20 @@
 // Climb the shafts between hunting decks. Jump+direction dismounts onto any intermediate deck.
+// Grabbing a ladder sheathes the weapon on your back (anim.js draws it); letting go draws it again.
 import { HERO } from '../config.js';
 import { world } from './world.js';
 import { input } from '../engine/input.js';
+import { sfx } from '../engine/audio.js';
+import { DRAW_TIME } from './anim.js';
 export function updateClimb(h,dt) {
   h.climbLock=Math.max(0,(h.climbLock||0)-dt);
+  h.drawT=Math.max(0,(h.drawT||0)-dt);
+  const was=h.ladder;
+  const on=climb(h,dt);
+  if(on && !was){h.climbT=0;sfx.ui();} // shk: sheathed
+  if(was && !h.ladder)h.drawT=DRAW_TIME; // shing: drawn again
+  return on;
+}
+function climb(h,dt) {
   if(h.hurtT>0 || h.dashT>0 || h.special){h.ladder=null;return false;}
   const dir=(input.held('down')?1:0)-(input.held('up')?1:0);
   if(!h.ladder && !h.climbLock && dir) {
@@ -18,6 +29,7 @@ export function updateClimb(h,dt) {
   h.x=l.x-h.w/2;h.vx=h.vy=0;h.onGround=false;h.coyote=0;
   if(input.axis())h.face=input.axis();
   h.y+=dir*98*dt;
+  if(dir)h.climbT=(h.climbT||0)+dt;
   if(h.y+h.h<=l.top+2) {
     h.x=l.exitX;h.y=l.exitY-h.h;h.onGround=true;h.ladder=null;h.climbLock=0.25;
   } else if(h.y+h.h>=l.bottom) {

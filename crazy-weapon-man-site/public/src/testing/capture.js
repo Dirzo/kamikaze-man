@@ -1,4 +1,4 @@
-// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|swarm|late.
+// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|swarm|results|ladder|late.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves } from '../game/waves.js';
@@ -8,6 +8,8 @@ import { openForge } from '../game/forge.js';
 import { openInventory, stash } from '../game/inventory.js';
 import { startBoss } from '../game/bosses.js';
 import { MOVES } from '../data/weapons.js';
+import { logDamage } from '../game/speedrun.js';
+import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
 export function captureScene(game, mode) {
   // Keep weapon names, looks and actor layout stable between captures.
@@ -37,6 +39,21 @@ export function captureScene(game, mode) {
       for(let i=0;i<90;i++){world.t+=1/60;h.inv=1;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
       world.swarmCombo.n=37;world.swarmCombo.best=37;world.swarmCombo.t=1.4;
       h.inv=1;
+    }
+    if(mode==='ladder') {
+      const l=world.map.ladders[0];h.attack=null;h.ladder=l;h.x=l.x-h.w/2;h.y=Math.round((l.top+l.bottom)/2)-h.h;h.climbT=0.1;h.face=1;
+      world.cameraX=Math.max(0,Math.round(l.x-240));world.cameraY=Math.max(0,Math.round(h.y-150));
+    }
+    if(mode==='results') {
+      h.weapon=makeWeapon(9,{type:'hammer',q:9,standout:true});
+      const R=world.run;R.t=1514.37;world.kills=812;world.shards=1240;h.lv=31;world.zone=9;
+      const prev=[121,140,155,149,170,188,166,190,201,210];
+      [130.2,128.9,161.4,140.7,175.1,181.3,170.9,184.2,199.6,215.07].forEach((t,i)=>{R.splits.push({zone:i,t,total:0,prev:prev[i]});});
+      [['hammer',9,9,true,92e4],['katana',7,6,false,51e4],['sword',3,3,false,18e4],['bow',5,4,false,9.5e4],['wand',8,7,false,6.1e4],['dagger',0,1,false,8e3],['staff',2,2,false,4e3]]
+        .forEach(([type,z,q,standout,d])=>logDamage(d,type==='hammer'?h.weapon:makeWeapon(z,{type,q,standout})));
+      for(const [type,kills] of [['hammer',90],['katana',60],['sword',30],['bow',14],['wand',8]]) {R.prof[type]={lv:0,xp:0,kills:0};addProficiency(type,kills,kills);}
+      R.prevBest=1530;world.phase='won';
+      game.results(true,99);world.run.prevBest=1530;world.run.newBest=true;
     }
     if(mode==='bag') {
       h.attack=null;

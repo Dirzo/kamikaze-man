@@ -18,6 +18,7 @@ import { makeWeapon } from './loot.js';
 import { dropWeapon } from './combat.js';
 import { openForge, updateForge } from './forge.js';
 import { updateCamera } from './camera.js';
+import { splitZone } from './speedrun.js';
 import { refHP, refDmg } from '../data/curve.js';
 import { COMBO, SWARM_BOSS, SWARM_BOSSES } from '../data/swarm.js';
 import { dropShards } from './combat.js';
@@ -78,6 +79,7 @@ export function updateWaves(dt) {
     case 'exit':
       // Reaching the portal is the forward transition. No button ambiguity with loot swaps.
       if(D.t<=0 && Math.abs(world.hero.x+world.hero.w/2-world.map.exitX)<24 && Math.abs(world.hero.y+world.hero.h-world.map.exitY)<20) {
+        splitZone();
         if(world.zone+1>=ZONES.length) world.phase='won';
         else {D.phase='forge';openForge();}
       }

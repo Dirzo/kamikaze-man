@@ -35,6 +35,7 @@ browser regression suite. These are absent from normal runs.
 | `game-src/game/enemy.js`, `bosses.js` | Enemy state machines, bosses, tells and hazards |
 | `game-src/game/waves.js`, `forge.js` | Finite map clears, survival swarm, gated exits and shard workshop |
 | `game-src/game/inventory.js`, `quirks.js`, `lust.js` | Bag/equipment windows, weapon quirks, Weapon Lust |
+| `game-src/game/speedrun.js`, `data/speedrun.js` | Run clock, splits, damage log, results screen |
 | `game-src/data/proficiency.js`, `quirks.js`, `lust.js` | Weapon mastery (saved), quirk table and rates, Weapon Lust numbers |
 | `game-src/data/maps.js`, `game-src/game/camera.js`, `map-view.js` | Multi-screen routes, solid terrain, ladders, two-axis camera, minimap and exit portals |
 | `game-src/engine/` | Input, canvas, assets and chiptune audio |
@@ -72,11 +73,18 @@ Bosses stay in the last-screen chamber and their warnings/hazards use that chamb
 All mutations have distinct awakened sprites, never trigger recursive procs, and reset between runs.
 Bosses have warning frames, locked charges, three health phases and stronger late-fight patterns.
 Map clears lead to the survival swarm, then the Forge (healing/reforging for shards). There is no
-free weapon draft and no auto-equip. Drops hover where they land and fly into the bag (E / B / Tab),
-which keeps the highest-DPS weapon of each type and salvages the rest; locked weapons are never
-replaced or salvaged. Press DOWN right after looting an upgrade to equip it. Equipping a weapon you
+free weapon draft and no auto-equip. Drops hover where they land and fly into the bag (E / B / Tab).
+Nothing is salvaged until all 24 slots are full; after that a better drop replaces the weakest
+unlocked weapon of its type (or the weakest unlocked weapon overall), and a worse one is salvaged.
+Locked weapons are never replaced or salvaged. Press DOWN right after looting an upgrade to equip it. Equipping a weapon you
 have never held fills the Weapon Lust meter (+15% damage at full, draining) and gives a short NEW
 TOY rush (+10%). Residents hold their platforms: they never walk off ledges, only get knocked off.
+Climbing a ladder sheathes the weapon on your back and draws it again when you step off.
+
+Every run is a speedrun: the clock (top centre) only stops for the pause menu, each exit portal
+records a split against your best for that zone, and the end screen animates the clear time, splits,
+damage dealt by each weapon and mastery gained. Bests are kept in localStorage
+(`crazyWeaponMan.speedrun.v1`).
 
 Every weapon has a quirk taken from its name (Rusty gives tetanus, Loose heads fly off, Bent weapons
 boomerang, Sad ones make foes weep). Common weapons trigger about every third hit; relics rarely.

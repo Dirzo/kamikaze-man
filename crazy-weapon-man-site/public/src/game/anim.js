@@ -171,7 +171,7 @@ export function heroPose(h, t) {
     if (st.spin) pose = spinPose(p, mv === 'spinBig' ? 2 : 1, mv === 'spinBig');
     else pose = keys(st.moves[mv] || Object.values(st.moves)[0], p);
   } else if (h.attack && h.attack.ranged && st.ranged) pose = keys(st.ranged, Math.min(1, h.attack.t / h.attack.dur));
-  else if (h.ladder) pose = {...st.idle(t,0), f: Math.floor(t*7)%2?'run1':'run3', fh:[14,8+Math.round(Math.sin(t*10)*3)], bh:[2,12-Math.round(Math.sin(t*10)*3)], ang:170, wb:true};
+  else if (h.ladder) pose = climbPose(h);
   else if (h.dashT > 0) pose = { ...st.dash };
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
@@ -182,7 +182,22 @@ export function heroPose(h, t) {
     if (!pose.f) pose.f = 'run1';
   } else pose = st.idle(t, b);
   if (!pose.f) pose.f = 'idle';
+  // just off a ladder: the hand reaches over the shoulder and draws the weapon back out
+  if (h.drawT > 0 && !h.attack && !h.special && !h.ladder && !h.dead) {
+    const k = Math.min(1, h.drawT / DRAW_TIME);
+    pose = { ...pose, fh: [pose.fh[0] + (SHEATH.at[0] - pose.fh[0]) * k, pose.fh[1] + (SHEATH.at[1] - pose.fh[1]) * k], ang: pose.ang + (SHEATH.ang - pose.ang) * k };
+  }
   return pose;
+}
+
+// Ladders: the weapon rides sheathed on the back (grip over the shoulder, blade down behind),
+// both hands go hand-over-hand up the rungs, and the legs only step while you actually climb.
+export const SHEATH = { at: [7, 6], ang: 112 };
+export const DRAW_TIME = 0.18;
+function climbPose(h) {
+  const ph = Math.floor((h.climbT || 0) * 6) % 2,
+    lift = ph ? 0 : 5;
+  return { f: ph ? 'run1' : 'run3', fh: [13, 2 + lift], bh: [5, 7 - lift], ang: SHEATH.ang, wb: true, ab: false, sheath: true };
 }
 
 function specialPose(h, st) {
@@ -322,7 +337,7 @@ export function drawHeroAnimated(h, t) {
   const rad = (angW * Math.PI) / 180;
   // two-handed: back hand on the handle (toward the pommel), or further up the shaft for the staff
   let bh;
-  if (st.twoHand) {
+  if (st.twoHand && !pose.sheath) {
     const d = st.slide ? st.twoHand : -st.twoHand;
     bh = [fh[0] + Math.cos(rad) * d, fh[1] + Math.sin(rad) * d];
   } else bh = W2(pose.bh ? pose.bh[0] : 5, pose.bh ? pose.bh[1] : 20);
@@ -330,8 +345,9 @@ export function drawHeroAnimated(h, t) {
     shF = W2(sh[1][0], sh[1][1]);
   // weapon origin: grip at the hand, optionally slid along the shaft
   const slide = st.slide || 0;
-  const wx = fh[0] + 1 - Math.cos(rad) * slide,
-    wy = fh[1] + 1 - Math.sin(rad) * slide;
+  const back = pose.sheath ? W2(SHEATH.at[0], SHEATH.at[1]) : null;
+  const wx = back ? back[0] : fh[0] + 1 - Math.cos(rad) * slide,
+    wy = back ? back[1] : fh[1] + 1 - Math.sin(rad) * slide;
   const flashing = h.inv > 0 && !h.special && h.dashT <= 0 && !h.dead && Math.floor(t * 20) % 2;
 
   const drawWeapon = () => {
@@ -374,7 +390,7 @@ export function drawHeroAnimated(h, t) {
 
   // bow string pulled to the back hand
   const drawString = () => {
-    if (!st.string || !pose.nock || pose.hide) return;
+    if (!st.string || !pose.nock || pose.hide || pose.sheath) return;
     // bow tips: top and bottom of the sprite near the string column
     const tipTop = [L.gx - 2, 2],
       tipBot = [L.gx - 2, L.h - 3];

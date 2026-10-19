@@ -11,6 +11,7 @@ import { LINES } from '../data/enemies.js';
 import { gainXp, gainProficiency } from './progress.js';
 import { say } from './bubbles.js';
 import { comboHit } from './waves.js';
+import { logDamage } from './speedrun.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -34,6 +35,7 @@ export function hitEnemy(e, dmg, o = {}) {
     o = { ...o, knock: (o.knock || 0) * 0.3 };
   }
   dmg = Math.max(1, Math.round(dmg));
+  logDamage(Math.min(dmg, Math.max(0, e.hp)));
   e.hp -= dmg;
   e.flash = e.boss ? 0.05 : 0.12;
   damageNumber(e, dmg, { crit: o.crit, chip: o.chip, col: o.col });
