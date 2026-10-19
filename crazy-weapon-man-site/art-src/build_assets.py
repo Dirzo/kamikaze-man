@@ -35,6 +35,7 @@ HERO_FRAMES = {
 from enemies import ENEMIES, ENEMY_KEY
 from bosses import BOSSES
 from weapons import WEAPONS, VARIANTS, weapon_image
+from awakening import AWAKENED
 
 
 def frame2(rows, alt):
@@ -102,7 +103,7 @@ def main():
 
     # held weapons: outlined, magenta markers recoloured in game; grip offset +1 for the outline
     man['weapons'] = {}
-    for wtype, ((gx, gy), rows) in {**WEAPONS, **VARIANTS}.items():
+    for wtype, ((gx, gy), rows) in {**WEAPONS, **VARIANTS, **AWAKENED}.items():
         im = outlined(weapon_image(rows))
         im.save(os.path.join(OUT, f'weapon-{wtype}.png'))
         man['weapons'][wtype] = {'w': im.width, 'h': im.height, 'gx': gx + 1, 'gy': gy + 1}

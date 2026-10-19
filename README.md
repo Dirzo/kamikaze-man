@@ -1,3 +1,5 @@
+> **Current web implementation:** native pixel combat builds from `crazy-weapon-man-site/game-src/`. See [the web README](crazy-weapon-man-site/README.md) for architecture, progression and checks. The prior patch stack is isolated at `/legacy/`. Older notes below describe legacy/Godot history.
+
 # KAMIKAZE MAN — Four-Class Prototype
 
 > The live web game, **Crazy Weapon Man**, is in `crazy-weapon-man-site/` (see its README and `WORK-LOG.md`). The Godot project below is the original prototype.

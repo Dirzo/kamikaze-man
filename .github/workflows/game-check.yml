@@ -1,11 +1,9 @@
 name: Game check
-
 on:
   push:
-    branches: [crazy-weapon-man-web]
+    branches: [crazy-weapon-man-web, 'cleanup/**']
   pull_request:
   workflow_dispatch:
-
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -14,13 +12,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Built output matches game-src
+      - name: Built output matches source
         run: node crazy-weapon-man-site/build.mjs --check
-      - name: Syntax
+      - name: Syntax and progression tests
         run: |
           node --check crazy-weapon-man-site/src/index.js
-          node --check crazy-weapon-man-site/public/game.js
-          for f in crazy-weapon-man-site/public/addons/*.js; do node --check "$f"; done
-          for f in $(find crazy-weapon-man-site/public/next/src -name '*.js'); do node --check "$f"; done
-      - name: In-game self-tests
+          find crazy-weapon-man-site/public/src -name '*.js' -exec node --check {} \;
+          node --test crazy-weapon-man-site/tests/*.test.mjs
+      - name: Browser combat, loot, bosses and transitions
+        env:
+          SMOKE_OUT: ${{ github.workspace }}/test-results
         run: bash crazy-weapon-man-site/tests/smoke.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: game-test-results
+          path: test-results

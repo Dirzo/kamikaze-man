@@ -13,7 +13,7 @@ from PIL import Image
 
 from pixel import HERO, HERO_KEY, sprite, outlined
 
-OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'next', 'assets')
+OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'hero')
 
 
 def legs(rows, new):

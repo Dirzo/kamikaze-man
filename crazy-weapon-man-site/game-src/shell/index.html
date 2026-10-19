@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a1428">
+<meta name="description" content="A pixel-art combat roguelike. Start with rusty steel. Finish with a weapon the moon should worry about.">
+<title>Crazy Weapon Man</title>
+<style>
+@font-face{font-family:Noobscrub;src:url('/assets/fonts/noobscrub-5x7.woff2') format('woff2');font-display:swap}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#1a1428;color:#f4f1e8;overflow:hidden}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-family:Noobscrub,monospace}
+#bar{display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 max(8px,env(safe-area-inset-right));gap:6px;min-height:32px}
+#brand{font-size:16px;color:#ffc15a;letter-spacing:1px}#tools{display:flex;gap:4px}
+button{font:16px Noobscrub,monospace;color:#c3c4d6;background:#2b2442;border:2px solid #5d5a7a;padding:7px 10px 5px;cursor:pointer;touch-action:none}
+button:hover,button:focus-visible{color:#ffc15a;border-color:#ffc15a;outline:none}button:active{background:#3e3a5c}
+#stage{position:relative;line-height:0;box-shadow:0 0 0 2px #3e3a5c,0 0 0 4px #1a1428}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+#start{position:absolute;left:50%;top:59%;transform:translateX(-50%);color:#1a1428;background:#ffc15a;border-color:#f8e08e;font-size:24px;padding:10px 24px 8px;white-space:nowrap}
+#status{position:absolute;inset:40% 5% auto;text-align:center;font:16px Noobscrub,monospace;color:#f06a52;line-height:1.5;pointer-events:none}
+#touch{display:none;position:fixed;inset:0;pointer-events:none;z-index:5;user-select:none;-webkit-user-select:none;touch-action:none}
+#joystick{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(28px,env(safe-area-inset-bottom));width:116px;height:116px;border:2px solid #8a89a6;border-radius:50%;background:#2b2442c9;pointer-events:auto;touch-action:none;box-shadow:inset 0 0 0 14px #1a14284d}
+#joystick:before{content:'+';position:absolute;inset:0;display:grid;place-items:center;color:#8a89a6;font:42px monospace;opacity:.6}
+#stick-knob{position:absolute;left:50%;top:50%;width:48px;height:48px;border:3px solid #f8e08e;border-radius:50%;background:#5d5a7a;transform:translate(calc(-50% + var(--stick-x,0px)),calc(-50% + var(--stick-y,0px)));pointer-events:none;box-shadow:0 4px 0 #1a1428}
+#joystick[data-held=true] #stick-knob{background:#9c713d}
+#touch-actions{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(26px,env(safe-area-inset-bottom));width:134px;height:178px}
+#touch button{position:absolute;pointer-events:auto;border-radius:50%;width:52px;height:52px;padding:0;font-size:14px;background:#2b2442e8;box-shadow:0 4px 0 #100d1c}
+#touch button[data-held=true]{background:#705233;border-color:#f8e08e;transform:translateY(3px);box-shadow:none}
+#touch .attack{right:0;bottom:44px;width:76px;height:76px;font-size:24px;color:#ffc15a;border:3px solid #ffc15a;background:#4b312de8}
+#touch .jump{left:0;bottom:0;border-color:#a8dcfd;color:#a8dcfd}
+#touch .dash{left:0;top:0}
+#touch .special{right:0;top:0;color:#ff6fb5;border-color:#ff6fb5}
+#rotate-hint{display:none;position:fixed;bottom:164px;left:10px;right:10px;text-align:center;color:#ffc15a;font-size:14px;pointer-events:none}
+#hint{font-size:16px;color:#8a89a6;text-align:center;height:16px}
+@media(any-pointer:coarse){
+  html,body{height:100%;height:100dvh;overscroll-behavior:none}body{gap:4px;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+  #touch{display:block}#hint,#brand{display:none}
+  #bar{min-height:30px;padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right))}
+  #tools{width:100%;justify-content:center}#tools button{padding:5px 7px;font-size:12px}
+  #stage{box-shadow:0 0 0 2px #3e3a5c}#start{font-size:18px;padding:10px 18px}
+}
+@media(any-pointer:coarse) and (orientation:portrait){body{padding-bottom:168px}#rotate-hint{display:block}}
+@media(any-pointer:coarse) and (orientation:landscape) and (max-height:350px){
+  #joystick{width:98px;height:98px;left:max(8px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom))}
+  #touch-actions{transform:scale(.86);transform-origin:bottom right;bottom:max(12px,env(safe-area-inset-bottom))}
+}
+</style>
+</head>
+<body>
+<header id="bar"><span id="brand">NOOBSCRUB / CRAZY WEAPON MAN</span><nav id="tools" aria-label="Game settings">
+<button id="b-sound" tabindex="-1">Sound: On</button><button id="b-music" tabindex="-1">Music: On</button><button id="b-pause" tabindex="-1">Pause</button><button id="b-restart" tabindex="-1">Restart</button><button id="b-full" tabindex="-1">Fullscreen</button>
+</nav></header>
+<main id="stage"><canvas id="screen" width="480" height="270" aria-label="Crazy Weapon Man game. Arrows move, X jumps, Z attacks, C special, Shift dashes." tabindex="0">Your browser needs Canvas to play Crazy Weapon Man.</canvas><button id="start">START RUN</button><div id="status" role="status" aria-live="polite"></div></main>
+<div id="hint">MOVE ARROWS / AD &nbsp; UP/DOWN CLIMB &nbsp; JUMP X / ALT &nbsp; ATTACK Z / CTRL &nbsp; SPECIAL C / SPACE &nbsp; DASH SHIFT</div>
+<div id="touch" aria-label="Touch controls">
+  <div id="joystick" role="group" aria-label="Movement joystick. Slide left or right to move, up or down to climb."><span id="stick-knob"></span></div>
+  <div id="touch-actions"><button class="dash" data-action="dash" aria-label="Dash">DASH</button><button class="special" data-action="special" aria-label="Special attack">SKILL</button><button class="jump" data-action="jump" aria-label="Jump, or keep weapon in the Forge">JUMP</button><button class="attack" data-action="attack" aria-label="Hold to attack, or select in the Forge">HIT</button></div>
+</div>
+<div id="rotate-hint">ROTATE YOUR PHONE FOR A WIDER FIGHT</div>
+<script type="module" src="/next/src/main.js"></script>
+</body></html>

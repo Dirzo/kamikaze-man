@@ -1,5 +1,30 @@
 # Crazy Weapon Man — work log
 
+## 2026-10-18 — finite side-scrolling maps
+
+- Replaced arena waves with ten finite maps, three to five screens wide, connected normal-jump ledges and an open ground route. Residents are distributed once across the route and distant packs wait for the player.
+- Added a smoothed horizontal camera, parallax backdrop, scrolling ground, section signs, remaining-enemy markers and minimap. Physics, projectiles, weapon trails, loot and bosses now use map coordinates rather than screen bounds.
+- Kill every resident and any end-chamber boss to unlock the right-edge portal. Reaching it opens the Forge/draft or wins on the final map. Summoned enemies count, and there are no timer respawns.
+- Added map reachability/camera/bounds tests and real-browser checks for finite populations, locked exits, offscreen projectiles and distant-pack behaviour.
+
+## 2026-10-18 — faster attacks and free attack movement
+
+- Every weapon's attack interval and finisher recovery is divided by 1.25: 25% more attacks per second, including animation and projectile release timing.
+- Removed the grounded attack movement penalty and facing lock. Movement accelerates normally during a swing; turning updates the pose and live hitbox, preserves the attack's hit set, and resets the old-facing blade trail.
+- Added exact cadence checks and a real-browser regression for running and reversing during one attack.
+
+## 2026-10-18 — crisp combat cleanup (PR #12)
+
+- Promoted the existing modular rebuild from `/next/` to `/`; source now lives in `game-src/`, built to `public/src/`. The previous 42-patch runtime and addons are isolated in `legacy-src/` and `public/legacy/` for comparison.
+- Fixed attack overwrite, held combo input, dash immunity, equipment changes during swings, stale Forge/death/effect state, and boss elemental status ticks. Shared contact geometry drives slash visuals and melee damage.
+- Added a single introduction schedule for weapon types, rarity, elements, five gameplay mutations, and enemy counters. Guaranteed opening reward and seven-kill dry-drop protection. Free three-weapon drafts between zones.
+- Added nine original awakened pixel weapon sprites in `art-src/awakening.py`, three slash frames, touch controls, viewport fitting, boss charge tells and platform pursuit.
+- Node validation: six suites pass, including 20,000 random loot samples. Browser regression suite runs in GitHub Actions and covers actual asset rendering, held combos, per-swing hits, dash, auto-equip safety, all mutations, all six bosses, Forge/reset and all ten zone transitions.
+- Compatibility: native game does not include the legacy armor/meta/Museum/leaderboard UI. Those remain at `/legacy/`; saves and API/database code are untouched. PR #12 is the review boundary before replacing production.
+
+---
+
+
 Handoff notes so any session can pick up where the last one stopped. Newest first.
 
 ## Roadmap (16-bit noobscrub update)
@@ -119,3 +144,16 @@ new game reusing the art and the core loop; the live game stays up until the new
 
 **Next session**
 - Phase 2: draw the style sheet (palette, hero, enemy, tile strip, HUD frame, font) at 480×270 and send it for approval.
+
+## 2026-10-19 — Larger hunting maps and expressive combat
+
+- Expanded all ten maps to 8–12 screens with three hunting tiers, ladders, solid tunnel floors and ceilings, canyon terraces, vertical camera tracking and a two-dimensional minimap.
+- Retained finite map clears and boss chambers; projectiles stop against rock.
+- Added cycling goofy hit faces, BONK/OOF/PLOP callouts, low thuds and a persistent full weapon-name banner.
+- Added collision and route checks plus browser ladder, camera, hit-reaction and all-zone transition scenarios.
+
+## 2026-10-19 — Correct map structure and add mobile browser play
+
+- Reviewed Ant Tunnel I reference geometry after user clarified the request was structural. Restored the ten original biome identities and authored backgrounds/platform art. Replaced repeated storeys with offset descending chambers, overhangs, broad hunting shelves, side alcoves, stepping ledges and short return ladders.
+- Added a left thumb joystick and right HIT/JUMP/DASH/SKILL controls, independent pointer ownership, cancellation and focus cleanup, landscape thumb gutters, safe-area layout and portrait rotation handling. Forge and restart remain touch playable.
+- Added reachability and theme checks, joystick tests, two-thumb browser regression and Chrome device-emulation layout/rotation screenshots.
