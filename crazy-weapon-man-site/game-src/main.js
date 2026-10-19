@@ -17,6 +17,8 @@ import { drawHud } from './game/hud.js';
 import { drawForge } from './game/forge.js';
 import { ZONES, TITLE_MUSIC } from './data/zones.js';
 import { rarityColour } from './game/looks.js';
+import { updateCamera } from './game/camera.js';
+import { drawMapBackdrop, drawMapExit, drawRouteHud } from './game/map-view.js';
 import { drawSlash } from './game/slash.js';
 import { updateEvolution, drawEvolution } from './game/evolution.js';
 import { fmt } from './data/curve.js';
@@ -90,6 +92,7 @@ function update(dt) {
   updateWaves(dt);
   updateFx(dt);
   tickToasts(dt);
+  updateCamera(dt);
   if (world.phase === 'dead') {
     world.deadT = (world.deadT || 0) + dt;
     if (world.deadT > 1.6) {
@@ -121,9 +124,9 @@ function drawSlab(zone, p) {
 
 function drawWorld(t) {
   const Z = ZONES[world.zone];
-  worldLayer();
-  X.drawImage(A.bg[Z.id], 0, 0);
+  drawMapBackdrop();
   for (const p of world.platforms) drawSlab(Z.id, p);
+  drawMapExit(t);
   drawDrops(t);
   drawHazards(t);
   for (const e of world.enemies) if (e.dead) e.boss ? drawBoss(e, t) : drawEnemy(e, t);
@@ -149,14 +152,14 @@ function drawTitle(t) {
   // hero standing on the ground
   const Hh = A.hero;
   frame(Hh.im, Hh.frames[Math.floor(t * 2) % 2 ? 'idle' : 'idle2'], Hh.w, Hh.h, W / 2 - 8, GROUND - 24, false);
-  text('RUSTY STEEL. QUESTIONABLE DESTINY.', W / 2, 123, C.mist, { align: 'center' });
+  text('CLEAR THE MAP. CLAIM THE NEXT.', W / 2, 123, C.mist, { align: 'center' });
   const lines = [
     'MOVE  ARROWS / A D        JUMP  ALT / X        ATTACK  CTRL / Z',
     'SPECIAL  SPACE / C        DASH  SHIFT / V      DROP / SWAP  DOWN',
     'GAMEPAD: A JUMP  X ATTACK  Y SPECIAL  B DASH  START PAUSE'
   ];
   lines.forEach((l, i) => text(l, W / 2, 222 + i * 11, C.mist, { align: 'center' }));
-  text('HOLD ATTACK TO COMBO. DASH THROUGH DANGER.', W / 2, 192, C.lime, { align: 'center' });
+  text('KILL EVERY ENEMY. OPEN THE EXIT PORTAL.', W / 2, 192, C.lime, { align: 'center' });
 }
 
 function drawPause() {
@@ -212,6 +215,7 @@ function render() {
   if (scene === 'title') return drawTitle(t);
   drawWorld(world.t);
   drawHud(world.t);
+  drawRouteHud();
   drawForge(world.t);
   if (scene === 'pause') drawPause();
   if (scene === 'over') drawEnd(false);

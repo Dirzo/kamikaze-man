@@ -33,7 +33,8 @@ browser regression suite. These are absent from normal runs.
 | `game-src/game/evolution.js` | Five bounded weapon mutation behaviours |
 | `game-src/game/anim.js`, `slash.js`, `looks.js` | Pixel poses, slash frames and weapon silhouettes |
 | `game-src/game/enemy.js`, `bosses.js` | Enemy state machines, bosses, tells and hazards |
-| `game-src/game/waves.js`, `forge.js` | Run progression, three-way weapon drafts, shard workshop |
+| `game-src/game/waves.js`, `forge.js` | Finite map clears, gated exits, three-way weapon drafts and shard workshop |
+| `game-src/data/maps.js`, `game-src/game/camera.js`, `map-view.js` | Multi-screen routes, reachable ledges, camera, minimap and exit portals |
 | `game-src/engine/` | Input, canvas, assets and chiptune audio |
 | `art-src/` | Editable pixel sources and reproducible PNG exporters |
 | `legacy-src/` | Historical patch stack; reference only |
@@ -44,11 +45,18 @@ regressions. New weapon powers belong in the mutation schedule, not a new script
 
 ## Progression
 
-The first zone offers sword/dagger/bow, then introduces geese and bombs across waves. Heavy weapons
-arrive in zone 2, katana in zone 3, shuriken in zone 4, then nunchucks/wand. Elements begin with fire
-and ice, followed by poison/water, lightning/earth, wind, radiant, plasma and finally void. Rarity is
-capped by zone even on boss rewards. New weapons are guaranteed after seven dry kills and after
-the opening wave. There are never more than eight weapon drops or ten director-controlled mobs.
+Each of the ten biomes is a finite side-scrolling map, growing from three to five screens wide.
+Connected ledges rise in normal-jump steps; the ground route stays open. Every map resident is
+placed once on entry. Undiscovered packs wait for you, and the minimap marks all remaining enemies.
+There are no timed waves or director respawns. Kill every resident (and the end-chamber boss on boss
+maps), then walk into the unlocked portal for your weapon draft and the next map. A living enemy
+anywhere on the route keeps the exit locked. Summoned enemies also count toward completion.
+
+The opening map starts with sword/dagger/bow and introduces geese farther along its route. Subsequent
+maps introduce heavy weapons, katana, shuriken and finally nunchucks/wand. Elements, rarity ceilings
+and mutations follow the shared introduction schedule. Loot has seven-kill dry-drop protection.
+Maps have 10–28 initial residents distributed across ground and ledges; only nearby packs engage.
+Bosses stay in the last-screen chamber and their warnings/hazards use that chamber's world bounds.
 
 | Earliest zone | Mutation | Behaviour |
 | --- | --- | --- |
@@ -60,7 +68,7 @@ the opening wave. There are never more than eight weapon drops or ten director-c
 
 All mutations have distinct awakened sprites, never trigger recursive procs, and reset between runs.
 Bosses have warning frames, locked charges, three health phases and stronger late-fight patterns.
-Zone clears lead to a free choice of three weapons, followed by healing/reforging for shards.
+Map clears lead to a free choice of three weapons, followed by healing/reforging for shards.
 
 Keyboard: arrows/AD move, X/Alt jump, Z/Ctrl attack (hold for combos), C/Space special,
 Shift/V dash, Down swap, Down+Jump drop through platforms, Esc pause. Gamepad and touch are supported.

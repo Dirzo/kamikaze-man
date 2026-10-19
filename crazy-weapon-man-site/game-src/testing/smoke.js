@@ -8,7 +8,9 @@ import { makeWeapon } from '../game/loot.js';
 import { updateDrops } from '../game/drops.js';
 import { updateEvolution, attackMutation, impactMutation } from '../game/evolution.js';
 import { startBoss, updateBoss, updateHazards, bossDone, clearBoss } from '../game/bosses.js';
-import { startZone, updateWaves } from '../game/waves.js';
+import { updateCamera } from '../game/camera.js';
+import { worldLayer, screenLayer, X } from '../engine/gfx.js';
+import { startZone, updateWaves, enemiesLeft } from '../game/waves.js';
 import { openForge, updateForge } from '../game/forge.js';
 import { ZONES } from '../data/zones.js';
 import { MUTATIONS } from '../data/progression.js';
@@ -73,7 +75,7 @@ export function runSmoke(game) {
   });
   check('every boss executes patterns, phase changes and defeat',()=>{
     for(let z=0;z<ZONES.length;z++) if(ZONES[z].boss) {
-      reset();startZone(z);world.hero.inv=100;startBoss(ZONES[z].boss);const e=world.boss;
+      reset();startZone(z);world.hero.x=world.map.bossLeft+40;world.hero.inv=100;startBoss(ZONES[z].boss);const e=world.boss;
       for(let i=0;i<600;i++){world.t+=STEP;updateBoss(e,STEP);updateHazards(STEP);}
       ok(e.pattern,'no attack pattern');ok(Number.isFinite(e.x)&&Number.isFinite(e.y),'bad boss position');
       e.hp=e.max*0.25;updateBoss(e,STEP);ok(e.phase===3,'phase did not advance');
@@ -91,11 +93,37 @@ export function runSmoke(game) {
       for(let i=0;i<10000 && !world.forge && world.phase!=='won';i++) {
         for(const e of world.enemies) if(!e.boss) {e.dead=true;e.deathT=0;}
         world.enemies=world.enemies.filter(e=>e.boss); // resolve boss outro through its own handler
-        if(world.boss){world.boss.dead=false;world.boss.hp=0;updateBoss(world.boss,STEP);for(let j=0;j<150;j++)updateBoss(world.boss,STEP);world.enemies=[];world.boss=null;}
+        if(world.boss){world.hero.x=world.map.bossLeft+40;world.boss.dead=false;world.boss.hp=0;updateBoss(world.boss,STEP);for(let j=0;j<150;j++)updateBoss(world.boss,STEP);world.enemies=[];world.boss=null;}
+        if(world.director.phase==='exit') world.hero.x=world.map.exitX-world.hero.w/2;
         updateWaves(STEP);world.t+=STEP;
       }
       ok(z===9?world.phase==='won':!!world.forge,'zone '+z+' stalled');
     }
+  });
+  check('finite map stays locked with undiscovered enemies and never replenishes them',()=>{
+    reset();startZone(0);const count=world.enemies.length, ids=world.enemies.map(e=>e.id).join(',');
+    world.hero.x=world.map.exitX-world.hero.w/2;
+    for(let i=0;i<1200;i++)updateWaves(STEP);
+    ok(world.director.phase==='fight' && !world.forge,'escaped with enemies left');
+    ok(world.enemies.length===count && world.enemies.map(e=>e.id).join(',')===ids,'map respawned enemies');
+    for(const e of world.enemies)e.dead=true;
+    updateWaves(STEP);ok(world.director.phase==='exit' && enemiesLeft()===0);
+    for(let i=0;i<90;i++)updateWaves(STEP);
+    ok(!!world.forge,'cleared exit did not advance');
+  });
+  check('world-space movement, camera and projectiles work beyond the first screen',()=>{
+    reset();const h=world.hero;h.x=850;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
+    const e=spawnEnemy('crawler',h.x+55,GROUND);e.spawnT=0;e.hp=e.max=10000;
+    key('KeyZ',true);poll();updateHero(h,STEP);key('KeyZ',false);
+    for(let i=0;i<50;i++){poll();updateHero(h,STEP);game.updateShots(STEP);}
+    ok(h.x>800 && e.x>800 && e.hp<e.max,'offscreen projectile or actor was clipped');
+    updateCamera(STEP,true);ok(world.cameraX>500);
+    worldLayer();ok(X.getTransform().e===-Math.round(world.cameraX),'camera transform is not world-space');screenLayer();
+  });
+  check('distant enemy packs wait rather than rushing the entrance',()=>{
+    reset();startZone(1);const e=world.enemies.find(e=>e.x>900), x=e.x;e.spawnT=0;
+    for(let i=0;i<180;i++)updateEnemy(e,STEP);
+    ok(e.x===x,'distant pack left its map section');
   });
   reset();
   const failed=results.filter(s=>s.startsWith('FAIL'));

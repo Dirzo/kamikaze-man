@@ -1,13 +1,16 @@
 // Bodies are axis-aligned boxes {x, y, w, h, vx, vy}. The ground is solid; platforms are one-way
 // (you land on them from above and can drop through with down + jump).
+import { world } from './world.js';
 import { W, GROUND } from '../config.js';
+
+export const worldWidth = () => world.map?.width || W;
 
 export function overlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 // integrate one step; returns true if the body landed this step
-export function move(b, dt, platforms, { gravity = 760, maxFall = 330, dropThrough = false, air = false } = {}) {
+export function move(b, dt, platforms, { gravity = 760, maxFall = 330, dropThrough = false, air = false, minX = 2, maxX = worldWidth() - 2 } = {}) {
   const wasOn = b.onGround;
   if (!air) b.vy = Math.min(maxFall, b.vy + gravity * dt);
   b.x += b.vx * dt;
@@ -34,12 +37,12 @@ export function move(b, dt, platforms, { gravity = 760, maxFall = 330, dropThrou
     }
   }
   // screen edges
-  if (b.x < 2) {
-    b.x = 2;
+  if (b.x < minX) {
+    b.x = minX;
     if (b.vx < 0) b.vx = 0;
     b.hitWall = -1;
-  } else if (b.x + b.w > W - 2) {
-    b.x = W - 2 - b.w;
+  } else if (b.x + b.w > maxX) {
+    b.x = maxX - b.w;
     if (b.vx > 0) b.vx = 0;
     b.hitWall = 1;
   } else b.hitWall = 0;

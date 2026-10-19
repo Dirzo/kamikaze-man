@@ -3,7 +3,7 @@
 import { C, W, H } from '../config.js';
 import { X, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { world } from './world.js';
-import { ZONES, WAVES_PER_ZONE } from '../data/zones.js';
+import { ZONES } from '../data/zones.js';
 import { TYPES } from '../data/weapons.js';
 import { xpToLevel, fmt } from '../data/curve.js';
 import { dps } from './loot.js';
@@ -95,11 +95,11 @@ export function drawHud(t) {
   const D = world.director;
   let sub = '';
   if (D) {
-    if (D.phase === 'fight') sub = `WAVE ${world.wave}/${WAVES_PER_ZONE}   ${enemiesLeft()} LEFT`;
-    else if (D.phase === 'intro') sub = 'GET READY';
-    else if (D.phase === 'boss') sub = 'BOSS';
-    else if (D.phase === 'clear') sub = `WAVE ${world.wave}/${WAVES_PER_ZONE} CLEAR`;
-    else if (D.phase === 'zoneclear' || D.phase === 'forge') sub = 'ZONE CLEAR';
+    if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
+    else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
+    else if (D.phase === 'boss') sub = `${enemiesLeft()} LEFT - BOSS AT THE EXIT`;
+    else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
+    else if (D.phase === 'forge') sub = 'ZONE CLEAR';
   }
   text(sub, 6, 15, C.mist);
   text(mutationLabel(h.weapon), W - 6, 16, h.weapon.mutation ? C.gold : C.fog, {align:'right'});

@@ -14,6 +14,7 @@ import { C } from '../config.js';
 import { A } from '../engine/assets.js';
 import { X, frame, rect } from '../engine/gfx.js';
 import { lookOf, frameOfLook, overlays, runEmitters, motion } from './looks.js';
+import { world } from './world.js';
 import { view } from '../engine/gfx.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -361,13 +362,13 @@ export function drawHeroAnimated(h, t) {
       if (!mk) return null;
       const [lx, ly] = to(mk[0], mk[1]);
       const p = m.transformPoint(new DOMPoint(lx + 0.5, ly + 0.5));
-      return { x: p.x - view.ox, y: p.y - view.oy };
+      return { x: p.x - view.ox + Math.round(world.cameraX || 0), y: p.y - view.oy };
     });
     // tip position for the swing smear
     const tip = to(L.tip[0], L.tip[1]);
     const tp = m.transformPoint(new DOMPoint(tip[0], tip[1]));
     X.restore();
-    return { x: tp.x - view.ox, y: tp.y - view.oy, col: L.light };
+    return { x: tp.x - view.ox + Math.round(world.cameraX || 0), y: tp.y - view.oy, col: L.light };
   };
 
   // bow string pulled to the back hand

@@ -23,10 +23,11 @@ export function drawBubbles() {
   const placed = [];
   for (const e of world.enemies) {
     const b = e.bubble;
+    if (Math.abs(e.x - (world.cameraX || 0) - 240) > 300) continue;
     if (!b || (e.dead && e.deathT < 0.05)) continue;
     const tw = textWidth(b.s) + 8,
       h = 13;
-    let bx = Math.round(Math.max(3, Math.min(477 - tw, e.x + e.w / 2 - tw / 2)));
+    let bx = Math.round(Math.max((world.cameraX || 0) + 3, Math.min((world.cameraX || 0) + 477 - tw, e.x + e.w / 2 - tw / 2)));
     let by = Math.round(Math.max(14, e.y - 20 - h));
     for (let g = 0; g < 3; g++) {
       const o = placed.find(r => bx < r[0] + r[2] && bx + tw > r[0] && by < r[1] + r[3] + 2 && by + h + 2 > r[1]);

@@ -1,6 +1,7 @@
 // Drawing on the 480x270 pixel canvas. Everything is whole pixels and palette colours, so there is
 // no per-frame colour fixing: art is palette-exact and code only draws with C.* colours.
 import { W, H, C } from '../config.js';
+import { world } from '../game/world.js';
 import { A } from './assets.js';
 
 export const canvas = document.getElementById('screen');
@@ -23,7 +24,7 @@ fit();
 // ---- world offset (screenshake) ----
 export const view = { ox: 0, oy: 0 };
 export function worldLayer() {
-  X.setTransform(1, 0, 0, 1, view.ox, view.oy);
+  X.setTransform(1, 0, 0, 1, view.ox - Math.round(world.cameraX || 0), view.oy);
 }
 export function screenLayer() {
   X.setTransform(1, 0, 0, 1, 0, 0);

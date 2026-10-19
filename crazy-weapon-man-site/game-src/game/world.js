@@ -3,6 +3,8 @@ export const world = {
   t: 0, // seconds of game time (stops during hit-stop and pause)
   zone: 0,
   wave: 0,
+  map: null,
+  cameraX: 0,
   hero: null,
   enemies: [],
   seenMutations: new Set(),
@@ -27,6 +29,8 @@ export function resetWorld() {
     t: 0,
     zone: 0,
     wave: 0,
+    map: null,
+    cameraX: 0,
     hero: null,
     forge: null,
     nearDrop: null,

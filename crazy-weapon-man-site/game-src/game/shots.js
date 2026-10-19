@@ -2,7 +2,7 @@
 import { C, W, GROUND } from '../config.js';
 import { X, rect, px } from '../engine/gfx.js';
 import { world } from './world.js';
-import { overlap, cx, cy } from './physics.js';
+import { overlap, cx, cy, worldWidth } from './physics.js';
 import { hitEnemy } from './combat.js';
 import { lookOf, runEmitters } from './looks.js';
 import { impactMutation } from './evolution.js';
@@ -50,7 +50,7 @@ export function updateShots(dt) {
         break;
       }
     }
-    if (s.life <= 0 || s.x < -12 || s.x > W + 12 || s.y > GROUND || s.y < -30) world.shots.splice(i, 1);
+    if (s.life <= 0 || s.x < -12 || s.x > worldWidth() + 12 || s.y > GROUND || s.y < -30) world.shots.splice(i, 1);
   }
 }
 

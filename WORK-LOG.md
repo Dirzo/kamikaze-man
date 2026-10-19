@@ -1,5 +1,12 @@
 # Crazy Weapon Man — work log
 
+## 2026-10-18 — finite side-scrolling maps
+
+- Replaced arena waves with ten finite maps, three to five screens wide, connected normal-jump ledges and an open ground route. Residents are distributed once across the route and distant packs wait for the player.
+- Added a smoothed horizontal camera, parallax backdrop, scrolling ground, section signs, remaining-enemy markers and minimap. Physics, projectiles, weapon trails, loot and bosses now use map coordinates rather than screen bounds.
+- Kill every resident and any end-chamber boss to unlock the right-edge portal. Reaching it opens the Forge/draft or wins on the final map. Summoned enemies count, and there are no timer respawns.
+- Added map reachability/camera/bounds tests and real-browser checks for finite populations, locked exits, offscreen projectiles and distant-pack behaviour.
+
 ## 2026-10-18 — faster attacks and free attack movement
 
 - Every weapon's attack interval and finisher recovery is divided by 1.25: 25% more attacks per second, including animation and projectile release timing.

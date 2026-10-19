@@ -161,7 +161,7 @@ export function drawNearDrop(t) {
   const name = fitText(item.name, 200);
   const line2 = `${gain >= 0 ? '+' : ''}${gain}% POWER   DOWN: SWAP`;
   const w = Math.max(textWidth(name), textWidth(line2)) + 10;
-  const x = Math.round(Math.max(4, Math.min(476 - w, cx(d) - w / 2))),
+  const x = Math.round(Math.max((world.cameraX || 0) + 4, Math.min((world.cameraX || 0) + 476 - w, cx(d) - w / 2))),
     y = Math.round(d.y - 34);
   rect(x - 1, y - 1, w + 2, 24, C.ink);
   rect(x, y, w, 22, item.standout ? C.gold : rarityColour(item.q));

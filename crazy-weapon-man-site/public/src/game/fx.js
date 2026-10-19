@@ -1,5 +1,6 @@
 // Effects: pixel particles, hit sparks, damage numbers (stacked per target, MapleStory style),
 // short callouts, screenshake (trauma) and hit-stop. All in screen pixels, palette colours only.
+import { world } from './world.js';
 import { C } from '../config.js';
 import { X, rect, px, text, view } from '../engine/gfx.js';
 import { fmt } from '../data/curve.js';
@@ -187,7 +188,7 @@ export function drawNumbers() {
   }
   for (const c of callouts) {
     if (c.life < 12 && c.life & 1) continue;
-    const x = c.follow ? c.follow.x + c.follow.w / 2 : c.x,
+    const x = c.follow ? c.follow.x + c.follow.w / 2 : c.x + Math.round(world.cameraX || 0),
       y = c.follow ? c.follow.y - 18 - (c.max - c.life) * 0.3 : c.y;
     text(c.s, x, Math.round(y), c.col, { align: 'center', k: c.big ? 2 : 1 });
   }

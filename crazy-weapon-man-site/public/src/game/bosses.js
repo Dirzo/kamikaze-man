@@ -5,9 +5,9 @@ import { A } from '../engine/assets.js';
 import { frame, rect, X, text } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
-import { move, overlap, cx, cy } from './physics.js';
+import { move, overlap, cx, cy, worldWidth } from './physics.js';
 import { refHP, refDmg } from '../data/curve.js';
-import { hurtHero, dropWeapon, dropShards, tickStatus } from './combat.js';
+import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
 import { makeWeapon } from './loot.js';
 import { spawnEnemy } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
@@ -91,7 +91,7 @@ export function startBoss(kind) {
     boss: true,
     D,
     name: D.name,
-    x: W - 80,
+    x: worldWidth() - 90,
     y: -art.h,
     w: Math.round((art.w - 2) * 0.7),
     h: art.h - 4,
@@ -129,6 +129,8 @@ function speak(lines) {
 export function updateBoss(e, dt) {
   const hero = world.hero,
     D = e.D;
+  // End-chamber bosses wait for you; they cannot fire hazards across an unexplored map.
+  if(!e.dead && world.map && cx(hero)<world.map.bossLeft-100) return;
   updateBubble(e, dt);
   e.flash = Math.max(0, e.flash - dt);
   e.anim += dt;
@@ -140,7 +142,7 @@ export function updateBoss(e, dt) {
       done = true;
       e.deathT = 0;
     }
-    move(e, dt, world.platforms);
+    move(e, dt, world.platforms, {minX:world.map?.bossLeft ?? 2,maxX:world.map?.bossRight ?? worldWidth()-2});
     return;
   }
   tickStatus(e, dt);
@@ -185,7 +187,7 @@ export function updateBoss(e, dt) {
       acting(e, dt);
       break;
   }
-  move(e, dt, world.platforms, { dropThrough: true });
+  move(e, dt, world.platforms, {dropThrough:true,minX:world.map?.bossLeft ?? 2,maxX:world.map?.bossRight ?? worldWidth()-2});
   // its body only hurts while charging or slamming
   if (e.state === 'act' && (e.pattern === 'charge' || e.slam) && overlap(e, hero)) hurtHero(e.dmg * 0.8, Math.sign(cx(hero) - cx(e)) || 1);
 }
@@ -254,13 +256,13 @@ function doPattern(e) {
     case 'swordrain':
     case 'coins':
       for (let i = 0; i < 4 + e.phase * 2; i++) {
-        const x = i === 0 ? cx(hero) : 20 + Math.random() * (W - 40);
+        const x = i === 0 ? cx(hero) : (world.map?.bossLeft ?? 0) + 20 + Math.random() * ((world.map ? world.map.bossRight-world.map.bossLeft : W)-40);
         hazards.push({ kind: 'fall', x, y: -20, t: 0.8 + i * 0.12, vy: 0, dmg: e.dmg, look: name });
       }
       e.st = 1.6;
       break;
     case 'strikes':
-      for (let i = 0; i < 3 + e.phase; i++) hazards.push({ kind: 'column', x: i === 0 ? cx(hero) : 20 + Math.random() * (W - 40), t: 0.9 + i * 0.15, life: 0.25, dmg: e.dmg });
+      for (let i = 0; i < 3 + e.phase; i++) hazards.push({ kind: 'column', x: i === 0 ? cx(hero) : (world.map?.bossLeft ?? 0) + 20 + Math.random() * ((world.map ? world.map.bossRight-world.map.bossLeft : W)-40), t: 0.9 + i * 0.15, life: 0.25, dmg: e.dmg });
       e.st = 1.6;
       break;
   }
@@ -273,7 +275,7 @@ function acting(e, dt) {
     if (e.hitWall || e.st <= 0) {
       if (e.hitWall) {
         shake(0.5);
-        burst(e.hitWall > 0 ? W - 4 : 4, e.y + e.h / 2, 10, 'chip', ['stone', 'paper']);
+        burst(e.hitWall > 0 ? (world.map?.bossRight ?? worldWidth()) - 4 : (world.map?.bossLeft ?? 0) + 4, e.y + e.h / 2, 10, 'chip', ['stone', 'paper']);
         e.stun = 0.6;
       }
       e.vx = 0;
@@ -317,7 +319,7 @@ function defeat(e) {
   dropShards(cx(e), cy(e), 20);
   hazards.length = 0;
   world.bolts.length = 0;
-  for (const o of world.enemies) if (o !== e && !o.dead) o.hp = 0;
+  for (const o of [...world.enemies]) if (o !== e && !o.dead) kill(o,{dir:1});
 }
 
 // ---------------------------------------------------------------- hazards
@@ -360,7 +362,7 @@ export function updateHazards(dt) {
         h.hit = true;
         hurtHero(h.dmg, h.dir);
       }
-      if (h.t > h.life || h.x < 0 || h.x > W) hazards.splice(i, 1);
+      if (h.t > h.life || h.x < 0 || h.x > worldWidth()) hazards.splice(i, 1);
     }
   }
 }
@@ -415,7 +417,7 @@ export function drawBoss(e, t) {
   if (e.state === 'wind') {
     const label = { charge: 'DASH THROUGH', slam: 'JUMP / DASH', stomp: 'JUMP', fan: 'FIND THE GAP', toss: 'KEEP MOVING', summon: 'CLEAR ADDS', strikes: 'MOVE OFF MARKS' }[e.pattern.split(':')[0]] || 'MOVE OFF MARKS';
     text(label, cx(e), sy - 30, C.gold, {align:'center'});
-    if (e.pattern === 'charge') for(let x=cx(e); x>2 && x<478; x+=e.face*6) rect(x, e.y+e.h-2, 3, 1, C.coral);
+    if (e.pattern === 'charge') for(let x=cx(e); x>(world.map?.bossLeft ?? 2) && x<(world.map?.bossRight ?? worldWidth()-2); x+=e.face*6) rect(x, e.y+e.h-2, 3, 1, C.coral);
   }
   if (e.state === 'wind' && Math.floor(t * 12) % 2 === 0) {
     const mx = Math.round(cx(e)),

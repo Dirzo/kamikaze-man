@@ -5,10 +5,10 @@ import { A } from '../engine/assets.js';
 import { frame, rect, text, X, px } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
-import { move, overlap, cx, cy } from './physics.js';
+import { move, overlap, cx, cy, worldWidth } from './physics.js';
 import { ENEMIES, ELITE_TITLES, LINES } from '../data/enemies.js';
 import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
-import { hurtHero, tickStatus, explode } from './combat.js';
+import { hurtHero, tickStatus, explode, kill } from './combat.js';
 import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { drawItem } from './drops.js';
@@ -29,7 +29,7 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     kind: d.kind,
     d,
     name: elite ? `${ELITE_TITLES[Math.floor(Math.random() * ELITE_TITLES.length)]} ${d.name}` : d.name,
-    x: Math.max(2, Math.min(W - 2 - w, x - w / 2)),
+    x: Math.max(2, Math.min(worldWidth() - 2 - w, x - w / 2)),
     y: d.air ? y : Math.min(y, GROUND) - h,
     w,
     h,
@@ -79,12 +79,16 @@ export function updateEnemy(e, dt) {
     move(e, dt, world.platforms, { air: false });
     return;
   }
+  if (e.hp <= 0) { kill(e); return; }
   tickStatus(e, dt);
   if (e.dead) return;
   if (e.spawnT > 0) {
     e.spawnT -= dt;
     return;
   }
+  // Undiscovered packs hold their ground until the hero reaches their part of the map.
+  // This keeps the whole route from collapsing into one giant horde at the entrance.
+  if (world.map && Math.abs(cx(hero)-cx(e))>320) { e.vx=0; return; }
   const slow = e.chill > 0 ? 0.5 : 1;
   const physics = () => move(e, dt, world.platforms, { air: e.air, gravity: 760, dropThrough: e.dropT > 0 });
   // knockback slide, then friction while staggered
@@ -227,7 +231,7 @@ function think(e, dt, dxh, dist, toward, slow) {
       if (dist > 90 && e.cool <= 0) {
         burst(cx(e), cy(e), 8, 'smoke', ['violet', 'pink']);
         const side = Math.random() < 0.5 ? -1 : 1;
-        e.x = Math.max(4, Math.min(W - 4 - e.w, cx(hero) + side * 24 - e.w / 2));
+        e.x = Math.max(4, Math.min(worldWidth() - 4 - e.w, cx(hero) + side * 24 - e.w / 2));
         e.y = Math.min(e.y, hero.y + hero.h - e.h);
         burst(cx(e), cy(e), 8, 'smoke', ['violet', 'pink']);
         e.face = -side;
@@ -368,7 +372,7 @@ export function updateBolts(dt) {
       hurtHero(b.dmg, Math.sign(b.vx) || 1);
       b.life = 0;
     }
-    if (b.life <= 0 || b.x < -10 || b.x > W + 10 || b.y > GROUND + 4 || b.y < -20) world.bolts.splice(i, 1);
+    if (b.life <= 0 || b.x < -10 || b.x > worldWidth() + 10 || b.y > GROUND + 4 || b.y < -20) world.bolts.splice(i, 1);
   }
 }
 export function drawBolts() {
