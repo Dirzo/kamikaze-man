@@ -6,6 +6,7 @@ import { overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { hitEnemy } from './combat.js';
 import { lookOf, runEmitters } from './looks.js';
 import { impactMutation } from './evolution.js';
+import { quirkHit } from './quirks.js';
 import { emit } from './fx.js';
 
 export function updateShots(dt) {
@@ -35,6 +36,21 @@ export function updateShots(dt) {
         s.vy = Math.sin(a) * sp;
       }
     }
+    if (s.g) s.vy += s.g * dt;
+    if (s.boomerang && !s.back && (s.t += dt) > 0.38) {
+      // bent weapons come back: turn around once and fly home, hitting everything again
+      s.back = true;
+      s.hit.clear();
+    }
+    if (s.back) {
+      const h = world.hero,
+        dx = cx(h) - s.x,
+        dy = cy(h) - s.y,
+        d = Math.max(1, Math.hypot(dx, dy));
+      s.vx = (dx / d) * 260;
+      s.vy = (dy / d) * 260;
+      if (d < 10) s.life = 0;
+    }
     s.x += s.vx * dt;
     s.y += s.vy * dt;
     if (world.map?.solids.some(p=>overlap(s,p))) {world.shots.splice(i,1);continue;}
@@ -45,7 +61,10 @@ export function updateShots(dt) {
       if (e.dead || e.spawnT > 0 || s.hit.has(e) || !overlap(s, e)) continue;
       s.hit.add(e);
       hitEnemy(e, s.dmg, { crit: s.crit, dir: Math.sign(s.vx) || 1, knock: s.knock, element: s.element, sparkCol: s.light });
-      if (!s.proc) impactMutation(world.hero, e, s);
+      if (!s.proc) {
+        impactMutation(world.hero, e, s);
+        quirkHit(world.hero, e, s.dmg, Math.sign(s.vx) || 1);
+      }
       if (s.pierce-- <= 0) {
         s.life = 0;
         break;
@@ -72,7 +91,7 @@ export function drawShots(t) {
       rect(-6, -1, 2, 1, C.paper);
       rect(-6, 1, 2, 1, C.paper);
       X.restore();
-    } else if (s.type === 'shuriken') {
+    } else if (s.type === 'shuriken' || s.sprite) {
       const L = lookOf(s.weapon);
       X.save();
       X.translate(x + 3, y + 2);

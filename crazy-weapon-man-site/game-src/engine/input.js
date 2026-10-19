@@ -27,8 +27,8 @@ window.addEventListener('keyup', e => {
 });
 window.addEventListener('blur', () => { down.clear(); fresh.clear(); touch.clear(); touchFresh.clear(); });
 
-// Standard gamepad layout: A jump, X attack, B dash, Y special, LB/RB dash, Start pause
-const PAD = { jump: [0], attack: [2], dash: [1, 4, 5], special: [3], pause: [9], confirm: [0, 9] };
+// Standard gamepad layout: A jump, X attack, B dash, Y special, LB/RB dash, Start pause, Back bag
+const PAD = { jump: [0], attack: [2], dash: [1, 4, 5], special: [3], pause: [9], confirm: [0, 9], inv: [8] };
 
 function padHeld(a) {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];

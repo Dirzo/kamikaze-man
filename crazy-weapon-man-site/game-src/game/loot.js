@@ -4,6 +4,11 @@ import { nameWeapon } from '../data/names.js';
 import { refHP, share, STANDOUT_SHARE, standoutChance } from '../data/curve.js';
 
 import { maxRarity, availableTypes, availableElements, availableMutations } from '../data/progression.js';
+import { quirkFor } from '../data/quirks.js';
+import { profMult } from '../data/proficiency.js';
+import { world } from './world.js';
+import { lustMult } from '../data/lust.js';
+import { comboMult } from '../data/swarm.js';
 let uid = 1;
 
 // All sources share the zone ceiling: zone 1 tops out at Uncommon; the
@@ -28,7 +33,7 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
   if (standout == null) standout = r() < standoutChance(zone);
   // standouts are named one tier grander, but never beyond what the zone allows
   const { name, look } = nameWeapon(type, q, family, standout, r, Math.min(10, maxQ(zone) + 1));
-  return { uid: uid++, type, q, family, mutation, standout, home: zone, name, look };
+  return { uid: uid++, type, q, family, mutation, standout, home: zone, name, look, quirk: quirkFor(look, r) };
 }
 
 export function trainingSword() {
@@ -40,14 +45,17 @@ export function trainingSword() {
     standout: false,
     home: 0,
     name: 'Training Sword',
-    look: { q: 0, base: 'Sword', family: null, cond: 'Plain' }
+    look: { q: 0, base: 'Sword', family: null, cond: 'Plain' },
+    quirk: 'bonk'
   };
 }
 
-// damage of one hit at move multiplier 1, used in zone `zoneNow`
+// damage of one hit at move multiplier 1, including the hero's proficiency with this weapon type
+// and, for the weapon in hand, the Weapon Lust bonus
 export function hitDamage(w) {
-  const T = TYPES[w.type];
-  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit);
+  const T = TYPES[w.type],
+    h = world.hero;
+  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
 }
 // relative strength in the current zone (for the HUD and auto-equip): damage per second
 export function dps(w) {

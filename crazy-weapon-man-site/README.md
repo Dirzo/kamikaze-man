@@ -33,7 +33,9 @@ browser regression suite. These are absent from normal runs.
 | `game-src/game/evolution.js` | Five bounded weapon mutation behaviours |
 | `game-src/game/anim.js`, `slash.js`, `looks.js` | Pixel poses, slash frames and weapon silhouettes |
 | `game-src/game/enemy.js`, `bosses.js` | Enemy state machines, bosses, tells and hazards |
-| `game-src/game/waves.js`, `forge.js` | Finite map clears, gated exits, three-way weapon drafts and shard workshop |
+| `game-src/game/waves.js`, `forge.js` | Finite map clears, survival swarm, gated exits and shard workshop |
+| `game-src/game/inventory.js`, `quirks.js`, `lust.js` | Bag/equipment windows, weapon quirks, Weapon Lust |
+| `game-src/data/proficiency.js`, `quirks.js`, `lust.js` | Weapon mastery (saved), quirk table and rates, Weapon Lust numbers |
 | `game-src/data/maps.js`, `game-src/game/camera.js`, `map-view.js` | Multi-screen routes, solid terrain, ladders, two-axis camera, minimap and exit portals |
 | `game-src/engine/` | Input, canvas, assets and chiptune audio |
 | `art-src/` | Editable pixel sources and reproducible PNG exporters |
@@ -48,7 +50,9 @@ regressions. New weapon powers belong in the mutation schedule, not a new script
 Each of the ten biomes is a finite side-scrolling map, growing from eight to twelve screens wide, with offset descending chambers, broad hunting ledges, small stepping shelves, side alcoves and short ladder connections. Geometry follows the Ant Tunnel cave-network structure while all ten original biome names, backgrounds and platform sprites remain intact. UP/DOWN climbs; jump plus direction dismounts onto shelves. Every map resident is
 placed once on entry. Undiscovered packs wait for you, and the minimap marks all remaining enemies.
 There are no timed waves or director respawns. Kill every resident (and the end-chamber boss on boss
-maps), then walk into the unlocked portal for your weapon draft and the next map. A living enemy
+maps), then survive the swarm: the screen locks and enemies pour in until the timer runs out, then the
+zone's unique swarm boss arrives. Swarm hits build a combo (+1% damage per 5 hits, up to +30%) that
+drops when you go about two seconds without hitting anything; the best combo pays out shards. Walk into the unlocked portal for the Forge and the next map. A living enemy
 anywhere on the route keeps the exit locked. Summoned enemies also count toward completion.
 
 The opening map starts with sword/dagger/bow and introduces geese farther along its route. Subsequent
@@ -67,10 +71,19 @@ Bosses stay in the last-screen chamber and their warnings/hazards use that chamb
 
 All mutations have distinct awakened sprites, never trigger recursive procs, and reset between runs.
 Bosses have warning frames, locked charges, three health phases and stronger late-fight patterns.
-Map clears lead to a free choice of three weapons, followed by healing/reforging for shards.
+Map clears lead to the survival swarm, then the Forge (healing/reforging for shards). There is no
+free weapon draft and no auto-equip. Drops hover where they land and fly into the bag (E / B / Tab),
+which keeps the highest-DPS weapon of each type and salvages the rest; locked weapons are never
+replaced or salvaged. Press DOWN right after looting an upgrade to equip it. Equipping a weapon you
+have never held fills the Weapon Lust meter (+15% damage at full, draining) and gives a short NEW
+TOY rush (+10%). Residents hold their platforms: they never walk off ledges, only get knocked off.
+
+Every weapon has a quirk taken from its name (Rusty gives tetanus, Loose heads fly off, Bent weapons
+boomerang, Sad ones make foes weep). Common weapons trigger about every third hit; relics rarely.
+Weapon mastery is tracked per type, earned by kills and saved across runs: +1.5% damage per level, 20 levels.
 
 Keyboard: arrows/AD move, X/Alt jump, Z/Ctrl attack (hold for combos), C/Space special,
-Shift/V dash, Down swap, Down+Jump drop through platforms, Esc pause. Gamepad and touch are supported.
+Shift/V dash, Down equip a just-looted upgrade, E/B/Tab bag, Down+Jump drop through platforms, Esc pause. Gamepad and touch are supported.
 
 ## Art
 

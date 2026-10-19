@@ -8,19 +8,21 @@ import { world, resetWorld } from './game/world.js';
 import { createHero, updateHero, drawHero } from './game/hero.js';
 import { updateEnemy, drawEnemy, updateBolts, drawBolts } from './game/enemy.js';
 import { updateShots, drawShots } from './game/shots.js';
-import { updateDrops, drawDrops, drawNearDrop } from './game/drops.js';
+import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
 import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
 import { drawForge } from './game/forge.js';
+import { updateInventory, drawInventory, toggleInventory, closeInventory } from './game/inventory.js';
 import { ZONES, TITLE_MUSIC } from './data/zones.js';
 import { rarityColour } from './game/looks.js';
 import { updateCamera } from './game/camera.js';
 import { drawMapBackdrop, drawMapExit, drawRouteHud } from './game/map-view.js';
 import { drawSlash } from './game/slash.js';
 import { updateEvolution, drawEvolution } from './game/evolution.js';
+import { updateLust } from './game/lust.js';
 import { fmt } from './data/curve.js';
 
 let capture = false;
@@ -32,6 +34,7 @@ let scene = 'loading',
 // ---------------------------------------------------------------- scenes
 function startRun() {
   document.getElementById('start').hidden = true;
+  closeInventory();
   resetWorld();
   clearFx();
   clearBoss();
@@ -65,8 +68,16 @@ function update(dt) {
     return;
   }
   // ---- play ----
+  if (world.inv) {
+    updateInventory(dt); // the bag pauses the fight
+    return;
+  }
   if (input.take('pause')) {
     scene = 'pause';
+    return;
+  }
+  if (input.take('inv') && !world.forge && world.phase === 'play') {
+    toggleInventory();
     return;
   }
   if (world.forge) {
@@ -81,6 +92,7 @@ function update(dt) {
   }
   world.t += dt;
   if (!world.forge) updateHero(world.hero, dt);
+  updateLust(world.hero, dt);
   for (const e of world.enemies) e.boss ? updateBoss(e, dt) : updateEnemy(e, dt);
   world.enemies = world.enemies.filter(e => !e.dead || e.deathT > 0);
   if (world.boss && world.boss.dead && world.boss.deathT <= 0) world.boss = null;
@@ -140,7 +152,6 @@ function drawWorld(t) {
   drawSparks();
   drawNumbers();
   drawBubbles();
-  drawNearDrop(t);
   screenLayer();
 }
 
@@ -155,7 +166,7 @@ function drawTitle(t) {
   text('CLEAR THE MAP. CLAIM THE NEXT.', W / 2, 123, C.mist, { align: 'center' });
   const lines = [
     'MOVE  ARROWS / A D        JUMP  ALT / X        ATTACK  CTRL / Z',
-    'SPECIAL  SPACE / C        DASH  SHIFT / V      DROP / SWAP  DOWN',
+    'SPECIAL  SPACE / C    DASH  SHIFT / V    PICK UP  DOWN    BAG  E',
     'GAMEPAD: A JUMP  X ATTACK  Y SPECIAL  B DASH  START PAUSE'
   ];
   lines.forEach((l, i) => text(l, W / 2, 222 + i * 11, C.mist, { align: 'center' }));
@@ -164,7 +175,7 @@ function drawTitle(t) {
 
 function drawPause() {
   dither(0, 0, W, H, C.ink, 10);
-  panel('panel', W / 2 - 120, 60, 240, 130);
+  panel('panel', W / 2 - 120, 56, 240, 146);
   text('PAUSED', W / 2, 72, C.gold, { align: 'center', k: 2 });
   const rows = [
     ['MOVE', 'ARROWS / A D'],
@@ -172,14 +183,15 @@ function drawPause() {
     ['ATTACK', 'CTRL / Z'],
     ['SPECIAL', 'SPACE / C'],
     ['DASH', 'SHIFT / V'],
-    ['SWAP WEAPON', 'DOWN ON A DROP'],
+    ['PICK UP WEAPON', 'DOWN ON A DROP'],
+    ['BAG / EQUIPMENT', 'E / B / TAB'],
     ['MUSIC / SOUND', `M ${audioSettings.music ? 'ON' : 'OFF'} / N ${audioSettings.sound ? 'ON' : 'OFF'}`]
   ];
   rows.forEach(([a, b], i) => {
     text(a, W / 2 - 108, 96 + i * 12, C.mist);
     text(b, W / 2 + 108, 96 + i * 12, C.paper, { align: 'right' });
   });
-  text('ESC TO RESUME', W / 2, 178, C.lime, { align: 'center' });
+  text('ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
 }
 
 function drawEnd(won) {
@@ -217,6 +229,7 @@ function render() {
   drawHud(world.t);
   drawRouteHud();
   drawForge(world.t);
+  drawInventory(clock);
   if (scene === 'pause') drawPause();
   if (scene === 'over') drawEnd(false);
   if (scene === 'won') drawEnd(true);
@@ -257,6 +270,9 @@ click('b-music', toggleMusic);
 click('b-pause', () => {
   if (scene === 'play') scene = 'pause';
   else if (scene === 'pause') scene = 'play';
+});
+click('b-bag', () => {
+  if (scene === 'play') toggleInventory();
 });
 click('b-restart', () => {
   if (scene !== 'loading') startRun();
@@ -311,7 +327,7 @@ loadAssets(f => (loadFrac = f))
   });
 
 // debug hooks for tests
-import { makeWeapon } from './game/loot.js';
+import { makeWeapon, hitDamage } from './game/loot.js';
 import { heroMaxHp } from './data/curve.js';
 import { startBoss } from './game/bosses.js';
 import { drawHeroAnimated } from './game/anim.js';
@@ -365,6 +381,7 @@ function animSheet(zoom = 3) {
 }
 const debug = {
   types: WTYPES,
+  hitDamage,
   snapshot(fn) { startRun(); fn(); capture = true; },
   updateShots,
   update,

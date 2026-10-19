@@ -13,6 +13,8 @@ export const world = {
   shots: [], // hero projectiles
   bolts: [], // enemy projectiles
   drops: [], // weapons lying on the ground
+  bag: new Array(24).fill(null), // inventory.js: weapons carried this run
+  inv: null, // open inventory window state
   pickups: [], // shards, hearts
   platforms: [], // {x, y, w}
   director: null, // wave director state (waves.js)
@@ -45,6 +47,13 @@ export function resetWorld() {
     shots: [],
     bolts: [],
     drops: [],
+    bag: new Array(24).fill(null),
+    bagNew: 0,
+    inv: null,
+    lock: null,
+    quirkCount: 0,
+    quick: null, // a just-looted weapon that beats yours: DOWN equips it
+    swarmCombo: null,
     pickups: [],
     platforms: [],
     director: null,

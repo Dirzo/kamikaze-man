@@ -9,7 +9,10 @@ import { xpToLevel, fmt } from '../data/curve.js';
 import { dps } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { mutationLabel, MUTATIONS } from '../data/progression.js';
-import { enemiesLeft } from './waves.js';
+import { enemiesLeft, survivalLeft, swarmBossUp } from './waves.js';
+import { COMBO, comboMult } from '../data/swarm.js';
+import { PROF_DMG } from '../data/proficiency.js';
+import { QUIRKS } from '../data/quirks.js';
 
 const BAR_Y = H - 28;
 
@@ -98,12 +101,18 @@ export function drawHud(t) {
     if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
     else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
     else if (D.phase === 'boss') sub = `${enemiesLeft()} LEFT - BOSS AT THE EXIT`;
+    else if (D.phase === 'survive') sub = swarmBossUp() ? 'BEAT THE SWARM BOSS' : 'SURVIVE THE SWARM';
     else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
     else if (D.phase === 'forge') sub = 'ZONE CLEAR';
   }
   text(sub, 6, 15, C.mist);
   text(mutationLabel(h.weapon), W - 6, 16, h.weapon.mutation ? C.gold : C.fog, {align:'right'});
-  text(`${world.kills} KILLS`, W - 6, 5, C.paper, { align: 'right' });
+  const kills = `${world.kills} KILLS`;
+  text(kills, W - 6, 5, C.paper, { align: 'right' });
+  const bagN = world.bag.filter(Boolean).length;
+  text(`E BAG ${bagN}/${world.bag.length}${world.bagNew ? ' NEW!' : ''}`, W - 14 - textWidth(kills), 5, world.bagNew ? C.lime : C.ice, { align: 'right' });
+  const qk = QUIRKS[h.weapon.quirk];
+  if (qk) text(qk.label, W - 12 - textWidth(mutationLabel(h.weapon)), 16, C.fog, { align: 'right' });
 
   // Full equipped name stays visible without waiting for the bottom ticker.
   panel('panel', 4, 25, W - 8, 17);
@@ -111,6 +120,29 @@ export function drawHud(t) {
   X.save(); X.translate(W / 2, 30); X.scale(nameScale, 1);
   text(w.name, 0, 0, C.paper, {align:'center'}); X.restore();
 
+  // ---- weapon lust meter ----
+  const lust = h.lust || 0;
+  text('LUST', 6, 46, lust > 0 ? C.pink : C.fog);
+  bar(32, 48, 60, 3, lust / 100, C.pink);
+  if (h.newToyT > 0) text('NEW TOY!', 98, 46, Math.floor(t * 6) % 2 ? C.pink : C.paper);
+  // ---- survival countdown ----
+  if (D && D.phase === 'survive' && !swarmBossUp()) {
+    const s = Math.ceil(survivalLeft());
+    text(String(s), W / 2, 48, s <= 5 ? C.coral : C.cream, { align: 'center', k: 3 });
+    text('SURVIVE', W / 2, 74, C.mist, { align: 'center' });
+  }
+  // ---- swarm combo meter: drains while you're not hitting anything ----
+  const cb = world.swarmCombo;
+  if (D && D.phase === 'survive' && cb) {
+    const on = cb.n > 0,
+      x = 6;
+    text('COMBO', x, 57, on ? C.gold : C.fog);
+    text(on ? 'x' + cb.n : '-', x + 34, 54, on ? (cb.n >= 50 ? C.gold : C.cream) : C.fog, { k: 2 });
+    bar(x, 72, 80, 3, on ? cb.t / COMBO.window(cb.n) : 0, cb.t < 0.5 && Math.floor(t * 10) % 2 ? C.coral : C.gold);
+    const bonus = Math.round((comboMult(cb) - 1) * 100);
+    if (bonus > 0) text(`+${bonus}% DMG`, x, 79, C.lime);
+    else if (!on && cb.lost >= 10) text(`LOST x${cb.lost}`, x, 79, C.coral);
+  }
   // ---- boss bar ----
   const b = world.boss;
   if (b && !b.dead) {
@@ -133,7 +165,7 @@ export function drawHud(t) {
   }
 
   // ---- toasts ----
-  let ty = b && !b.dead ? 66 : 46;
+  let ty = D && D.phase === 'survive' ? 86 : b && !b.dead ? 66 : 46;
   for (let i = world.toasts.length - 1; i >= 0; i--) {
     const to = world.toasts[i];
     if (to.kind === 'weapon') {
@@ -148,6 +180,22 @@ export function drawHud(t) {
       panel('card', W / 2 - 142, ty, 284, 32);
       text(to.label + ' UNLOCKED', W / 2, ty + 5, C.gold, {align:'center'});
       text(to.desc, W / 2, ty + 18, C.paper, {align:'center'});
+      ty += 36;
+    } else if (to.kind === 'bag') {
+      const l1 = to.head || 'INTO THE BAG   E: OPEN',
+        l2 = fitText(to.name, 300),
+        tw = Math.max(textWidth(l1), textWidth(l2)) + 14;
+      panel('card', W / 2 - tw / 2, ty, tw, 24);
+      text(l1, W / 2, ty + 4, to.hot ? (Math.floor(t * 6) % 2 ? C.lime : C.gold) : C.ice, { align: 'center' });
+      text(l2, W / 2, ty + 13, to.col, { align: 'center' });
+      ty += 28;
+    } else if (to.kind === 'mastery') {
+      const l1 = `${to.type.toUpperCase()} MASTERY LV ${to.lv}`,
+        l2 = `${to.rank}   +${Math.round(to.lv * PROF_DMG * 1000) / 10}% ${to.type.toUpperCase()} DAMAGE`,
+        tw = Math.max(textWidth(l1, 2), textWidth(l2)) + 14;
+      panel('card', W / 2 - tw / 2, ty, tw, 32);
+      text(l1, W / 2, ty + 5, C.sky, { align: 'center', k: 2 });
+      text(l2, W / 2, ty + 21, C.paper, { align: 'center' });
       ty += 36;
     } else if (to.kind === 'level') {
       panel('card', W / 2 - 60, ty, 120, 32);
