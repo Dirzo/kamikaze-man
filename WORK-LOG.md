@@ -151,3 +151,9 @@ new game reusing the art and the core loop; the live game stays up until the new
 - Retained finite map clears and boss chambers; projectiles stop against rock.
 - Added cycling goofy hit faces, BONK/OOF/PLOP callouts, low thuds and a persistent full weapon-name banner.
 - Added collision and route checks plus browser ladder, camera, hit-reaction and all-zone transition scenarios.
+
+## 2026-10-19 — Correct map structure and add mobile browser play
+
+- Reviewed Ant Tunnel I reference geometry after user clarified the request was structural. Restored the ten original biome identities and authored backgrounds/platform art. Replaced repeated storeys with offset descending chambers, overhangs, broad hunting shelves, side alcoves, stepping ledges and short return ladders.
+- Added a left thumb joystick and right HIT/JUMP/DASH/SKILL controls, independent pointer ownership, cancellation and focus cleanup, landscape thumb gutters, safe-area layout and portrait rotation handling. Forge and restart remain touch playable.
+- Added reachability and theme checks, joystick tests, two-thumb browser regression and Chrome device-emulation layout/rotation screenshots.

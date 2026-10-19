@@ -26,3 +26,5 @@ for scene in combat canyon depths forge late; do
   "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1460,950 \
     --virtual-time-budget=3000 --screenshot="$OUT/$scene.png" "http://127.0.0.1:$PORT/?capture=$scene" 2>>"$OUT/chrome.log"
 done
+
+CHROME="$CHROME" PORT="$PORT" SMOKE_OUT="$OUT" node tests/mobile-check.mjs

@@ -125,7 +125,7 @@ function drawSlab(zone, p) {
 function drawWorld(t) {
   const Z = ZONES[world.zone];
   drawMapBackdrop();
-  for (const p of world.platforms) if (!p.solid) drawSlab(Z.id, p);
+  for (const p of world.platforms) if(p.x+p.w>=world.cameraX && p.x<=world.cameraX+W && p.y>=world.cameraY-32 && p.y<=world.cameraY+H) drawSlab(Z.id, p);
   drawMapExit(t);
   drawDrops(t);
   drawHazards(t);
@@ -261,9 +261,14 @@ click('b-pause', () => {
 click('b-restart', () => {
   if (scene !== 'loading') startRun();
 });
-click('b-full', () => {
-  if (document.fullscreenElement) document.exitFullscreen();
-  else document.documentElement.requestFullscreen?.();
+click('b-full', async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else {
+      await document.documentElement.requestFullscreen?.();
+      try {await screen.orientation?.lock?.('landscape');} catch (_) { /* Browser rotation remains available. */ }
+    }
+  } catch (_) { /* Fullscreen is optional on mobile browsers. */ }
 });
 addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleMusic();

@@ -2,6 +2,7 @@
 //   held(a)     true while down
 //   pressed(a)  true on the step it went down (edge), buffered until consumed or 0.12s old
 import { KEYS } from '../config.js';
+import { bindTouchControls } from './touch-controls.js';
 
 const ACTIONS = Object.keys(KEYS);
 const down = new Set();
@@ -81,13 +82,12 @@ export const input = {
   anyKey: () => down.size > 0 || touch.size > 0
 };
 
-for (const button of document.querySelectorAll('[data-action]')) {
-  const action = button.dataset.action;
-  button.addEventListener('pointerdown', e => {
-    e.preventDefault(); button.setPointerCapture(e.pointerId); touch.add(action); touchFresh.add(action);
-  });
-  const release = e => { e.preventDefault(); touch.delete(action); };
-  button.addEventListener('pointerup', release);
-  button.addEventListener('pointercancel', release);
-  button.addEventListener('lostpointercapture', release);
-}
+bindTouchControls((actions,reset) => {
+  if(reset)touchFresh.clear();
+  if(actions.has('attack'))actions.add('confirm');
+  for (const a of actions) if (!touch.has(a)) touchFresh.add(a);
+  touch.clear();for (const a of actions) touch.add(a);
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){down.clear();fresh.clear();touch.clear();touchFresh.clear();}
+});

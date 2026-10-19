@@ -26,6 +26,25 @@ export function runSmoke(game) {
   const key=(code,on)=>window.dispatchEvent(new KeyboardEvent(on?'keydown':'keyup',{code,bubbles:true}));
   const poll=()=>input.poll(clock+=STEP);
   const reset=()=>{key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);key('ArrowRight',false);key('ArrowLeft',false);key('KeyX',false);key('KeyV',false);poll();game.startRun();world.enemies=[];world.director=null;world.hero.inv=0;clearFx();};
+  check('two thumbs move and attack independently, with safe cancellation',()=>{
+    reset();const touchPanel=document.getElementById('touch'),oldDisplay=touchPanel.style.display;touchPanel.style.display='block';const stick=document.getElementById('joystick'),hit=document.querySelector('[data-action="attack"]');
+    const send=(el,type,id,x=0,y=0)=>el.dispatchEvent(new PointerEvent(type,{pointerId:id,pointerType:'touch',clientX:x,clientY:y,bubbles:true,cancelable:true}));
+    const b=stick.getBoundingClientRect(),x=b.left+b.width/2,y=b.top+b.height/2;
+    send(stick,'pointerdown',101,x+50,y);send(hit,'pointerdown',102);poll();
+    ok(input.held('right') && input.held('attack'),'two-thumb input dropped');
+    send(stick,'pointermove',101,x-100,y);poll();ok(input.held('left') && !input.held('right') && input.held('attack'));
+    send(stick,'pointercancel',101);poll();ok(!input.held('left') && input.held('attack'),'stick cancelled attack');
+    send(hit,'lostpointercapture',102);poll();ok(!input.held('attack'),'attack stuck after lost capture');
+    send(stick,'pointerdown',103,x,y-40);poll();ok(input.held('up'),'ladder direction missing');
+    window.dispatchEvent(new Event('blur'));poll();ok(!input.held('up') && !input.held('attack'),'blur left input stuck');touchPanel.style.display=oldDisplay;
+  });
+  if(new URLSearchParams(location.search).has('mobile')) check('landscape touch layout fits the viewport with clear thumb gutters',()=>{
+    const canvas=document.getElementById('screen').getBoundingClientRect(),stick=document.getElementById('joystick').getBoundingClientRect(),actions=document.getElementById('touch-actions').getBoundingClientRect();
+    ok(matchMedia('(any-pointer:coarse)').matches,'touch device was not emulated');
+    ok(canvas.left>=stick.right && canvas.right<=actions.left,'controls cover the playfield');
+    ok(canvas.top>=0 && canvas.bottom<=innerHeight && actions.bottom<=innerHeight,'mobile layout clipped');
+    ok(canvas.width>300 && canvas.height>170,'landscape canvas is too small');
+  });
   check('all nine weapons render with awakened silhouettes',()=>{
     for(const type of Object.keys(game.types)) {const w=makeWeapon(9,{type,q:8});w.mutation='orbit';ok(lookOf(w).cv.width>0);}
   });
@@ -100,9 +119,9 @@ export function runSmoke(game) {
       ok(z===9?world.phase==='won':!!world.forge,'zone '+z+' stalled');
     }
   });
-  check('ladders connect the bottom route to the upper hunting deck',()=>{
+  check('ladders connect chamber floors to suspended hunting ledges',()=>{
     reset();startZone(1);world.enemies=[];const h=world.hero,l=world.map.ladders[0];
-    h.x=l.x-h.w/2;h.y=world.map.floorY-h.h;
+    h.x=l.x-h.w/2;h.y=l.bottom-h.h;
     key('ArrowUp',true);
     for(let i=0;i<270;i++){poll();updateHero(h,STEP);}
     key('ArrowUp',false);poll();
@@ -110,8 +129,8 @@ export function runSmoke(game) {
     h.x=l.x-h.w/2;key('ArrowDown',true);
     for(let i=0;i<260;i++){poll();updateHero(h,STEP);}
     key('ArrowDown',false);poll();
-    ok(h.onGround && Math.abs(h.y+h.h-world.map.floorY)<1,'bottom dismount failed');
-    updateCamera(STEP,true);ok(world.cameraY===384,'camera missed lower route');
+    ok(h.onGround && Math.abs(h.y+h.h-l.bottom)<1,'bottom dismount failed');
+    updateCamera(STEP,true);ok(Math.abs(world.cameraY-(l.bottom-GROUND+12))<1,'camera missed chamber route');
   });
   check('nonlethal hits trigger expressive faces',()=>{
     reset();const e=spawnEnemy('goose',100,GROUND);e.spawnT=0;e.hp=e.max=10000;

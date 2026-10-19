@@ -12,13 +12,19 @@ X.imageSmoothingEnabled = false;
 
 // Integer CSS scaling to fit the window.
 function fit() {
-  const coarse = matchMedia('(pointer: coarse)').matches;
-  const room = Math.min((innerWidth - 8) / W, (innerHeight - (coarse ? 108 : 80)) / H);
-  const k = room >= 1 ? Math.floor(room) : Math.max(0.25, room); // fit narrow phones, integer pixels on larger screens
+  const coarse = matchMedia('(any-pointer: coarse)').matches;
+  const vw = window.visualViewport?.width || innerWidth, vh = window.visualViewport?.height || innerHeight;
+  const landscape = vw > vh;
+  // Landscape leaves thumb gutters on both sides; portrait leaves the controls below the map.
+  const room = Math.min((vw - (coarse && landscape ? 280 : 8)) / W,
+    (vh - (coarse ? landscape ? 48 : 218 : 80)) / H);
+  const k = coarse ? Math.max(0.2, room) : room >= 1 ? Math.floor(room) : Math.max(0.25, room);
   canvas.style.width = W * k + 'px';
   canvas.style.height = H * k + 'px';
 }
 addEventListener('resize', fit);
+window.visualViewport?.addEventListener('resize',fit);
+matchMedia('(any-pointer: coarse)').addEventListener('change',fit);
 fit();
 
 // ---- world offset (screenshake) ----
