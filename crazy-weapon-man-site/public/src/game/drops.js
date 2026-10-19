@@ -1,4 +1,5 @@
-// Weapon drops on the ground (walk over to compare; better ones auto-equip, others swap with DOWN),
+// Weapon drops on the ground (walk over to compare; better ones auto-equip and the old one goes in
+// the bag, others go in the bag with DOWN, or swap when the bag is full),
 // and pickups (shards fly to you, hearts heal).
 import { C, GROUND } from '../config.js';
 import { X, rect, text, textWidth, fitText } from '../engine/gfx.js';
@@ -12,6 +13,7 @@ import { MUTATIONS } from '../data/progression.js';
 import { toast } from './progress.js';
 import { burst, emit } from './fx.js';
 import { dropWeapon } from './combat.js';
+import { stash } from './inventory.js';
 
 export function equip(item) {
   const h = world.hero,
@@ -60,8 +62,10 @@ export function updateDrops(dt) {
   if (world.nearDrop && !h.attack && !h.special && h.dashT <= 0 && input.take('down', 0.15)) {
     const d = world.nearDrop;
     world.drops.splice(world.drops.indexOf(d), 1);
-    const old = equip(d.item);
-    dropOld(old, d);
+    if (stash(d.item)) {
+      sfx.pickup();
+      toast('bag', { name: d.item.name, col: d.item.standout ? C.gold : rarityColour(d.item.q) });
+    } else dropOld(equip(d.item), d);
   }
   // pickups
   for (let i = world.pickups.length - 1; i >= 0; i--) {
@@ -96,7 +100,7 @@ export function updateDrops(dt) {
   }
 }
 function dropOld(old, d) {
-  if (old.name === 'Training Sword') return;
+  if (old.name === 'Training Sword' || stash(old)) return;
   dropWeapon(cx(d), d.y, old);
   const n = world.drops[world.drops.length - 1];
   n.declined = true;
@@ -159,7 +163,8 @@ export function drawNearDrop(t) {
   const item = d.item,
     gain = Math.round((powerScore(item) / Math.max(1, powerScore(h.weapon)) - 1) * 100);
   const name = fitText(item.name, 200);
-  const line2 = `${gain >= 0 ? '+' : ''}${gain}% POWER   DOWN: SWAP`;
+  const full = !world.bag.includes(null);
+  const line2 = `${gain >= 0 ? '+' : ''}${gain}% POWER   DOWN: ${full ? 'SWAP (BAG FULL)' : 'BAG'}`;
   const w = Math.max(textWidth(name), textWidth(line2)) + 10;
   const x = Math.round(Math.max((world.cameraX || 0) + 4, Math.min((world.cameraX || 0) + 476 - w, cx(d) - w / 2))),
     y = Math.round(d.y - 34);

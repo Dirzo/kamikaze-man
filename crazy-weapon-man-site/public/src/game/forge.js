@@ -3,23 +3,17 @@
 import { C, W } from '../config.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
-import { text, panel, fitText, dither, rect, textWidth } from '../engine/gfx.js';
+import { text, panel, fitText, rect } from '../engine/gfx.js';
 import { world } from './world.js';
 import { nameWeapon } from '../data/names.js';
 import { rarityColour } from './looks.js';
 import { toast } from './progress.js';
-import { dps, makeWeapon } from './loot.js';
-import { equip, drawItem } from './drops.js';
-import { maxRarity, mutationLabel, MUTATIONS, availableTypes } from '../data/progression.js';
+import { dps } from './loot.js';
+import { maxRarity } from '../data/progression.js';
 
 let uidBase = 100000;
 export function openForge() {
-  const zone = Math.min(9, world.zone + 1);
-  // A free choice between three next-zone weapons, followed by the shard workshop.
-  const types = availableTypes(zone).filter(t => t !== world.hero.weapon.type);
-  const picks = [world.hero.weapon.type];
-  while (picks.length < 3) picks.push(types.splice(Math.floor(Math.random() * types.length), 1)[0]);
-  world.forge = { sel: 0, msg: '', t: 0, draft: true, offers: picks.map(type => makeWeapon(zone, { q: maxRarity(world.zone), type, standout: false })) };
+  world.forge = { sel: 0, msg: '', t: 0 };
 }
 const costs = () => ({ heal: 8 + world.zone * 4, reforge: 20 + world.zone * 8 });
 
@@ -28,7 +22,6 @@ export function updateForge(dt) {
   const F = world.forge;
   if (!F) return true;
   F.t += dt;
-  if (F.draft) return updateDraft(F);
   const h = world.hero,
     c = costs();
   const opts = ['heal', 'reforge', 'go'];
@@ -83,7 +76,6 @@ export function updateForge(dt) {
 export function drawForge(t) {
   const F = world.forge;
   if (!F) return;
-  if (F.draft) return drawDraft(F, t);
   const h = world.hero,
     c = costs();
   rect(0, 0, W, 242, C.ink);
@@ -105,43 +97,4 @@ export function drawForge(t) {
   text('CURRENT WEAPON', W / 2, 166, C.mist, { align: 'center' });
   text(fitText(h.weapon.name, 280), W / 2, 176, h.weapon.standout ? C.gold : rarityColour(h.weapon.q), { align: 'center' });
   if (F.msg) text(F.msg, W / 2, 190, C.lime, { align: 'center' });
-}
-
-function updateDraft(F) {
-  if (F.t > 0.35 && input.take('jump')) { F.draft = false; F.sel = 0; F.t = 0; return false; }
-  if (input.take('left') || input.take('up')) F.sel = (F.sel + 2) % 3;
-  if (input.take('right') || input.take('down')) F.sel = (F.sel + 1) % 3;
-  if (F.t > 0.35 && (input.take('confirm') | input.take('attack'))) {
-    equip(F.offers[F.sel]);
-    F.draft = false; F.sel = 0; F.t = 0;
-  }
-  return false;
-}
-function drawDraft(F, t) {
-  rect(0, 0, W, 242, C.ink);
-  text('PICK YOUR NEXT BAD IDEA', W / 2, 46, C.gold, { align: 'center', k: 2 });
-  text('ONE FREE WEAPON. CHOOSE YOUR BUILD.', W / 2, 68, C.mist, { align: 'center' });
-  F.offers.forEach((w, i) => {
-    const x = 12 + i * 156, on = F.sel === i;
-    panel(on ? 'btn-hot' : 'panel', x, 86, 144, 110);
-    drawItem(w, x + 72, 126, t);
-    const lines = wrapName(w.name);
-    lines.forEach((line, n) => text(line, x + 72, 134 + n * 10, rarityColour(w.q), {align:'center'}));
-    text(Math.round(dps(w)) + ' DPS', x + 72, 155, C.paper, { align: 'center' });
-    text(mutationLabel(w), x + 72, 171, C.lime, { align: 'center' });
-    if (on) text('> TAKE THIS <', x + 72, 183, C.gold, { align: 'center' });
-  });
-  const chosen = F.offers[F.sel];
-  text(chosen.mutation ? MUTATIONS[chosen.mutation].desc : 'KEEP MOVING. WATCH WIND-UPS. COUNTERATTACK.', W / 2, 202, C.mist, {align:'center'});
-  text('LEFT/RIGHT: CHOOSE   ATTACK: TAKE   JUMP: KEEP', W / 2, 214, C.paper, { align: 'center' });
-}
-
-function wrapName(name) {
-  const lines = [''];
-  for (const word of name.split(' ')) {
-    const n = lines.length - 1, next = lines[n] ? lines[n] + ' ' + word : word;
-    if (textWidth(next) > 130 && lines[n] && n === 0) lines.push(word);
-    else lines[n] = next;
-  }
-  return lines.map(s => fitText(s, 130));
 }

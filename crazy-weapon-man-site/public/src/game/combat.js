@@ -8,7 +8,7 @@ import { makeWeapon } from './loot.js';
 import { cx, cy } from './physics.js';
 import { ELEMENTS } from '../data/weapons.js';
 import { LINES } from '../data/enemies.js';
-import { gainXp } from './progress.js';
+import { gainXp, gainProficiency } from './progress.js';
 import { say } from './bubbles.js';
 
 const KB_SLIDE = 0.1;
@@ -147,7 +147,7 @@ export function zap(x0, y0, x1, y1, col) {
 
 // damage over time ticks (burn, venom) — called from the enemy update
 export function tickStatus(e, dt) {
-  for (const k of ['burn', 'venom']) {
+  for (const k of ['burn', 'venom', 'rash']) {
     const s = e[k];
     if (!s) continue;
     s.t -= dt;
@@ -155,8 +155,9 @@ export function tickStatus(e, dt) {
     if (s.tick <= 0) {
       s.tick = 0.5;
       const d = k === 'venom' ? s.dmg * s.stacks : s.dmg;
-      hitEnemy(e, d, { chip: true, col: k === 'burn' ? C.orange : C.lime });
-      emit(cx(e), e.y + 2, k === 'burn' ? 'ember' : 'bubble', k === 'burn' ? C.orange : C.lime);
+      const col = k === 'burn' ? C.orange : k === 'rash' ? C.rust : C.lime;
+      hitEnemy(e, d, { chip: true, col });
+      emit(cx(e), e.y + 2, k === 'burn' ? 'ember' : k === 'rash' ? 'dot' : 'bubble', col);
     }
     if (s.t <= 0) e[k] = null;
   }
@@ -194,6 +195,7 @@ export function kill(e, o = {}) {
   }
   if (e.sleeper) say(e, pickLine(LINES.last), 1.4, true);
   gainXp(e.xp);
+  gainProficiency(e.elite ? 'elite' : 'normal');
   // loot
   const zone = world.zone;
   dropShards(cx(e), cy(e), e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0));

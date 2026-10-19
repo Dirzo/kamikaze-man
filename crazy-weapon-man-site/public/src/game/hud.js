@@ -10,6 +10,8 @@ import { dps } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { mutationLabel, MUTATIONS } from '../data/progression.js';
 import { enemiesLeft } from './waves.js';
+import { PROF_DMG } from '../data/proficiency.js';
+import { QUIRKS } from '../data/quirks.js';
 
 const BAR_Y = H - 28;
 
@@ -103,7 +105,12 @@ export function drawHud(t) {
   }
   text(sub, 6, 15, C.mist);
   text(mutationLabel(h.weapon), W - 6, 16, h.weapon.mutation ? C.gold : C.fog, {align:'right'});
-  text(`${world.kills} KILLS`, W - 6, 5, C.paper, { align: 'right' });
+  const kills = `${world.kills} KILLS`;
+  text(kills, W - 6, 5, C.paper, { align: 'right' });
+  const bagN = world.bag.filter(Boolean).length;
+  text(`E BAG ${bagN}/${world.bag.length}${world.bagNew ? ' NEW!' : ''}`, W - 14 - textWidth(kills), 5, world.bagNew ? C.lime : C.ice, { align: 'right' });
+  const qk = QUIRKS[h.weapon.quirk];
+  if (qk) text(qk.label, W - 12 - textWidth(mutationLabel(h.weapon)), 16, C.fog, { align: 'right' });
 
   // Full equipped name stays visible without waiting for the bottom ticker.
   panel('panel', 4, 25, W - 8, 17);
@@ -148,6 +155,21 @@ export function drawHud(t) {
       panel('card', W / 2 - 142, ty, 284, 32);
       text(to.label + ' UNLOCKED', W / 2, ty + 5, C.gold, {align:'center'});
       text(to.desc, W / 2, ty + 18, C.paper, {align:'center'});
+      ty += 36;
+    } else if (to.kind === 'bag') {
+      const l2 = fitText(to.name, 300),
+        tw = Math.max(textWidth('INTO THE BAG   E: OPEN'), textWidth(l2)) + 14;
+      panel('card', W / 2 - tw / 2, ty, tw, 24);
+      text('INTO THE BAG   E: OPEN', W / 2, ty + 4, C.ice, { align: 'center' });
+      text(l2, W / 2, ty + 13, to.col, { align: 'center' });
+      ty += 28;
+    } else if (to.kind === 'mastery') {
+      const l1 = `${to.type.toUpperCase()} MASTERY LV ${to.lv}`,
+        l2 = `${to.rank}   +${Math.round(to.lv * PROF_DMG * 1000) / 10}% ${to.type.toUpperCase()} DAMAGE`,
+        tw = Math.max(textWidth(l1, 2), textWidth(l2)) + 14;
+      panel('card', W / 2 - tw / 2, ty, tw, 32);
+      text(l1, W / 2, ty + 5, C.sky, { align: 'center', k: 2 });
+      text(l2, W / 2, ty + 21, C.paper, { align: 'center' });
       ty += 36;
     } else if (to.kind === 'level') {
       panel('card', W / 2 - 60, ty, 120, 32);

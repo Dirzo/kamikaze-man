@@ -12,7 +12,7 @@ import { makeWeapon } from './loot.js';
 import { spawnEnemy } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
-import { gainXp } from './progress.js';
+import { gainXp, gainProficiency } from './progress.js';
 
 const BOSSES = {
   bossjr: {
@@ -315,6 +315,7 @@ function defeat(e) {
   hitstop(0.2);
   callout('BOSS DOWN', W / 2, 60, C.gold, { big: true, life: 140 });
   gainXp(e.xp);
+  gainProficiency('boss');
   world.kills++;
   for (let i = 0; i < 3; i++) dropWeapon(cx(e) + (i - 1) * 24, e.y + 10, makeWeapon(world.zone, { boss: true, standout: i === 1 ? true : null }));
   dropShards(cx(e), cy(e), 20);

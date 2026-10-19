@@ -14,6 +14,7 @@ import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { lookOf } from './looks.js';
 import { attackBox, activeWindow, canAttack } from './attack-rules.js';
 import { attackMutation, impactMutation } from './evolution.js';
+import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
 
 
@@ -181,6 +182,7 @@ function updateAttack(h, dt, T) {
         sparkCol: lookOf(h.weapon).light
       });
       impactMutation(h, e, a);
+      quirkHit(h, e, dmg, h.face);
     }
   }
   if (a.t >= a.dur) h.attack = null;

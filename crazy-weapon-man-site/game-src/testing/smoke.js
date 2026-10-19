@@ -12,6 +12,10 @@ import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
 import { startZone, updateWaves, enemiesLeft } from '../game/waves.js';
 import { openForge, updateForge } from '../game/forge.js';
+import { openInventory, updateInventory, stash, BAG_SIZE } from '../game/inventory.js';
+import { quirkHit } from '../game/quirks.js';
+import { QUIRK_LIST } from '../data/quirks.js';
+import { proficiency, PROF_KEY } from '../data/proficiency.js';
 import { ZONES } from '../data/zones.js';
 import { MUTATIONS } from '../data/progression.js';
 import { C, STEP, GROUND, HERO } from '../config.js';
@@ -101,10 +105,50 @@ export function runSmoke(game) {
       e.hp=0;updateBoss(e,STEP);ok(e.dead);for(let i=0;i<150;i++)updateBoss(e,STEP);ok(bossDone(),'boss clear stalled');
     }
   });
-  check('forge choice preserves simulation and reset clears it',()=>{
-    reset();openForge();ok(world.forge.draft && world.forge.offers.length===3);
-    world.forge.t=1;key('KeyZ',true);poll();updateForge(STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();ok(!world.forge.draft);
+  check('forge opens straight to the workshop with no weapon draft, and reset clears it',()=>{
+    reset();const before=world.hero.weapon;openForge();ok(!world.forge.draft && !world.forge.offers,'weapon draft still offered');
+    world.forge.t=1;key('KeyZ',true);poll();updateForge(STEP);key('KeyZ',false);poll();ok(world.hero.weapon===before,'forge changed the weapon');
     game.startRun();ok(!world.forge && world.echoes.length===0 && !world.deadT);
+  });
+  check('swapped-out and picked-up weapons land in the bag; bag equips, drops and salvages',()=>{
+    reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});const old=h.weapon;
+    const better=makeWeapon(1,{type:'dagger',q:1,standout:true});dropWeapon(h.x+5,h.y,better);const d=world.drops.at(-1);d.x=h.x;d.y=h.y+h.h-d.h;d.t=1;d.vy=0;
+    updateDrops(STEP);ok(h.weapon===better && world.bag.includes(old),'old weapon not stashed on auto-equip');
+    const worse=makeWeapon(0,{type:'bow',q:0,standout:false});dropWeapon(h.x,h.y,worse);const d2=world.drops.at(-1);d2.x=h.x;d2.y=h.y+h.h-d2.h;d2.t=1;d2.vy=0;
+    updateDrops(STEP);ok(world.nearDrop===d2,'compare card missing');key('ArrowDown',true);poll();updateDrops(STEP);key('ArrowDown',false);poll();
+    ok(world.bag.includes(worse) && h.weapon===better,'DOWN did not bag the drop');
+    ok(openInventory() && world.inv,'bag did not open');world.inv.t=1;world.inv.sel=world.bag.indexOf(worse);
+    key('KeyZ',true);poll();updateInventory(STEP);key('KeyZ',false);poll();ok(h.weapon===worse && world.bag.includes(better),'equip from bag failed');
+    world.inv.sel=world.bag.indexOf(better);const n=world.drops.length;key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();
+    ok(!world.bag.includes(better) && world.drops.length===n+1 && world.drops.at(-1).declined,'drop from bag failed');
+    world.inv.sel=world.bag.indexOf(old);const sh=world.shards;
+    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(world.bag.includes(old),'salvage did not ask to confirm');
+    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(!world.bag.includes(old) && world.shards>sh,'salvage failed');
+    for(let i=0;i<BAG_SIZE+2;i++) stash(makeWeapon(0,{q:0}));ok(world.bag.filter(Boolean).length===BAG_SIZE,'bag overfilled');
+    key('KeyE',true);poll();updateInventory(STEP);key('KeyE',false);poll();ok(!world.inv,'E did not close the bag');
+    game.startRun();ok(world.bag.every(x=>!x) && !world.inv,'new run kept the old bag');
+  });
+  check('every quirk fires on cheap weapons and never recurses',()=>{
+    for(const id of QUIRK_LIST) {
+      reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});h.weapon.quirk=id;h.hp=h.maxHp-20;
+      const e=spawnEnemy('crawler',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e6;const e2=spawnEnemy('stalker',h.x-20,GROUND);e2.spawnT=0;e2.hp=e2.max=1e6;
+      const rnd=Math.random;Math.random=()=>0;let fired;try{fired=quirkHit(h,e,50,1);}finally{Math.random=rnd;}
+      ok(fired,'quirk '+id+' did not fire');
+      for(let i=0;i<120;i++){world.t+=STEP;game.updateShots(STEP);updateEnemy(e,STEP);}
+      ok(world.shots.length===0 || world.shots.every(s=>s.proc),'quirk '+id+' left a non-proc shot');
+    }
+    reset();let n=0;const h=world.hero;h.weapon=makeWeapon(0,{q:0,standout:false});
+    const e=spawnEnemy('crawler',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e9;
+    for(let i=0;i<400;i++){world.t+=1;if(quirkHit(h,e,1,1))n++;}
+    ok(n>80 && n<200,'common quirk rate off: '+n+'/400');
+  });
+  check('weapon mastery grows from kills, persists in storage and boosts damage',()=>{
+    reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'staff',q:0,standout:false});
+    const before=proficiency('staff').lv,dmg0=game.hitDamage(h.weapon);
+    for(let i=0;i<60;i++){const e=spawnEnemy('crawler',h.x+30,GROUND);e.spawnT=0;hitEnemy(e,1e9,{dir:1});}
+    ok(proficiency('staff').lv>before,'no staff mastery from kills');
+    ok(game.hitDamage(h.weapon)>dmg0,'mastery did not add damage');
+    const saved=JSON.parse(localStorage.getItem(PROF_KEY));ok(saved.staff.lv===proficiency('staff').lv,'mastery not saved');
   });
   check('all ten zones can clear and transition through the forge',()=>{
     for(let z=0;z<10;z++) {
