@@ -144,3 +144,10 @@ new game reusing the art and the core loop; the live game stays up until the new
 
 **Next session**
 - Phase 2: draw the style sheet (palette, hero, enemy, tile strip, HUD frame, font) at 480×270 and send it for approval.
+
+## 2026-10-19 — Larger hunting maps and expressive combat
+
+- Expanded all ten maps to 8–12 screens with three hunting tiers, ladders, solid tunnel floors and ceilings, canyon terraces, vertical camera tracking and a two-dimensional minimap.
+- Retained finite map clears and boss chambers; projectiles stop against rock.
+- Added cycling goofy hit faces, BONK/OOF/PLOP callouts, low thuds and a persistent full weapon-name banner.
+- Added collision and route checks plus browser ladder, camera, hit-reaction and all-zone transition scenarios.

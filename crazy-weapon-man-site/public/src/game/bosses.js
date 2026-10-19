@@ -5,7 +5,7 @@ import { A } from '../engine/assets.js';
 import { frame, rect, X, text } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
-import { move, overlap, cx, cy, worldWidth } from './physics.js';
+import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { refHP, refDmg } from '../data/curve.js';
 import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
 import { makeWeapon } from './loot.js';
@@ -71,6 +71,7 @@ const BOSSES = {
   }
 };
 
+const bossFloor=()=>world.map?.bossFloor??worldFloor();
 const hazards = [];
 let boss = null,
   done = false,
@@ -249,7 +250,7 @@ function doPattern(e) {
       e.st = 0.8;
       break;
     case 'summon':
-      for (let i = 0; i < 2; i++) spawnEnemy(arg, cx(e) + (i ? 40 : -40), GROUND, { wave: 3 });
+      for (let i = 0; i < 2; i++) spawnEnemy(arg, cx(e) + (i ? 40 : -40), bossFloor(), { wave: 3 });
       e.st = 0.8;
       break;
     case 'anvils':
@@ -334,10 +335,10 @@ export function updateHazards(dt) {
         h.y += h.vy * dt;
         if (overlap({ x: h.x - 5, y: h.y - 8, w: 10, h: 12 }, hero)) {
           hurtHero(h.dmg, Math.sign(cx(hero) - h.x) || 1);
-          h.y = GROUND + 1;
+          h.y = bossFloor() + 1;
         }
-        if (h.y >= GROUND - 4) {
-          burst(h.x, GROUND - 2, 6, 'chip', h.look === 'coins' ? ['gold', 'cream'] : ['stone', 'fog']);
+        if (h.y >= bossFloor() - 4) {
+          burst(h.x, bossFloor() - 2, 6, 'chip', h.look === 'coins' ? ['gold', 'cream'] : ['stone', 'fog']);
           sfx.land();
           hazards.splice(i, 1);
         }
@@ -357,8 +358,8 @@ export function updateHazards(dt) {
     } else if (h.kind === 'wave') {
       h.t += dt;
       h.x += h.dir * 170 * dt;
-      if (Math.random() < 0.8) emit(h.x, GROUND - 2, 'chip', Math.random() < 0.5 ? C.sand : C.wood);
-      if (!h.hit && hero.onGround && Math.abs(cx(hero) - h.x) < 7 && hero.y + hero.h >= GROUND - 2) {
+      if (Math.random() < 0.8) emit(h.x, bossFloor() - 2, 'chip', Math.random() < 0.5 ? C.sand : C.wood);
+      if (!h.hit && hero.onGround && Math.abs(cx(hero) - h.x) < 7 && hero.y + hero.h >= bossFloor() - 2) {
         h.hit = true;
         hurtHero(h.dmg, h.dir);
       }
@@ -374,8 +375,8 @@ export function drawHazards(t) {
       if (h.t > 0) {
         // ground marker blinking where it will land
         if (Math.floor(t * 12) % 2) {
-          rect(x - 5, GROUND - 2, 11, 2, C.red);
-          rect(x - 1, GROUND - 6, 3, 3, C.red);
+          rect(x - 5, bossFloor() - 2, 11, 2, C.red);
+          rect(x - 1, bossFloor() - 6, 3, 3, C.red);
         }
       } else {
         const y = Math.round(h.y);
@@ -393,16 +394,16 @@ export function drawHazards(t) {
       }
     } else if (h.kind === 'column') {
       if (h.t > 0) {
-        if (Math.floor(t * 14) % 2) for (let y = 20; y < GROUND; y += 6) rect(x, y, 1, 3, C.sky);
+        if (Math.floor(t * 14) % 2) for (let y = 20; y < bossFloor(); y += 6) rect(x, y, 1, 3, C.sky);
       } else {
-        rect(x - 4, 0, 9, GROUND, C.ink);
-        rect(x - 3, 0, 7, GROUND, C.sky);
-        rect(x - 1, 0, 3, GROUND, C.paper);
+        rect(x - 4, 0, 9, bossFloor(), C.ink);
+        rect(x - 3, 0, 7, bossFloor(), C.sky);
+        rect(x - 1, 0, 3, bossFloor(), C.paper);
       }
     } else if (h.kind === 'wave') {
-      rect(x - 3, GROUND - 7, 7, 7, C.ink);
-      rect(x - 2, GROUND - 6, 5, 6, C.sand);
-      rect(x - 1, GROUND - 9, 3, 3, C.wood);
+      rect(x - 3, bossFloor() - 7, 7, 7, C.ink);
+      rect(x - 2, bossFloor() - 6, 5, 6, C.sand);
+      rect(x - 1, bossFloor() - 9, 3, 3, C.wood);
     }
   }
 }

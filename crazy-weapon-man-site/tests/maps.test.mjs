@@ -1,33 +1,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeMap, cameraTarget } from '../game-src/data/maps.js';
+import { makeMap, cameraTarget, cameraTargetY } from '../game-src/data/maps.js';
 import { HERO, GROUND, W } from '../game-src/config.js';
 import { world } from '../game-src/game/world.js';
 import { move } from '../game-src/game/physics.js';
-test('ten finite maps grow from three to five screens with residents across their routes',()=>{
+test('ten finite maps grow from eight to twelve screens with residents across their routes',()=>{
   let prevWidth=0,prevCount=0;
   for(let z=0;z<10;z++) {
-    const m=makeMap(z);assert.ok(m.width>=3*W && m.width<=5*W);
+    const m=makeMap(z);assert.ok(m.width>=8*W && m.width<=12*W);
     assert.ok(m.width>=prevWidth && m.spawns.length>=prevCount);prevWidth=m.width;prevCount=m.spawns.length;
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
-    assert.ok(m.spawns.every(e=>e.x>120 && e.x<m.width-70));
-    assert.ok(m.platforms.every(p=>p.x>=0 && p.x+p.w<m.width));
+    assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));
+    assert.ok(m.platforms.every(p=>p.x>=0 && p.x+p.w<=m.width+36));
     assert.ok(m.exitX>m.width-60);
   }
 });
-test('every platform is reachable through normal jump steps',()=>{
-  const jumpRise=HERO.jump*HERO.jump/(2*HERO.gravity);
+test('each section has a clear ladder joining all three hunting tiers',()=>{
   for(let z=0;z<10;z++) {
-    const m=makeMap(z), reached=new Set();let changed=true;
-    while(changed) {
-      changed=false;
-      for(const p of m.platforms) if(!reached.has(p)) {
-        const support=p.y>=GROUND-jumpRise || [...reached].some(q=>q.y-p.y<=jumpRise && p.x<q.x+q.w+60 && p.x+p.w>q.x-60);
-        if(support){reached.add(p);changed=true;}
-      }
+    const m=makeMap(z);assert.equal(m.levels.length,3);assert.equal(m.ladders.length,m.sections);
+    for(const l of m.ladders) {
+      assert.ok(l.top<m.levels[0] && l.bottom===m.floorY);
+      assert.ok(!m.solids.some(p=>l.x>p.x-10 && l.x<p.x+p.w+10));
+      assert.ok(m.platforms.some(p=>p.y===l.exitY && l.exitX>=p.x && l.exitX<p.x+p.w));
     }
-    assert.equal(reached.size,m.platforms.length,'unreachable ledge in map '+z);
+    for(const spawn of m.spawns) assert.ok(m.platforms.some(p=>spawn.x>=p.x && spawn.x<p.x+p.w && spawn.y===p.y));
+    assert.equal(cameraTargetY(m.floorY,m.floorY),384);
   }
+});
+test('solid floors, ceilings and side walls stop movement',()=>{
+  world.map=makeMap(1);
+  try {
+    const p=world.map.solids[0], h={x:100,y:p.y+p.h+1,w:16,h:22,vx:0,vy:-200};
+    move(h,1/60,[]);assert.equal(h.y,p.y+p.h);assert.equal(h.vy,0);
+    h.x=p.x+p.w+1;h.y=p.y+4;h.vx=-150;h.vy=0;
+    move(h,1/60,[]);assert.equal(h.x,p.x+p.w);assert.equal(h.hitWall,-1);
+  } finally {world.map=null;}
 });
 test('world collision permits traversal beyond the old screen edge and clamps only at map ends',()=>{
   world.map=makeMap(9);

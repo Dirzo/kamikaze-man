@@ -125,7 +125,7 @@ function drawSlab(zone, p) {
 function drawWorld(t) {
   const Z = ZONES[world.zone];
   drawMapBackdrop();
-  for (const p of world.platforms) drawSlab(Z.id, p);
+  for (const p of world.platforms) if (!p.solid) drawSlab(Z.id, p);
   drawMapExit(t);
   drawDrops(t);
   drawHazards(t);

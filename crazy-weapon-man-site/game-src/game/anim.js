@@ -171,6 +171,7 @@ export function heroPose(h, t) {
     if (st.spin) pose = spinPose(p, mv === 'spinBig' ? 2 : 1, mv === 'spinBig');
     else pose = keys(st.moves[mv] || Object.values(st.moves)[0], p);
   } else if (h.attack && h.attack.ranged && st.ranged) pose = keys(st.ranged, Math.min(1, h.attack.t / h.attack.dur));
+  else if (h.ladder) pose = {...st.idle(t,0), f: Math.floor(t*7)%2?'run1':'run3', fh:[14,8+Math.round(Math.sin(t*10)*3)], bh:[2,12-Math.round(Math.sin(t*10)*3)], ang:170, wb:true};
   else if (h.dashT > 0) pose = { ...st.dash };
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
@@ -362,13 +363,13 @@ export function drawHeroAnimated(h, t) {
       if (!mk) return null;
       const [lx, ly] = to(mk[0], mk[1]);
       const p = m.transformPoint(new DOMPoint(lx + 0.5, ly + 0.5));
-      return { x: p.x - view.ox + Math.round(world.cameraX || 0), y: p.y - view.oy };
+      return { x: p.x - view.ox + Math.round(world.cameraX || 0), y: p.y - view.oy + Math.round(world.cameraY || 0) };
     });
     // tip position for the swing smear
     const tip = to(L.tip[0], L.tip[1]);
     const tp = m.transformPoint(new DOMPoint(tip[0], tip[1]));
     X.restore();
-    return { x: tp.x - view.ox + Math.round(world.cameraX || 0), y: tp.y - view.oy, col: L.light };
+    return { x: tp.x - view.ox + Math.round(world.cameraX || 0), y: tp.y - view.oy + Math.round(world.cameraY || 0), col: L.light };
   };
 
   // bow string pulled to the back hand

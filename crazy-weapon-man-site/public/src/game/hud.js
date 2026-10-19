@@ -105,14 +105,20 @@ export function drawHud(t) {
   text(mutationLabel(h.weapon), W - 6, 16, h.weapon.mutation ? C.gold : C.fog, {align:'right'});
   text(`${world.kills} KILLS`, W - 6, 5, C.paper, { align: 'right' });
 
+  // Full equipped name stays visible without waiting for the bottom ticker.
+  panel('panel', 4, 25, W - 8, 17);
+  const nameScale = textWidth(w.name) <= W - 28 ? 1 : (W - 28) / textWidth(w.name);
+  X.save(); X.translate(W / 2, 30); X.scale(nameScale, 1);
+  text(w.name, 0, 0, nameCol, {align:'center'}); X.restore();
+
   // ---- boss bar ----
   const b = world.boss;
   if (b && !b.dead) {
     const bw = 200,
       bx = (W - bw) / 2;
-    text(b.name, W / 2, 26, C.gold, { align: 'center' });
-    bar(bx, 36, bw, 5, b.hp / b.max, C.red);
-    for (const f of [1 / 3, 2 / 3]) rect(bx + Math.round(bw * f), 36, 1, 5, C.ink);
+    text(b.name, W / 2, 45, C.gold, { align: 'center' });
+    bar(bx, 55, bw, 5, b.hp / b.max, C.red);
+    for (const f of [1 / 3, 2 / 3]) rect(bx + Math.round(bw * f), 55, 1, 5, C.ink);
   }
 
   // ---- zone intro card ----

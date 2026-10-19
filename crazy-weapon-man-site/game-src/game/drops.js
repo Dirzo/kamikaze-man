@@ -5,7 +5,7 @@ import { X, rect, text, textWidth, fitText } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
-import { move, overlap, cx, cy } from './physics.js';
+import { move, overlap, cx, cy, worldFloor } from './physics.js';
 import { dps, powerScore } from './loot.js';
 import { lookOf, overlays, runEmitters, frameOfLook, rarityColour } from './looks.js';
 import { MUTATIONS } from '../data/progression.js';
@@ -92,7 +92,7 @@ export function updateDrops(dt) {
       world.pickups.splice(i, 1);
       continue;
     }
-    if (p.life <= 0 || p.y > GROUND + 20) world.pickups.splice(i, 1);
+    if (p.life <= 0 || p.y > worldFloor() + 20) world.pickups.splice(i, 1);
   }
 }
 function dropOld(old, d) {

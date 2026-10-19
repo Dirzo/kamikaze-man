@@ -34,7 +34,7 @@ browser regression suite. These are absent from normal runs.
 | `game-src/game/anim.js`, `slash.js`, `looks.js` | Pixel poses, slash frames and weapon silhouettes |
 | `game-src/game/enemy.js`, `bosses.js` | Enemy state machines, bosses, tells and hazards |
 | `game-src/game/waves.js`, `forge.js` | Finite map clears, gated exits, three-way weapon drafts and shard workshop |
-| `game-src/data/maps.js`, `game-src/game/camera.js`, `map-view.js` | Multi-screen routes, reachable ledges, camera, minimap and exit portals |
+| `game-src/data/maps.js`, `game-src/game/camera.js`, `map-view.js` | Multi-screen routes, solid terrain, ladders, two-axis camera, minimap and exit portals |
 | `game-src/engine/` | Input, canvas, assets and chiptune audio |
 | `art-src/` | Editable pixel sources and reproducible PNG exporters |
 | `legacy-src/` | Historical patch stack; reference only |
@@ -45,7 +45,7 @@ regressions. New weapon powers belong in the mutation schedule, not a new script
 
 ## Progression
 
-Each of the ten biomes is a finite side-scrolling map, growing from three to five screens wide.
+Each of the ten biomes is a finite side-scrolling map, growing from eight to twelve screens wide, with three hunting tiers, climbable shafts, enclosed fungal tunnels and sandstone canyon terraces. UP/DOWN climbs; jump plus direction dismounts onto intermediate decks.
 Connected ledges rise in normal-jump steps; the ground route stays open. Every map resident is
 placed once on entry. Undiscovered packs wait for you, and the minimap marks all remaining enemies.
 There are no timed waves or director respawns. Kill every resident (and the end-chamber boss on boss

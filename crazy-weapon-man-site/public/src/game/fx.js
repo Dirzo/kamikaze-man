@@ -189,7 +189,7 @@ export function drawNumbers() {
   for (const c of callouts) {
     if (c.life < 12 && c.life & 1) continue;
     const x = c.follow ? c.follow.x + c.follow.w / 2 : c.x + Math.round(world.cameraX || 0),
-      y = c.follow ? c.follow.y - 18 - (c.max - c.life) * 0.3 : c.y;
+      y = c.follow ? c.follow.y - 18 - (c.max - c.life) * 0.3 : c.y + Math.round(world.cameraY || 0);
     text(c.s, x, Math.round(y), c.col, { align: 'center', k: c.big ? 2 : 1 });
   }
 }

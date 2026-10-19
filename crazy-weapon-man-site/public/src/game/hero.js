@@ -1,6 +1,7 @@
 // The hero: movement (run, variable jump, coyote time, drop-through, dash), melee combos, ranged
 // shots, one special per weapon type, and drawing the held weapon from the front hand.
 import { HERO, C, GROUND } from '../config.js';
+import { updateClimb } from './climbing.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
@@ -51,6 +52,11 @@ export function updateHero(h, dt) {
     return;
   }
 
+  if (updateClimb(h, dt)) {
+    if ((input.pressed('attack', 0.16) || input.held('attack')) && canAttack(h)) { input.consume('attack'); startAttack(h, T); }
+    if (h.attack) updateAttack(h, dt, T);
+    return;
+  }
   const ax = input.axis();
   // dash
   if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
@@ -84,7 +90,7 @@ export function updateHero(h, dt) {
   // jump / drop-through
   h.coyote = h.onGround ? HERO.coyote : Math.max(0, h.coyote - dt);
   if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0) {
-    if (input.held('down') && h.onGround && h.platform) {
+    if (input.held('down') && h.onGround && h.platform && !h.platform.solid) {
       input.consume('jump');
       h.dropT = 0.25;
       h.y += 2;
@@ -341,7 +347,7 @@ function updateSpecial(h, dt) {
         s.slam = true;
         areaHit(h, 90, 1.6, { knock: 24, hop: true });
         for (const e of world.enemies) if (!e.dead && !e.boss && Math.abs(cx(e) - cx(h)) < 90 && e.onGround) e.stun = Math.max(e.stun, 0.8);
-        for (let i = -12; i <= 12; i++) emit(cx(h) + i * 7, GROUND - 1, 'chip', i % 2 ? C.sand : C.wood);
+        for (let i = -12; i <= 12; i++) emit(cx(h) + i * 7, h.y + h.h - 1, 'chip', i % 2 ? C.sand : C.wood);
         spark(cx(h), h.y + h.h, { big: true, col: light });
         shake(0.6);
         hitstop(0.06);

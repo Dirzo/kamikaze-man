@@ -24,7 +24,7 @@ fit();
 // ---- world offset (screenshake) ----
 export const view = { ox: 0, oy: 0 };
 export function worldLayer() {
-  X.setTransform(1, 0, 0, 1, view.ox - Math.round(world.cameraX || 0), view.oy);
+  X.setTransform(1, 0, 0, 1, view.ox - Math.round(world.cameraX || 0), view.oy - Math.round(world.cameraY || 0));
 }
 export function screenLayer() {
   X.setTransform(1, 0, 0, 1, 0, 0);

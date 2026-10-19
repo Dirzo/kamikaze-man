@@ -39,7 +39,14 @@ export function hitEnemy(e, dmg, o = {}) {
   if (!o.chip) {
     const sy = Math.max(e.y + 4, Math.min(e.y + e.h - 4, hero.y + hero.h * 0.45));
     spark(cx(e) - dir * e.w * 0.35, sy, { crit: o.crit, col: o.sparkCol || C.cream });
+    e.faceUntil = world.t + 0.42;
+    e.funnyFace = ((e.funnyFace || 0) + 1) % 3;
     sfx.hit(o.crit);
+    sfx.thud(o.crit, e.type === 'goose');
+    if (!e.boss && world.t > (e.nextBonk || 0)) {
+      callout(['BONK!', 'OOF!', 'PLOP!'][e.funnyFace], 0, 0, C.cream, {follow:e, life:22});
+      e.nextBonk = world.t + 0.65;
+    }
     const now = feel.frame / 60;
     if (o.crit || e.boss) {
       hitstop(o.crit ? 0.06 : 0.035);

@@ -2,7 +2,7 @@
 import { C, W, GROUND } from '../config.js';
 import { X, rect, px } from '../engine/gfx.js';
 import { world } from './world.js';
-import { overlap, cx, cy, worldWidth } from './physics.js';
+import { overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { hitEnemy } from './combat.js';
 import { lookOf, runEmitters } from './looks.js';
 import { impactMutation } from './evolution.js';
@@ -37,6 +37,7 @@ export function updateShots(dt) {
     }
     s.x += s.vx * dt;
     s.y += s.vy * dt;
+    if (world.map?.solids.some(p=>overlap(s,p))) {world.shots.splice(i,1);continue;}
     s.spin += dt * 20;
     runEmitters(s.emitters, () => ({ x: s.x + 3, y: s.y + 2 }), 1.2);
     if (s.type === 'wand' && Math.random() < 0.6) emit(s.x + 2, s.y + 2, 'dot', s.light);
@@ -50,7 +51,7 @@ export function updateShots(dt) {
         break;
       }
     }
-    if (s.life <= 0 || s.x < -12 || s.x > worldWidth() + 12 || s.y > GROUND || s.y < -30) world.shots.splice(i, 1);
+    if (s.life <= 0 || s.x < -12 || s.x > worldWidth() + 12 || s.y > worldFloor() || s.y < -30) world.shots.splice(i, 1);
   }
 }
 

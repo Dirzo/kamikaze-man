@@ -131,6 +131,12 @@ function gate(k, ms) {
 }
 
 export const sfx = {
+  thud(heavy = false, honk = false) {
+    if (!gate('thud', 65)) return;
+    chip([[heavy ? 160 : 210, 1], [90, 2], [48, 4]], {wave:'tri', vol:0.09, decay:0.01});
+    hiss(4, {vol:0.035, rate:0.23, drop:0.18});
+    if (honk) chip([[420, 2], [330, 3]], {wave:'p25', vol:0.025, decay:0.004});
+  },
   attack(type, q = 0) {
     if (!gate('atk', 40)) return;
     const v = 0.035 + q * 0.002,

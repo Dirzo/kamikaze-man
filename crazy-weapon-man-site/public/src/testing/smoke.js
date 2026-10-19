@@ -25,7 +25,7 @@ export function runSmoke(game) {
   let clock=0;
   const key=(code,on)=>window.dispatchEvent(new KeyboardEvent(on?'keydown':'keyup',{code,bubbles:true}));
   const poll=()=>input.poll(clock+=STEP);
-  const reset=()=>{key('KeyZ',false);key('ArrowRight',false);key('ArrowLeft',false);key('KeyX',false);key('KeyV',false);poll();game.startRun();world.enemies=[];world.director=null;world.hero.inv=0;clearFx();};
+  const reset=()=>{key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);key('ArrowRight',false);key('ArrowLeft',false);key('KeyX',false);key('KeyV',false);poll();game.startRun();world.enemies=[];world.director=null;world.hero.inv=0;clearFx();};
   check('all nine weapons render with awakened silhouettes',()=>{
     for(const type of Object.keys(game.types)) {const w=makeWeapon(9,{type,q:8});w.mutation='orbit';ok(lookOf(w).cv.width>0);}
   });
@@ -33,12 +33,12 @@ export function runSmoke(game) {
     reset(); const h=world.hero;key('KeyZ',true);poll();updateHero(h,STEP);const first=h.attack;let swings=1;
     updateHero(h,STEP);ok(h.attack===first,'attack overwritten');
     let last=first;for(let i=0;i<150;i++){poll();updateHero(h,STEP);if(h.attack && h.attack!==last){swings++;last=h.attack;}}
-    ok(swings>=5,'held attack stopped');key('KeyZ',false);poll();
+    ok(swings>=5,'held attack stopped');key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();
   });
   check('move at full speed and turn without cancelling a live attack',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'hammer',q:0,standout:false});
     h.vx=HERO.speed;key('ArrowRight',true);key('KeyZ',true);poll();updateHero(h,STEP);
-    const attack=h.attack,x=h.x;key('KeyZ',false);poll();updateHero(h,STEP);
+    const attack=h.attack,x=h.x;key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();updateHero(h,STEP);
     ok(h.attack===attack && h.vx===HERO.speed && h.x>x,'attack slowed movement');
     key('ArrowRight',false);key('ArrowLeft',true);poll();updateHero(h,STEP);
     ok(h.face===-1 && h.attack===attack,'turn cancelled or locked attack');
@@ -48,7 +48,7 @@ export function runSmoke(game) {
   });
   check('one swing hits each enemy once, never during wind-up',()=>{
     reset();const h=world.hero,e=spawnEnemy('crawler',h.x+23,GROUND);e.spawnT=0;e.hp=e.max=10000;
-    key('KeyZ',true);poll();updateHero(h,STEP);key('KeyZ',false);poll();
+    key('KeyZ',true);poll();updateHero(h,STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();
     const hp=e.hp;ok(hp===10000,'damage before contact frame');
     for(let i=0;i<23;i++){poll();updateHero(h,STEP);} const after=e.hp;ok(after<hp,'swing missed');
     for(let i=0;i<8;i++){poll();updateHero(h,STEP);} ok(e.hp===after,'swing multi-hit');
@@ -75,7 +75,7 @@ export function runSmoke(game) {
   });
   check('every boss executes patterns, phase changes and defeat',()=>{
     for(let z=0;z<ZONES.length;z++) if(ZONES[z].boss) {
-      reset();startZone(z);world.hero.x=world.map.bossLeft+40;world.hero.inv=100;startBoss(ZONES[z].boss);const e=world.boss;
+      reset();startZone(z);world.hero.x=world.map.bossLeft+40;world.hero.y=world.map.bossFloor-world.hero.h;world.hero.inv=100;startBoss(ZONES[z].boss);const e=world.boss;
       for(let i=0;i<600;i++){world.t+=STEP;updateBoss(e,STEP);updateHazards(STEP);}
       ok(e.pattern,'no attack pattern');ok(Number.isFinite(e.x)&&Number.isFinite(e.y),'bad boss position');
       e.hp=e.max*0.25;updateBoss(e,STEP);ok(e.phase===3,'phase did not advance');
@@ -84,7 +84,7 @@ export function runSmoke(game) {
   });
   check('forge choice preserves simulation and reset clears it',()=>{
     reset();openForge();ok(world.forge.draft && world.forge.offers.length===3);
-    world.forge.t=1;key('KeyZ',true);poll();updateForge(STEP);key('KeyZ',false);poll();ok(!world.forge.draft);
+    world.forge.t=1;key('KeyZ',true);poll();updateForge(STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();ok(!world.forge.draft);
     game.startRun();ok(!world.forge && world.echoes.length===0 && !world.deadT);
   });
   check('all ten zones can clear and transition through the forge',()=>{
@@ -93,16 +93,34 @@ export function runSmoke(game) {
       for(let i=0;i<10000 && !world.forge && world.phase!=='won';i++) {
         for(const e of world.enemies) if(!e.boss) {e.dead=true;e.deathT=0;}
         world.enemies=world.enemies.filter(e=>e.boss); // resolve boss outro through its own handler
-        if(world.boss){world.hero.x=world.map.bossLeft+40;world.boss.dead=false;world.boss.hp=0;updateBoss(world.boss,STEP);for(let j=0;j<150;j++)updateBoss(world.boss,STEP);world.enemies=[];world.boss=null;}
-        if(world.director.phase==='exit') world.hero.x=world.map.exitX-world.hero.w/2;
+        if(world.boss){world.hero.x=world.map.bossLeft+40;world.hero.y=world.map.bossFloor-world.hero.h;world.boss.dead=false;world.boss.hp=0;updateBoss(world.boss,STEP);for(let j=0;j<150;j++)updateBoss(world.boss,STEP);world.enemies=[];world.boss=null;}
+        if(world.director.phase==='exit') {world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;}
         updateWaves(STEP);world.t+=STEP;
       }
       ok(z===9?world.phase==='won':!!world.forge,'zone '+z+' stalled');
     }
   });
+  check('ladders connect the bottom route to the upper hunting deck',()=>{
+    reset();startZone(1);world.enemies=[];const h=world.hero,l=world.map.ladders[0];
+    h.x=l.x-h.w/2;h.y=world.map.floorY-h.h;
+    key('ArrowUp',true);
+    for(let i=0;i<270;i++){poll();updateHero(h,STEP);}
+    key('ArrowUp',false);poll();
+    ok(h.onGround && Math.abs(h.y+h.h-l.exitY)<1 && h.x===l.exitX,'upper dismount failed');
+    h.x=l.x-h.w/2;key('ArrowDown',true);
+    for(let i=0;i<260;i++){poll();updateHero(h,STEP);}
+    key('ArrowDown',false);poll();
+    ok(h.onGround && Math.abs(h.y+h.h-world.map.floorY)<1,'bottom dismount failed');
+    updateCamera(STEP,true);ok(world.cameraY===384,'camera missed lower route');
+  });
+  check('nonlethal hits trigger expressive faces',()=>{
+    reset();const e=spawnEnemy('goose',100,GROUND);e.spawnT=0;e.hp=e.max=10000;
+    hitEnemy(e,2,{dir:1});ok(e.faceUntil>world.t);const first=e.funnyFace;
+    hitEnemy(e,2,{dir:1});ok(e.funnyFace!==first);
+  });
   check('finite map stays locked with undiscovered enemies and never replenishes them',()=>{
     reset();startZone(0);const count=world.enemies.length, ids=world.enemies.map(e=>e.id).join(',');
-    world.hero.x=world.map.exitX-world.hero.w/2;
+    world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;
     for(let i=0;i<1200;i++)updateWaves(STEP);
     ok(world.director.phase==='fight' && !world.forge,'escaped with enemies left');
     ok(world.enemies.length===count && world.enemies.map(e=>e.id).join(',')===ids,'map respawned enemies');
@@ -114,7 +132,7 @@ export function runSmoke(game) {
   check('world-space movement, camera and projectiles work beyond the first screen',()=>{
     reset();const h=world.hero;h.x=850;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
     const e=spawnEnemy('crawler',h.x+55,GROUND);e.spawnT=0;e.hp=e.max=10000;
-    key('KeyZ',true);poll();updateHero(h,STEP);key('KeyZ',false);
+    key('KeyZ',true);poll();updateHero(h,STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);
     for(let i=0;i<50;i++){poll();updateHero(h,STEP);game.updateShots(STEP);}
     ok(h.x>800 && e.x>800 && e.hp<e.max,'offscreen projectile or actor was clipped');
     updateCamera(STEP,true);ok(world.cameraX>500);

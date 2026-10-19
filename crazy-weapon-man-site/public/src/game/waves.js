@@ -23,11 +23,11 @@ export function startZone(z) {
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
   world.map=makeMap(z);
   world.platforms=world.map.platforms;
-  world.cameraX=0;
+  world.cameraX=world.cameraY=0;
   const h=world.hero;
   if(h) {
     h.x=48;h.y=GROUND-HERO.h;h.vx=h.vy=0;h.onGround=true;h.platform=null;
-    h.attack=h.special=null;h.trail=null;h.dashT=h.dropT=0;h.inv=Math.max(h.inv,1);
+    h.attack=h.special=h.ladder=null;h.climbLock=0;h.trail=null;h.dashT=h.dropT=0;h.inv=Math.max(h.inv,1);
     if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.3));
   }
   world.director={phase:'intro',t:2.6,toSpawn:0,initialCount:world.map.spawns.length,bossStarted:false};
@@ -64,7 +64,7 @@ export function updateWaves(dt) {
       break;
     case 'exit':
       // Reaching the portal is the forward transition. No button ambiguity with loot swaps.
-      if(D.t<=0 && Math.abs(world.hero.x+world.hero.w/2-world.map.exitX)<24 && world.hero.y+world.hero.h>GROUND-18) {
+      if(D.t<=0 && Math.abs(world.hero.x+world.hero.w/2-world.map.exitX)<24 && Math.abs(world.hero.y+world.hero.h-world.map.exitY)<20) {
         if(world.zone+1>=ZONES.length) world.phase='won';
         else {D.phase='forge';openForge();}
       }

@@ -5,7 +5,7 @@ import { A } from '../engine/assets.js';
 import { frame, rect, text, X, px } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
-import { move, overlap, cx, cy, worldWidth } from './physics.js';
+import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { ENEMIES, ELITE_TITLES, LINES } from '../data/enemies.js';
 import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
 import { hurtHero, tickStatus, explode, kill } from './combat.js';
@@ -30,7 +30,7 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     d,
     name: elite ? `${ELITE_TITLES[Math.floor(Math.random() * ELITE_TITLES.length)]} ${d.name}` : d.name,
     x: Math.max(2, Math.min(worldWidth() - 2 - w, x - w / 2)),
-    y: d.air ? y : Math.min(y, GROUND) - h,
+    y: d.air ? y : Math.min(y, worldFloor()) - h,
     w,
     h,
     vx: 0,
@@ -88,7 +88,7 @@ export function updateEnemy(e, dt) {
   }
   // Undiscovered packs hold their ground until the hero reaches their part of the map.
   // This keeps the whole route from collapsing into one giant horde at the entrance.
-  if (world.map && Math.abs(cx(hero)-cx(e))>320) { e.vx=0; return; }
+  if (world.map && (Math.abs(cx(hero)-cx(e))>320 || Math.abs(cy(hero)-cy(e))>115)) { e.vx=0; return; }
   const slow = e.chill > 0 ? 0.5 : 1;
   const physics = () => move(e, dt, world.platforms, { air: e.air, gravity: 760, dropThrough: e.dropT > 0 });
   // knockback slide, then friction while staggered
@@ -181,7 +181,7 @@ export function updateEnemy(e, dt) {
   if (!e.air && e.onGround && e.state === 'idle') {
     const dy = hero.y + hero.h - (e.y + e.h);
     if (dy < -18 && dist < 80) { e.vy = -265; e.onGround = false; }
-    else if (dy > 18 && e.platform) { e.dropT = 0.3; e.y += 2; }
+    else if (dy > 18 && e.platform && !e.platform.solid) { e.dropT = 0.3; e.y += 2; }
   }
   e.dropT = Math.max(0, (e.dropT || 0) - dt);
   physics();
@@ -367,12 +367,13 @@ export function updateBolts(dt) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.life -= dt;
+    if (world.map?.solids.some(p=>overlap(b,p))) {world.bolts.splice(i,1);continue;}
     if (Math.random() < 0.5) emit(b.x + 2, b.y + 2, 'dot', b.col);
     if (overlap(b, hero) && hero.inv <= 0 && hero.dashT <= 0) {
       hurtHero(b.dmg, Math.sign(b.vx) || 1);
       b.life = 0;
     }
-    if (b.life <= 0 || b.x < -10 || b.x > worldWidth() + 10 || b.y > GROUND + 4 || b.y < -20) world.bolts.splice(i, 1);
+    if (b.life <= 0 || b.x < -10 || b.x > worldWidth() + 10 || b.y > worldFloor() + 4 || b.y < -20) world.bolts.splice(i, 1);
   }
 }
 export function drawBolts() {
@@ -398,6 +399,19 @@ export function drawEnemy(e, t) {
   else if (Math.abs(e.vx) > 8 || e.air) f = Math.floor(e.anim * 8) % 2;
   const bob = e.d.float ? Math.round(Math.sin(e.anim * 3) * 2) : 0;
   frame(art.im, f, art.w, art.h, sx, sy + bob - (e.state === 'wind' && e.kind === 'bomb' && Math.floor(t * 16) % 2 ? 1 : 0), e.face < 0);
+  // Little mismatched eyes, cheeks and rubbery hit faces make every resident readable.
+  const ex = Math.round(cx(e)), ey = sy + bob + Math.max(4, Math.floor(art.h * 0.35));
+  const bonked = (e.faceUntil || 0) > world.t;
+  rect(ex - 5, ey - 1, 10, 7, C.ink);
+  if (bonked && e.funnyFace === 0) {
+    for (const dx of [-4, 2]) {rect(ex+dx,ey,1,1,C.paper);rect(ex+dx+2,ey,1,1,C.paper);rect(ex+dx+1,ey+1,1,1,C.paper);rect(ex+dx,ey+2,1,1,C.paper);rect(ex+dx+2,ey+2,1,1,C.paper);}
+  } else {
+    rect(ex-4,ey,3,bonked?3:4,C.paper);rect(ex+2,ey-1,3,4,C.paper);
+    rect(ex-3+e.face,ey+1,1,2,C.ink);rect(ex+3+e.face,ey,1,2,C.ink);
+  }
+  rect(ex-6,ey+4,2,1,C.coral);rect(ex+5,ey+4,2,1,C.coral);
+  if (bonked) {rect(ex-1,ey+4,3,3,C.coral);rect(ex,ey+4,1,1,C.paper);}
+  else {rect(ex-1,ey+4,3,1,C.paper);rect(ex+1,ey+3,1,1,C.paper);}
   if (e.dead) return;
   // elite marker: small gold chevron
   if (e.elite) {
