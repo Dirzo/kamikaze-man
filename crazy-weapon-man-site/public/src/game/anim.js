@@ -171,7 +171,7 @@ export function heroPose(h, t) {
     if (st.spin) pose = spinPose(p, mv === 'spinBig' ? 2 : 1, mv === 'spinBig');
     else pose = keys(st.moves[mv] || Object.values(st.moves)[0], p);
   } else if (h.attack && h.attack.ranged && st.ranged) pose = keys(st.ranged, Math.min(1, h.attack.t / h.attack.dur));
-  else if (h.ladder) pose = {...st.idle(t,0), f: Math.floor(t*7)%2?'run1':'run3', fh:[14,8+Math.round(Math.sin(t*10)*3)], bh:[2,12-Math.round(Math.sin(t*10)*3)], ang:170, wb:true};
+  else if (h.ladder) pose = climbPose(h);
   else if (h.dashT > 0) pose = { ...st.dash };
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
@@ -182,7 +182,90 @@ export function heroPose(h, t) {
     if (!pose.f) pose.f = 'run1';
   } else pose = st.idle(t, b);
   if (!pose.f) pose.f = 'idle';
+  // just off a ladder: the hand reaches over the shoulder and draws the weapon back out
+  if (h.drawT > 0 && !h.attack && !h.special && !h.ladder && !h.dead) {
+    const k = Math.min(1, h.drawT / DRAW_TIME);
+    pose = { ...pose, fh: [pose.fh[0] + (SHEATH.at[0] - pose.fh[0]) * k, pose.fh[1] + (SHEATH.at[1] - pose.fh[1]) * k], ang: pose.ang + (SHEATH.ang - pose.ang) * k };
+  }
   return pose;
+}
+
+// Ladders: we see the hero from behind, cape and all. The weapon rides sheathed across the back
+// under the cape (hilt over the right shoulder, tip out past the left hip), both hands go hand-over-hand up the
+// rungs, and the legs and cape only move while you actually climb.
+export const SHEATH = { at: [7, 6], ang: 112 };
+const BACK_SHEATH = { at: [12, 14], ang: 128 };
+export const DRAW_TIME = 0.18;
+function climbPose(h) {
+  const ph = Math.floor((h.climbT || 0) * 6) % 2,
+    lift = ph ? 0 : 3; // short reach: hands grip the rungs beside the head
+  return { back: ph, fh: [15, 7 + lift], bh: [1, 10 - lift], sh: BACK_SHOULDERS, ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: true, ab: false, sheath: true };
+}
+
+// back view, 17x25 like the hero sheet: spiky hair, red headband with tails, cape over the body
+const BACK_PAL = { a: C.ink, b: '#ffc15a', c: '#f08a2c', d: '#c4501f', e: '#c4363e', f: '#7a1f2b', g: '#f2c3a0', i: '#d98e6e', k: '#2b2442', l: '#8a4f22', m: '#3e3a5c', n: '#5d2f14' };
+const BACK_TOP = [
+  '.a...a...a.......',
+  'aba.aba.abaa.....',
+  'acbaacbaaccba....',
+  'acccbcccbcccbaa..',
+  'adccccccccccccba.',
+  'addcccccccccccca.',
+  'addeeeeeeeeeeeeaa',
+  'adfffffffffffffea',
+  'addcccccccccccdae',
+  'addccccccccccccda',
+  '.adccbcccbcccda..',
+  '.agdcccbcccccdga.',
+  '..addccccccddda..',
+  '...adddddddda....',
+  '....aiiiiiiia....'
+];
+const BACK_LOW = [
+  [
+    '..aeeeeeeeeeeea..',
+    '.aeeeeeeeeeeeeea.',
+    '.aeeefeeeeefeeea.',
+    '.afeeefeeeefeeea.',
+    '.afeeefeeeeefeea.',
+    '.afeeeefeeeefeea.',
+    '..afeefeeeefefa..',
+    '..aafaafaafaaa...',
+    '...amka..amka....',
+    '...anlna.amka....',
+    '....aaa..anlna...'
+  ],
+  [
+    '..aeeeeeeeeeeea..',
+    '.aeeeeeeeeeeeeea.',
+    '.aeeefeeeeefeeea.',
+    '.aeeefeeeeefeefa.',
+    '.aefeeefeeeefefa.',
+    '.aefeeefeeeefefa.',
+    '..afefeeeeefefa..',
+    '...aaafaafaafaa..',
+    '....amka..amka...',
+    '....amka.anlna...',
+    '...anlna..aaa....'
+  ]
+];
+const BACK_SHOULDERS = [[3, 14], [13, 14]];
+const backFrames = [];
+function backFrame(i) {
+  if (backFrames[i]) return backFrames[i];
+  const cv = document.createElement('canvas');
+  cv.width = 17;
+  cv.height = 25;
+  const g = cv.getContext('2d');
+  [...BACK_TOP, ...BACK_LOW[i]].forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const col = BACK_PAL[row[x]];
+      if (!col) continue;
+      g.fillStyle = col;
+      g.fillRect(x, y, 1, 1);
+    }
+  });
+  return (backFrames[i] = cv);
 }
 
 function specialPose(h, st) {
@@ -308,11 +391,11 @@ function drawArm(x0, y0, x1, y1, front) {
 export function drawHeroAnimated(h, t) {
   const Hh = A.hero;
   const pose = heroPose(h, t);
-  const face = pose.flip ? -h.face : h.face;
+  const face = pose.back != null ? 1 : pose.flip ? -h.face : h.face; // the back view is drawn as is
   const sx0 = Math.round(h.x + h.w / 2 - Hh.w / 2),
     sy0 = Math.round(h.y + h.h - 24);
   const W2 = (x, y) => [face > 0 ? sx0 + x : sx0 + Hh.w - 1 - x, sy0 + y];
-  const sh = Hh.shoulders[pose.f] || Hh.shoulders.idle;
+  const sh = pose.sh || Hh.shoulders[pose.f] || Hh.shoulders.idle;
   const w = h.weapon,
     L = lookOf(w, frameOfLook(w.look, t)),
     st = STYLES[w.type];
@@ -322,7 +405,7 @@ export function drawHeroAnimated(h, t) {
   const rad = (angW * Math.PI) / 180;
   // two-handed: back hand on the handle (toward the pommel), or further up the shaft for the staff
   let bh;
-  if (st.twoHand) {
+  if (st.twoHand && !pose.sheath) {
     const d = st.slide ? st.twoHand : -st.twoHand;
     bh = [fh[0] + Math.cos(rad) * d, fh[1] + Math.sin(rad) * d];
   } else bh = W2(pose.bh ? pose.bh[0] : 5, pose.bh ? pose.bh[1] : 20);
@@ -330,8 +413,9 @@ export function drawHeroAnimated(h, t) {
     shF = W2(sh[1][0], sh[1][1]);
   // weapon origin: grip at the hand, optionally slid along the shaft
   const slide = st.slide || 0;
-  const wx = fh[0] + 1 - Math.cos(rad) * slide,
-    wy = fh[1] + 1 - Math.sin(rad) * slide;
+  const back = pose.sheath ? W2(...(pose.at || SHEATH.at)) : null;
+  const wx = back ? back[0] : fh[0] + 1 - Math.cos(rad) * slide,
+    wy = back ? back[1] : fh[1] + 1 - Math.sin(rad) * slide;
   const flashing = h.inv > 0 && !h.special && h.dashT <= 0 && !h.dead && Math.floor(t * 20) % 2;
 
   const drawWeapon = () => {
@@ -374,7 +458,7 @@ export function drawHeroAnimated(h, t) {
 
   // bow string pulled to the back hand
   const drawString = () => {
-    if (!st.string || !pose.nock || pose.hide) return;
+    if (!st.string || !pose.nock || pose.hide || pose.sheath) return;
     // bow tips: top and bottom of the sprite near the string column
     const tipTop = [L.gx - 2, 2],
       tipBot = [L.gx - 2, L.h - 3];
@@ -398,10 +482,15 @@ export function drawHeroAnimated(h, t) {
 
   // draw order: back arm, (weapon behind), body, (weapon), front arm
   let tip = null;
-  if (!flashing) drawArm(shB[0], shB[1], bh[0], bh[1], false);
+  const backView = pose.back != null; // seen from behind: both arms reach up in front of the back
+  if (!flashing && !backView) drawArm(shB[0], shB[1], bh[0], bh[1], false);
   if (pose.wb) tip = drawWeapon();
   if (pose.ab && !flashing) drawArm(shF[0], shF[1], fh[0], fh[1], true);
-  if (!flashing) frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0);
+  if (!flashing) {
+    if (pose.back != null) X.drawImage(backFrame(pose.back), sx0, sy0);
+    else frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0);
+  }
+  if (backView && !flashing) drawArm(shB[0], shB[1], bh[0], bh[1], false);
   if (!pose.wb) tip = drawWeapon();
   drawString();
   if (!pose.ab && !flashing) drawArm(shF[0], shF[1], fh[0], fh[1], true);

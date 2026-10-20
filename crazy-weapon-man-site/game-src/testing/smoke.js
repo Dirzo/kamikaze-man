@@ -23,6 +23,10 @@ import { C, STEP, GROUND, HERO } from '../config.js';
 import { lookOf } from '../game/looks.js';
 import { feel, clearFx } from '../game/fx.js';
 import { cx } from '../game/physics.js';
+import { heroPose } from '../game/anim.js';
+import { tickRun, splitZone } from '../game/speedrun.js';
+import { resetRecords } from '../data/speedrun.js';
+import { addProficiency } from '../data/proficiency.js';
 
 export function runSmoke(game) {
   const results=[];
@@ -123,27 +127,52 @@ export function runSmoke(game) {
     ok(h.weapon===better && world.bag.includes(old) && !world.bag.includes(better),'DOWN did not equip the looted weapon');
     ok(h.lust>0 && h.newToyT>0 && game.hitDamage(better)>dmg0,'no Weapon Lust bonus for a new weapon');
   });
-  check('the bag keeps the best DPS of each weapon type unless it is locked',()=>{
+  check('the bag keeps every drop until it is full, then swaps out the weakest unlocked weapon',()=>{
     reset();const h=world.hero;
     const a=makeWeapon(0,{type:'bow',q:0,standout:false}),b=makeWeapon(3,{type:'bow',q:4,standout:false}),c=makeWeapon(6,{type:'bow',q:8,standout:false});
     ok(dps(a)<dps(b) && dps(b)<dps(c),'test weapons out of order');
-    autoLoot(a);autoLoot(b);ok(world.bag.includes(b) && !world.bag.includes(a),'weaker bow was kept');
-    let sh=world.shards;ok(autoLoot(a)==='salvaged' && world.shards>sh && world.bag.filter(w=>w&&w.type==='bow').length===1,'worse bow was not salvaged');
-    b.locked=true;autoLoot(c);ok(world.bag.includes(b) && world.bag.includes(c),'locked bow was replaced');
-    const d=makeWeapon(6,{type:'bow',q:9,standout:true});autoLoot(d);ok(world.bag.includes(b) && world.bag.includes(d) && !world.bag.includes(c),'unlocked bow was not upgraded');
+    autoLoot(b);autoLoot(a);ok(world.bag.includes(a) && world.bag.includes(b),'a weaker bow was salvaged before the bag was full');
+    while(world.bag.includes(null)) autoLoot(makeWeapon(0,{type:'dagger',q:0,standout:false}));
+    ok(world.bag.filter(Boolean).length===BAG_SIZE,'bag did not fill');
+    a.locked=true;let sh=world.shards;
+    ok(autoLoot(c)==='upgraded' && world.bag.includes(c) && world.bag.includes(a) && !world.bag.includes(b) && world.shards>sh,'full bag did not swap the weakest unlocked bow');
+    const weakBow=makeWeapon(0,{type:'bow',q:0,standout:false});
+    if(dps(weakBow)<dps(c)) {sh=world.shards;ok(autoLoot(weakBow)==='salvaged' && world.shards>sh && world.bag.includes(a) && world.bag.includes(c),'weaker loot into a full bag was not salvaged');}
+    const big=makeWeapon(9,{type:'hammer',q:10,standout:true});ok(autoLoot(big)==='upgraded' && world.bag.includes(big),'a new type did not replace the weakest weapon in a full bag');
+    ok(world.bag.filter(Boolean).length===BAG_SIZE,'full bag overfilled on loot');
+    world.bag[world.bag.findIndex(w=>w&&w.type==='dagger')]=null;const d=makeWeapon(6,{type:'bow',q:9,standout:true});autoLoot(d);
     ok(openInventory() && world.inv,'bag did not open');world.inv.t=1;world.inv.sel=world.bag.indexOf(d);
     key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();ok(d.locked,'X did not lock');
     sh=world.shards;key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();
     ok(world.bag.includes(d) && world.shards===sh,'locked weapon was salvaged');
     key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();ok(!d.locked,'X did not unlock');
-    const old=h.weapon;key('KeyZ',true);poll();updateInventory(STEP);key('KeyZ',false);poll();ok(h.weapon===d && !world.bag.includes(d),'equip from bag failed');
-    world.inv.sel=world.bag.indexOf(b);b.locked=false;sh=world.shards;
-    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(world.bag.includes(b),'salvage did not ask to confirm');
-    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(!world.bag.includes(b) && world.shards>sh,'salvage failed');
-    for(let i=0;i<BAG_SIZE+2;i++) stash(makeWeapon(0,{q:0}));ok(world.bag.filter(Boolean).length===BAG_SIZE,'bag overfilled');
-    ok(autoLoot(makeWeapon(0,{type:'hammer',q:0}))!=='bagged' && world.bag.filter(Boolean).length===BAG_SIZE,'full bag overfilled on loot');
+    key('KeyZ',true);poll();updateInventory(STEP);key('KeyZ',false);poll();ok(h.weapon===d && !world.bag.includes(d),'equip from bag failed');
+    world.inv.sel=world.bag.indexOf(c);sh=world.shards;
+    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(world.bag.includes(c),'salvage did not ask to confirm');
+    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(!world.bag.includes(c) && world.shards>sh,'salvage failed');
     key('KeyE',true);poll();updateInventory(STEP);key('KeyE',false);poll();ok(!world.inv,'E did not close the bag');
-    game.startRun();ok(world.bag.every(x=>!x) && !world.inv,'new run kept the old bag');void old;
+    game.startRun();ok(world.bag.every(x=>!x) && !world.inv,'new run kept the old bag');
+  });
+  check('speedrun clock, splits, per-weapon damage, mastery and an animated results screen',()=>{
+    resetRecords();reset();const h=world.hero,R=world.run;ok(R && R.t===0 && R.weapons.size===0,'no fresh run record');
+    tickRun(1.5);ok(Math.abs(R.t-1.5)<1e-9,'clock did not run');
+    const e=spawnEnemy('brute',h.x+30,GROUND);e.spawnT=0;e.hp=e.max=1e6;
+    const w1=h.weapon;hitEnemy(e,100,{dir:1});const w2=makeWeapon(1,{type:'bow',q:2});h.weapon=w2;hitEnemy(e,40,{dir:1});hitEnemy(e,40,{dir:1});
+    ok(R.weapons.get(w1).dmg===100 && R.weapons.get(w2).dmg===80 && R.dealt===180,'damage was not credited per weapon');
+    e.hp=5;hitEnemy(e,500,{dir:1});ok(R.weapons.get(w2).dmg===85,'overkill counted as damage dealt');
+    world.zone=0;splitZone();ok(R.splits.length===1 && Math.abs(R.splits[0].t-1.5)<1e-9 && R.splits[0].prev==null,'first split wrong');
+    ok(world.toasts.some(t=>t.kind==='split'),'no split toast');
+    tickRun(2);world.zone=1;splitZone();ok(Math.abs(R.splits[1].t-2)<1e-9,'second split did not start at the portal');
+    reset();world.run.t=1;world.zone=0;splitZone();ok(world.run.splits[0].prev===1.5 && world.run.splits[0].t<1.5,'best split not remembered');
+    addProficiency('bow',3,3);world.run.t=42;
+    game.results(true,0);ok(game.scene==='won' && world.run.ended && world.run.newBest,'win did not record a best');
+    const t0=world.run.t;tickRun(5);ok(world.run.t===t0,'clock kept running after the run ended');
+    for(const T of [0,0.6,1.3,2,2.8,4]) {game.results(true,T);game.render();}
+    game.results(true,1);
+    key('KeyZ',true);poll();game.update(STEP);key('KeyZ',false);poll();ok(game.scene==='won' && game.sceneT()>=3.6,'first press did not skip the animation');
+    key('KeyZ',true);poll();game.update(STEP);key('KeyZ',false);poll();ok(game.scene==='play' && world.run.t===0,'second press did not start a new run');
+    reset();game.results(false,4);game.render();ok(game.scene==='over','death results did not show');
+    resetRecords();game.startRun();
   });
   check('every zone has its own swarm boss that spawns, fights and draws',()=>{
     const names=new Set();
@@ -212,11 +241,16 @@ export function runSmoke(game) {
   check('ladders connect chamber floors to suspended hunting ledges',()=>{
     reset();startZone(1);world.enemies=[];const h=world.hero,l=world.map.ladders[0];
     h.x=l.x-h.w/2;h.y=l.bottom-h.h;
-    key('ArrowUp',true);
-    for(let i=0;i<270;i++){poll();updateHero(h,STEP);}
+    key('ArrowUp',true);let drew=false;
+    for(let i=0;i<270;i++){poll();updateHero(h,STEP);drew||=!h.ladder && h.drawT>0 && !heroPose(h,1).sheath;}
     key('ArrowUp',false);poll();
     ok(h.onGround && Math.abs(h.y+h.h-l.exitY)<1 && h.x===l.exitX,'upper dismount failed');
+    ok(drew,'weapon was not drawn again off the ladder');
     h.x=l.x-h.w/2;key('ArrowDown',true);
+    for(let i=0;i<20;i++){poll();updateHero(h,STEP);}
+    ok(h.ladder && heroPose(h,1).sheath,'weapon not sheathed on the ladder');
+    const c0=h.climbT;key('ArrowDown',false);poll();updateHero(h,STEP);ok(h.ladder && h.climbT===c0,'climb animation ran while holding still');
+    key('ArrowDown',true);
     for(let i=0;i<260;i++){poll();updateHero(h,STEP);}
     key('ArrowDown',false);poll();
     ok(h.onGround && Math.abs(h.y+h.h-l.bottom)<1,'bottom dismount failed');

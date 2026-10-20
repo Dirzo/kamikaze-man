@@ -13,6 +13,7 @@ import { enemiesLeft, survivalLeft, swarmBossUp } from './waves.js';
 import { COMBO, comboMult } from '../data/swarm.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
+import { clock as clockOf } from '../data/speedrun.js';
 
 const BAR_Y = H - 28;
 
@@ -107,6 +108,7 @@ export function drawHud(t) {
   }
   text(sub, 6, 15, C.mist);
   text(mutationLabel(h.weapon), W - 6, 16, h.weapon.mutation ? C.gold : C.fog, {align:'right'});
+  if (world.run) text(clockOf(world.run.t), W / 2, 5, C.cream, { align: 'center' });
   const kills = `${world.kills} KILLS`;
   text(kills, W - 6, 5, C.paper, { align: 'right' });
   const bagN = world.bag.filter(Boolean).length;
@@ -196,6 +198,14 @@ export function drawHud(t) {
       panel('card', W / 2 - tw / 2, ty, tw, 32);
       text(l1, W / 2, ty + 5, C.sky, { align: 'center', k: 2 });
       text(l2, W / 2, ty + 21, C.paper, { align: 'center' });
+      ty += 36;
+    } else if (to.kind === 'split') {
+      const l1 = `ZONE ${to.zone + 1} SPLIT  ${clockOf(to.t)}`,
+        l2 = to.d ? `${to.d} VS BEST   RUN ${clockOf(to.total)}` : `FIRST SPLIT   RUN ${clockOf(to.total)}`,
+        tw = Math.max(textWidth(l1, 2), textWidth(l2)) + 14;
+      panel('card', W / 2 - tw / 2, ty, tw, 32);
+      text(l1, W / 2, ty + 5, C.gold, { align: 'center', k: 2 });
+      text(l2, W / 2, ty + 21, to.ahead ? C.lime : C.coral, { align: 'center' });
       ty += 36;
     } else if (to.kind === 'level') {
       panel('card', W / 2 - 60, ty, 120, 32);

@@ -39,4 +39,4 @@ try {
   if(!fits)throw Error('Portrait rotation overlaps controls');
   const shot=await send('Page.captureScreenshot',{format:'png'});writeFileSync(join(out,'mobile-portrait.png'),Buffer.from(shot.data,'base64'));
   console.log('PASS mobile portrait rotation refits the playfield');
-} finally {socket?.close();chrome.kill();await delay(200);rmSync(profile,{recursive:true,force:true});}
+} finally {socket?.close();chrome.kill();await delay(200);rmSync(profile,{recursive:true,force:true,maxRetries:10,retryDelay:200});}

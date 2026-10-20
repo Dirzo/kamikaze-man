@@ -1,8 +1,8 @@
 // Inventory and equipment windows (E / B / Tab, gamepad Back, or the Bag button). Two framed
 // windows over a paused game: EQUIPMENT (hero, weapon slot, weapon mastery) and INVENTORY
 // (a 24-slot bag of weapons, item details, equip / lock / salvage). Keyboard, pad, mouse and touch.
-// Drops are looted automatically: the bag keeps the highest-DPS weapon of each type and salvages
-// the rest for shards. Locked weapons are never replaced or salvaged.
+// Drops are looted automatically and kept until the bag is full; after that the weakest unlocked
+// weapons are swapped out for better ones. Locked weapons are never replaced or salvaged.
 import { C, W, H } from '../config.js';
 import { X, canvas, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
@@ -50,31 +50,34 @@ export function stash(w) {
   return true;
 }
 
-// auto-loot: keep the best unlocked weapon of each type, salvage the loser
+// auto-loot: every drop is kept until all 24 slots are full. Once full, a new weapon replaces the
+// weakest unlocked weapon of its type (or the weakest unlocked weapon overall if none share its
+// type) when it has more DPS; otherwise the new one is salvaged. Locked weapons are never touched.
 export function autoLoot(w) {
   if (!w || w.name === 'Training Sword') return 'skip';
   const col = w.standout ? C.gold : rarityColour(w.q);
-  const i = world.bag.findIndex(b => b && !b.locked && b.type === w.type);
   const better = dps(w) > dps(world.hero.weapon);
   let res;
-  if (i >= 0 && dps(world.bag[i]) >= dps(w)) {
-    world.shards += salvageValue(w);
-    toast('bag', { head: `SALVAGED +${salvageValue(w)} SHARDS`, name: w.name, col: C.fog });
-    return 'salvaged';
-  }
-  if (i >= 0) {
-    world.shards += salvageValue(world.bag[i]);
+  if (stash(w)) res = 'bagged';
+  else {
+    const weakest = list => list.reduce((m, i) => (m < 0 || dps(world.bag[i]) < dps(world.bag[m]) ? i : m), -1);
+    const open = world.bag.map((b, i) => (b && !b.locked ? i : -1)).filter(i => i >= 0);
+    const same = open.filter(i => world.bag[i].type === w.type);
+    const i = weakest(same.length ? same : open);
+    if (i < 0 || dps(world.bag[i]) >= dps(w)) {
+      world.shards += salvageValue(w);
+      toast('bag', { head: `BAG FULL  SALVAGED +${salvageValue(w)}`, name: w.name, col: C.fog });
+      return 'salvaged';
+    }
+    const old = world.bag[i];
+    world.shards += salvageValue(old);
     world.bag[i] = w;
     world.bagNew = (world.bagNew || 0) + 1;
     res = 'upgraded';
-  } else if (stash(w)) res = 'bagged';
-  else {
-    world.shards += salvageValue(w);
-    toast('bag', { head: `BAG FULL  +${salvageValue(w)} SHARDS`, name: w.name, col: C.fog });
-    return 'salvaged';
+    toast('bag', { head: better ? 'BETTER WEAPON!  DOWN: EQUIP' : `SWAPPED OUT ${typeName(old.type)} +${salvageValue(old)}`, name: w.name, col, hot: better });
   }
   world.quick = better ? { item: w, t: 4 } : null;
-  toast('bag', { head: better ? 'BETTER WEAPON!  DOWN: EQUIP' : res === 'upgraded' ? `BEST ${typeName(w.type)} KEPT   E: OPEN` : 'INTO THE BAG   E: OPEN', name: w.name, col, hot: better });
+  if (res === 'bagged') toast('bag', { head: better ? 'BETTER WEAPON!  DOWN: EQUIP' : 'INTO THE BAG   E: OPEN', name: w.name, col, hot: better });
   return res;
 }
 
@@ -310,8 +313,8 @@ export function drawInventory(t) {
   if (!it) {
     text('EMPTY SLOT', tx, dy + 2, C.fog);
     text('DROPS ARE LOOTED AUTOMATICALLY.', tx, dy + 14, C.mist);
-    text('THE BAG KEEPS THE BEST DPS OF EACH TYPE', tx, dy + 24, C.mist);
-    text('AND SALVAGES THE REST. LOCK TO KEEP ONE.', tx, dy + 34, C.mist);
+    text('NOTHING IS SALVAGED UNTIL ALL 24 FILL;', tx, dy + 24, C.mist);
+    text('THEN THE WEAKEST GO. LOCK TO KEEP ONE.', tx, dy + 34, C.mist);
   } else {
     const col = it.standout ? C.gold : rarityColour(it.q);
     text(fitText(it.name, INV.w - (it.locked ? 44 : 30)), tx, dy + 2, col);
