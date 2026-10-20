@@ -269,7 +269,7 @@ function think(e, dt, dxh, dist, toward, slow) {
   if (A && !e.swarmBoss && dist < (A.range || 140) && Math.abs(cy(hero) - cy(e)) < 70) {
     e.traitT = (e.traitT ?? 1.2 + Math.random()) - dt;
     if (e.traitT <= 0) {
-      e.traitT = A.every * (e.swarm ? 1.6 : 1) * (0.85 + Math.random() * 0.3);
+      e.traitT = A.every * (e.swarm ? 2.2 : 1) * (0.85 + Math.random() * 0.3);
       e.trait = true;
       windup(e, A.wind || 0.4);
       return;

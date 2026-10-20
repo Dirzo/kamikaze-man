@@ -77,6 +77,13 @@ Bosses stay in the last-screen arena and their warnings/hazards use that arena's
 
 All mutations have distinct awakened sprites, never trigger recursive procs, and reset between runs.
 Bosses have warning frames, locked charges, three health phases and stronger late-fight patterns.
+Their health is sized to the weapon you bring (at least ~10 seconds of its steady damage) and no
+single hit takes more than 5% of it, so a lucky drop no longer deletes them; they shake loose two
+hearts at each phase change. Thirteen weapon types (spear, axe, scythe and boomerang joined the
+original nine), each with its own special; Rare and better weapons often carry a named ability
+(meteors, double jump, bubble guard...) that shows up at the end of the name. Every resident type
+has its own trick once it notices you (game/traits.js), and every map hides one easter egg on its
+highest ledge (game/secrets.js).
 Map clears lead to the arena swarm and its boss, then straight on to the next map. There is no
 free weapon draft and no auto-equip. Drops hover where they land and fly into the bag (E / B / Tab).
 Nothing is salvaged until all 24 slots are full; after that a better drop replaces the weakest

@@ -13,7 +13,7 @@ import { kill } from './combat.js';
 import { overlap } from './physics.js';
 import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
-import { startBoss, bossDone, clearBoss, castMove, bossWarning } from './bosses.js';
+import { startBoss, bossDone, clearBoss, castMove, bossWarning, bossHearts } from './bosses.js';
 import { clearAbilities } from './abilities.js';
 import { placeSecret } from './secrets.js';
 import { makeWeapon, steadyDps } from './loot.js';
@@ -44,7 +44,7 @@ export function startZone(z) {
   if(h) {
     h.x=world.map.startX;h.y=world.map.startY-HERO.h;h.vx=h.vy=0;h.onGround=true;h.platform=null;
     h.attack=h.special=h.ladder=null;h.climbLock=0;h.trail=null;h.dashT=h.dropT=0;h.inv=Math.max(h.inv,1);
-    if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.3));
+    if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.6)); // a breather between maps
   }
   world.director={phase:'intro',t:2.6,toSpawn:0,initialCount:world.map.spawns.length,bossStarted:false};
   for(const spot of world.map.spawns) {
@@ -188,7 +188,7 @@ function updateSurvival(dt) {
   if(b.swarmBoss && !b.dead && !(b.spawnT>0)) {
     // swarm bosses fight with their zone's themed moves too, and pull a surprise at half health
     const B=SWARM_BOSSES[world.zone%SWARM_BOSSES.length];
-    if(!D.surprised && b.hp<b.max/2) {D.surprised=true;castMove(b,B.surprise);D.moveT=2.5;}
+    if(!D.surprised && b.hp<b.max/2) {D.surprised=true;castMove(b,B.surprise);bossHearts(b);D.moveT=2.5;}
     if((D.moveT-=dt)<=0) {D.moveT=SWARM_BOSS.moveEvery*(b.hp<b.max/2?0.75:1);castMove(b,B.moves[Math.floor(Math.random()*B.moves.length)]);}
   }
   if(b.swarmBoss ? b.dead : bossDone()) endSurvival();
@@ -221,9 +221,10 @@ function openExit() {
   world.bolts.length=0;
   sfx.clear();
   callout('MAP CLEAR - EXIT OPEN',W/2,64,C.gold,{big:true,life:120});
-  // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard)
+  // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard), already
+  // tuned for the next map so there is always something ready to carry on with
   const z=world.zone,home=ZONES[z].weapon;
-  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(z,{type:home,q:z===0?1:Math.min(10,z+1),standout:false}));
+  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:home,q:z===0?1:Math.min(10,z+1),standout:false}));
 }
 export function enemiesLeft() {
   if(!world.director) return 0;

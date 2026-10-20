@@ -89,6 +89,10 @@ const BOSSES = {
 export const bossWarning = kind => BOSSES[kind]?.warn;
 
 const bossFloor=()=>world.map?.bossFloor??worldFloor();
+// long boss fights shake loose a couple of hearts at each turning point (phase change / half health)
+export function bossHearts(e) {
+  for (let i = 0; i < 2; i++) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: e.y + 6, vx: (i ? 1 : -1) * (50 + Math.random() * 40), vy: -170, life: 14 });
+}
 const hazards = [];
 let boss = null,
   done = false,
@@ -119,7 +123,7 @@ export function startBoss(kind) {
     face: -1,
     hp,
     max: hp,
-    dmg: refDmg(z) * 1.5,
+    dmg: refDmg(z) * 0.5,
     state: 'enter',
     st: 1.2,
     stun: 0,
@@ -175,10 +179,11 @@ export function updateBoss(e, dt) {
     shake(0.5);
     hitstop(0.1);
     if (D.surprise) castMove(e, D.surprise);
+    bossHearts(e);
     e.state = 'idle';
     e.st = 1.1;
   }
-  const rate = e.phase === 1 ? 1.1 : e.phase === 2 ? 1.4 : 1.75;
+  const rate = e.phase === 1 ? 1 : e.phase === 2 ? 1.25 : 1.5;
   e.st -= dt * rate;
   const toward = Math.sign(cx(hero) - cx(e)) || 1;
   switch (e.state) {

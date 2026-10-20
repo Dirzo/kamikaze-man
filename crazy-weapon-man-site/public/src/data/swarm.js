@@ -10,11 +10,11 @@ export const comboMult = c => (c && c.n > 0 ? 1 + Math.min(COMBO.max, Math.floor
 // resident (zones 1, 2, 4 and 5 have their own full-size art) that also fires its zone's themed `moves` (bosses.js castMove) every few seconds and
 // pulls its `surprise` at half health. The swarm keeps coming at half pace until the boss falls.
 // hp is in refHP(zone) units (the first zone's goose is lighter: you still hold the training sword).
-export const SWARM_BOSS = { hp: 12, firstHp: 8, dmg: 1.6, every: 2, alive: 0.5, moveEvery: 3.4 };
+export const SWARM_BOSS = { hp: 12, firstHp: 8, dmg: 0.75, every: 3, alive: 0.3, moveEvery: 3.4 };
 // Bosses are sized to the hero who shows up, not just the zone: a lucky weapon used to delete them
 // in 3-10 seconds. Health is at least `secs` seconds of the hero's steady damage (dps of the held
 // weapon, specials and quirks come on top) and no single hit takes more than `hitCap` of it.
-export const BOSS_TOUGH = { story: 20, swarm: 15, first: 10, hitCap: 0.04 };
+export const BOSS_TOUGH = { story: 10, swarm: 9, first: 8, hitCap: 0.05 };
 export const BOSS_ARRIVES = { min: 6, spread: 5, warn: 1.6 };
 export const SWARM_BOSSES = [
   { type: 'mothergoose', scale: 1, name: 'MOTHER GOOSE OF THE GRAVES', line: 'HONK. (FINAL FORM)', moves: ['graves'], surprise: 'honk', warn: 'A HONK ECHOES FROM THE GRAVES...' },
