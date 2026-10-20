@@ -82,6 +82,7 @@ export function updateWaves(dt) {
     case 'exit':
       // Reaching the portal is the forward transition. No button ambiguity with loot swaps.
       if(D.t<=0 && Math.abs(world.hero.x+world.hero.w/2-world.map.exitX)<24 && Math.abs(world.hero.y+world.hero.h-world.map.exitY)<20) {
+        if(world.level) {world.levelExit=world.secret?.found?'secret':'next';world.phase='cleared';break;} // overworld level: back to the map (the map's secret opens its secret exit)
         splitZone();
         if(world.zone+1>=ZONES.length) world.phase='won';
         else startZone(world.zone+1);

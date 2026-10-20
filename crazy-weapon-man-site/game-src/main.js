@@ -26,6 +26,9 @@ import { updateEvolution, drawEvolution } from './game/evolution.js';
 import { updateLust } from './game/lust.js';
 import { fmt } from './data/curve.js';
 import { newRun, tickRun, endRun, drawResults, RESULTS_TIME } from './game/speedrun.js';
+import { ow, openOverworld, updateOverworld, drawOverworld } from './game/overworld.js';
+import { loadSave, writeSave, clearLevel, FINAL } from './data/overworld.js';
+import { freshUid } from './game/loot.js';
 
 let capture = false;
 let scene = 'loading',
@@ -47,6 +50,55 @@ function startRun() {
   sceneT = 0;
 }
 
+// ---------------------------------------------------------------- overworld + levels
+// The overworld run: the hero (level, weapon, bag) carries from level to level and is saved with
+// the map. A level is played on its region's zone map. Dying or leaving only loses that attempt:
+// the hero goes back to how they walked in and the map keeps everything cleared.
+function openMap(fresh = []) {
+  document.getElementById('start').hidden = true;
+  closeInventory();
+  world.level = null;
+  if (!ow.save) ow.save = loadSave();
+  openOverworld(ow.save, fresh);
+  music.play('title', TITLE_MUSIC);
+  scene = 'map';
+  sceneT = 0;
+}
+const heroSnapshot = () => JSON.parse(JSON.stringify({ lv: world.hero.lv, xp: world.hero.xp, weapon: world.hero.weapon, bag: world.bag }));
+function enterLevel(node) {
+  closeInventory();
+  resetWorld();
+  clearFx();
+  clearBoss();
+  const h = (world.hero = createHero()), snap = ow.save.hero;
+  if (snap) {
+    // fresh copies with new ids, so a failed attempt can never touch the saved gear
+    const copy = JSON.parse(JSON.stringify(snap));
+    Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMaxHp(copy.lv), weapon: freshUid(copy.weapon) });
+    world.bag = copy.bag.map(w => w && freshUid(w));
+  }
+  world.level = node;
+  newRun();
+  startZone(node.zone);
+  h.hp = h.maxHp; // every level starts at full health
+  scene = 'play';
+  sceneT = 0;
+}
+// a level ended: 'clear' saves the hero and reveals new roads, 'fail' and 'quit' change nothing
+function endLevel(result) {
+  const node = world.level;
+  let fresh = [];
+  if (result === 'clear') {
+    fresh = clearLevel(ow.save, node.id, world.levelExit === 'secret' && node.secret.length ? 'secret' : 'next');
+    ow.save.hero = heroSnapshot();
+    writeSave(ow.save);
+  }
+  if (result === 'quit') return openMap();
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret) };
+  scene = 'levelEnd';
+  sceneT = 0;
+}
+
 function update(dt) {
   if (capture) return;
   clock += dt;
@@ -58,8 +110,17 @@ function update(dt) {
     if (input.take('confirm') | input.take('jump')) {
       audioOn();
       sfx.ui(true);
-      startRun();
+      openMap();
     }
+    return;
+  }
+  if (scene === 'map') {
+    const node = updateOverworld(dt);
+    if (node) enterLevel(node);
+    return;
+  }
+  if (scene === 'levelEnd') {
+    if (sceneT > 0.6 && (input.take('confirm') | input.take('jump')) || sceneT > 4) openMap(world.levelEnd.fresh);
     return;
   }
   if (scene === 'over' || scene === 'won') {
@@ -69,6 +130,7 @@ function update(dt) {
   }
   if (scene === 'pause') {
     if (input.take('pause') | input.take('confirm')) scene = 'play';
+    else if (world.level && input.take('leave')) endLevel('quit');
     return;
   }
   // ---- play ----
@@ -108,13 +170,17 @@ function update(dt) {
   updateCamera(dt);
   if (world.phase === 'dead') {
     world.deadT = (world.deadT || 0) + dt;
-    if (world.deadT > 1.6) {
+    if (world.deadT > 1.6 && world.level) {
+      music.stop();
+      endLevel('fail');
+    } else if (world.deadT > 1.6) {
       scene = 'over';
       sceneT = 0;
       endRun(false);
       music.stop();
     }
   }
+  if (world.phase === 'cleared') endLevel('clear');
   if (world.phase === 'won') {
     scene = 'won';
     sceneT = 0;
@@ -196,7 +262,21 @@ function drawPause() {
     text(a, W / 2 - 108, 96 + i * 12, C.mist);
     text(b, W / 2 + 108, 96 + i * 12, C.paper, { align: 'right' });
   });
-  text('ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
+  text(world.level ? 'ESC TO RESUME    Q TO LEAVE THE LEVEL' : 'ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
+}
+
+function drawLevelEnd() {
+  const E = world.levelEnd, clear = E.result === 'clear', final = clear && E.node.id === FINAL;
+  dither(0, 0, W, H, C.ink, 9);
+  panel('panel', W / 2 - 130, 74, 260, 104);
+  text(final ? 'THE ARMORY IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
+  text(E.node.id + '  ' + E.node.name.toUpperCase(), W / 2, 112, C.paper, { align: 'center' });
+  const line = final ? 'YOU BEAT CRAZY WEAPON MAN. THE CLOSETS STILL HAVE SECRETS.'
+    : E.secret ? 'SECRET EXIT! A HIDDEN PATH OPENS'
+    : clear ? (E.fresh.length > 1 ? 'A FORK IN THE ROAD! ' + E.fresh.length + ' NEW PATHS OPEN' : E.fresh.length ? 'A NEW PATH OPENS' : 'YOUR GEAR IS SAVED')
+    : 'NOTHING LOST BUT THE ATTEMPT. THE MAP IS SAFE.';
+  text(line, W / 2, 130, clear ? C.lime : C.mist, { align: 'center' });
+  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 158, C.fog, { align: 'center' });
 }
 
 function render() {
@@ -209,11 +289,13 @@ function render() {
     return;
   }
   if (scene === 'title') return drawTitle(t);
+  if (scene === 'map') return drawOverworld(t);
   drawWorld(world.t);
   drawHud(world.t);
   drawRouteHud();
   drawInventory(clock);
   if (scene === 'pause') drawPause();
+  if (scene === 'levelEnd') drawLevelEnd();
   if (scene === 'over') drawResults(false, sceneT, clock);
   if (scene === 'won') drawResults(true, sceneT, clock);
   document.getElementById('start').hidden = scene !== 'over' && scene !== 'won';
@@ -259,7 +341,8 @@ click('b-bag', () => {
   if (scene === 'play') toggleInventory();
 });
 click('b-restart', () => {
-  if (scene !== 'loading') startRun();
+  if (world.level && scene !== 'map') enterLevel(world.level); // retry this level, from the map's saved hero
+  else if (scene !== 'map' && scene !== 'loading' && scene !== 'title') startRun();
 });
 click('b-full', async () => {
   try {
@@ -279,7 +362,7 @@ setInterval(syncButtons, 250);
 
 document.getElementById('start').addEventListener('click', () => {
   if (scene === 'loading') return;
-  audioOn(); startRun(); document.getElementById('screen').focus();
+  audioOn(); scene === 'over' || scene === 'won' ? startRun() : openMap(); document.getElementById('screen').focus();
 });
 document.getElementById('start').hidden = true;
 document.addEventListener('visibilitychange', () => {
@@ -378,6 +461,9 @@ const debug = {
     return scene;
   },
   startRun,
+  openMap,
+  enterLevel,
+  ow,
   A,
   animSheet,
   // debug: start at zone z with a matching hero (and optionally go straight to its boss)

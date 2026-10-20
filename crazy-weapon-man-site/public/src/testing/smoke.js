@@ -33,6 +33,7 @@ import { fireTrait } from '../game/traits.js';
 import { updateBolts } from '../game/enemy.js';
 import { updateSecret, SECRETS, SECRET_KEY } from '../game/secrets.js';
 import { updateAbilities, abilityHit } from '../game/abilities.js';
+import { NODES, OVERWORLD_KEY, isOpen } from '../data/overworld.js';
 
 export function runSmoke(game) {
   const results=[];
@@ -189,6 +190,28 @@ export function runSmoke(game) {
     key('KeyZ',true);poll();game.update(STEP);key('KeyZ',false);poll();ok(game.scene==='play' && world.run.t===0,'second press did not start a new run');
     reset();game.results(false,4);game.render();ok(game.scene==='over','death results did not show');
     resetRecords();game.startRun();
+  });
+  check('overworld: walk the map, clear a level to open the fork, fail one and keep everything',()=>{
+    localStorage.removeItem(OVERWORLD_KEY);game.ow.save=null;game.openMap();
+    ok(game.scene==='map' && game.ow.save.at==='home','map did not open at the crash site');
+    key('ArrowRight',true);for(let i=0;i<120 && game.ow.save.at!=='1-1';i++){poll();game.update(STEP);}key('ArrowRight',false);
+    ok(game.ow.save.at==='1-1','could not walk to 1-1');
+    for(let i=0;i<5;i++){poll();game.update(STEP);}
+    key('KeyX',true);poll();game.update(STEP);key('KeyX',false);
+    ok(game.scene==='play' && world.level?.id==='1-1' && world.zone===0 && world.hero.hp===world.hero.maxHp,'1-1 did not start');
+    const h=world.hero;h.lv=3;world.enemies.length=0;world.director.phase='exit';world.director.t=0;
+    h.x=world.map.exitX-h.w/2;h.y=world.map.exitY-h.h;game.update(STEP);
+    ok(game.scene==='levelEnd' && world.levelEnd.result==='clear','clearing 1-1 did not end the level');
+    for(let i=0;i<260 && game.scene!=='map';i++){poll();game.update(STEP);}
+    const save=JSON.parse(localStorage.getItem(OVERWORLD_KEY));
+    ok(game.scene==='map' && save.cleared['1-1'] && save.hero.lv===3 && isOpen(game.ow.save,'1-2'),'clear was not saved');
+    game.enterLevel(NODES['1-2']);ok(world.hero.lv===3,'saved hero not restored');
+    world.hero.lv=50;world.hero.dead=true;world.phase='dead';
+    for(let i=0;i<120 && game.scene==='play';i++)game.update(STEP);
+    ok(game.scene==='levelEnd' && world.levelEnd.result==='fail','death did not fail the level');
+    const after=JSON.parse(localStorage.getItem(OVERWORLD_KEY));
+    ok(after.hero.lv===3 && !after.cleared['1-2'] && after.cleared['1-1'],'failing changed the save');
+    localStorage.removeItem(OVERWORLD_KEY);game.ow.save=null;world.level=null;
   });
   check('every zone has its own swarm boss that spawns, fights and draws',()=>{
     const names=new Set();

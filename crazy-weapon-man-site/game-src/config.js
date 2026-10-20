@@ -47,5 +47,6 @@ export const KEYS = {
   dash: ['ShiftLeft', 'ShiftRight', 'KeyV', 'KeyI'],
   pause: ['Escape', 'KeyP'],
   inv: ['KeyE', 'KeyB', 'Tab'],
+  leave: ['KeyQ'],
   confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ', 'ControlLeft']
 };
