@@ -41,6 +41,9 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
   return { uid: uid++, type, q, family, mutation, standout, home: zone, name, look, quirk: quirkFor(look, r), ability };
 }
 
+// a weapon loaded from a save gets a new id (looks are cached by id)
+export const freshUid = w => ((w.uid = uid++), w);
+
 export function trainingSword() {
   return {
     uid: uid++,

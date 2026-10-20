@@ -18,7 +18,17 @@ import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
 import { updateCamera } from '../game/camera.js';
+import { newSave, revealAll, clearLevel } from '../data/overworld.js';
+// ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
+function mapScene(game, all) {
+  const s = all ? revealAll(newSave()) : newSave();
+  if (!all) { clearLevel(s, '1-1'); clearLevel(s, '1-2'); }
+  s.at = all ? '6-2' : '1-2';
+  game.ow.save = s;
+  game.openMap();
+}
 export function captureScene(game, mode) {
+  if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));

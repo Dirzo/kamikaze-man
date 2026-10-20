@@ -157,8 +157,9 @@ export function drawHud(t) {
     if (a > 0.1) {
       dither(0, 92, W, 50, C.ink, 11);
       const home = Z.weapon ? `HOME OF THE ${Z.weapon.toUpperCase()}` : 'HOME OF EVERY WEAPON';
-      text(`ZONE ${world.zone + 1}` + (world.map ? ` - ${world.map.title}` : '') + `  -  ${home}`, W / 2, 98, C.gold, { align: 'center' });
-      text(Z.name, W / 2, 108, C.paper, { align: 'center', k: 2 });
+      const L = world.level; // an overworld level is named for itself, in its zone
+      text(L ? `${L.id}  -  ${Z.name.toUpperCase()}  -  ${home}` : `ZONE ${world.zone + 1}` + (world.map ? ` - ${world.map.title}` : '') + `  -  ${home}`, W / 2, 98, C.gold, { align: 'center' });
+      text(L ? L.name : Z.name, W / 2, 108, C.paper, { align: 'center', k: 2 });
       text(fitText(Z.sub, 460), W / 2, 128, C.mist, { align: 'center' });
     }
   }

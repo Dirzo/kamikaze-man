@@ -53,6 +53,8 @@ export function resetWorld() {
     quirkCount: 0,
     quick: null, // a just-looted weapon that beats yours: DOWN equips it
     swarmCombo: null,
+    level: null, // the overworld node being played (null in a classic ten-map run)
+    levelEnd: null,
     run: null, // speedrun clock, splits and damage log (speedrun.js)
     pickups: [],
     platforms: [],

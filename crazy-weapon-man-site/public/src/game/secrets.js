@@ -73,6 +73,7 @@ export function updateSecret(dt) {
   callout(`${s.name}  (${ever}/${SECRETS.length})`, 240, 84, C.cream, { life: 150 });
   say(h, s.line, 2.8, true);
   treat(s.zone, h);
+  if (world.level?.secret?.length) callout('SECRET EXIT OPEN - FINISH THE LEVEL TO TAKE IT', 240, 100, C.pink, { life: 180 });
 }
 
 function gift(h, o, name) {
