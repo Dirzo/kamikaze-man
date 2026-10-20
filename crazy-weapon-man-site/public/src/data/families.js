@@ -11,7 +11,10 @@ export const ROLES = {
   level: { hp: 6, secs: 5, dmg: 0.55, phases: 2, speed: 1 },
   secret: { hp: 8, secs: 6, dmg: 0.7, phases: 2, speed: 1.1 },
   fort: { hp: 9, secs: 9, dmg: 0.9, phases: 3, speed: 1 },
-  castle: { hp: 15, secs: 18, dmg: 1.5, phases: 3, speed: 1.1 }
+  castle: { hp: 15, secs: 18, dmg: 2, phases: 3, speed: 1.1 },
+  // a classic ten-map run (no overworld, no full heal between maps) meets each head at the old
+  // story-boss strength
+  classic: { hp: 14, secs: 10, dmg: 0.5, phases: 3, speed: 1 }
 };
 // later levels in a world are tougher: hp and damage grow along the road to the castle (tier 0..1)
 export const TIER_HP = 0.45, TIER_DMG = 0.2;
@@ -19,7 +22,13 @@ export const TIER_HP = 0.45, TIER_DMG = 0.2;
 export const FOE_TIER = { hp: 0.5, dmg: 0.35 };
 // On the overworld every level starts at full health, so the danger has to come from inside the
 // level: each world (z = 0..9) hits a little harder than the zone curve alone, x (1 + RAMP * z).
-export const WORLD_RAMP = { foeDmg: 0.08, bossDmg: 0.1 };
+// Bosses also take longer to wear down each world (their `secs` floor), so a stronger account
+// still meets a stronger family.
+export const WORLD_RAMP = { foeDmg: 0.12, bossDmg: 0.3, bossSecs: 0.12 };
+
+// Each head's moves hurt differently (Sr.'s anvils and lava were a wall, the Kingpin's coins a
+// breeze), so their damage is evened out per head from the campaign playtests.
+export const HEAD_DMG = { bossgoose: 0.7, bossacorn: 1.25, bossjr: 0.7, bosskingpin: 2.2, bossshogun: 0.95, bossman: 1.2, bosssr: 0.7, bossgrandma: 1.45, bossceo: 1.4, bossweapon: 1.25 };
 
 // [region, head kind, family name, the head's move pool, its phase surprise]
 export const FAMILIES = {

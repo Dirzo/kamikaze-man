@@ -9,7 +9,7 @@ import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { refHP, refDmg } from '../data/curve.js';
 import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
 import { makeWeapon, baseDps } from './loot.js';
-import { ROLES, TIER_HP, TIER_DMG, WORLD_RAMP, NEW_HEADS, SIBLING_DEFS } from '../data/families.js';
+import { ROLES, TIER_HP, TIER_DMG, WORLD_RAMP, HEAD_DMG, NEW_HEADS, SIBLING_DEFS } from '../data/families.js';
 import { stats } from '../data/meta.js';
 import { spawnEnemy } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
@@ -107,9 +107,10 @@ export function startBoss(kind, tier = 1) {
   const D = BOSSES[kind],
     art = A.bosses[kind],
     z = world.zone,
-    R = ROLES[D.role || 'castle'];
+    R = ROLES[D.role || (world.level ? 'castle' : 'classic')];
   // tough enough to need real damage, measured against the gear (not the hero's long-term growth)
-  const hp = Math.round(Math.max(refHP(z) * R.hp * (1 + TIER_HP * tier), baseDps() * R.secs));
+  const ramp = k => (world.level ? 1 + WORLD_RAMP[k] * z : 1);
+  const hp = Math.round(Math.max(refHP(z) * R.hp * (1 + TIER_HP * tier), baseDps() * R.secs * ramp('bossSecs')));
   done = false;
   outroT = 0;
   hazards.length = 0;
@@ -130,7 +131,7 @@ export function startBoss(kind, tier = 1) {
     face: -1,
     hp,
     max: hp,
-    dmg: refDmg(z) * R.dmg * (1 + TIER_DMG * tier) * (world.level ? 1 + WORLD_RAMP.bossDmg * z : 1),
+    dmg: refDmg(z) * R.dmg * (1 + TIER_DMG * tier) * ramp('bossDmg') * (world.level ? HEAD_DMG[kind] || 1 : 1),
     role: D.role || 'castle',
     phases: R.phases,
     speed: D.speed * R.speed,

@@ -14,7 +14,7 @@ export const META_KEY = 'crazyWeaponMan.meta.v1';
 // ---------------------------------------------------------------- the shard tree
 // tier t of a branch opens after GATE[t] ranks are spent in that branch
 export const GATE = [0, 5, 12, 20];
-export const rankCost = (tier, rank) => (35 + 35 * tier) * rank; // rank = the rank being bought, from 1
+export const rankCost = (tier, rank) => (50 + 50 * tier) * rank; // rank = the rank being bought, from 1
 export const BRANCHES = [
   { id: 'might', name: 'MIGHT', col: 'coral' },
   { id: 'guard', name: 'GUARD', col: 'sky' },
@@ -36,7 +36,7 @@ const NODES = [
   ['fleet', 'guard', 1, 'FLEET FOOT', 5, 'speed', 0.03, '+{v}% move speed'],
   ['blink', 'guard', 2, 'BLINK STEP', 5, 'dashCd', 0.06, 'Dash recharges {v}% faster'],
   ['grace', 'guard', 2, 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit'],
-  ['regen', 'guard', 3, 'REGENERATE', 3, 'regen', 0.002, 'Heal {v}% of max health a second'],
+  ['regen', 'guard', 3, 'REGENERATE', 3, 'regen', 0.001, 'Heal {v}% of max health a second'],
   ['stone', 'guard', 3, 'STONESKIN', 3, 'armor', 0.04, 'Take {v}% less damage'],
   ['magnet', 'fortune', 0, 'MAGNET', 5, 'shards', 0.06, '+{v}% shards'],
   ['learn', 'fortune', 0, 'STUDIOUS', 5, 'xp', 0.06, '+{v}% hero XP'],
@@ -58,7 +58,7 @@ export const TROPHIES = {
   3: { name: "JR.'S SURFBOARD", perk: "SURF'S UP", desc: 'Double jump with every weapon', stats: {}, innate: 'hops' },
   4: { name: "THE KINGPIN'S MONOCLE", perk: 'STICKY FINGERS', desc: '+25% shards', stats: { shards: 0.25 } },
   5: { name: 'THE SHOGUN NODACHI', perk: 'PETAL STEP', desc: 'Dashing through foes slices them', stats: {}, innate: 'dashcut' },
-  6: { name: "THE OGRE KING'S BEADS", perk: 'INNER PEACE', desc: 'Heal 0.4% of max health a second', stats: { regen: 0.004 } },
+  6: { name: "THE OGRE KING'S BEADS", perk: 'INNER PEACE', desc: 'Heal 0.25% of max health a second', stats: { regen: 0.0025 } },
   7: { name: "DAD'S HAMMER", perk: "DAD'S TOUGHNESS", desc: 'Take 12% less damage', stats: { armor: 0.12 } },
   8: { name: "GRANDMA'S CASSEROLE DISH", perk: 'SECOND HELPINGS', desc: 'Hearts heal 50% more and drop more often', stats: { heal: 0.5, hearts: 0.04 } },
   9: { name: 'THE STOLEN CROWN', perk: 'HOSTILE TAKEOVER', desc: '+15% damage to bosses and elites', stats: { bossDmg: 0.15 } },
