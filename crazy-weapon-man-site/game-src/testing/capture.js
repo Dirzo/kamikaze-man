@@ -2,7 +2,7 @@
 // ?capture=secret1..secret10 for where each map hides its easter egg,
 // ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
 // ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise, ?capture=lv1-3 (any
-// level id) for that overworld level's own boss, or ?capture=powers0..2 for the POWERS window tabs.
+// level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
@@ -32,13 +32,13 @@ function mapScene(game, all) {
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
   bankShards(2600);
-  for (const id of ['sharp', 'sharp', 'sharp', 'luck', 'sharp', 'sharp', 'brutal', 'brutal', 'skin', 'skin', 'band', 'magnet', 'magnet', 'learn']) buyRank(id);
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'luck', 'sharp', 'sharp', 'brutal', 'brutal', 'swarm', 'over', 'skin', 'skin', 'band', 'magnet', 'magnet', 'learn', 'combo', 'fire']) buyRank(id);
   winTrophy(1); winTrophy(2);
   addProficiency('sword', 2200); addProficiency('bow', 300);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
-  openPowers(tab);
-  powers.tree.c = 0; powers.tree.r = 1; powers.mast.col = 1; powers.mast.tier = 2;
+  openPowers(tab === 3 ? 1 : tab);
+  powers.tree.sel = 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
 }
 export function captureScene(game, mode) {
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');

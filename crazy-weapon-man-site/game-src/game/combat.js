@@ -88,7 +88,11 @@ export function hitEnemy(e, dmg, o = {}) {
     if (e.state === 'wind' && (o.crit || o.special)) e.state = 'idle'; // big hits interrupt wind-ups
   }
   e.lastHitAt = world.t;
-  if (o.element && !o.chip) applyElement(e, dmg, o);
+  if (o.element && !o.chip) {
+    applyElement(e, dmg, o);
+    // shard tree keystones: a chance to also strike with another element
+    if (!o.chain) for (const [el, p] of Object.entries(heroStats().infuse)) if (el !== o.element && Math.random() < p) applyElement(e, dmg, { ...o, element: el });
+  }
   if (e.hp <= 0) kill(e, o);
   return dmg;
 }

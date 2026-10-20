@@ -1,6 +1,6 @@
 // Progression that outlives every level and run (Slormancer style), kept in localStorage:
-//   SHARD TREE   shards you collect are banked and spent on ranks in three branches. Deeper tiers
-//                open once enough ranks are spent in that branch. Respec is free.
+//   SHARD TREE   shards you collect are banked and spent on ranks in a web of linked nodes, out
+//                from CORE through three clusters to element keystones. Respec is free.
 //   TROPHIES     beating a world's family head (its castle) gives that world's trophy and a
 //                permanent perk.
 //   MASTERY      every weapon type's mastery (proficiency.js) opens a choice of two perks at each
@@ -12,43 +12,78 @@ import { proficiency } from './proficiency.js';
 export const META_KEY = 'crazyWeaponMan.meta.v1';
 
 // ---------------------------------------------------------------- the shard tree
-// tier t of a branch opens after GATE[t] ranks are spent in that branch
-export const GATE = [0, 5, 12, 20];
-export const rankCost = (tier, rank) => (50 + 50 * tier) * rank; // rank = the rank being bought, from 1
+// A web of nodes (Slormancer's Ancestral Legacy): CORE in the middle, a cluster for each branch
+// around it. You can invest in a node once a node linked to it has a rank. Every cluster ends in two
+// element keystones that infuse your hits with that element. Respec is free, and UNDO takes back
+// the last rank you bought.
 export const BRANCHES = [
-  { id: 'might', name: 'MIGHT', col: 'coral' },
-  { id: 'guard', name: 'GUARD', col: 'sky' },
-  { id: 'fortune', name: 'FORTUNE', col: 'gold' }
+  { id: 'might', name: 'MIGHT', col: 'coral', dir: [-1.4, -0.35], side: [0, 1] },
+  { id: 'guard', name: 'GUARD', col: 'sky', dir: [1.4, -0.35], side: [0, 1] },
+  { id: 'fortune', name: 'FORTUNE', col: 'gold', dir: [0, 1.12], side: [1.25, 0] }
 ];
-// [id, branch, tier, name, max ranks, stat, per rank, description ({v} = the total at this rank)]
-const NODES = [
-  ['sharp', 'might', 0, 'SHARPENED', 5, 'dmg', 0.03, '+{v}% damage'],
-  ['luck', 'might', 0, 'LUCKY HITS', 5, 'crit', 0.01, '+{v}% critical chance'],
-  ['brutal', 'might', 1, 'BIG CRITS', 5, 'critDmg', 0.08, 'Crits deal +{v}% more'],
-  ['swarm', 'might', 1, 'SWARMBANE', 5, 'swarmDmg', 0.04, '+{v}% damage in the swarm'],
-  ['giant', 'might', 2, 'GIANTBANE', 5, 'bossDmg', 0.04, '+{v}% damage to bosses and elites'],
-  ['spec', 'might', 2, 'SPECIALIST', 5, 'specialCd', 0.04, 'Specials recharge {v}% faster'],
-  ['over', 'might', 3, 'OVERCHARGE', 3, 'dmg', 0.06, '+{v}% damage'],
-  ['exec', 'might', 3, 'EXECUTION', 3, 'execute', 0.12, '+{v}% damage to foes under a third of their health'],
-  ['skin', 'guard', 0, 'THICK SKIN', 5, 'hp', 0.04, '+{v}% max health'],
-  ['band', 'guard', 0, 'BANDAGES', 5, 'heal', 0.1, 'Hearts heal {v}% more'],
-  ['armor', 'guard', 1, 'PADDING', 5, 'armor', 0.025, 'Take {v}% less damage'],
-  ['fleet', 'guard', 1, 'FLEET FOOT', 5, 'speed', 0.03, '+{v}% move speed'],
-  ['blink', 'guard', 2, 'BLINK STEP', 5, 'dashCd', 0.06, 'Dash recharges {v}% faster'],
-  ['grace', 'guard', 2, 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit'],
-  ['regen', 'guard', 3, 'REGENERATE', 3, 'regen', 0.001, 'Heal {v}% of max health a second'],
-  ['stone', 'guard', 3, 'STONESKIN', 3, 'armor', 0.04, 'Take {v}% less damage'],
-  ['magnet', 'fortune', 0, 'MAGNET', 5, 'shards', 0.06, '+{v}% shards'],
-  ['learn', 'fortune', 0, 'STUDIOUS', 5, 'xp', 0.06, '+{v}% hero XP'],
-  ['combo', 'fortune', 1, 'MOMENTUM', 5, 'combo', 0.08, 'Swarm combos last {v}% longer'],
-  ['hearts', 'fortune', 1, 'HEARTFELT', 5, 'hearts', 0.02, '+{v}% heart drops'],
-  ['tutor', 'fortune', 2, 'MENTOR', 5, 'mastery', 0.08, '+{v}% weapon mastery'],
-  ['bounty', 'fortune', 2, 'BOUNTY', 5, 'bossShards', 0.2, '+{v}% shards from bosses'],
-  ['stand', 'fortune', 3, 'LUCKY LOOT', 3, 'standout', 0.02, '+{v}% standout weapon drops'],
-  ['lust', 'fortune', 3, 'COVETOUS', 3, 'lust', 0.1, 'Weapon Lust builds {v}% faster']
-];
-export const TREE = NODES.map(([id, branch, tier, name, max, stat, per, desc]) => ({ id, branch, tier, name, max, stat, per, desc }));
+// every cluster has the same shape: [along, across, size, depth] for each slot, then the links
+const SLOTS = [[22, -10, 'small', 0], [22, 10, 'small', 0], [44, -22, 'small', 1], [44, 0, 'small', 1], [44, 22, 'small', 1],
+  [66, -12, 'small', 2], [66, 12, 'small', 2], [90, 0, 'medium', 3], [84, -34, 'key', 4], [84, 34, 'key', 4]];
+const SLOT_LINKS = [[-1, 0], [-1, 1], [0, 1], [0, 2], [0, 3], [1, 3], [1, 4], [2, 5], [3, 5], [3, 6], [4, 6], [5, 7], [6, 7], [2, 8], [5, 8], [4, 9], [6, 9]];
+const DEPTH_COST = [50, 100, 150, 200, 300];
+// per branch, in slot order: [id, name, max ranks, stat, per rank, description ({v} = the total at this rank)]
+// a keystone's stat is 'infuse' and its element comes after the description
+const NODES = {
+  might: [
+    ['sharp', 'SHARPENED', 5, 'dmg', 0.03, '+{v}% damage'],
+    ['luck', 'LUCKY HITS', 5, 'crit', 0.01, '+{v}% critical chance'],
+    ['swarm', 'SWARMBANE', 5, 'swarmDmg', 0.04, '+{v}% damage in the swarm'],
+    ['brutal', 'BIG CRITS', 5, 'critDmg', 0.08, 'Crits deal +{v}% more'],
+    ['giant', 'GIANTBANE', 5, 'bossDmg', 0.04, '+{v}% damage to bosses and elites'],
+    ['spec', 'SPECIALIST', 5, 'specialCd', 0.04, 'Specials recharge {v}% faster'],
+    ['exec', 'EXECUTION', 3, 'execute', 0.12, '+{v}% damage to foes under a third of their health'],
+    ['over', 'OVERCHARGE', 3, 'dmg', 0.06, '+{v}% damage'],
+    ['fire', 'BLAZING WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Fire: {v}% chance to burn', 'fire'],
+    ['bolt', 'THUNDER WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Lightning: {v}% chance to chain', 'lightning']
+  ],
+  guard: [
+    ['skin', 'THICK SKIN', 5, 'hp', 0.04, '+{v}% max health'],
+    ['band', 'BANDAGES', 5, 'heal', 0.1, 'Hearts heal {v}% more'],
+    ['armor', 'PADDING', 5, 'armor', 0.025, 'Take {v}% less damage'],
+    ['fleet', 'FLEET FOOT', 5, 'speed', 0.03, '+{v}% move speed'],
+    ['blink', 'BLINK STEP', 5, 'dashCd', 0.06, 'Dash recharges {v}% faster'],
+    ['grace', 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit'],
+    ['regen', 'REGENERATE', 3, 'regen', 0.001, 'Heal {v}% of max health a second'],
+    ['stone', 'STONESKIN', 3, 'armor', 0.04, 'Take {v}% less damage'],
+    ['frost', 'ICY WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Ice: {v}% chance to chill', 'ice'],
+    ['quake', 'QUAKE WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Earth: {v}% chance to quake', 'earth']
+  ],
+  fortune: [
+    ['magnet', 'MAGNET', 5, 'shards', 0.06, '+{v}% shards'],
+    ['learn', 'STUDIOUS', 5, 'xp', 0.06, '+{v}% hero XP'],
+    ['combo', 'MOMENTUM', 5, 'combo', 0.08, 'Swarm combos last {v}% longer'],
+    ['hearts', 'HEARTFELT', 5, 'hearts', 0.02, '+{v}% heart drops'],
+    ['tutor', 'MENTOR', 5, 'mastery', 0.08, '+{v}% weapon mastery'],
+    ['bounty', 'BOUNTY', 5, 'bossShards', 0.2, '+{v}% shards from bosses'],
+    ['lust', 'COVETOUS', 3, 'lust', 0.1, 'Weapon Lust builds {v}% faster'],
+    ['stand', 'LUCKY LOOT', 3, 'standout', 0.02, '+{v}% standout weapon drops'],
+    ['venom', 'VENOM WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Poison: {v}% chance to poison', 'poison'],
+    ['gale', 'GALE WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Wind: {v}% chance to toss', 'wind']
+  ]
+};
+// x, y are offsets in pixels from CORE
+export const TREE = [{ id: 'core', branch: null, depth: 0, size: 'medium', name: 'AWAKENING', max: 1, stat: 'dmg', per: 0.02, desc: '+{v}% damage. Every path starts here', cost: 25, x: 0, y: 0, links: [] }];
+for (const B of BRANCHES)
+  NODES[B.id].forEach(([id, name, max, stat, per, desc, el], i) => {
+    const [a, s, size, depth] = SLOTS[i];
+    TREE.push({ id, branch: B.id, depth, size, name, max, stat, per, desc, el, cost: DEPTH_COST[depth], x: Math.round(a * B.dir[0] + s * B.side[0]), y: Math.round(a * B.dir[1] + s * B.side[1]), links: [] });
+  });
 export const TREE_BY_ID = Object.fromEntries(TREE.map(n => [n.id, n]));
+const link = (a, b) => {
+  TREE_BY_ID[a].links.push(b);
+  TREE_BY_ID[b].links.push(a);
+};
+for (const B of BRANCHES) for (const [a, b] of SLOT_LINKS) link(a < 0 ? 'core' : NODES[B.id][a][0], NODES[B.id][b][0]);
+// bridges between neighbouring clusters
+link('giant', 'combo');
+link('blink', 'tutor');
+export const TREE_LINKS = TREE.flatMap(n => n.links.filter(id => id > n.id).map(id => [n.id, id]));
+export const rankCost = (n, rank) => n.cost * rank; // rank = the rank being bought, from 1
 
 // ---------------------------------------------------------------- world boss perks and trophies
 // region -> the trophy you take off the family head and the perk it gives
@@ -109,7 +144,7 @@ try {
 } catch (_) {
   storage = null;
 }
-const blank = () => ({ v: 1, shards: 0, earned: 0, tree: {}, perks: {}, trophies: {} });
+const blank = () => ({ v: 1, shards: 0, earned: 0, tree: {}, hist: [], perks: {}, trophies: {} });
 let store = null;
 function load() {
   const out = blank();
@@ -119,6 +154,13 @@ function load() {
       out.shards = Math.max(0, Math.floor(+raw.shards || 0));
       out.earned = Math.max(out.shards, Math.floor(+raw.earned || 0));
       for (const [id, r] of Object.entries(raw.tree || {})) if (TREE_BY_ID[id]) out.tree[id] = Math.max(0, Math.min(TREE_BY_ID[id].max, Math.floor(+r || 0)));
+      if (Array.isArray(raw.hist)) out.hist = raw.hist.filter(id => out.tree[id]).slice(-HIST_MAX);
+      if (!reachable(out.tree)) {
+        // a save from before the web: every rank refunded
+        for (const [id, r] of Object.entries(out.tree)) out.shards += (TREE_BY_ID[id].cost * r * (r + 1)) / 2;
+        out.tree = {};
+        out.hist = [];
+      }
       for (const t of TYPE_LIST) if (Array.isArray(raw.perks?.[t])) out.perks[t] = raw.perks[t].slice(0, MASTERY_TIERS.length).map(c => (c === 0 || c === 1 ? c : null));
       for (const r of Object.keys(TROPHIES)) if (raw.trophies?.[r]) out.trophies[r] = 1;
     }
@@ -153,33 +195,58 @@ export function bankShards(n) {
   return n;
 }
 export const rank = id => meta().tree[id] || 0;
-export const spentIn = branch => TREE.filter(n => n.branch === branch).reduce((s, n) => s + rank(n.id), 0);
-export const tierOpen = (branch, tier) => spentIn(branch) >= GATE[tier];
+// every invested node can be walked to from CORE through invested nodes
+function reachable(tree) {
+  const seen = new Set(), todo = tree.core ? ['core'] : [];
+  while (todo.length) {
+    const id = todo.pop();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    for (const l of TREE_BY_ID[id].links) if (tree[l]) todo.push(l);
+  }
+  return Object.keys(tree).every(id => !tree[id] || seen.has(id));
+}
+// CORE is always open; any other node opens once a node linked to it has a rank
+export const linked = id => id === 'core' || TREE_BY_ID[id].links.some(l => rank(l));
 // why a rank can't be bought, or null if it can
 export function cantBuy(id) {
   const n = TREE_BY_ID[id];
   if (!n) return 'NO SUCH NODE';
   if (rank(id) >= n.max) return 'MAXED';
-  if (!tierOpen(n.branch, n.tier)) return `SPEND ${GATE[n.tier] - spentIn(n.branch)} MORE IN ${n.branch.toUpperCase()}`;
-  if (meta().shards < rankCost(n.tier, rank(id) + 1)) return 'NOT ENOUGH SHARDS';
+  if (!linked(id)) return 'INVEST IN A LINKED NODE FIRST';
+  if (meta().shards < rankCost(n, rank(id) + 1)) return 'NOT ENOUGH SHARDS';
   return null;
 }
+const HIST_MAX = 300;
 export function buyRank(id) {
   if (cantBuy(id)) return false;
   const n = TREE_BY_ID[id], m = meta();
-  m.shards -= rankCost(n.tier, rank(id) + 1);
+  m.shards -= rankCost(n, rank(id) + 1);
   m.tree[id] = rank(id) + 1;
+  m.hist.push(id);
+  if (m.hist.length > HIST_MAX) m.hist.shift();
   save();
   return true;
 }
+// take back the last rank bought (newest first, so the web always stays linked)
+export function undoRank() {
+  const m = meta(), id = m.hist.pop();
+  if (!id || !rank(id)) return save(), null;
+  m.shards += rankCost(TREE_BY_ID[id], rank(id));
+  if (--m.tree[id] === 0) delete m.tree[id];
+  save();
+  return id;
+}
+export const canUndo = () => meta().hist.length > 0;
 // every rank refunded in full
 export function respec() {
   const m = meta();
-  for (const n of TREE) for (let r = 1; r <= rank(n.id); r++) m.shards += rankCost(n.tier, r);
+  m.shards += treeSpent();
   m.tree = {};
+  m.hist = [];
   save();
 }
-export const treeSpent = () => TREE.reduce((s, n) => s + Array.from({ length: rank(n.id) }, (_, i) => rankCost(n.tier, i + 1)).reduce((a, b) => a + b, 0), 0);
+export const treeSpent = () => TREE.reduce((s, n) => s + n.cost * (rank(n.id) * (rank(n.id) + 1)) / 2, 0);
 
 // ---- trophies
 export const hasTrophy = region => !!meta().trophies[region];
@@ -216,8 +283,12 @@ export function stats(type = null) {
   cache ||= {};
   const key = type ? type + tiersOpen(type) : '-'; // a mastery level-up opens a tier: new key
   if (cache[key]) return cache[key];
-  const out = { ...ZERO, innate: new Set() };
-  for (const n of TREE) if (rank(n.id)) out[n.stat] += n.per * rank(n.id);
+  const out = { ...ZERO, innate: new Set(), infuse: {} };
+  for (const n of TREE) {
+    if (!rank(n.id)) continue;
+    if (n.el) out.infuse[n.el] = n.per * rank(n.id);
+    else out[n.stat] += n.per * rank(n.id);
+  }
   for (const r of Object.keys(meta().trophies)) {
     add(out, TROPHIES[r].stats);
     if (TROPHIES[r].innate) out.innate.add(TROPHIES[r].innate);

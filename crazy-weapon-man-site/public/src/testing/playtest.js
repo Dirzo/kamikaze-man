@@ -57,7 +57,7 @@ export function runPlaytest(game) {
 
 // ---------------------------------------------------------------- campaign
 // the bot's spec: cheap ranks first, damage and health before the rest
-const SPEC = ['sharp', 'skin', 'luck', 'armor', 'brutal', 'magnet', 'band', 'giant', 'over', 'stone', 'regen', 'swarm', 'spec', 'blink', 'exec', 'learn', 'tutor', 'bounty'];
+const SPEC = ['core', 'sharp', 'skin', 'luck', 'armor', 'brutal', 'magnet', 'band', 'giant', 'over', 'stone', 'regen', 'swarm', 'spec', 'blink', 'exec', 'learn', 'tutor', 'bounty'];
 function spend() {
   for (let bought = true; bought;) {
     bought = false;

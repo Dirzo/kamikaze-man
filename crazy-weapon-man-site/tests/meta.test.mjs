@@ -4,7 +4,7 @@ import { LEVELS, NODES } from '../game-src/data/overworld.js';
 import { BOSS_OF, SIBLING_DEFS, HEAD_KINDS, FAMILIES, ROLES, levelTier } from '../game-src/data/families.js';
 import { readFileSync } from 'node:fs';
 import {
-  resetMeta, meta, bankShards, buyRank, cantBuy, rank, respec, TREE, GATE, rankCost, spentIn, stats, winTrophy, hasTrophy,
+  resetMeta, meta, bankShards, buyRank, cantBuy, rank, respec, undoRank, TREE, TREE_BY_ID, TREE_LINKS, rankCost, stats, winTrophy, hasTrophy,
   TROPHIES, MASTERY_TIERS, MASTERY_PERKS, choosePerk, perkChoice, tiersOpen, masteryPerk, SIGNATURE
 } from '../game-src/data/meta.js';
 import { addProficiency, resetProficiency, PROF_MAX, profToNext } from '../game-src/data/proficiency.js';
@@ -39,23 +39,44 @@ test('sibling moves are moves the boss engine knows', () => {
   for (const D of Object.values(SIBLING_DEFS)) for (const p of [...D.patterns, D.surprise]) assert.ok(known.has(p.split(':')[0]), D.name + ': ' + p);
 });
 
-test('shards bank, buy ranks behind tier gates, and refund in full', () => {
+test('the shard web: every node links back to CORE, and keystones sit at the ends', () => {
+  const seen = new Set(), todo = ['core'];
+  while (todo.length) {
+    const id = todo.pop();
+    if (seen.has(id)) continue;
+    seen.add(id);
+    todo.push(...TREE_BY_ID[id].links);
+  }
+  assert.equal(seen.size, TREE.length);
+  assert.equal(TREE.filter(n => n.el).length, 6, 'two element keystones a cluster');
+  for (const n of TREE) for (const l of n.links) assert.ok(TREE_BY_ID[l].links.includes(n.id), n.id + ' - ' + l);
+  for (const [a, b] of TREE_LINKS) assert.ok(TREE_BY_ID[a] && TREE_BY_ID[b]);
+  const pos = new Set(TREE.map(n => n.x + ',' + n.y));
+  assert.equal(pos.size, TREE.length, 'two nodes on one spot');
+});
+test('shards bank, ranks need a linked node, undo takes back the last rank, refund is in full', () => {
   resetMeta();
-  assert.equal(cantBuy('sharp'), 'NOT ENOUGH SHARDS');
+  assert.equal(cantBuy('core'), 'NOT ENOUGH SHARDS');
   bankShards(100000);
-  assert.match(cantBuy('brutal'), /SPEND 5 MORE/);
+  assert.match(cantBuy('sharp'), /LINKED/);
+  assert.ok(buyRank('core'));
   for (let i = 0; i < 5; i++) assert.ok(buyRank('sharp'));
   assert.equal(cantBuy('sharp'), 'MAXED');
-  assert.equal(cantBuy('brutal'), null, 'tier 1 opens after 5 ranks');
-  assert.ok(Math.abs(stats().dmg - 0.15) < 1e-9);
-  const spent = [1, 2, 3, 4, 5].reduce((s, r) => s + rankCost(0, r), 0);
+  assert.equal(cantBuy('brutal'), null, 'linked to sharp');
+  assert.match(cantBuy('over'), /LINKED/);
+  assert.ok(Math.abs(stats().dmg - 0.17) < 1e-9);
+  const spent = rankCost(TREE_BY_ID.core, 1) + [1, 2, 3, 4, 5].reduce((s, r) => s + rankCost(TREE_BY_ID.sharp, r), 0);
   assert.equal(meta().shards, 100000 - spent);
+  assert.equal(undoRank(), 'sharp');
+  assert.equal(rank('sharp'), 4);
+  assert.equal(meta().shards, 100000 - spent + rankCost(TREE_BY_ID.sharp, 5));
+  buyRank('swarm');
+  buyRank('fire');
+  assert.ok(Math.abs(stats().infuse.fire - 0.06) < 1e-9);
   respec();
   assert.equal(meta().shards, 100000);
   assert.equal(rank('sharp'), 0);
-  assert.equal(spentIn('might'), 0);
-  assert.deepEqual(GATE.slice(0, 1), [0]);
-  assert.equal(TREE.length, 24);
+  assert.equal(undoRank(), null);
 });
 test('a trophy is won once and its perk is always on', () => {
   resetMeta();
