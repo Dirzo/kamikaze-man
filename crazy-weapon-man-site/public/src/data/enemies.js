@@ -27,7 +27,16 @@ export const ENEMIES = {
   blinker: { name: 'Blink Imp', kind: 'blink', hp: 0.75, dmg: 0.9, speed: 38, range: 22, wind: 0.42 },
   summoner: { name: 'Bone-Summoning Necromancer', kind: 'summon', hp: 0.9, dmg: 0.8, speed: 26, range: 110, wind: 0.85, bolt: 'lime' },
   sniper: { name: 'Steve, Who Never Misses', kind: 'sniper', hp: 0.8, dmg: 1.3, speed: 22, range: 300, wind: 1.1, bolt: 'red' },
-  roller: { name: 'Runaway Barrel Knight', kind: 'roller', hp: 1.0, dmg: 1.1, speed: 30, range: 140, wind: 0.6 }
+  roller: { name: 'Runaway Barrel Knight', kind: 'roller', hp: 1.0, dmg: 1.1, speed: 30, range: 140, wind: 0.6 },
+  // weapon-zone residents: each one carries (a tiny version of) its zone's weapon
+  squirrel: { name: 'Acorn Archer', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 38, range: 112, wind: 0.66, bolt: 'orange' },
+  turtle: { name: 'Nunchuck Turtle', kind: 'melee', style: 'leap', hp: 1.1, dmg: 1.0, speed: 44, range: 28, wind: 0.4 },
+  raccoon: { name: 'Bazaar Raccoon', kind: 'melee', style: 'slash', hp: 0.8, dmg: 0.95, speed: 62, range: 22, wind: 0.36 },
+  samurai: { name: 'Tiny Samurai', kind: 'melee', style: 'cleave', hp: 1.3, dmg: 1.3, speed: 30, range: 32, wind: 0.62 },
+  kitsune: { name: 'Kitsune Spirit', kind: 'blink', hp: 0.8, dmg: 0.95, speed: 40, range: 22, wind: 0.44 },
+  monk: { name: 'Pebble Monk', kind: 'shield', hp: 1.25, dmg: 1.05, speed: 32, range: 26, wind: 0.56 },
+  anvil: { name: 'Anvil Pup', kind: 'roller', hp: 1.4, dmg: 1.2, speed: 26, range: 140, wind: 0.66 },
+  ninja: { name: 'Pocket Ninja', kind: 'ranged', hp: 0.78, dmg: 1.05, speed: 44, range: 118, wind: 0.5, bolt: 'violet' }
 };
 
 export const ELITE_TITLES = ['Grand', 'Royal', 'Elder', 'Mighty', 'Slightly Cursed', 'Ill-Tempered', 'Very Large', 'Knighted', 'Haunted', 'Ancient'];

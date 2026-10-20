@@ -34,6 +34,7 @@ HERO_FRAMES = {
 
 from enemies import ENEMIES, ENEMY_KEY
 from cute_enemies import DESIGNS as CUTE, frames as cute_frames, strip as cute_strip
+import weapon_zones
 from bosses import BOSSES
 from weapons import WEAPONS, VARIANTS, weapon_image
 from awakening import AWAKENED
@@ -141,6 +142,8 @@ def main():
         sl.save(os.path.join(OUT, f'slab-{key}.png'))
         man['slabs'][key] = {'file': f'slab-{key}.png', 'w': sl.width, 'h': sl.height, 'cap': 9}
         man['zones'].append(key)
+    # weapon-themed zones (weapon_zones.py); the ranger forest dresses up the mushroom backdrop
+    weapon_zones.build(OUT, man, Image.open(os.path.join(OUT, 'bg-mushroom-hollow.png')).convert('RGBA'))
 
     with open(os.path.join(OUT, 'manifest.json'), 'w') as f:
         json.dump(man, f, indent=1)

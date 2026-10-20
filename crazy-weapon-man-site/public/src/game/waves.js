@@ -196,7 +196,9 @@ function openExit() {
   world.bolts.length=0;
   sfx.clear();
   callout('MAP CLEAR - EXIT OPEN',W/2,64,C.gold,{big:true,life:120});
-  if(world.zone===0) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(0,{q:1,standout:false}));
+  // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard)
+  const z=world.zone,home=ZONES[z].weapon;
+  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(z,{type:home,q:z===0?1:Math.min(10,z+1),standout:false}));
 }
 export function enemiesLeft() {
   if(!world.director) return 0;

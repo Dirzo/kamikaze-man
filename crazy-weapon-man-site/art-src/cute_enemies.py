@@ -302,12 +302,127 @@ def roller(s, f):  # Runaway Barrel Knight: a barrel in a helmet, rolling on lit
     s.eyes(7, 8 + b, 4, f == 2, big=False)
 
 
+# ---- weapon-zone residents ----------------------------------------------------------------------
+
+def squirrel(s, f):  # Acorn Archer (Ranger's Forest): a brown squirrel in a green cap with a tiny bow
+    b = f == 1
+    s.oval(0, 2 + b, 8, 16 + b, '#c98a4a')                    # big fluffy tail
+    s.oval(2, 4 + b, 6, 12 + b, '#e8b07a')
+    s.oval(5, 7 + b, 16, 19, '#b8743a')                       # body
+    s.oval(7, 11 + b, 13, 18, '#f2d7b0')                      # belly
+    s.poly([(7, 3 + b), (15, 3 + b), (11, 0 + b)], '#4f9a3a')  # ranger cap
+    s.poly([(14, 2 + b), (18, 0 + b), (15, 4 + b)], '#e0405a', shade=False)  # feather
+    s.box(16, 8 + b, 17, 16 + b, '#8a4f22')                   # bow
+    s.oval(6, 17, 9, 19, '#7a4a22'); s.oval(12, 17 - b, 15, 19 - b, '#7a4a22')
+    s.outline()
+    s.eyes(9, 8 + b, 3, f == 2, big=False)
+
+
+def turtle(s, f):  # Nunchuck Turtle (Turtle Lagoon): a green shell kid in an orange mask, nunchucks out
+    b = f == 1
+    s.oval(1, 6 + b, 15, 18, '#4f8a3a')                       # shell
+    for x in (4, 8):
+        s.box(x, 9 + b, x + 2, 10 + b, '#8acb6a', shade=False)
+    s.oval(9, 2 + b, 19, 12 + b, '#9be06a')                   # head
+    s.box(9, 5 + b, 19, 7 + b, '#ff8a2c', shade=False)        # mask
+    s.poly([(9, 5 + b), (6, 3 + b), (7, 7 + b)], '#ff8a2c', shade=False)  # mask tails
+    s.box(17, 11 + b, 18, 14 + b, '#8a4f22'); s.box(19, 14 - b, 20, 17 - b, '#8a4f22')  # nunchucks
+    s.oval(3, 16, 7, 20, '#7cc254'); s.oval(10, 16 - b, 14, 20 - b, '#7cc254')
+    s.outline()
+    s.eyes(12, 5 + b, 4, f == 2, big=False, col=WHITE if f != 2 else INK)
+    s.mouth(14, 9 + b)
+
+
+def raccoon(s, f):  # Bazaar Raccoon (Thieves' Bazaar): a grey pickpocket with a loot sack and a dagger
+    b = f == 1
+    s.oval(0, 8 + b, 6, 16 + b, '#b8a68a')                    # loot sack
+    s.oval(3, 7 + b, 15, 19, '#9aa0aa')                       # body
+    s.oval(5, 1 + b, 17, 11 + b, '#b8bec8')                   # head
+    s.poly([(6, 3 + b), (6, 0 + b), (9, 2 + b)], '#7a808a'); s.poly([(16, 3 + b), (16, 0 + b), (13, 2 + b)], '#7a808a')
+    s.box(6, 5 + b, 16, 7 + b, '#3a3a4a', shade=False)       # robber mask
+    s.box(15, 13 + b, 19, 14 + b, '#d8e0f0')                  # dagger
+    s.oval(5, 17, 8, 19, '#5d5a6a'); s.oval(11, 17 - b, 14, 19 - b, '#5d5a6a')
+    s.outline()
+    s.eyes(8, 5 + b, 5, f == 2, big=False, col=WHITE if f != 2 else INK)
+    s.dot(11, 8 + b, INK)
+
+
+def samurai(s, f):  # Tiny Samurai (Sakura Shrine): a red-armoured bean in a horned helmet with a katana
+    b = f == 1
+    s.oval(3, 9 + b, 16, 21, '#c83a3a')                       # armour
+    s.box(4, 15 + b, 15, 16 + b, '#ffd84a', shade=False)      # belt
+    s.oval(5, 4 + b, 15, 13 + b, '#ffe0c0')                   # face
+    s.poly([(3, 6 + b), (10, 0 + b), (17, 6 + b)], '#3a3a5a')  # kabuto
+    s.poly([(7, 2 + b), (5, -1 + b), (9, 1 + b)], '#ffd84a', shade=False)
+    s.poly([(13, 2 + b), (15, -1 + b), (11, 1 + b)], '#ffd84a', shade=False)
+    s.box(16, 4 + b, 17, 14 + b, '#e8eef8'); s.box(15, 13 + b, 18, 14 + b, '#3a3a5a')  # katana
+    s.oval(5, 19, 8, 22, '#3a3a5a'); s.oval(11, 19 - b, 14, 22 - b, '#3a3a5a')
+    s.outline()
+    s.eyes(8, 7 + b, 3, f == 2, big=False)
+    s.mouth(9, 10 + b)
+
+
+def kitsune(s, f):  # Kitsune Spirit (Sakura Shrine): a white fox with red markings that blinks around
+    b = f == 1
+    s.oval(0, 6 + b, 7, 14 + b, '#fff4ea'); s.oval(0, 6 + b, 3, 9 + b, '#ff8a5a')  # tail with a red tip
+    s.oval(4, 7 + b, 15, 18, '#fff4ea')                       # body
+    s.oval(6, 1 + b, 17, 11 + b, '#fff4ea')                   # head
+    s.poly([(7, 3 + b), (7, -1 + b), (10, 2 + b)], '#fff4ea'); s.poly([(16, 3 + b), (16, -1 + b), (13, 2 + b)], '#fff4ea')
+    s.poly([(15, 7 + b), (18, 8 + b), (15, 9 + b)], '#fff4ea')  # snout
+    s.oval(5, 16, 8, 18, '#e8d8c8'); s.oval(11, 16 - b, 14, 18 - b, '#e8d8c8')
+    s.outline()
+    s.dot(8, 1 + b, '#ff6f8f'); s.dot(15, 1 + b, '#ff6f8f')
+    s.dot(11, 3 + b, '#e0405a'); s.dot(12, 3 + b, '#e0405a')  # forehead mark
+    s.eyes(10, 5 + b, 3, f == 2, big=False)
+
+
+def monk(s, f):  # Pebble Monk (Mountain Monastery): a bald little monk in saffron robes, staff held up
+    b = f == 1
+    s.box(16, 1 + b, 17, 20 + b, '#8a4f22')                   # staff
+    s.oval(3, 9 + b, 16, 21, '#ff9a2e')                       # robe
+    s.poly([(4, 11 + b), (14, 20), (4, 20)], '#c83a3a')       # sash
+    s.oval(5, 1 + b, 15, 11 + b, '#ffd9b8')                   # head
+    s.oval(14, 9 + b, 18, 12 + b, '#ffd9b8')                  # hand on the staff
+    s.oval(5, 19, 8, 22, '#7a4a22'); s.oval(11, 19 - b, 14, 22 - b, '#7a4a22')
+    s.outline()
+    s.dot(9, 2 + b, WHITE); s.dot(10, 2 + b, WHITE)            # shiny head
+    s.eyes(8, 5 + b, 3, f == 2, big=False)
+    s.mouth(9, 8 + b)
+
+
+def ninja(s, f):  # Pocket Ninja (Ninja Castle): a navy bean with a red headband who throws stars
+    b = f == 1
+    s.oval(3, 3 + b, 15, 18, '#2a3a6a')                       # body and hood
+    s.box(5, 7 + b, 13, 10 + b, '#ffe0c0', shade=False, r=1)  # eye slit
+    s.box(3, 4 + b, 15, 5 + b, '#e0405a', shade=False)        # headband
+    s.poly([(3, 4 + b), (0, 2 + b), (1, 6 + b)], '#e0405a', shade=False)
+    s.poly([(16, 10 + b), (18, 12 + b), (16, 14 + b), (14, 12 + b)], '#c8d0e0')  # shuriken
+    s.oval(4, 16, 7, 19, '#1a2a4a'); s.oval(11, 16 - b, 14, 19 - b, '#1a2a4a')
+    s.outline()
+    s.eyes(7, 8 + b, 3, f == 2, big=False)
+
+
+def anvil(s, f):  # Anvil Pup (Dad's Forge): a walking anvil with a glowing ember heart and stubby legs
+    b = f == 1
+    s.box(1, 3 + b, 20, 7 + b, '#6a7088', r=1)                # anvil face
+    s.poly([(20, 3 + b), (24, 4 + b), (20, 6 + b)], '#6a7088')  # horn
+    s.box(5, 7 + b, 16, 13 + b, '#585e74')                    # waist
+    s.box(3, 12 + b, 18, 15 + b, '#6a7088', r=1)              # foot
+    s.oval(9, 8 + b, 12, 11 + b, '#ff8a2c')                   # ember heart
+    s.oval(4, 14, 8, 17, '#3a3e4e'); s.oval(13, 14 - b, 17, 17 - b, '#3a3e4e')
+    s.outline()
+    s.eyes(8, 4 + b, 5, f == 2, big=False, col=WHITE if f != 2 else INK)
+
+
 DESIGNS = {
     'stalker': (18, 20, stalker), 'crawler': (16, 17, crawler), 'goose': (21, 21, goose),
     'bombchicken': (18, 19, bombchicken), 'brute': (25, 24, brute), 'wraith': (17, 20, wraith),
     'maw': (23, 18, maw), 'flyer': (21, 14, flyer), 'wizard': (18, 22, wizard), 'taxman': (19, 20, taxman),
     'mimic': (22, 14, mimic), 'eyeball': (19, 17, eyeball), 'shieldbro': (20, 21, shieldbro),
     'blinker': (16, 18, blinker), 'summoner': (20, 21, summoner), 'sniper': (19, 21, sniper), 'roller': (19, 19, roller),
+    'squirrel': (19, 20, squirrel), 'turtle': (21, 21, turtle), 'raccoon': (20, 20, raccoon),
+    'samurai': (19, 23, samurai), 'kitsune': (19, 19, kitsune), 'monk': (19, 23, monk), 'ninja': (19, 20, ninja),
+    'anvil': (25, 18, anvil),
 }
 
 

@@ -2,7 +2,7 @@
 // One new idea at a time: basic weapons -> finishers -> elements -> build-defining mutations.
 export const TYPE_UNLOCKS = {
   sword: 0, dagger: 0, bow: 0, hammer: 1, staff: 1, katana: 2,
-  shuriken: 3, nunchucks: 4, wand: 4
+  nunchucks: 2, shuriken: 3, wand: 4
 };
 export const ELEMENT_UNLOCKS = {
   fire: 1, ice: 1, poison: 2, water: 2, lightning: 3, earth: 3,
@@ -24,7 +24,9 @@ export function mutationLabel(w) { return w.mutation ? MUTATIONS[w.mutation].lab
 export const ENEMY_UNLOCKS = {
   stalker: 0, crawler: 0, goose: 2, bombchicken: 3, wizard: 4, shieldbro: 5, blinker: 7,
   brute: 8, roller: 9, taxman: 12, mimic: 13, sniper: 14, summoner: 16,
-  eyeball: 17, wraith: 24, maw: 25, flyer: 28
+  eyeball: 17, wraith: 24, maw: 25, flyer: 28,
+  // each weapon zone's own residents show up from its first wave
+  squirrel: 4, turtle: 8, raccoon: 12, samurai: 16, kitsune: 17, monk: 20, anvil: 24, ninja: 32
 };
 export function enemyPool(zone, wave, pool) {
   const stage = zone * 4 + Math.max(0, wave - 1);

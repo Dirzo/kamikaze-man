@@ -13,11 +13,11 @@ import { ZONES } from './zones.js';
 
 export const LAYOUTS = [
   { style: 'chambers', title: 'ANT TUNNEL', label: 'CHAMBER' },
-  { style: 'field', title: 'MUSHROOM MEADOW', label: 'MEADOW', screens: 8, tiers: 3, hills: true },
-  { style: 'field', title: 'LAVA CAVERN', label: 'CAVERN', screens: 8, tiers: 2, descend: true, cave: true, plat: [22, 44] },
-  { style: 'field', title: 'GRAND BANQUET', label: 'TABLE', screens: 8, tiers: 3, cave: true, plat: [36, 64], gaps: [14, 28] },
-  { style: 'field', title: 'BELL TOWER', label: 'LANDING', screens: 3, tiers: 7, peak: true, plat: [16, 30], gaps: [10, 20] },
-  { style: 'field', title: 'MOUNTAIN PASS', label: 'LEDGE', screens: 6, tiers: 5, hills: true, peak: true },
+  { style: 'field', title: 'ARCHERY GLADE', label: 'GLADE', screens: 8, tiers: 3, hills: true },
+  { style: 'field', title: 'SEA CAVES', label: 'GROTTO', screens: 8, tiers: 2, descend: true, cave: true, plat: [22, 44] },
+  { style: 'field', title: 'MARKET ROOFTOPS', label: 'STALL', screens: 8, tiers: 3, cave: true, plat: [36, 64], gaps: [14, 28] },
+  { style: 'field', title: 'CHERRY PAGODA', label: 'STOREY', screens: 3, tiers: 7, peak: true, plat: [16, 30], gaps: [10, 20] },
+  { style: 'field', title: 'MONASTERY STEPS', label: 'TERRACE', screens: 6, tiers: 5, hills: true, peak: true },
   { style: 'field', title: 'FORGE CATWALKS', label: 'CATWALK', screens: 9, tiers: 3, plat: [14, 26], gaps: [10, 18] },
   { style: 'chambers', title: 'ROOT TUNNELS', label: 'BURROW' },
   { style: 'field', title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 9, tiers: 4, cave: true },

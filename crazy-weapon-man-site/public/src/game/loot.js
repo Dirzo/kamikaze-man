@@ -9,6 +9,7 @@ import { profMult } from '../data/proficiency.js';
 import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
+import { ZONES } from '../data/zones.js';
 let uid = 1;
 
 // All sources share the zone ceiling: zone 1 tops out at Uncommon; the
@@ -18,7 +19,9 @@ export const maxQ = maxRarity;
 export function makeWeapon(zone, { elite = false, boss = false, standout = null, q = null, type = null } = {}) {
   const r = Math.random;
   const types = availableTypes(zone);
-  type = type || types[Math.floor(r() * types.length)];
+  // a zone's own weapon (bows in the Ranger's Forest, katanas at the shrine...) drops most often
+  const home = ZONES[zone] && ZONES[zone].weapon;
+  type = type || (home && types.includes(home) && r() < 0.4 ? home : types[Math.floor(r() * types.length)]);
   if (q == null) {
     const top = maxQ(zone);
     q = Math.min(10, Math.floor((top + 0.99) * Math.pow(r(), elite || boss ? 1.3 : 1.9)));
