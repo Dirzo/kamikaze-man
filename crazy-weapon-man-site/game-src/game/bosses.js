@@ -63,7 +63,7 @@ const BOSSES = {
     speed: 28
   },
   bossceo: {
-    name: 'THE USURPER SHOGUN',
+    name: 'THE USURPER NINJA LORD',
     patterns: ['stars', 'vanish', 'coins', 'summon:ninja'],
     surprise: 'clones',
     warn: 'A SHADOW MOVES ON THE ROOF...',
