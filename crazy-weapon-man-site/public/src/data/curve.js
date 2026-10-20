@@ -6,7 +6,7 @@
 //                            enemy at home, 2 hits in the next zone (~1.9x health), ~4 after
 // share(q) = 0.26 + 0.02q    -> a sword (hit 1.25) takes ~5 hits on a home-zone enemy
 export const refHP = z => Math.round(30 * Math.pow(1.9, Math.max(0, z)));
-export const refDmg = z => Math.round(9 * Math.pow(1.3, Math.max(0, z))); // enemy hit on the hero
+export const refDmg = z => Math.round(9 * Math.pow(1.25, Math.max(0, z))); // enemy hit on the hero
 export const share = q => 0.26 + 0.02 * q;
 export const ENEMY_HP = 1.6;
 export const STANDOUT_SHARE = 2.0;
@@ -17,7 +17,8 @@ export const ELITE_HP = 2.2;
 export const ELITE_DMG = 1.4;
 
 export const xpToLevel = lv => Math.round(40 * Math.pow(1.28, lv - 1));
-export const heroMaxHp = lv => 100 + (lv - 1) * 14;
+// ~1.45 levels a zone, so max health grows ~1.21x a zone: a hit costs ~9% at the start, ~13% at the end
+export const heroMaxHp = lv => Math.round(100 * Math.pow(1.14, lv - 1));
 
 // compact numbers: 999, 12.3K, 4.5M ... then joke units
 const JOKE = ['GAZILLION', 'BAJILLION', 'KAJILLION', 'TOO MANY', 'YES'];

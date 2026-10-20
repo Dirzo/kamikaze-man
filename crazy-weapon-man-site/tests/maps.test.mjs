@@ -26,7 +26,7 @@ test('maps are bounded, populated along their whole route and end at the exit',(
   for(let z=0;z<10;z++) {
     const m=makeMap(z);
     assert.ok(m.width>=2.5*W && m.width<=12*W);
-    assert.ok(m.spawns.length>=28+z*3-1);
+    assert.ok(m.spawns.length>=27+z*2-1);
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
     assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));
     assert.ok(m.platforms.every(p=>p.x>=0 && p.x+p.w<=m.width && p.y<=m.floorY));

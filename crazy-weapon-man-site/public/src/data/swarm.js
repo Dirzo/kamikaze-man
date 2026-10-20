@@ -9,8 +9,8 @@ export const comboMult = c => (c && c.n > 0 ? 1 + Math.min(COMBO.max, Math.floor
 // themed warning comes just before). Zones without a story boss get a swarm boss: a giant, named
 // resident that also fires its zone's themed `moves` (bosses.js castMove) every few seconds and
 // pulls its `surprise` at half health. The swarm keeps coming at half pace until the boss falls.
-// hp is in refHP(zone) units.
-export const SWARM_BOSS = { hp: 12, dmg: 1.6, every: 2, alive: 0.5, moveEvery: 4.2 };
+// hp is in refHP(zone) units (the first zone's goose is lighter: you still hold the training sword).
+export const SWARM_BOSS = { hp: 12, firstHp: 8, dmg: 1.6, every: 2, alive: 0.5, moveEvery: 4.2 };
 export const BOSS_ARRIVES = { min: 6, spread: 5, warn: 1.6 };
 export const SWARM_BOSSES = [
   { type: 'goose', scale: 3, name: 'MOTHER GOOSE OF THE GRAVES', line: 'HONK. (FINAL FORM)', moves: ['graves'], surprise: 'honk', warn: 'A HONK ECHOES FROM THE GRAVES...' },

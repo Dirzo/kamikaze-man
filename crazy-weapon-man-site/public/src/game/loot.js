@@ -77,11 +77,15 @@ export function powerScore(w) {
 }
 
 // A new weapon is never a downgrade: any drop that rolls weaker than the one in your hand is pumped
-// up (w.boost) to match it, plus a little extra, so every pickup is worth a swing.
+// up (w.boost) to match it, plus a little extra, so every pickup is worth a swing. The match stops
+// at par, the best this drop's zone can roll (a standout of the strongest type, with an element and
+// the top power): past that the extra compounded on every pickup and a run's weapon outgrew the
+// zones ~3x each (playtest: 50x enemy health per hit by zone 8).
 export function noWeaker(w) {
   const h = world.hero;
   if (!w || !h || !h.weapon || h.weapon === w) return w;
-  const held = powerScore(h.weapon) / (lustMult(h) * comboMult(world.swarmCombo));
+  const par = Math.max(...Object.keys(TYPES).map(type => powerScore({ ...w, type, standout: true, boost: 1, mutation: 'cataclysm', family: w.family || 'fire' })));
+  const held = Math.min(par, powerScore(h.weapon) / (lustMult(h) * comboMult(world.swarmCombo)));
   const mine = powerScore(w);
   if (mine < held) w.boost = (w.boost || 1) * (held / mine) * (1 + Math.random() * 0.1);
   return w;

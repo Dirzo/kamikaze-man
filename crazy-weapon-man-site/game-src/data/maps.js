@@ -138,7 +138,7 @@ function chambers(zone, lay) {
       }
     }
   }
-  const count=28+zone*3,spawns=[];
+  const count=27+zone*2,spawns=[];
   const hunt=platforms.filter(p=>p.ground||p.hunt);
   for(let i=0;i<count;i++) {
     const p=hunt[i%hunt.length],slot=Math.floor(i/hunt.length);
@@ -146,7 +146,7 @@ function chambers(zone, lay) {
     const span=Math.max(1,p.x+p.w-28-left);
     const sx=left+((slot*137+i*53)%span);
     const roof=Math.max(0,...solids.filter(s=>s.ceiling && sx>=s.x && sx<s.x+s.w).map(s=>s.y+s.h));
-    spawns.push({x:sx,y:p.y,airY:Math.max(roof+18,p.y-65),section:Math.floor(sx/W),room:p.room,wave:Math.min(4,1+Math.floor(p.room*4/countRooms)),elite:zone>0&&i>0&&i%9===0});
+    spawns.push({x:sx,y:p.y,airY:Math.max(roof+18,p.y-52),section:Math.floor(sx/W),room:p.room,wave:Math.min(4,1+Math.floor(p.room*4/countRooms)),elite:zone>0&&i>0&&i%9===0});
   }
   return {name:ZONES[zone].name,style:lay.style,title:lay.title,width,height:floorY+64,floorY,rooms,sections,platforms,solids,ladders,spawns,
     startX:48,startY:GROUND,exitX:width-36,exitY:floorY,bossFloor:floorY,bossLeft:width-W+8,bossRight:width-8};
@@ -254,7 +254,7 @@ function finish(m, zone, lay) {
     if (right - left >= GAP * 3) spans.push({ p, left, right });
   }
   spans.sort((a, b) => a.p.room - b.p.room || a.p.y - b.p.y || a.left - b.left);
-  const total = spans.reduce((s, q) => s + q.right - q.left, 0), count = 28 + zone * 3, spawns = [];
+  const total = spans.reduce((s, q) => s + q.right - q.left, 0), count = 27 + zone * 2, spawns = [];
   const packs = [];
   for (let left = count; left > 0; ) {
     const n = Math.min(left, m.int(3, zone >= 5 ? 5 : 4));
@@ -273,7 +273,7 @@ function finish(m, zone, lay) {
         sx = [x0 + d, x0 - d].find(v => v >= q.left && v <= q.right && !blocked(v, q.p.y)) ?? sx;
       const roof = roofAbove(sx, q.p.y), i = spawns.length;
       spawns.push({
-        x: sx, y: q.p.y, airY: Math.max(roof + 18, q.p.y - 65), section: Math.floor(sx / W), room: q.p.room, pack: k,
+        x: sx, y: q.p.y, airY: Math.max(roof + 18, q.p.y - 52), section: Math.floor(sx / W), room: q.p.room, pack: k,
         wave: Math.min(4, 1 + Math.floor(q.p.room * 4 / m.rooms.length)), elite: zone > 0 && i > 0 && i % 9 === 0
       });
     }

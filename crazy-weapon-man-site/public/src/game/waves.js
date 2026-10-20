@@ -145,7 +145,7 @@ export function spawnSwarmBoss() {
   e.scale=B.scale;e.swarm=e.swarmBoss=true;
   e.d={...d,range:d.range*(d.kind==='melee'||d.kind==='shield'||d.kind==='blink'?B.scale:1)};
   e.name=B.name;
-  e.max=e.hp=Math.round(refHP(z)*SWARM_BOSS.hp);
+  e.max=e.hp=Math.round(refHP(z)*(z?SWARM_BOSS.hp:SWARM_BOSS.firstHp));
   e.dmg=refDmg(z)*d.dmg*SWARM_BOSS.dmg;
   e.xp*=5;
   e.spawnT=0.9;

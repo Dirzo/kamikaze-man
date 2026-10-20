@@ -303,6 +303,7 @@ loadAssets(f => (loadFrac = f))
     const captureName = new URLSearchParams(location.search).get('capture');
     if (captureName) import('./testing/capture.js').then(m => m.captureScene(debug, captureName));
     if (new URLSearchParams(location.search).has('smoke')) import('./testing/smoke.js').then(m => m.runSmoke(debug));
+    if (new URLSearchParams(location.search).has('playtest')) import('./testing/playtest.js').then(m => m.runPlaytest(debug));
   })
   .catch(err => {
     console.error(err);
