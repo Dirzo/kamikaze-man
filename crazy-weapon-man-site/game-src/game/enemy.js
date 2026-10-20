@@ -57,6 +57,9 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     honkT: 1 + Math.random() * 3,
     grumbleT: 8 + Math.random() * 6,
     anim: Math.random() * 10,
+    calm: true, // wanders its platform until the hero comes close or hits it
+    wanderT: Math.random() * 2,
+    wanderDir: Math.random() < 0.5 ? -1 : 1,
     bubble: null,
     dead: false
   };
@@ -220,10 +223,35 @@ function windup(e, t) {
   }
 }
 
+export function provoke(e) {
+  if (!e.calm) return;
+  e.calm = false;
+  e.cool = Math.max(e.cool, 0.5);
+}
+// stroll back and forth on the home platform, pausing now and then
+function wander(e, dt, slow) {
+  if ((e.wanderT -= dt) <= 0) {
+    e.wanderT = 1.2 + Math.random() * 2.2;
+    e.wanderDir = Math.random() < 0.3 ? 0 : Math.random() < 0.5 ? -1 : 1;
+  }
+  if (e.wanderDir) e.face = e.wanderDir;
+  e.vx = e.wanderDir * e.speed * 0.45 * slow;
+  if (e.air) e.vy = (e.hoverY + Math.sin(e.anim * 1.6) * 6 - e.y) * 2;
+  // turn around at the platform edge instead of pressing into it
+  const p = e.platform;
+  if (!e.air && p && ((e.vx < 0 && e.x < p.x + 6) || (e.vx > 0 && e.x + e.w > p.x + p.w - 6))) { e.wanderDir *= -1; e.vx = 0; }
+}
 function think(e, dt, dxh, dist, toward, slow) {
   const d = e.d,
     hero = world.hero;
   const sameLevel = Math.abs(cy(hero) - cy(e)) < 28 || e.air;
+  // Residents are peaceful until you get close or hit them, and settle down again once you leave.
+  if (!e.swarm && !e.boss) {
+    const ranged = e.kind === 'ranged' || e.kind === 'summon' || e.kind === 'sniper';
+    if (e.calm && sameLevel && dist < (ranged ? 130 : 70)) provoke(e);
+    else if (!e.calm && (dist > 260 || Math.abs(cy(hero) - cy(e)) > 90)) e.calm = true;
+    if (e.calm) return wander(e, dt, slow);
+  }
   e.face = toward;
   switch (e.kind) {
     case 'melee':
@@ -367,6 +395,7 @@ function attacking(e, dt, toward) {
     e.state = 'recover';
     e.st = e.kind === 'ranged' || e.kind === 'sniper' ? 0.6 : 0.5;
     e.cool = e.kind === 'ranged' ? 1.4 + Math.random() : e.kind === 'sniper' ? 2.2 : 0.9 + Math.random() * 0.6;
+    if (!e.swarm) e.cool *= 1.6; // map residents breathe between attacks; the swarm doesn't
   }
 }
 
@@ -427,19 +456,7 @@ function drawBody(e, t, sx, sy, art) {
   else if (Math.abs(e.vx) > 8 || e.air) f = Math.floor(e.anim * 8) % 2;
   const bob = e.d.float ? Math.round(Math.sin(e.anim * 3) * 2) : 0;
   frame(art.im, f, art.w, art.h, sx, sy + bob - (e.state === 'wind' && e.kind === 'bomb' && Math.floor(t * 16) % 2 ? 1 : 0), e.face < 0);
-  // Little mismatched eyes, cheeks and rubbery hit faces make every resident readable.
-  const ex = Math.round(cx(e)), ey = sy + bob + Math.max(4, Math.floor(art.h * 0.35));
-  const bonked = (e.faceUntil || 0) > world.t;
-  rect(ex - 5, ey - 1, 10, 7, C.ink);
-  if (bonked && e.funnyFace === 0) {
-    for (const dx of [-4, 2]) {rect(ex+dx,ey,1,1,C.paper);rect(ex+dx+2,ey,1,1,C.paper);rect(ex+dx+1,ey+1,1,1,C.paper);rect(ex+dx,ey+2,1,1,C.paper);rect(ex+dx+2,ey+2,1,1,C.paper);}
-  } else {
-    rect(ex-4,ey,3,bonked?3:4,C.paper);rect(ex+2,ey-1,3,4,C.paper);
-    rect(ex-3+e.face,ey+1,1,2,C.ink);rect(ex+3+e.face,ey,1,2,C.ink);
-  }
-  rect(ex-6,ey+4,2,1,C.coral);rect(ex+5,ey+4,2,1,C.coral);
-  if (bonked) {rect(ex-1,ey+4,3,3,C.coral);rect(ex,ey+4,1,1,C.paper);}
-  else {rect(ex-1,ey+4,3,1,C.paper);rect(ex+1,ey+3,1,1,C.paper);}
+  // faces, eyes and blush are part of each sprite (art-src/cute_enemies.py); hits squeeze them shut
   if (e.dead) return;
   // elite marker: small gold chevron
   if (e.elite) {

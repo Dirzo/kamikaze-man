@@ -298,6 +298,15 @@ export function runSmoke(game) {
     for(let i=0;i<180;i++)updateEnemy(e,STEP);
     ok(e.x===x,'distant pack left its map section');
   });
+  check('residents stroll peacefully until the hero comes close or hits them',()=>{
+    reset();const h=world.hero,e=spawnEnemy('stalker',h.x+150,GROUND);e.spawnT=0;h.inv=100;
+    let attacked=false;
+    for(let i=0;i<240;i++){world.t+=STEP;updateEnemy(e,STEP);attacked||=e.state!=='idle';}
+    ok(e.calm && !attacked,'resident attacked from across the screen');
+    const far=spawnEnemy('crawler',h.x+150,GROUND);far.spawnT=0;hitEnemy(far,1,{dir:1});ok(!far.calm,'a hit did not provoke');
+    e.x=h.x+30;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(e,STEP);}
+    ok(!e.calm,'resident ignored the hero right next to it');
+  });
   reset();
   const failed=results.filter(s=>s.startsWith('FAIL'));
   document.documentElement.dataset.smoke=failed.length?'fail':'pass';

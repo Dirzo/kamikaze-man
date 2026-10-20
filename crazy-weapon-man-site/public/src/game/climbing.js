@@ -1,4 +1,4 @@
-// Climb the shafts between hunting decks. Jump+direction dismounts onto any intermediate deck.
+// Climb the ladders that hang from platforms. Jump+direction dismounts partway.
 // Grabbing a ladder sheathes the weapon on your back (anim.js draws it); letting go draws it again.
 import { HERO } from '../config.js';
 import { world } from './world.js';
@@ -30,7 +30,8 @@ function climb(h,dt) {
   if(input.axis())h.face=input.axis();
   h.y+=dir*98*dt;
   if(dir)h.climbT=(h.climbT||0)+dt;
-  if(h.y+h.h<=l.top+2) {
+  // the ladder ends level with its platform: climbing up stops you standing right there
+  if(dir<0 && h.y+h.h<=l.top) {
     h.x=l.exitX;h.y=l.exitY-h.h;h.onGround=true;h.ladder=null;h.climbLock=0.25;
   } else if(h.y+h.h>=l.bottom) {
     h.y=l.bottom-h.h;h.onGround=true;h.ladder=null;h.climbLock=0.25;

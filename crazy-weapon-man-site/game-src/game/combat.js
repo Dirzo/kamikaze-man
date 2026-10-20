@@ -23,6 +23,7 @@ export function hitEnemy(e, dmg, o = {}) {
   const hero = world.hero;
   const dir = o.dir || Math.sign(cx(e) - cx(hero)) || 1;
   if (e.asleep) wake(e);
+  e.calm = false; // a peaceful resident fights back once hit
   if (e.kind === 'mimic' && e.disguised) reveal(e);
   // shields block from the front unless it's a crit or a special
   if (e.kind === 'shield' && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack') {

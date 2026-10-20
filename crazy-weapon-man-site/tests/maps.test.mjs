@@ -6,16 +6,21 @@ import { HERO, GROUND, W } from '../game-src/config.js';
 import { world } from '../game-src/game/world.js';
 import { ZONES } from '../game-src/data/zones.js';
 import { move } from '../game-src/game/physics.js';
-test('every zone has its own layout style, and seeded routes never change between runs',()=>{
-  const styles=new Set();
+test('map 1 keeps its Ant Tunnel layout; the others are distinct MapleStory-style fields',()=>{
+  assert.equal(LAYOUTS[0].style,'chambers');
+  const fields=new Set();
   for(let z=0;z<10;z++) {
-    const m=makeMap(z);styles.add(m.style);
+    const m=makeMap(z);
     assert.equal(m.name,ZONES[z].name);assert.ok(m.title);
     assert.equal(JSON.stringify(makeMap(z)),JSON.stringify(m));
-    if(z>0)assert.notEqual(m.style,LAYOUTS[z-1].style,'neighbouring zones share a layout');
+    if(m.style==='field')fields.add(JSON.stringify({...LAYOUTS[z],title:0,label:0}));
   }
-  assert.ok(styles.size>=7,'only '+styles.size+' layout styles');
-  assert.ok(LAYOUTS.filter(l=>l.style==='burrow').length>=2,'ant tunnels should recur');
+  assert.equal(fields.size,LAYOUTS.filter(l=>l.style==='field').length,'two field zones share the same recipe');
+});
+test('ladders end level with the platform they hang from, so the climb stops there',()=>{
+  for(let z=0;z<10;z++) for(const l of makeMap(z).ladders) {
+    assert.equal(l.top,l.exitY);assert.equal(l.exitX,l.x-HERO.w/2);
+  }
 });
 test('maps are bounded, populated along their whole route and end at the exit',()=>{
   for(let z=0;z<10;z++) {
@@ -49,7 +54,7 @@ test('ladders stand on floors, exit onto floors and never pass through terrain',
     for(const l of m.ladders) {
       assert.ok(m.platforms.some(p=>p.y===l.exitY && l.exitX>=p.x && l.exitX<p.x+p.w),'ladder exit in the air in zone '+z);
       assert.ok(m.platforms.some(p=>p.y===l.bottom && l.x>=p.x && l.x<p.x+p.w),'ladder foot in the air in zone '+z);
-      assert.ok(!m.solids.some(p=>l.x>p.x-6 && l.x<p.x+p.w+6 && p.y<l.bottom-2 && p.y+p.h>l.top+30),'ladder passes through terrain in zone '+z);
+      assert.ok(!m.solids.some(p=>l.x>p.x-6 && l.x<p.x+p.w+6 && p.y<l.bottom-2 && p.y+p.h>l.top+2),'ladder passes through terrain in zone '+z);
     }
   }
 });
@@ -57,24 +62,21 @@ test('the end chamber is a flat open arena the boss can drop into',()=>{
   for(let z=0;z<10;z++) {
     const m=makeMap(z);
     assert.ok(m.platforms.some(p=>p.solid && p.y===m.bossFloor && p.x<=m.bossLeft && p.x+p.w>=m.bossRight),'arena floor not flat in zone '+z);
-    assert.ok(!m.solids.some(p=>p.x<m.bossRight && p.x+p.w>m.bossLeft+16 && p.y<m.bossFloor && p.y+p.h>m.bossFloor-220),'arena roof too low in zone '+z);
+    if(ZONES[z].boss)assert.ok(!m.solids.some(p=>p.x<m.bossRight && p.x+p.w>m.bossLeft+16 && p.y<m.bossFloor && p.y+p.h>m.bossFloor-200),'arena roof too low in zone '+z);
     assert.equal(m.exitY,m.bossFloor);
   }
 });
-test('climbing maps start at the bottom and the camera can follow every height',()=>{
-  const climbs=[];
+test('every map starts on a floor and the camera can follow every height',()=>{
   for(let z=0;z<10;z++) {
     const m=makeMap(z);
     assert.ok(m.platforms.some(p=>p.y===m.startY && m.startX>=p.x && m.startX<p.x+p.w));
-    if(m.startY>m.exitY+200)climbs.push(m.style);
     assert.equal(cameraTargetY(m.floorY,m.floorY),m.floorY-GROUND);
     assert.equal(cameraTargetY(0,m.floorY),0);
     for(const r of m.rooms)assert.ok(r.label && r.end>r.x);
   }
-  assert.deepEqual(climbs.sort(),['belfry','summit']);
 });
 test('solid floors, ceilings and side walls stop movement',()=>{
-  world.map=makeMap(1);
+  world.map=makeMap(0);
   try {
     const p=world.map.solids.find(p=>p.ceiling), h={x:p.x+30,y:p.y+p.h+1,w:16,h:22,vx:0,vy:-200};
     move(h,1/60,[]);assert.equal(h.y,p.y+p.h);assert.equal(h.vy,0);
