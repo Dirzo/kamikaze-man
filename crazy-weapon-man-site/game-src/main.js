@@ -2,7 +2,7 @@
 import { W, H, STEP, C, GROUND } from './config.js';
 import { input } from './engine/input.js';
 import { loadAssets, A } from './engine/assets.js';
-import { X, rect, text, textWidth, panel, dither, worldLayer, screenLayer, frame } from './engine/gfx.js';
+import { X, rect, text, textWidth, fitText, panel, dither, worldLayer, screenLayer, frame } from './engine/gfx.js';
 import { audioOn, music, sfx, toggleMusic, toggleSound, audioSettings } from './engine/audio.js';
 import { world, resetWorld } from './game/world.js';
 import { createHero, updateHero, drawHero } from './game/hero.js';
@@ -29,6 +29,10 @@ import { newRun, tickRun, endRun, drawResults, RESULTS_TIME } from './game/speed
 import { ow, openOverworld, updateOverworld, drawOverworld } from './game/overworld.js';
 import { loadSave, writeSave, clearLevel, FINAL } from './data/overworld.js';
 import { freshUid } from './game/loot.js';
+import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
+import { P as powers, openPowers, closePowers } from './game/powers.js';
+import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
+import { applyLock } from './game/classlock.js';
 
 let capture = false;
 let scene = 'loading',
@@ -54,6 +58,12 @@ function startRun() {
 // The overworld run: the hero (level, weapon, bag) carries from level to level and is saved with
 // the map. A level is played on its region's zone map. Dying or leaving only loses that attempt:
 // the hero goes back to how they walked in and the map keeps everything cleared.
+function showFiles() {
+  document.getElementById('start').hidden = true;
+  openFiles();
+  scene = 'files';
+  sceneT = 0;
+}
 function openMap(fresh = []) {
   document.getElementById('start').hidden = true;
   closeInventory();
@@ -74,11 +84,18 @@ function enterLevel(node) {
   if (snap) {
     // fresh copies with new ids, so a failed attempt can never touch the saved gear
     const copy = JSON.parse(JSON.stringify(snap));
-    Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMaxHp(copy.lv), weapon: freshUid(copy.weapon) });
+    Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMax(copy.lv), weapon: freshUid(copy.weapon) });
     world.bag = copy.bag.map(w => w && freshUid(w));
   }
   world.level = node;
   newRun();
+  // specialized: off-class weapons in the kit melt into banked shards, for good (a failed
+  // attempt restores the kit from the save, so the save is cleaned too)
+  const melted = applyLock();
+  if (melted) {
+    bankShards(melted);
+    if (snap) (ow.save.hero = heroSnapshot()), writeSave(ow.save);
+  }
   startZone(node.zone);
   h.hp = h.maxHp; // every level starts at full health
   scene = 'play';
@@ -87,14 +104,18 @@ function enterLevel(node) {
 // a level ended: 'clear' saves the hero and reveals new roads, 'fail' and 'quit' change nothing
 function endLevel(result) {
   const node = world.level;
-  let fresh = [];
+  let fresh = [], trophy = null;
+  // shards are banked for the shard tree win or lose: a failed attempt still made you stronger
+  const shards = bankShards(world.shards);
+  world.shards = 0;
   if (result === 'clear') {
+    if (node.kind === 'castle' && winTrophy(node.region)) trophy = TROPHIES[node.region];
     fresh = clearLevel(ow.save, node.id, world.levelExit === 'secret' && node.secret.length ? 'secret' : 'next');
     ow.save.hero = heroSnapshot();
     writeSave(ow.save);
   }
   if (result === 'quit') return openMap();
-  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret) };
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy };
   scene = 'levelEnd';
   sceneT = 0;
 }
@@ -110,17 +131,29 @@ function update(dt) {
     if (input.take('confirm') | input.take('jump')) {
       audioOn();
       sfx.ui(true);
+      showFiles();
+    }
+    return;
+  }
+  if (scene === 'files') {
+    const r = updateFiles();
+    if (r === 'play') {
+      ow.save = null; // the chosen file's map
       openMap();
+    } else if (r === 'back') {
+      scene = 'title';
+      document.getElementById('start').hidden = false;
     }
     return;
   }
   if (scene === 'map') {
+    if (!powers.open && input.take('pause')) return showFiles();
     const node = updateOverworld(dt);
     if (node) enterLevel(node);
     return;
   }
   if (scene === 'levelEnd') {
-    if (sceneT > 0.6 && (input.take('confirm') | input.take('jump')) || sceneT > 4) openMap(world.levelEnd.fresh);
+    if (sceneT > 0.6 && (input.take('confirm') | input.take('jump')) || sceneT > (world.levelEnd.trophy ? 8 : 4)) openMap(world.levelEnd.fresh);
     return;
   }
   if (scene === 'over' || scene === 'won') {
@@ -177,6 +210,7 @@ function update(dt) {
       scene = 'over';
       sceneT = 0;
       endRun(false);
+      bankShards(world.shards); // a classic run's shards feed the shard tree too
       music.stop();
     }
   }
@@ -185,6 +219,7 @@ function update(dt) {
     scene = 'won';
     sceneT = 0;
     endRun(true);
+    bankShards(world.shards);
   }
 }
 
@@ -268,15 +303,19 @@ function drawPause() {
 function drawLevelEnd() {
   const E = world.levelEnd, clear = E.result === 'clear', final = clear && E.node.id === FINAL;
   dither(0, 0, W, H, C.ink, 9);
-  panel('panel', W / 2 - 130, 74, 260, 104);
+  panel('panel', W / 2 - 172, 74, 344, 108);
   text(final ? 'THE ARMORY IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
   text(E.node.id + '  ' + E.node.name.toUpperCase(), W / 2, 112, C.paper, { align: 'center' });
   const line = final ? 'YOU BEAT CRAZY WEAPON MAN. THE CLOSETS STILL HAVE SECRETS.'
     : E.secret ? 'SECRET EXIT! A HIDDEN PATH OPENS'
     : clear ? (E.fresh.length > 1 ? 'A FORK IN THE ROAD! ' + E.fresh.length + ' NEW PATHS OPEN' : E.fresh.length ? 'A NEW PATH OPENS' : 'YOUR GEAR IS SAVED')
     : 'NOTHING LOST BUT THE ATTEMPT. THE MAP IS SAFE.';
-  text(line, W / 2, 130, clear ? C.lime : C.mist, { align: 'center' });
-  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 158, C.fog, { align: 'center' });
+  text(line, W / 2, 128, clear ? C.lime : C.mist, { align: 'center' });
+  if (E.trophy) {
+    text('TROPHY: ' + E.trophy.name, W / 2, 140, C.gold, { align: 'center' });
+    text(fitText('NEW PERK  ' + E.trophy.perk + ': ' + E.trophy.desc.toUpperCase(), 330), W / 2, 150, C.cream, { align: 'center' });
+  } else text(`+${E.shards} SHARDS BANKED FOR THE SHARD TREE`, W / 2, 144, C.ice, { align: 'center' });
+  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164, C.fog, { align: 'center' });
 }
 
 function render() {
@@ -289,6 +328,7 @@ function render() {
     return;
   }
   if (scene === 'title') return drawTitle(t);
+  if (scene === 'files') return drawTitle(t), drawFiles(t);
   if (scene === 'map') return drawOverworld(t);
   drawWorld(world.t);
   drawHud(world.t);
@@ -339,6 +379,7 @@ click('b-pause', () => {
 });
 click('b-bag', () => {
   if (scene === 'play') toggleInventory();
+  else if (scene === 'map') powers.open ? closePowers() : openPowers();
 });
 click('b-restart', () => {
   if (world.level && scene !== 'map') enterLevel(world.level); // retry this level, from the map's saved hero
@@ -362,7 +403,7 @@ setInterval(syncButtons, 250);
 
 document.getElementById('start').addEventListener('click', () => {
   if (scene === 'loading') return;
-  audioOn(); scene === 'over' || scene === 'won' ? startRun() : openMap(); document.getElementById('screen').focus();
+  audioOn(); scene === 'over' || scene === 'won' ? startRun() : scene === 'title' ? showFiles() : openMap(); document.getElementById('screen').focus();
 });
 document.getElementById('start').hidden = true;
 document.addEventListener('visibilitychange', () => {
@@ -396,7 +437,7 @@ loadAssets(f => (loadFrac = f))
 
 // debug hooks for tests
 import { makeWeapon, hitDamage } from './game/loot.js';
-import { heroMaxHp } from './data/curve.js';
+import { heroMax } from './game/perks.js';
 import { drawHeroAnimated } from './game/anim.js';
 import { TYPES as WTYPES, MOVES } from './data/weapons.js';
 // debug: contact sheet of every weapon style's poses -> data URL
@@ -462,6 +503,7 @@ const debug = {
   },
   startRun,
   openMap,
+  showFiles,
   enterLevel,
   ow,
   A,
@@ -471,7 +513,7 @@ const debug = {
     startRun();
     const h = world.hero;
     h.lv = 1 + z * 3;
-    h.maxHp = h.hp = heroMaxHp(h.lv);
+    h.maxHp = h.hp = heroMax(h.lv);
     h.weapon = makeWeapon(z, { q: Math.min(10, z + 1), type, standout: false });
     startZone(z);
     if (boss) {

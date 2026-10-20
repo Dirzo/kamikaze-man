@@ -14,6 +14,9 @@ import { comboHit } from './waves.js';
 import { logDamage } from './speedrun.js';
 import { BOSS_TOUGH } from '../data/swarm.js';
 import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.js';
+import { heroStats, foeMult } from './perks.js';
+import { stats } from '../data/meta.js';
+import { convertDrop } from './classlock.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -37,7 +40,7 @@ export function hitEnemy(e, dmg, o = {}) {
     }
     o = { ...o, knock: (o.knock || 0) * 0.3 };
   }
-  dmg *= bigFoeMult(e);
+  dmg *= bigFoeMult(e) * foeMult(e);
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
@@ -50,7 +53,7 @@ export function hitEnemy(e, dmg, o = {}) {
     spark(cx(e) - dir * e.w * 0.35, sy, { crit: o.crit, col: o.sparkCol || C.cream });
     e.faceUntil = world.t + 0.42;
     e.funnyFace = ((e.funnyFace || 0) + 1) % 3;
-    sfx.hit(o.crit);
+    sfx.hit(o.crit, o.chain ? null : hero.weapon?.type); // the weapon's signature sound
     sfx.thud(o.crit, e.type === 'goose');
     if (!e.boss && world.t > (e.nextBonk || 0)) {
       callout(['BONK!', 'OOF!', 'PLOP!'][e.funnyFace], 0, 0, C.cream, {follow:e, life:22});
@@ -86,7 +89,11 @@ export function hitEnemy(e, dmg, o = {}) {
     if (e.state === 'wind' && (o.crit || o.special)) e.state = 'idle'; // big hits interrupt wind-ups
   }
   e.lastHitAt = world.t;
-  if (o.element && !o.chip) applyElement(e, dmg, o);
+  if (o.element && !o.chip) {
+    applyElement(e, dmg, o);
+    // shard tree keystones: a chance to also strike with another element
+    if (!o.chain) for (const [el, p] of Object.entries(heroStats().infuse)) if (el !== o.element && Math.random() < p) applyElement(e, dmg, { ...o, element: el });
+  }
   if (e.hp <= 0) kill(e, o);
   return dmg;
 }
@@ -94,6 +101,7 @@ export function hitEnemy(e, dmg, o = {}) {
 function applyElement(e, dmg, o) {
   const el = ELEMENTS[o.element];
   if (!el) return;
+  sfx.element(el.effect);
   const col = C[el.col];
   switch (el.effect) {
     case 'burn':
@@ -212,20 +220,22 @@ export function kill(e, o = {}) {
   dropShards(cx(e), cy(e), e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0));
   world.killsSinceDrop = (world.killsSinceDrop || 0) + 1;
   if (world.killsSinceDrop >= 7 || Math.random() < (e.elite ? 0.65 : 0.10)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
-  if (Math.random() < (e.elite ? 0.4 : 0.05)) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
+  if (Math.random() < (e.elite ? 0.4 : 0.05) + stats().hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
 }
 
 export function dropWeapon(x, y, w) {
-  noWeaker(w);
   world.killsSinceDrop = 0;
+  if (convertDrop(x, y, w, dropShards)) return; // specialized: another class bursts into shards
+  noWeaker(w);
   if (world.drops.length >= 8) world.drops.shift();
   world.drops.push({ id: newId(), x: x - 6, y: y - 6, w: 12, h: 8, vx: (Math.random() - 0.5) * 50, vy: -150, item: w, life: 40, t: 0 });
   sfx.loot(w.q);
 }
-export function dropShards(x, y, n) {
+// n pickups worth `total` shards between them (one each by default)
+export function dropShards(x, y, n, total = n) {
   for (let i = 0; i < n; i++)
-    world.pickups.push({ kind: 'shard', x: x - 2, y: y - 2, vx: (Math.random() - 0.5) * 90, vy: -100 - Math.random() * 80, life: 20, value: 1 });
+    world.pickups.push({ kind: 'shard', x: x - 2, y: y - 2, vx: (Math.random() - 0.5) * 90, vy: -100 - Math.random() * 80, life: 20, value: Math.floor(total / n) + (i < total % n ? 1 : 0) });
 }
 
 // explosion: hurts the hero and (if `friendly`) other enemies; big pixel burst, no circles
@@ -247,9 +257,10 @@ export function hurtHero(dmg, dir = 1) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
-  dmg = Math.max(1, Math.round(dmg));
+  const S = heroStats();
+  dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
   h.hp -= dmg;
-  h.inv = 0.8;
+  h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
   h.vx = dir * 130;
   h.vy = -120;

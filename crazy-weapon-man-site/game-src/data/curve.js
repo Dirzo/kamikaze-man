@@ -16,6 +16,9 @@ export const CRIT = { chance: 0.08, mult: 1.6 };
 export const ELITE_HP = 2.2;
 export const ELITE_DMG = 1.4;
 
+// An overworld level is a whole zone map and a world has about seven of them, so each kill there is
+// worth a fraction of a classic run's (hero levels keep pace with the zones either way).
+export const LEVEL_XP = 0.2;
 export const xpToLevel = lv => Math.round(40 * Math.pow(1.28, lv - 1));
 // ~1.45 levels a zone, so max health grows ~1.21x a zone: a hit costs ~9% at the start, ~13% at the end
 export const heroMaxHp = lv => Math.round(100 * Math.pow(1.14, lv - 1));

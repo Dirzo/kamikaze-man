@@ -5,6 +5,9 @@
 //   ?playtest=20&bot=skilled|casual&from=0
 //   casual: walks in and holds attack, takes DOWN upgrades
 //   skilled: also dodges bolts, uses specials, keeps the best weapon in the bag equipped
+//   ?playtest=4&campaign: plays the overworld instead, level by level from a fresh account until the
+//   final castle falls. Shards are banked and spent on the tree, mastery perks are picked, and a
+//   failed level is simply tried again (each attempt banks its shards, so the account grows).
 // Results land in window.CWM_PLAYTEST (and data-playtest="done" on <html>).
 import { world } from '../game/world.js';
 import { STEP } from '../config.js';
@@ -16,6 +19,10 @@ import { refHP } from '../data/curve.js';
 import { resetProficiency } from '../data/proficiency.js';
 import { cx, cy } from '../game/physics.js';
 import { kill } from '../game/combat.js';
+import { NODES, LEVELS, newSave, isOpen } from '../data/overworld.js';
+import { resetMeta, meta, TREE, cantBuy, buyRank, rank, choosePerk, unpicked, metaPower, stats, setLock, treeSpent } from '../data/meta.js';
+import { TYPE_LIST } from '../data/weapons.js';
+import { proficiency } from '../data/proficiency.js';
 
 const CODES = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', jump: 'KeyX', attack: 'KeyZ', special: 'KeyC', dash: 'KeyV' };
 const held = new Set();
@@ -33,6 +40,7 @@ export function runPlaytest(game) {
   const runs = +q.get('playtest') || 10, skill = q.get('bot') || 'skilled', from = +q.get('from') || 0;
   const out = { skill, runs: [] };
   window.CWM_PLAYTEST = out;
+  if (q.has('campaign')) return runCampaign(game, runs, skill, out);
   let n = 0;
   const next = () => {
     if (n++ >= runs) { press(new Set()); document.documentElement.dataset.playtest = 'done'; return; }
@@ -47,9 +55,57 @@ export function runPlaytest(game) {
   next();
 }
 
-function newRun(game, skill, from) {
+// ---------------------------------------------------------------- campaign
+// the bot's spec: cheap ranks first, damage and health before the rest
+const SPEC = ['core', 'sharp', 'skin', 'edge', 'brutal', 'magnet', 'band', 'swarm', 'slice', 'exec', 'bladem', 'hearts', 'fleet', 'blink', 'learn', 'tutor', 'bounty', 'fire', 'grace', 'combo'];
+function spend() {
+  for (let bought = true; bought;) {
+    bought = false;
+    const pick = TREE.filter(n => !cantBuy(n.id)).sort((a, b) => (SPEC.indexOf(a.id) + 99) % 99 - (SPEC.indexOf(b.id) + 99) % 99 || rank(a.id) - rank(b.id))[0];
+    if (pick) bought = buyRank(pick.id);
+  }
+  for (const t of TYPE_LIST) for (const tier of unpicked(t)) choosePerk(t, tier, tier % 2); // alternate A / B
+}
+function runCampaign(game, campaigns, skill, out) {
+  let n = 0;
+  const next = () => {
+    if (n++ >= campaigns) { press(new Set()); document.documentElement.dataset.playtest = 'done'; return; }
+    resetProficiency(); resetMeta(); setLock('blades'); // the bot specializes in blades
+    const save = newSave(), C = { levels: [], won: false };
+    out.runs.push(C);
+    game.ow.save = save;
+    let tries = {}, bot = null;
+    const pickLevel = () => LEVELS.find(l => isOpen(save, l.id) && !save.cleared[l.id] && (l.kind !== 'secret' || Math.random() < 0.5)) || null;
+    const start = () => {
+      spend();
+      const node = pickLevel();
+      if (!node || C.levels.length > 400) { C.won = !!save.cleared['10-C']; setTimeout(next, 0); return false; }
+      tries[node.id] = (tries[node.id] || 0) + 1;
+      game.openMap();
+      game.enterLevel(node);
+      bot = newRun(game, skill, 0, node);
+      bot.report.id = node.id; bot.report.kind = node.kind; bot.report.region = node.region; bot.report.attempt = tries[node.id];
+      bot.report.meta = metaPower(); bot.report.ranks = TREE.reduce((s, x) => s + rank(x.id), 0); bot.report.banked = meta().earned;
+      return true;
+    };
+    const chunk = () => {
+      for (let i = 0; i < 4000 && !bot.done; i++) bot.step();
+      if (!bot.done) return setTimeout(chunk, 0);
+      const r = bot.report, h = world.hero;
+      r.mastery = proficiency(h.weapon.type).lv; r.weapon = h.weapon.type;
+      r.topMastery = Math.max(...TYPE_LIST.map(t => proficiency(t).lv));
+      r.treePct = Math.round(100 * treeSpent() / TREE.filter(n => !n.branch || n.branch === meta().lock).reduce((s, n) => s + n.cost * n.max * (n.max + 1) / 2, 0));
+      C.levels.push(r);
+      if (start()) setTimeout(chunk, 0);
+    };
+    if (start()) chunk();
+  };
+  next();
+}
+
+function newRun(game, skill, from, level = null) {
   const skilled = skill === 'skilled';
-  from ? game.jump(from) : game.startRun();
+  if (!level) from ? game.jump(from) : game.startRun();
   const S = { t: 0, target: null, targetT: 0, best: Infinity, bestT: 0, jumpT: 0, lastHp: world.hero.hp, zone: -1, zt: 0 };
   const trace = new URLSearchParams(location.search).has('trace');
   const report = { won: false, zone: from, zones: [], warps: 0, skips: 0, trace: [] };
@@ -66,8 +122,11 @@ function newRun(game, skill, from) {
   const bot = { report, done: false };
   bot.step = () => {
     const h = world.hero, D = world.director;
-    if (game.scene === 'over' || game.scene === 'won' || world.phase === 'dead' || world.phase === 'won') {
-      report.won = world.phase === 'won' || game.scene === 'won';
+    // an overworld level: let a death play out until the level-end screen (it banks the shards)
+    if (level && world.phase === 'dead' && game.scene === 'play') { press(new Set()); game.update(STEP); return; }
+    if (level ? game.scene === 'levelEnd' : game.scene === 'over' || game.scene === 'won' || world.phase === 'dead' || world.phase === 'won') {
+      report.won = level ? world.levelEnd.result === 'clear' : world.phase === 'won' || game.scene === 'won';
+      report.bossHp = world.boss && !report.won ? +(world.boss.hp / world.boss.max).toFixed(2) : null;
       report.zone = world.zone;
       report.diedIn = report.won ? null : phaseKey();
       report.boss = world.boss?.name || null;
@@ -76,7 +135,7 @@ function newRun(game, skill, from) {
       bot.done = true;
       return;
     }
-    if (S.t > 60 * 60) { report.zone = world.zone; report.timeout = `${world.director?.phase} ${S.target?.type || '-'}`; bot.done = true; return; }
+    if (S.t > (level ? 15 : 60) * 60) { report.zone = world.zone; report.timeout = `${world.director?.phase} ${S.target?.type || '-'}`; bot.done = true; return; }
     if (world.zone !== S.zone) startZoneLog();
     S.t += STEP;
     const want = new Set();

@@ -7,7 +7,8 @@ import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy } from './physics.js';
 import { TYPES, MOVES, RECOVERY } from '../data/weapons.js';
-import { CRIT, heroMaxHp } from '../data/curve.js';
+import { CRIT } from '../data/curve.js';
+import { heroMax, heroStats } from './perks.js';
 import { hitDamage, trainingSword } from './loot.js';
 import { hitEnemy } from './combat.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
@@ -16,7 +17,7 @@ import { attackBox, activeWindow, canAttack } from './attack-rules.js';
 import { attackMutation, impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
-import { abilityHit, swingMult, critBonus, dashCut } from './abilities.js';
+import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abilities.js';
 
 
 export function createHero() {
@@ -24,7 +25,7 @@ export function createHero() {
     x: 60, y: GROUND - HERO.h, w: HERO.w, h: HERO.h, vx: 0, vy: 0, face: 1,
     onGround: true, coyote: 0, jumpHeld: false, dropT: 0,
     dashT: 0, dashCd: 0, inv: 1, hurtT: 0, dead: false,
-    hp: HERO.hp, maxHp: heroMaxHp(1), lv: 1, xp: 0,
+    hp: heroMax(1), maxHp: heroMax(1), lv: 1, xp: 0,
     weapon: trainingSword(), cd: 0, combo: 0, comboT: 0, attack: null,
     specialCd: 0, special: null, animT: 0, landT: 0
   };
@@ -48,6 +49,13 @@ export function updateHero(h, dt) {
   h.dropT = Math.max(0, h.dropT - dt);
   h.castT = Math.max(0, (h.castT || 0) - dt);
   h.animT += dt;
+  const S = heroStats();
+  if (S.regen && h.hp < h.maxHp) {
+    // REGENERATION / INNER PEACE: whole points only, the remainder carries over
+    h.regenAcc = (h.regenAcc || 0) + h.maxHp * S.regen * dt;
+    const n = Math.floor(h.regenAcc);
+    if (n) { h.regenAcc -= n; h.hp = Math.min(h.maxHp, h.hp + n); }
+  }
 
   // special moves take over movement while they run
   if (h.special) {
@@ -64,7 +72,7 @@ export function updateHero(h, dt) {
   // dash
   if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
     h.dashT = HERO.dashTime;
-    h.dashCd = HERO.dashCooldown;
+    h.dashCd = HERO.dashCooldown * (1 - S.dashCd);
     if (ax) h.face = ax;
     h.attack = null;
     h.cd = 0;
@@ -84,7 +92,7 @@ export function updateHero(h, dt) {
   }
   // run
   if (h.hurtT <= 0) {
-    const target = ax * HERO.speed;
+    const target = ax * HERO.speed * (1 + S.speed);
     const a = ax ? HERO.accel : HERO.friction;
     h.vx += Math.sign(target - h.vx) * Math.min(Math.abs(target - h.vx), a * dt);
     if (ax) {
@@ -107,7 +115,7 @@ export function updateHero(h, dt) {
       h.onGround = false;
       h.jumpHeld = true;
       sfx.jump();
-    } else if (h.weapon.ability === 'hops' && !h.hopped && !h.ladder) {
+    } else if (hasAbility('hops') && !h.hopped && !h.ladder) {
       // DOUBLE JUMP: one more hop off thin air
       input.consume('jump');
       h.vy = -HERO.jump * 0.9;
@@ -186,7 +194,7 @@ function updateAttack(h, dt, T) {
       if (e.dead || e.spawnT > 0 || a.hit.has(e) || !overlap(box, e)) continue;
       a.hit.add(e);
       const crit = rollCrit(h);
-      const dmg = hitDamage(h.weapon) * a.move.mult * (crit ? CRIT.mult : 1);
+      const dmg = hitDamage(h.weapon) * a.move.mult * (crit ? CRIT.mult + heroStats().critDmg : 1);
       hitEnemy(e, dmg, {
         crit,
         dir: h.face,
@@ -217,7 +225,7 @@ function shoot(h, T, ang, mult = 1, extra = {}) {
     h: 4,
     vx: Math.cos(ang) * T.speed * h.face,
     vy: Math.sin(ang) * T.speed,
-    dmg: hitDamage(w) * mult * (crit ? CRIT.mult : 1),
+    dmg: hitDamage(w) * mult * (crit ? CRIT.mult + heroStats().critDmg : 1),
     crit,
     knock: T.knock,
     pierce: T.pierce + (w.family === 'plasma' ? 2 : 0) + (extra.pierce || 0),
@@ -239,10 +247,10 @@ function shoot(h, T, ang, mult = 1, extra = {}) {
 
 // ---------------------------------------------------------------- specials
 function startSpecial(h, T) {
-  h.specialCd = T.cool;
+  h.specialCd = h.specialMax = T.cool * (1 - heroStats().specialCd);
   h.special = { kind: T.special, t: 0, hit: new Map(), tick: 0 };
   h.attack = null;
-  sfx.special();
+  sfx.special(h.weapon.type);
   callout(T.specialName, 0, 0, C.gold, { follow: h, life: 45 });
   const s = h.special;
   switch (s.kind) {
@@ -309,7 +317,7 @@ function areaHit(h, radius, mult, o = {}, once = null) {
     if (once && once.has(e)) continue;
     if (once) once.add(e);
     const crit = rollCrit(h);
-    hitEnemy(e, hitDamage(h.weapon) * mult * (crit ? CRIT.mult : 1), {
+    hitEnemy(e, hitDamage(h.weapon) * mult * (crit ? CRIT.mult + heroStats().critDmg : 1), {
       crit,
       dir: Math.sign(cx(e) - cx(h)) || h.face,
       knock: o.knock ?? T.knock,
@@ -352,7 +360,7 @@ function updateSpecial(h, dt) {
         for (const e of world.enemies)
           if (!e.dead && overlap(box, e)) {
             const crit = rollCrit(h);
-            hitEnemy(e, hitDamage(h.weapon) * 0.6 * (crit ? CRIT.mult : 1), { crit, dir: h.face, knock: 6, element: h.weapon.family, special: true, sparkCol: light });
+            hitEnemy(e, hitDamage(h.weapon) * 0.6 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: h.face, knock: 6, element: h.weapon.family, special: true, sparkCol: light });
           }
         sfx.attack('dagger', h.weapon.q);
       }
@@ -370,7 +378,7 @@ function updateSpecial(h, dt) {
         for (const e of world.enemies)
           if (!e.dead && e.x + e.w > xa && e.x < xb && Math.abs(cy(e) - cy(h)) < 26) {
             const crit = rollCrit(h);
-            hitEnemy(e, hitDamage(h.weapon) * 2.2 * (crit ? CRIT.mult : 1), { crit, dir: h.face, knock: 20, element: h.weapon.family, special: true, sparkCol: light });
+            hitEnemy(e, hitDamage(h.weapon) * 2.2 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: h.face, knock: 20, element: h.weapon.family, special: true, sparkCol: light });
           }
         for (let x = xa; x < xb; x += 3) emit(x, cy(h) + (Math.random() - 0.5) * 3, 'spark', Math.random() < 0.5 ? light : C.paper);
         shake(0.35);
@@ -423,7 +431,7 @@ function updateSpecial(h, dt) {
           if (!e.dead && !s.hit.has(e) && overlap(box, e)) {
             s.hit.set(e, 1);
             const crit = rollCrit(h);
-            hitEnemy(e, hitDamage(h.weapon) * 1.8 * (crit ? CRIT.mult : 1), { crit, dir: h.face, knock: 30, element: h.weapon.family, special: true, sparkCol: light });
+            hitEnemy(e, hitDamage(h.weapon) * 1.8 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: h.face, knock: 30, element: h.weapon.family, special: true, sparkCol: light });
           }
         emit(cx(h) - h.face * 6, h.y + 10 + Math.random() * 6, 'streak', light);
       } else h.vx *= 0.8;
@@ -436,7 +444,7 @@ function updateSpecial(h, dt) {
         for (const e of world.enemies) {
           if (e.dead || Math.abs(cx(e) - cx(h)) > 56 || Math.abs(cy(e) - cy(h)) > 34) continue;
           const crit = rollCrit(h);
-          hitEnemy(e, hitDamage(h.weapon) * 1.7 * (crit ? CRIT.mult : 1), { crit, dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 18, element: h.weapon.family, special: true, sparkCol: light });
+          hitEnemy(e, hitDamage(h.weapon) * 1.7 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 18, element: h.weapon.family, special: true, sparkCol: light });
           n++;
         }
         if (n) h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * 0.025 * Math.min(5, n)));

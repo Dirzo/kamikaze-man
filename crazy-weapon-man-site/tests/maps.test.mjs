@@ -1,11 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeMap, cameraTarget, cameraTargetY, LAYOUTS } from '../game-src/data/maps.js';
+import { makeMap, cameraTarget, cameraTargetY, LAYOUTS, DEPTHS, ownMap } from '../game-src/data/maps.js';
 import { surfaceGraph } from './map-reach.mjs';
 import { HERO, GROUND, W } from '../game-src/config.js';
 import { world } from '../game-src/game/world.js';
 import { ZONES } from '../game-src/data/zones.js';
 import { move } from '../game-src/game/physics.js';
+// every zone's map, then World 1's deeper Ant Tunnel levels
+import { LEVELS } from '../game-src/data/overworld.js';
+const MAPS=[...Array.from({length:10},(_,z)=>[z,null]),...LEVELS.map(n=>[n.zone,n.id])];
+const label=(z,id)=>id?'level '+id:'zone '+(z+1);
+test('World 1 goes deeper down the Ant Tunnel: level 1-1 is map 1 exactly, every later level is its own map',()=>{
+  assert.equal(JSON.stringify(makeMap(0,'1-1')),JSON.stringify(makeMap(0)));
+  const seen=new Set([JSON.stringify(makeMap(0).platforms)]);
+  for(const id of Object.keys(DEPTHS)) {
+    const m=makeMap(0,id);
+    assert.equal(m.title,DEPTHS[id].title);
+    assert.ok(!seen.has(JSON.stringify(m.platforms)),id+' repeats a layout');
+    seen.add(JSON.stringify(m.platforms));
+  }
+  assert.ok(makeMap(0,'1-C').floorY>makeMap(0,'1-2').floorY,'the castle is the deepest');
+});
+test('every overworld level plays its own map, and the road to each castle grows',()=>{
+  const seen=new Set();
+  for(const n of LEVELS) {
+    const m=makeMap(n.zone,n.id),key=JSON.stringify(m.platforms);
+    assert.ok(!seen.has(key),n.id+' repeats another level\'s map');
+    seen.add(key);
+  }
+  for(const R of [...new Set(LEVELS.map(n=>n.region))]) {
+    const ids=LEVELS.filter(n=>n.region===R),first=makeMap(ids[0].zone,ids[0].id),castle=ids.find(n=>n.kind==='castle');
+    const c=makeMap(castle.zone,castle.id);
+    assert.ok(c.spawns.length>first.spawns.length && c.width>=first.width,'castle of world '+R+' is no bigger than its first level');
+  }
+});
 test('map 1 keeps its Ant Tunnel layout; the others are distinct MapleStory-style fields',()=>{
   assert.equal(LAYOUTS[0].style,'chambers');
   const fields=new Set();
@@ -18,14 +46,14 @@ test('map 1 keeps its Ant Tunnel layout; the others are distinct MapleStory-styl
   assert.equal(fields.size,LAYOUTS.filter(l=>l.style==='field').length,'two field zones share the same recipe');
 });
 test('ladders end level with the platform they hang from, so the climb stops there',()=>{
-  for(let z=0;z<10;z++) for(const l of makeMap(z).ladders) {
+  for(const [z,id] of MAPS) for(const l of makeMap(z,id).ladders) {
     assert.equal(l.top,l.exitY);assert.equal(l.exitX,l.x-HERO.w/2);
   }
 });
 test('maps are bounded, populated along their whole route and end at the exit',()=>{
-  for(let z=0;z<10;z++) {
-    const m=makeMap(z);
-    assert.ok(m.width>=2.5*W && m.width<=12*W);
+  for(const [z,id] of MAPS) {
+    const m=makeMap(z,id);
+    assert.ok(m.width>=2.5*W && m.width<=14*W);
     assert.ok(m.spawns.length>=27+z*2-1);
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
     assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));
@@ -39,18 +67,18 @@ test('maps are bounded, populated along their whole route and end at the exit',(
   }
 });
 test('every surface is reachable with real hero physics, and every one leads back to the start',()=>{
-  for(let z=0;z<10;z++) {
-    const m=makeMap(z),g=surfaceGraph(m);
-    assert.ok(g.start>=0 && g.exit>=0,'start or exit not on a floor in zone '+z);
+  for(const [zone,id] of MAPS) {
+    const m=makeMap(zone,id),g=surfaceGraph(m),z=label(zone,id);
+    assert.ok(g.start>=0 && g.exit>=0,'start or exit not on a floor in '+z);
     const stranded=m.platforms.map((p,i)=>i).filter(i=>!g.forward.has(i));
     const oneWay=m.platforms.map((p,i)=>i).filter(i=>!g.back.has(i));
-    assert.deepEqual(stranded.map(i=>[m.platforms[i].x,m.platforms[i].y]),[],'unreachable surfaces in zone '+(z+1));
-    assert.deepEqual(oneWay.map(i=>[m.platforms[i].x,m.platforms[i].y]),[],'no way back from surfaces in zone '+(z+1));
+    assert.deepEqual(stranded.map(i=>[m.platforms[i].x,m.platforms[i].y]),[],'unreachable surfaces in '+z);
+    assert.deepEqual(oneWay.map(i=>[m.platforms[i].x,m.platforms[i].y]),[],'no way back from surfaces in '+z);
   }
 });
 test('ladders stand on floors, exit onto floors and never pass through terrain',()=>{
-  for(let z=0;z<10;z++) {
-    const m=makeMap(z);
+  for(const [z,id] of MAPS) {
+    const m=makeMap(z,id);
     for(const l of m.ladders) {
       assert.ok(m.platforms.some(p=>p.y===l.exitY && l.exitX>=p.x && l.exitX<p.x+p.w),'ladder exit in the air in zone '+z);
       assert.ok(m.platforms.some(p=>p.y===l.bottom && l.x>=p.x && l.x<p.x+p.w),'ladder foot in the air in zone '+z);
@@ -59,16 +87,16 @@ test('ladders stand on floors, exit onto floors and never pass through terrain',
   }
 });
 test('the end chamber is a flat open arena the boss can drop into',()=>{
-  for(let z=0;z<10;z++) {
-    const m=makeMap(z);
+  for(const [z,id] of MAPS) {
+    const m=makeMap(z,id);
     assert.ok(m.platforms.some(p=>p.solid && p.y===m.bossFloor && p.x<=m.bossLeft && p.x+p.w>=m.bossRight),'arena floor not flat in zone '+z);
-    if(ZONES[z].boss)assert.ok(!m.solids.some(p=>p.x<m.bossRight && p.x+p.w>m.bossLeft+16 && p.y<m.bossFloor && p.y+p.h>m.bossFloor-200),'arena roof too low in zone '+z);
+    if(ZONES[z].boss||ownMap(id))assert.ok(!m.solids.some(p=>p.x<m.bossRight && p.x+p.w>m.bossLeft+16 && p.y<m.bossFloor && p.y+p.h>m.bossFloor-200),'arena roof too low in zone '+z);
     assert.equal(m.exitY,m.bossFloor);
   }
 });
 test('every map starts on a floor and the camera can follow every height',()=>{
-  for(let z=0;z<10;z++) {
-    const m=makeMap(z);
+  for(const [z,id] of MAPS) {
+    const m=makeMap(z,id);
     assert.ok(m.platforms.some(p=>p.y===m.startY && m.startX>=p.x && m.startX<p.x+p.w));
     assert.equal(cameraTargetY(m.floorY,m.floorY),m.floorY-GROUND);
     assert.equal(cameraTargetY(0,m.floorY),0);

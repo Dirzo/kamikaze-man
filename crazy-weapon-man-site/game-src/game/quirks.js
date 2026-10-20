@@ -26,6 +26,7 @@ export function quirkHit(h, e, dmg, dir) {
   if (NEEDS_LIVE.has(id) && (e.dead || e.hp <= 0)) return false;
   if (Math.random() >= quirkChance(w)) return false;
   h.quirkReadyAt = world.t + 0.18;
+  sfx.quirk(id);
   world.quirkCount = (world.quirkCount || 0) + 1;
   dmg *= quirkPower(w);
   const col = C[Q.col] || C.paper,

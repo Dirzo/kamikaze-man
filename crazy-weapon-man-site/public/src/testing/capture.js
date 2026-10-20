@@ -1,7 +1,8 @@
 // Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late,
 // ?capture=secret1..secret10 for where each map hides its easter egg,
 // ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
-// ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise.
+// ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise, ?capture=lv1-3 (any
+// level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
@@ -11,14 +12,16 @@ import { ENEMIES } from '../data/enemies.js';
 import { spawnEnemy } from '../game/enemy.js';
 import { openInventory, stash } from '../game/inventory.js';
 import { startBoss, updateBoss, updateHazards, castMove } from '../game/bosses.js';
-import { SWARM_BOSSES } from '../data/swarm.js';
 import { ZONES } from '../data/zones.js';
 import { MOVES } from '../data/weapons.js';
 import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
 import { updateCamera } from '../game/camera.js';
-import { newSave, revealAll, clearLevel } from '../data/overworld.js';
+import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
+import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
+import { useFile, eraseFile } from '../data/saves.js';
+import { openPowers, P as powers } from '../game/powers.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
 function mapScene(game, all) {
   const s = all ? revealAll(newSave()) : newSave();
@@ -27,13 +30,39 @@ function mapScene(game, all) {
   game.ow.save = s;
   game.openMap();
 }
+// a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
+function powersScene(game, tab) {
+  bankShards(4200); setLock('blades');
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'edge', 'edge', 'swarm', 'brutal', 'brutal', 'fire']) buyRank(id);
+  winTrophy(1); winTrophy(2);
+  addProficiency('sword', 2200); addProficiency('bow', 300);
+  choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
+  mapScene(game, false);
+  openPowers(tab === 3 ? 1 : tab);
+  powers.tree.sel = tab === 0 ? 'core' : 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
+}
+// the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
+function filesScene(game) {
+  for (const i of [2, 1, 0]) eraseFile(i);
+  useFile(1);
+  bankShards(140);
+  const s1 = newSave(); clearLevel(s1, '1-1'); s1.at = '1-2'; s1.hero = { lv: 3 }; writeSave(s1);
+  useFile(0);
+  bankShards(5400); winTrophy(1); winTrophy(2); addProficiency('sword', 2200);
+  const s0 = revealAll(newSave(), false); for (const id of Object.keys(s0.cleared)) if (!/^[1-3]-/.test(id) && id !== 'home') delete s0.cleared[id];
+  s0.at = '3-C'; s0.hero = { lv: 14 }; writeSave(s0);
+  game.showFiles();
+}
 export function captureScene(game, mode) {
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
+  if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
+  if(mode==='files') return filesScene(game);
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));
   if(/^secret\d+$/.test(mode)) return secret(game,+mode.slice(6));
   if(/^boss\d+$/.test(mode)) return bossFight(game,+mode.slice(4));
+  if(/^lv[\dSFC-]+$/.test(mode) && NODES[mode.slice(2)]) return bossFight(game,NODES[mode.slice(2)].zone+1,NODES[mode.slice(2)]);
   game.snapshot(()=>{
     const z=mode==='late'?9:mode==='canyon'?0:1;
     startZone(z);world.wave=3;world.director={phase:'fight',toSpawn:0,bossStarted:mode==='late'};world.t=12;
@@ -122,8 +151,9 @@ function secret(game,n) {
 }
 
 // a zone's boss a moment after it crashed into the swarm, in the middle of its surprise
-function bossFight(game,n) {
+function bossFight(game,n,node=null) {
   game.snapshot(()=>{
+    world.level=node; // an overworld level fights its own boss
     const z=Math.max(0,Math.min(9,n-1)),m=(startZone(z),world.map),h=world.hero;
     world.enemies.length=0;world.director.phase='fight';
     h.lv=1+z*3;h.weapon=makeWeapon(z,{type:ZONES[z].weapon||'sword',q:Math.min(10,z+2),standout:false});
@@ -134,7 +164,7 @@ function bossFight(game,n) {
     world.director.t=Math.min(world.director.t,0.01);
     for(let i=0;i<150 && !(world.boss && world.boss.onGround);i++) step();
     const b=world.boss;
-    if(b) {b.spawnT=0;b.hp=b.max*0.6;castMove(b,ZONES[z].boss?b.D.surprise:SWARM_BOSSES[z].surprise);}
+    if(b) {b.spawnT=0;b.hp=b.max*0.6;castMove(b,b.D.surprise);}
     for(let i=0;i<48;i++) step();
     h.inv=0;
   });

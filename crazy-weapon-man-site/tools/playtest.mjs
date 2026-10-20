@@ -7,7 +7,9 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const [runs = 40, bot = 'skilled', workers = 4, from = 0] = process.argv.slice(2).map((v, i) => (i === 1 ? v : +v));
+// node tools/playtest.mjs [campaigns] [bot] [workers] campaign: the whole overworld, level by level
+const [runs = 40, bot = 'skilled', workers = 4, fromArg = 0] = process.argv.slice(2).map((v, i) => (i === 1 || v === 'campaign' ? v : +v));
+const campaign = fromArg === 'campaign', from = campaign ? 0 : fromArg;
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const port = +(process.env.PORT || 8890), CHROME = process.env.CHROME || execSync('command -v chromium || command -v google-chrome').toString().trim();
 const delay = ms => new Promise(r => setTimeout(r, ms));
@@ -28,7 +30,7 @@ async function worker(w, count) {
   socket.onmessage = e => { const m = JSON.parse(e.data); if (m.id) { pending.get(m.id)(m.result); pending.delete(m.id); } };
   const send = (method, params = {}) => new Promise(res => { const n = ++id; pending.set(n, res); socket.send(JSON.stringify({ id: n, method, params })); });
   const evaluate = async expr => (await send('Runtime.evaluate', { expression: expr, returnByValue: true })).result?.value;
-  await send('Page.navigate', { url: `http://127.0.0.1:${port}/?playtest=${count}&bot=${bot}&from=${from}${process.env.TRACE ? '&trace' : ''}` });
+  await send('Page.navigate', { url: `http://127.0.0.1:${port}/?playtest=${count}&bot=${bot}&from=${from}${campaign ? '&campaign' : ''}${process.env.TRACE ? '&trace' : ''}` });
   for (;;) {
     await delay(1000);
     const done = await evaluate('document.documentElement.dataset.playtest');
@@ -41,6 +43,26 @@ const per = Math.ceil(runs / workers);
 const all = (await Promise.all(Array.from({ length: workers }, (_, w) => worker(w, Math.min(per, runs - per * w))))).flat();
 process.stderr.write('\n');
 
+if (campaign) { report(all); process.exit(0); }
+// the overworld: does it get harder world by world while the account gets stronger?
+function report(all) {
+  const L = all.flatMap(c => c.levels), med = a => (a.sort((x, y) => x - y), a.length ? a[Math.floor(a.length / 2)] : 0);
+  console.log(`\n${bot} bot, ${all.length} campaigns: ${all.filter(c => c.won).length} beat the Sentient Armory, attempts per campaign ${(L.length / all.length).toFixed(0)}`);
+  console.log('\nworld | attempts/level | castle tries (median) | 1st-try clears level/fort/castle | boss s level/fort/castle | hero lv | weapon power | account power | tree ranks | shards earned | tree % bought | mastery (held, best type)');
+  for (let r = 1; r <= 10; r++) {
+    const at = L.filter(x => x.region === r);
+    if (!at.length) continue;
+    const ids = new Set(at.map(x => x.id)), first = k => { const f = at.filter(x => x.attempt === 1 && (k === 'level' ? x.kind === 'level' || x.kind === 'secret' : x.kind === k)); return f.length ? Math.round(100 * f.filter(x => x.won).length / f.length) + '%' : '-'; };
+    const castle = all.map(c => c.levels.filter(x => x.region === r && x.kind === 'castle').length).filter(Boolean);
+    const bossT = k => { const w = at.filter(x => x.won && (k === 'level' ? x.kind !== 'fort' && x.kind !== 'castle' : x.kind === k)).map(x => x.zones[0]?.bossT || 0); return w.length ? med(w).toFixed(0) : '-'; };
+    const avg = f => (at.reduce((s, x) => s + f(x), 0) / at.length);
+    console.log([r, (at.length / ids.size / all.length).toFixed(2), castle.length ? med(castle) : '-', `${first('level')} / ${first('fort')} / ${first('castle')}`, `${bossT('level')} / ${bossT('fort')} / ${bossT('castle')}`,
+      avg(x => x.lv).toFixed(1), avg(x => x.zones[0]?.power || 0).toFixed(2), avg(x => x.meta).toFixed(2), avg(x => x.ranks).toFixed(0), avg(x => x.banked).toFixed(0), avg(x => x.treePct || 0).toFixed(0) + '%', avg(x => x.mastery || 0).toFixed(0) + ', ' + avg(x => x.topMastery || 0).toFixed(0)].join(' | '));
+  }
+  const lost = L.filter(x => !x.won && x.kind === 'castle');
+  if (lost.length) console.log('\ncastle losses: boss health left (median) ' + med(lost.map(x => x.bossHp ?? 1)).toFixed(2) + ', died in ' + JSON.stringify(lost.reduce((m, x) => ((m[x.diedIn || 'timeout'] = (m[x.diedIn || 'timeout'] || 0) + 1), m), {})));
+  if (process.env.PLAYTEST_OUT) writeFileSync(process.env.PLAYTEST_OUT, JSON.stringify(all, null, 1));
+}
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0) + '%';
 const wins = all.filter(r => r.won).length;
 console.log(`\n${bot} bot: ${wins}/${all.length} wins (${pct(wins, all.length)}), avg warps/run ${(all.reduce((n, r) => n + r.warps, 0) / all.length).toFixed(1)}, residents written off/run ${(all.reduce((n, r) => n + (r.skips || 0), 0) / all.length).toFixed(1)}`);

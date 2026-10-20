@@ -54,7 +54,7 @@ export function drawHud(t) {
   const T = TYPES[h.weapon.type];
   label(T.specialName, 110);
   const ready = h.specialCd <= 0;
-  bar(110, y + 2, 44, 4, ready ? 1 : 1 - h.specialCd / T.cool, ready ? C.lime : C.teal);
+  bar(110, y + 2, 44, 4, ready ? 1 : 1 - h.specialCd / (h.specialMax || T.cool), ready ? C.lime : C.teal);
   text(ready ? 'READY' : h.specialCd.toFixed(1), 158, y, ready ? C.lime : C.mist);
   sep(190);
   // WEAPON: icon, scrolling name, DPS
@@ -158,7 +158,7 @@ export function drawHud(t) {
       dither(0, 92, W, 50, C.ink, 11);
       const home = Z.weapon ? `HOME OF THE ${Z.weapon.toUpperCase()}` : 'HOME OF EVERY WEAPON';
       const L = world.level; // an overworld level is named for itself, in its zone
-      text(L ? `${L.id}  -  ${Z.name.toUpperCase()}  -  ${home}` : `ZONE ${world.zone + 1}` + (world.map ? ` - ${world.map.title}` : '') + `  -  ${home}`, W / 2, 98, C.gold, { align: 'center' });
+      text(L ? `${L.id}  -  ${world.map?.own ? world.map.title : Z.name.toUpperCase()}  -  ${home}` : `ZONE ${world.zone + 1}` + (world.map ? ` - ${world.map.title}` : '') + `  -  ${home}`, W / 2, 98, C.gold, { align: 'center' });
       text(L ? L.name : Z.name, W / 2, 108, C.paper, { align: 'center', k: 2 });
       text(fitText(Z.sub, 460), W / 2, 128, C.mist, { align: 'center' });
     }

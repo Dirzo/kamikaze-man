@@ -5,26 +5,11 @@
 export const COMBO = { window: n => Math.max(1.2, 2.2 - n * 0.01), per: 5, step: 0.01, max: 0.3, shardsPer: 4 };
 export const comboMult = c => (c && c.n > 0 ? 1 + Math.min(COMBO.max, Math.floor(c.n / COMBO.per) * COMBO.step) : 1);
 
-// Every zone's boss crashes into the survival swarm a few seconds in (the moment is a surprise; a
-// themed warning comes just before). Zones without a story boss get a swarm boss: a giant, named
-// resident (zones 1, 2, 4 and 5 have their own full-size art) that also fires its zone's themed `moves` (bosses.js castMove) every few seconds and
-// pulls its `surprise` at half health. The swarm keeps coming at half pace until the boss falls.
-// hp is in refHP(zone) units (the first zone's goose is lighter: you still hold the training sword).
-export const SWARM_BOSS = { hp: 12, firstHp: 8, dmg: 0.75, every: 3, alive: 0.3, moveEvery: 3.4 };
-// Bosses are sized to the hero who shows up, not just the zone: a lucky weapon used to delete them
-// in 3-10 seconds. Health is at least `secs` seconds of the hero's steady damage (dps of the held
-// weapon, specials and quirks come on top) and no single hit takes more than `hitCap` of it.
-export const BOSS_TOUGH = { story: 10, swarm: 9, first: 8, hitCap: 0.05 };
+// Every level's boss (data/families.js) crashes into the survival swarm a few seconds in (the
+// moment is a surprise; a themed warning comes just before). The swarm keeps coming at a third of
+// its size, `every` times slower, until the boss falls.
+export const SWARM_BOSS = { every: 3, alive: 0.3 };
+// no single hit takes more than `hitCap` of a boss's health (a lucky weapon used to delete them in
+// 3-10 seconds); their health is set in bosses.js startBoss from families.js ROLES
+export const BOSS_TOUGH = { hitCap: 0.05 };
 export const BOSS_ARRIVES = { min: 6, spread: 5, warn: 1.6 };
-export const SWARM_BOSSES = [
-  { type: 'mothergoose', scale: 1, name: 'MOTHER GOOSE OF THE GRAVES', line: 'HONK. (FINAL FORM)', moves: ['graves'], surprise: 'honk', warn: 'A HONK ECHOES FROM THE GRAVES...' },
-  { type: 'acornking', scale: 1, name: 'THE ACORN ARCHER KING', line: 'I NEVER MISS. TWICE.', moves: ['arrows'], surprise: 'volley', warn: 'THE CANOPY RUSTLES...' },
-  { type: 'turtle', scale: 3, name: 'GRANDMASTER SHELLDON', line: 'NUNCHUCKS ARE A LIFESTYLE', moves: ['tide', 'shell'], surprise: 'surf', warn: 'THE TIDE IS GOING OUT... FAST' },
-  { type: 'kingpin', scale: 1, name: 'THE RACCOON KINGPIN', line: "EVERYTHING HERE IS STOLEN. EVEN ME.", moves: ['smoke'], surprise: 'decoys', warn: 'YOUR POCKETS FEEL LIGHTER...' },
-  { type: 'shogun', scale: 1, name: 'THE PETAL SHOGUN', line: 'KNEEL. OR BE PRUNED.', moves: ['iai', 'petals'], surprise: 'storm', warn: 'THE PETALS STOP FALLING...' },
-  { type: 'monk', scale: 3, name: 'THE ABBOT OF AVALANCHES', line: 'BE STILL. NOW ROLL.', moves: ['avalanche'], surprise: 'avalanche', warn: 'THE MOUNTAIN GROANS...' },
-  { type: 'anvil', scale: 3, name: "DAD'S FAVOURITE ANVIL", line: 'CLANG. (AFFECTIONATE)', moves: ['molten'], surprise: 'overheat', warn: 'SOMEONE LEFT THE FORGE ON HIGH' },
-  { type: 'wraith', scale: 3, name: "GRANDMA'S HAUNTED CASSEROLE", line: 'EAT YOUR VEGETABLES', moves: ['cookies', 'sparkles'], surprise: 'helpings', warn: 'SOMETHING SMELLS LIKE CASSEROLE...' },
-  { type: 'ninja', scale: 3, name: 'THE SHADOW INTERN', line: 'I AM UNPAID AND UNSEEN', moves: ['stars', 'vanish'], surprise: 'clones', warn: 'A SHADOW MOVES ON THE ROOF...' },
-  { type: 'eyeball', scale: 3, name: 'THE VAULT SEES ALL', line: 'I SAW YOU LOOT THAT', moves: ['graves', 'stars'], surprise: 'arsenal', warn: 'EVERY WEAPON YOU DROPPED IS HUMMING...' }
-];
