@@ -7,6 +7,10 @@ import { A } from '../engine/assets.js';
 import { X, rect, text, textWidth, panel, dither, frame, screenLayer } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { ZONES } from '../data/zones.js';
+import { P as powers, openPowers, updatePowers, drawPowers, powersWaiting } from './powers.js';
+import { hasTrophy } from '../data/meta.js';
+import { BOSS_OF } from '../data/families.js';
+import { bossName } from './bosses.js';
 import { NODES, REGIONS, SLOT_W, SLOT_H, MAP_W, MAP_H, isLevel, isOpen, edges, step, visit, warp, progress, writeSave } from '../data/overworld.js';
 
 const WALK = 110; // px/s along a road
@@ -41,6 +45,7 @@ export function updateOverworld(dt) {
   for (const e of ow.fresh) e.t += dt;
   ow.fresh = ow.fresh.filter(e => e.t < DRAW);
   centre(false);
+  if (powers.open) return updatePowers(dt), null;
   if (ow.fresh.length) return null; // let the new roads finish drawing
   if (ow.walk) {
     ow.walk.d += WALK * dt;
@@ -53,6 +58,7 @@ export function updateOverworld(dt) {
     }
     return null;
   }
+  if (input.take('inv')) return openPowers(), null;
   const dx = (input.held('right') ? 1 : 0) - (input.held('left') ? 1 : 0), dy = (input.held('down') ? 1 : 0) - (input.held('up') ? 1 : 0);
   if (dx || dy) {
     const to = step(s, s.at, dx, dy);
@@ -106,6 +112,7 @@ function drawNode(n, t) {
     for (const cx of [-8, -2, 4]) rect(x + cx, y - 14, 4, 3, open ? C.mist : C.stone);
     rect(x - 2, y - 5, 4, 6, C.ink);
     rect(x - 1, y - 20, 1, 7, C.woodD); rect(x, y - 20, 5, 3, done ? C.gold : C.red);
+    if (hasTrophy(n.region)) { rect(x + 8, y - 22, 7, 5, C.ink); rect(x + 9, y - 21, 5, 3, C.gold); rect(x + 10, y - 18, 3, 3, C.orange); } // its trophy is yours
   } else if (n.kind === 'fort') {
     rect(x - 6, y - 10, 12, 12, C.ink); rect(x - 5, y - 9, 10, 10, open ? C.sand : C.stone);
     rect(x - 6, y - 12, 3, 3, C.ink); rect(x + 3, y - 12, 3, 3, C.ink); rect(x - 2, y - 4, 4, 5, done ? C.gold : C.wine);
@@ -141,9 +148,10 @@ export function drawOverworld(t) {
     frame(Hh.im, Hh.frames[f], Hh.w, Hh.h, p.x - Hh.w / 2, p.y - Hh.h + (ow.walk ? 4 : -2), ow.face < 0);
   } else rect(p.x - 4, p.y - 14, 8, 12, C.gold);
   screenLayer();
-  drawOverworldHud();
+  drawOverworldHud(t);
+  drawPowers(t);
 }
-function drawOverworldHud() {
+function drawOverworldHud(t) {
   const s = ow.save, n = here(), R = REGIONS[n.region - 1], P = progress(s);
   // along the bottom, so the region names along the top of each painting stay readable
   const y = H - HUD_H;
@@ -152,7 +160,13 @@ function drawOverworldHud() {
   text('LEVELS CLEARED ' + P.cleared + '/' + P.total, W - 12, y + 6, C.lime, { align: 'right' });
   const kind = { level: '', fort: ' (FORT)', castle: ' (CASTLE)', secret: ' (SECRET)', warp: ' (CANNON)', start: '' }[n.kind];
   text((isLevel(n) ? n.id + '  ' : '') + n.name.toUpperCase() + kind, 12, y + 16, C.paper);
-  if (s.cleared[n.id] && isLevel(n)) text(s.cleared[n.id].includes('secret') ? 'CLEARED + SECRET EXIT' : 'CLEARED', W - 12, y + 16, C.cream, { align: 'right' });
+  if (isLevel(n)) {
+    // every level has its own boss: a sibling of the family, or the head itself in the castle
+    const done = s.cleared[n.id] ? (s.cleared[n.id].includes('secret') ? 'CLEARED + SECRET   ' : 'CLEARED   ') : '';
+    text(done + (n.kind === 'castle' ? 'HEAD: ' : 'BOSS: ') + bossName(BOSS_OF[n.id]), W - 12, y + 16, n.kind === 'castle' ? C.coral : C.cream, { align: 'right' });
+  }
   const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK    JUMP / ENTER: FIRE THE CANNON' : isLevel(n) ? 'ARROWS: WALK    JUMP / ENTER: PLAY LEVEL' : 'ARROWS: WALK';
-  if (hint) text(hint, W / 2, y + 26, C.mist, { align: 'center' });
+  if (hint) text(hint, 12, y + 26, C.mist);
+  // the POWERS window: blinks when there is a mastery perk to pick or a rank you can afford
+  text('E: POWERS', W - 12, y + 26, powersWaiting() && Math.floor(t * 3) % 2 ? C.lime : C.gold, { align: 'right' });
 }

@@ -4,9 +4,10 @@ import { C } from '../config.js';
 import { callout, burst } from './fx.js';
 import { sfx } from '../engine/audio.js';
 import { LUST } from '../data/lust.js';
+import { stats } from '../data/meta.js';
 
 export function lustBoost(h) {
-  h.lust = Math.min(100, (h.lust || 0) + LUST.gain);
+  h.lust = Math.min(100, (h.lust || 0) + LUST.gain * (1 + stats().lust));
   h.newToyT = LUST.toyTime;
   callout(`NEW TOY! +${Math.round(LUST.toyBonus * 100)}% DMG`, 0, 0, C.pink, { follow: h, life: 60 });
   burst(h.x + h.w / 2, h.y + 6, 8, 'twinkle', ['pink', 'paper']);

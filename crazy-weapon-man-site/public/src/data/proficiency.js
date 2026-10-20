@@ -1,15 +1,16 @@
 // Weapon proficiency: every weapon type has its own mastery level, earned by killing with it and
-// kept across runs in localStorage. Each level adds a little damage to that type.
+// kept across runs in localStorage. Each level adds a little damage to that type. Mastery is a
+// long road (level 100, ~10,000 kills); its perk choices along the way live in meta.js.
 import { TYPE_LIST } from './weapons.js';
 
 export const PROF_KEY = 'crazyWeaponMan.proficiency.v1';
-export const PROF_MAX = 20;
-export const PROF_DMG = 0.015; // +1.5% damage per level, +30% at mastery
+export const PROF_MAX = 100;
+export const PROF_DMG = 0.003; // +0.3% damage per level, +30% at grandmastery
 export const PROF_KILL_XP = { normal: 1, elite: 4, boss: 25 };
-// kills to go from level n to n+1: 6, 9, 12 ... (about 1,300 kills to master a type)
-export const profToNext = lv => 6 + lv * 3;
+// kills to go from level n to n+1: 6, 8, 10 ... (about 10,500 kills to grandmaster a type)
+export const profToNext = lv => 6 + lv * 2;
 const RANKS = ['NOVICE', 'APPRENTICE', 'ADEPT', 'EXPERT', 'MASTER'];
-export const profRank = lv => (lv >= PROF_MAX ? 'GRANDMASTER' : RANKS[Math.min(RANKS.length - 1, Math.floor(lv / 5))]);
+export const profRank = lv => (lv >= PROF_MAX ? 'GRANDMASTER' : RANKS[Math.min(RANKS.length - 1, Math.floor(lv / 20))]);
 
 const blank = () => Object.fromEntries(TYPE_LIST.map(t => [t, { lv: 0, xp: 0, kills: 0 }]));
 let store = null;

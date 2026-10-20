@@ -8,20 +8,21 @@ import { cx, cy, overlap } from './physics.js';
 import { rect, px } from '../engine/gfx.js';
 import { burst, emit, spark, shake, callout } from './fx.js';
 import { sfx } from '../engine/audio.js';
+import { innate, heroStats } from './perks.js';
 
 const meteors = [];
-export const hasAbility = id => world.hero?.weapon?.ability === id;
+// the weapon's own ability, or one the hero learned for good (mastery signature, world boss perk)
+export const hasAbility = id => world.hero?.weapon?.ability === id || (!!world.hero && innate(id));
 const say1 = (s, col) => callout(s, 0, 0, col, { follow: world.hero, life: 34 });
 
 // a primary hit landed (melee contact or projectile impact); finisher = the combo's big last move
 export function abilityHit(h, e, dmg, finisher) {
-  const id = h.weapon.ability;
-  if (id === 'vampire' && world.t >= (h.sipAt || 0)) {
+  if (hasAbility('vampire') && world.t >= (h.sipAt || 0)) {
     h.sipAt = world.t + 0.25;
     h.hp = Math.min(h.maxHp, h.hp + Math.max(1, Math.round(h.maxHp * 0.012)));
     emit(cx(e), cy(e), 'drip', C.red);
   }
-  if (id === 'meteor' && finisher && !e.dead) {
+  if (hasAbility('meteor') && finisher && !e.dead) {
     meteors.push({ x: cx(e) + (Math.random() - 0.5) * 8, y: Math.max(-20, e.y - 150), ty: e.y + e.h, vy: 160, dmg: hitDamage(h.weapon) * 1.4 });
     sfx.enemyCast();
   }
@@ -33,13 +34,14 @@ export function abilityKill() {
   h.frenzyT = 3;
 }
 // swings run faster while FRENZY is up
-export const swingMult = h => (h.weapon.ability === 'frenzy' && h.frenzyT > 0 ? 0.72 : 1);
-export const critBonus = h => (h.weapon.ability === 'lucky' ? 0.15 : 0);
+// (and the attack speed perks always)
+export const swingMult = h => (hasAbility('frenzy') && h.frenzyT > 0 ? 0.72 : 1) / (1 + heroStats().attackSpeed);
+export const critBonus = h => (hasAbility('lucky') ? 0.15 : 0) + heroStats().crit;
 export const bigFoeMult = e => (hasAbility('giantslayer') && (e.elite || e.boss || e.swarmBoss) ? 1.25 : 1);
 
 // the hero is about to take a hit: true if a bubble ate it
 export function abilityBlock(h) {
-  if (h.weapon.ability !== 'bubble' || world.t < (h.bubbleAt || 0)) return false;
+  if (!hasAbility('bubble') || world.t < (h.bubbleAt || 0)) return false;
   h.bubbleAt = world.t + 8;
   h.inv = 0.6;
   burst(cx(h), cy(h), 12, 'bubble', ['ice', 'paper', 'sky']);
@@ -48,7 +50,7 @@ export function abilityBlock(h) {
   return true;
 }
 export function abilityHurt(h) {
-  if (h.weapon.ability !== 'thorns' || h.dead) return;
+  if (!hasAbility('thorns') || h.dead) return;
   for (const e of world.enemies)
     if (!e.dead && Math.abs(cx(e) - cx(h)) < 48 && Math.abs(cy(e) - cy(h)) < 36) hitEnemy(e, hitDamage(h.weapon) * 1.2, { dir: Math.sign(cx(e) - cx(h)) || 1, knock: 24, chain: true, sparkCol: C.leaf });
   burst(cx(h), cy(h), 10, 'chip', ['leaf', 'lime', 'pine']);
@@ -56,7 +58,7 @@ export function abilityHurt(h) {
 }
 // DASH CUT: everything the dash passes through gets sliced once
 export function dashCut(h) {
-  if (h.weapon.ability !== 'dashcut') return;
+  if (!hasAbility('dashcut')) return;
   h.dashHit = h.dashHit || new Set();
   for (const e of world.enemies) {
     if (e.dead || e.spawnT > 0 || h.dashHit.has(e) || !overlap(h, e)) continue;
@@ -92,7 +94,7 @@ export function drawAbilities(t) {
   }
   const h = world.hero;
   // a ready BUBBLE GUARD shimmers around the hero
-  if (h && !h.dead && h.weapon.ability === 'bubble' && world.t >= (h.bubbleAt || 0)) {
+  if (h && !h.dead && hasAbility('bubble') && world.t >= (h.bubbleAt || 0)) {
     const r = 15, n = 12;
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2 + t * 0.8;

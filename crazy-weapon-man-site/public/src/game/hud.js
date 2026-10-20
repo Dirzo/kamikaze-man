@@ -54,7 +54,7 @@ export function drawHud(t) {
   const T = TYPES[h.weapon.type];
   label(T.specialName, 110);
   const ready = h.specialCd <= 0;
-  bar(110, y + 2, 44, 4, ready ? 1 : 1 - h.specialCd / T.cool, ready ? C.lime : C.teal);
+  bar(110, y + 2, 44, 4, ready ? 1 : 1 - h.specialCd / (h.specialMax || T.cool), ready ? C.lime : C.teal);
   text(ready ? 'READY' : h.specialCd.toFixed(1), 158, y, ready ? C.lime : C.mist);
   sep(190);
   // WEAPON: icon, scrolling name, DPS

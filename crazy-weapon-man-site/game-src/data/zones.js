@@ -113,6 +113,10 @@ export const ZONES = [
 export const WAVES_PER_ZONE = 4;
 export const TITLE_MUSIC = { key: 52, scale: 'dorian', bpm: 112, prog: [0, 3, 5, 4], drums: 'title' };
 export const BOSS_MUSIC = {
+  bossgoose: { key: 52, bpm: 170 },
+  bossacorn: { key: 57, bpm: 166 },
+  bosskingpin: { key: 55, bpm: 158 },
+  bossshogun: { key: 48, bpm: 150 },
   bossjr: { key: 53, bpm: 176 },
   bossman: { key: 45, bpm: 164 },
   bosssr: { key: 47, bpm: 168 },

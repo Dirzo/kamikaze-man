@@ -14,6 +14,8 @@ import { comboHit } from './waves.js';
 import { logDamage } from './speedrun.js';
 import { BOSS_TOUGH } from '../data/swarm.js';
 import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.js';
+import { heroStats, foeMult } from './perks.js';
+import { stats } from '../data/meta.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -37,7 +39,7 @@ export function hitEnemy(e, dmg, o = {}) {
     }
     o = { ...o, knock: (o.knock || 0) * 0.3 };
   }
-  dmg *= bigFoeMult(e);
+  dmg *= bigFoeMult(e) * foeMult(e);
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
@@ -212,7 +214,7 @@ export function kill(e, o = {}) {
   dropShards(cx(e), cy(e), e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0));
   world.killsSinceDrop = (world.killsSinceDrop || 0) + 1;
   if (world.killsSinceDrop >= 7 || Math.random() < (e.elite ? 0.65 : 0.10)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
-  if (Math.random() < (e.elite ? 0.4 : 0.05)) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
+  if (Math.random() < (e.elite ? 0.4 : 0.05) + stats().hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
 }
 
@@ -247,9 +249,10 @@ export function hurtHero(dmg, dir = 1) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
-  dmg = Math.max(1, Math.round(dmg));
+  const S = heroStats();
+  dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
   h.hp -= dmg;
-  h.inv = 0.8;
+  h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
   h.vx = dir * 130;
   h.vy = -120;

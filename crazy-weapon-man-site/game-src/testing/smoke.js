@@ -10,9 +10,12 @@ import { updateEvolution, attackMutation, impactMutation } from '../game/evoluti
 import { startBoss, updateBoss, updateHazards, drawHazards, bossDone, clearBoss, castMove, MOVES } from '../game/bosses.js';
 import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
-import { startZone, updateWaves, enemiesLeft, spawnSwarmBoss } from '../game/waves.js';
+import { startZone, updateWaves, enemiesLeft } from '../game/waves.js';
 import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE } from '../game/inventory.js';
-import { SWARM_BOSSES } from '../data/swarm.js';
+import { BOSS_OF, HEAD_KINDS, SIBLING_KINDS, SIBLING_DEFS, headOfZone } from '../data/families.js';
+import { LEVELS } from '../data/overworld.js';
+import { bossName } from '../game/bosses.js';
+import { A } from '../engine/assets.js';
 import { quirkHit } from '../game/quirks.js';
 import { QUIRK_LIST } from '../data/quirks.js';
 import { proficiency, PROF_KEY } from '../data/proficiency.js';
@@ -108,12 +111,13 @@ export function runSmoke(game) {
       ok(world.enemies.some(n=>n.hp<n.max),mutation+' did no damage');ok(world.echoes.length===0,'pending effect leaked');
     }
   });
-  check('every boss executes patterns, phase changes and defeat',()=>{
-    for(let z=0;z<ZONES.length;z++) if(ZONES[z].boss) {
-      reset();startZone(z);world.hero.x=world.map.bossLeft+40;world.hero.y=world.map.bossFloor-world.hero.h;world.hero.inv=100;startBoss(ZONES[z].boss);const e=world.boss;
-      for(let i=0;i<600;i++){world.t+=STEP;updateBoss(e,STEP);updateHazards(STEP);}
-      ok(e.pattern,'no attack pattern');ok(Number.isFinite(e.x)&&Number.isFinite(e.y),'bad boss position');
-      e.hp=e.max*0.25;updateBoss(e,STEP);ok(e.phase===3,'phase did not advance');
+  check('every boss of every family executes patterns, phase changes and defeat',()=>{
+    for(const kind of [...HEAD_KINDS,...SIBLING_KINDS]) {
+      const z=SIBLING_DEFS[kind]?SIBLING_DEFS[kind].family-1:HEAD_KINDS.indexOf(kind);
+      reset();startZone(z);world.hero.x=world.map.bossLeft+40;world.hero.y=world.map.bossFloor-world.hero.h;world.hero.inv=1e9;startBoss(kind,0.5);const e=world.boss;
+      for(let i=0;i<600;i++){world.t+=STEP;updateBoss(e,STEP);updateHazards(STEP);world.hero.inv=1e9;}
+      ok(e.pattern,kind+' has no attack pattern');ok(Number.isFinite(e.x)&&Number.isFinite(e.y),'bad boss position');
+      e.hp=e.max*0.25;updateBoss(e,STEP);ok(e.phase===e.phases,kind+' phase did not advance');
       e.hp=0;updateBoss(e,STEP);ok(e.dead);for(let i=0;i<150;i++)updateBoss(e,STEP);ok(bossDone(),'boss clear stalled');
     }
   });
@@ -213,17 +217,14 @@ export function runSmoke(game) {
     ok(after.hero.lv===3 && !after.cleared['1-2'] && after.cleared['1-1'],'failing changed the save');
     localStorage.removeItem(OVERWORLD_KEY);game.ow.save=null;world.level=null;
   });
-  check('every zone has its own swarm boss that spawns, fights and draws',()=>{
-    const names=new Set();
-    for(let z=0;z<ZONES.length;z++) {
-      reset();startZone(z);world.enemies.length=0;const h=world.hero;h.inv=1e9;
-      updateCamera(0,true);world.lock={x0:world.cameraX,x1:world.cameraX+480,y0:world.cameraY,feet:h.y+h.h};world.director.phase='survive';
-      const e=spawnSwarmBoss();ok(e && e.swarmBoss && world.boss===e && e.hp>0,'no swarm boss in zone '+(z+1));names.add(e.name);
-      for(let i=0;i<240;i++){world.t+=STEP;updateEnemy(e,STEP);h.inv=1e9;}
-      ok(Number.isFinite(e.x) && Number.isFinite(e.y) && !e.dead,'swarm boss broke in zone '+(z+1));
-      drawEnemy(e,1);
+  check('every level has its own boss with its own art, and family heads tower over their siblings',()=>{
+    const kinds=new Set(),names=new Set();
+    for(const n of LEVELS) {
+      const kind=BOSS_OF[n.id],art=A.bosses[kind];
+      ok(kind && art && art.im.width===art.w*3,'no boss art for '+n.id);kinds.add(kind);names.add(bossName(kind));
+      if(n.kind!=='castle') {const head=A.bosses[headOfZone(n.zone)];ok(art.h<head.h*0.9 && art.w<head.w*0.9,n.id+' sibling is as big as its head');}
     }
-    ok(names.size===ZONES.length,'swarm bosses are not unique per zone');
+    ok(kinds.size===LEVELS.length && names.size===LEVELS.length,'bosses repeat across levels');
   });
   check('residents never walk off their platform on their own',()=>{
     let tested=0;
@@ -334,7 +335,6 @@ export function runSmoke(game) {
       for(let i=0;i<10000 && world.zone===z && world.phase!=='won';i++) {
         for(const e of world.enemies) if(!e.boss) {e.dead=true;e.deathT=0;}
         world.enemies=world.enemies.filter(e=>e.boss); // resolve boss outro through its own handler
-        if(world.boss && world.boss.swarmBoss && world.boss.dead) world.boss=null;
         if(world.boss){world.hero.x=world.map.bossLeft+40;world.hero.y=world.map.bossFloor-world.hero.h;world.boss.dead=false;world.boss.hp=0;updateBoss(world.boss,STEP);for(let j=0;j<150;j++)updateBoss(world.boss,STEP);world.enemies=[];world.boss=null;}
         if(world.director.phase==='exit' || world.director.phase==='arena') {world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;}
         updateWaves(STEP);world.t+=STEP;
@@ -397,10 +397,10 @@ export function runSmoke(game) {
     const boosted=game.hitDamage(world.hero.weapon);world.swarmCombo.n=50;ok(game.hitDamage(world.hero.weapon)>boosted,'combo gave no damage');world.swarmCombo.n=2;
     for(let i=0;i<200;i++)updateWaves(STEP);ok(world.swarmCombo.n===0,'combo did not fall off without hits');
     if(!world.boss){world.director.t=0;updateWaves(STEP);}
-    const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.swarmBoss && boss.w>30 && boss.name===SWARM_BOSSES[0].name,'no swarm boss when the timer ran out');
+    const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.boss && boss.w>30 && boss.name===bossName(headOfZone(0)),'the family head did not arrive when the timer ran out');
     for(let i=0;i<60;i++)updateWaves(STEP);ok(world.director.phase==='survive','swarm ended before its boss fell');
-    boss.spawnT=0;boss.hp=1;hitEnemy(boss,2,{dir:1});updateWaves(STEP);
-    ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead) && !world.swarmCombo,'swarm boss defeat did not open the exit');
+    boss.hp=0;for(let i=0;i<200 && world.director.phase==='survive';i++){updateBoss(boss,STEP);updateWaves(STEP);}
+    ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead||e.boss) && !world.swarmCombo,'boss defeat did not open the exit');
     for(let i=0;i<90;i++)updateWaves(STEP);
     ok(world.zone===1,'cleared exit did not advance');
   });

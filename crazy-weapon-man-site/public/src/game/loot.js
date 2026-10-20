@@ -11,7 +11,10 @@ import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
 import { ZONES } from '../data/zones.js';
+import { stats } from '../data/meta.js';
 let uid = 1;
+// what the hero has grown into with a type: its mastery level and every damage perk
+const growth = type => profMult(type) * (1 + stats(type).dmg);
 
 // All sources share the zone ceiling: zone 1 tops out at Uncommon; the
 // absurd tier only shows up at the very end
@@ -34,7 +37,7 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
   const family = elements.length && r() < (boss ? 0.7 : 0.12 + 0.055 * q) ? elements[Math.floor(r() * elements.length)] : null;
   const mutations = availableMutations(zone, q);
   const mutation = mutations.length && (boss || r() < 0.18 + q * 0.025) ? mutations[Math.floor(r() * mutations.length)] : null;
-  if (standout == null) standout = r() < standoutChance(zone);
+  if (standout == null) standout = r() < standoutChance(zone) + stats().standout;
   // standouts are named one tier grander, but never beyond what the zone allows
   const ability = rollAbility(q, { standout, boss }, r);
   const { name, look } = nameWeapon(type, q, family, standout, r, Math.min(10, maxQ(zone) + 1), ability);
@@ -58,12 +61,12 @@ export function trainingSword() {
   };
 }
 
-// damage of one hit at move multiplier 1, including the hero's proficiency with this weapon type
-// and, for the weapon in hand, the Weapon Lust bonus
+// damage of one hit at move multiplier 1, including the hero's proficiency with this weapon type,
+// the damage perks (meta.js) and, for the weapon in hand, the Weapon Lust bonus
 export function hitDamage(w) {
   const T = TYPES[w.type],
     h = world.hero;
-  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * (w.boost || 1) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
+  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * (w.boost || 1) * growth(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
 }
 // relative strength in the current zone (for the HUD and auto-equip): damage per second
 export function dps(w) {
@@ -96,9 +99,11 @@ export function noWeaker(w) {
   return w;
 }
 
-// the held weapon's damage per second without the moment-to-moment Weapon Lust and combo bonuses:
-// what bosses measure the hero by when they arrive
+// the held weapon's damage per second without the moment-to-moment Weapon Lust and combo bonuses
 export function steadyDps() {
   const h = world.hero;
   return h && h.weapon ? dps(h.weapon) / (lustMult(h) * comboMult(world.swarmCombo)) : 0;
 }
+// what bosses measure the hero by when they arrive: the gear alone. Mastery and perks are left out,
+// so getting stronger the long way (shards, trophies, mastery) really does shorten boss fights.
+export const baseDps = () => (world.hero?.weapon ? steadyDps() / growth(world.hero.weapon.type) : 0);

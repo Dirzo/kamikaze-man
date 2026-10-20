@@ -8,8 +8,9 @@ import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { refHP, refDmg } from '../data/curve.js';
 import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
-import { makeWeapon, steadyDps } from './loot.js';
-import { BOSS_TOUGH } from '../data/swarm.js';
+import { makeWeapon, baseDps } from './loot.js';
+import { ROLES, TIER_HP, TIER_DMG, WORLD_RAMP, NEW_HEADS, SIBLING_DEFS } from '../data/families.js';
+import { stats } from '../data/meta.js';
 import { spawnEnemy } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
@@ -17,7 +18,8 @@ import { gainXp, gainProficiency } from './progress.js';
 
 // Each boss lives in its weapon zone and fights with that zone's theme. They all crash into the
 // survival swarm partway through (waves.js); `warn` is shouted just before they arrive and
-// `surprise` is the twist they pull at each phase change.
+// `surprise` is the twist they pull at each phase change. These six and the four in NEW_HEADS head
+// the boss families (data/families.js); every other level's boss is one of their siblings.
 const BOSSES = {
   bossjr: {
     name: 'CRAZY WEAPON MAN JR.',
@@ -86,7 +88,9 @@ const BOSSES = {
     speed: 50
   }
 };
+Object.assign(BOSSES, NEW_HEADS, SIBLING_DEFS);
 export const bossWarning = kind => BOSSES[kind]?.warn;
+export const bossName = kind => BOSSES[kind]?.name;
 
 const bossFloor=()=>world.map?.bossFloor??worldFloor();
 // long boss fights shake loose a couple of hearts at each turning point (phase change / half health)
@@ -98,11 +102,14 @@ let boss = null,
   done = false,
   outroT = 0;
 
-export function startBoss(kind) {
+// tier: how far along its world's road the level is (0..1, families.js levelTier)
+export function startBoss(kind, tier = 1) {
   const D = BOSSES[kind],
     art = A.bosses[kind],
-    z = world.zone;
-  const hp = Math.round(Math.max(refHP(z) * 14, steadyDps() * BOSS_TOUGH.story));
+    z = world.zone,
+    R = ROLES[D.role || 'castle'];
+  // tough enough to need real damage, measured against the gear (not the hero's long-term growth)
+  const hp = Math.round(Math.max(refHP(z) * R.hp * (1 + TIER_HP * tier), baseDps() * R.secs));
   done = false;
   outroT = 0;
   hazards.length = 0;
@@ -123,7 +130,10 @@ export function startBoss(kind) {
     face: -1,
     hp,
     max: hp,
-    dmg: refDmg(z) * 0.5,
+    dmg: refDmg(z) * R.dmg * (1 + TIER_DMG * tier) * (world.level ? 1 + WORLD_RAMP.bossDmg * z : 1),
+    role: D.role || 'castle',
+    phases: R.phases,
+    speed: D.speed * R.speed,
     state: 'enter',
     st: 1.2,
     stun: 0,
@@ -133,7 +143,7 @@ export function startBoss(kind) {
     phase: 1,
     queue: [],
     elite: true,
-    xp: 40 + z * 20,
+    xp: (40 + z * 20) * (D.role ? 0.6 : 1.5),
     anim: 0,
     bubble: null,
     dead: false
@@ -170,8 +180,8 @@ export function updateBoss(e, dt) {
   }
   tickStatus(e, dt);
   if (e.hp <= 0) return defeat(e);
-  // phase changes at 2/3 and 1/3
-  const ph = e.hp < e.max / 3 ? 3 : e.hp < (e.max * 2) / 3 ? 2 : 1;
+  // phase changes at 2/3 and 1/3 (a two-phase sibling turns at half health)
+  const ph = e.phases === 2 ? (e.hp < e.max / 2 ? 2 : 1) : e.hp < e.max / 3 ? 3 : e.hp < (e.max * 2) / 3 ? 2 : 1;
   if (ph > e.phase) {
     e.phase = ph;
     speak(D.phase);
@@ -179,11 +189,17 @@ export function updateBoss(e, dt) {
     shake(0.5);
     hitstop(0.1);
     if (D.surprise) castMove(e, D.surprise);
+    // a family head's last phase: it stops to shout, then fights faster than any sibling
+    if (e.role === 'castle' && ph === 3) {
+      callout('THE HEAD OF THE FAMILY IS FURIOUS!', W / 2, 108, C.red, { big: true, life: 110 });
+      e.queue = [];
+      e.rage = true;
+    }
     bossHearts(e);
     e.state = 'idle';
     e.st = 1.1;
   }
-  const rate = e.phase === 1 ? 1 : e.phase === 2 ? 1.25 : 1.5;
+  const rate = (e.phase === 1 ? 1 : e.phase === 2 ? 1.25 : 1.5) * (e.rage ? 1.15 : 1);
   e.st -= dt * rate;
   const toward = Math.sign(cx(hero) - cx(e)) || 1;
   switch (e.state) {
@@ -201,7 +217,7 @@ export function updateBoss(e, dt) {
       break;
     case 'idle':
       e.face = toward;
-      e.vx = Math.abs(cx(hero) - cx(e)) > 70 ? toward * D.speed : 0;
+      e.vx = Math.abs(cx(hero) - cx(e)) > 70 ? toward * e.speed : 0;
       if (e.st <= 0) nextPattern(e);
       break;
     case 'wind':
@@ -477,8 +493,11 @@ function defeat(e) {
   gainXp(e.xp);
   gainProficiency('boss');
   world.kills++;
-  for (let i = 0; i < 3; i++) dropWeapon(cx(e) + (i - 1) * 24, e.y + 10, makeWeapon(world.zone, { boss: true, standout: i === 1 ? true : null }));
-  dropShards(cx(e), cy(e), 20);
+  // a family head drops three weapons (one a standout), a fort's big sibling two, the rest one
+  const n = e.role === 'castle' ? 3 : e.role === 'level' ? 1 : 2;
+  for (let i = 0; i < n; i++) dropWeapon(cx(e) + (i - (n - 1) / 2) * 24, e.y + 10, makeWeapon(world.zone, { boss: true, standout: e.role === 'castle' && i === 1 ? true : null }));
+  dropShards(cx(e), cy(e), Math.round({ castle: 40, fort: 20, secret: 20, level: 10 }[e.role] * (1 + stats().bossShards)));
+  world.bossBeaten = e.type;
   hazards.length = 0;
   world.bolts.length = 0;
   for (const o of [...world.enemies]) if (o !== e && !o.dead) kill(o,{dir:1});

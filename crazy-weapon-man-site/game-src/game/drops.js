@@ -1,6 +1,7 @@
 // Weapon drops (looted automatically into the bag; DOWN equips a just-looted upgrade),
 // and pickups (shards fly to you, hearts heal).
 import { C } from '../config.js';
+import { stats } from '../data/meta.js';
 import { X, rect } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
@@ -94,10 +95,14 @@ export function updateDrops(dt) {
     }
     if (dist < 10 && !h.dead) {
       if (p.kind === 'shard') {
-        world.shards += p.value;
+        // SHARD MAGNET / STICKY FINGERS: the fractions add up across pickups
+        world.shardAcc = (world.shardAcc || 0) + p.value * (1 + stats().shards);
+        const n = Math.floor(world.shardAcc);
+        world.shardAcc -= n;
+        world.shards += n;
         sfx.pickup();
       } else {
-        const heal = Math.round(h.maxHp * 0.15);
+        const heal = Math.round(h.maxHp * 0.15 * (1 + stats().heal));
         h.hp = Math.min(h.maxHp, h.hp + heal);
         sfx.ui(true);
         burst(cx(h), h.y + 4, 6, 'twinkle', ['red', 'paper']);

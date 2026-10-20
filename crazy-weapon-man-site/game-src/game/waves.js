@@ -13,17 +13,17 @@ import { kill } from './combat.js';
 import { overlap } from './physics.js';
 import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
-import { startBoss, bossDone, clearBoss, castMove, bossWarning, bossHearts } from './bosses.js';
+import { startBoss, bossDone, clearBoss, bossWarning } from './bosses.js';
 import { clearAbilities } from './abilities.js';
 import { placeSecret } from './secrets.js';
-import { makeWeapon, steadyDps } from './loot.js';
+import { makeWeapon } from './loot.js';
 import { dropWeapon } from './combat.js';
 import { updateCamera } from './camera.js';
 import { splitZone } from './speedrun.js';
-import { refHP, refDmg } from '../data/curve.js';
-import { COMBO, SWARM_BOSS, SWARM_BOSSES, BOSS_ARRIVES, BOSS_TOUGH } from '../data/swarm.js';
+import { COMBO, SWARM_BOSS, BOSS_ARRIVES } from '../data/swarm.js';
+import { BOSS_OF, headOfZone, levelTier, FOE_TIER, WORLD_RAMP } from '../data/families.js';
 import { dropShards } from './combat.js';
-import { say } from './bubbles.js';
+import { stats } from '../data/meta.js';
 
 export function startZone(z) {
   clearBoss();
@@ -36,6 +36,8 @@ export function startZone(z) {
   world.zone=z;
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
   world.map=makeMap(z);
+  const tier=world.level?levelTier(world.level.id):0; // the road to the castle gets harder
+  world.foeScale={hp:1+FOE_TIER.hp*tier,dmg:(1+FOE_TIER.dmg*tier)*(world.level?1+WORLD_RAMP.foeDmg*z:1)};
   placeSecret(z);
   world.lastRoom=null;
   world.platforms=world.map.platforms;
@@ -109,7 +111,7 @@ export function startSurvival() {
 export function comboHit() {
   const c=world.swarmCombo;
   if(!c || world.director?.phase!=='survive') return;
-  c.n++;c.best=Math.max(c.best,c.n);c.t=COMBO.window(c.n);
+  c.n++;c.best=Math.max(c.best,c.n);c.t=COMBO.window(c.n)*(1+stats().combo);
   if(c.n%25===0) callout(`${c.n} COMBO!`,W/2,118,C.gold,{life:50});
 }
 function updateCombo(dt) {
@@ -133,37 +135,13 @@ function swarmSpot(d) {
   const side=Math.random()<0.5?-1:1;
   return [Math.max(L.x0+12,Math.min(L.x1-12,h.x+side*110)),d.air?L.feet-70:L.feet];
 }
-// the zone's unique swarm boss: a giant, named resident with a boss bar
-export function spawnSwarmBoss() {
-  const D=world.director,L=world.lock,h=world.hero,z=world.zone,B=SWARM_BOSSES[z%SWARM_BOSSES.length];
-  const d=ENEMIES[B.type],side=h.x+h.w/2<(L.x0+L.x1)/2?1:-1;
-  const x=side>0?L.x1-50:L.x0+50,y=d.air?L.feet-70:L.feet;
-  const e=spawnEnemy(B.type,x,y,{elite:true,wave:4});
-  if(!e) return null;
-  const feet=e.y+e.h,mid=e.x+e.w/2;
-  e.w=Math.round(e.w*B.scale);e.h=Math.round(e.h*B.scale);
-  e.x=mid-e.w/2;e.y=d.air?y-e.h/2:feet-e.h;
-  e.scale=B.scale;e.swarm=e.swarmBoss=true;
-  e.d={...d,range:d.range*(d.kind==='melee'||d.kind==='shield'||d.kind==='blink'?B.scale:1)};
-  e.name=B.name;
-  e.max=e.hp=Math.round(Math.max(refHP(z)*(z?SWARM_BOSS.hp:SWARM_BOSS.firstHp),steadyDps()*(z?BOSS_TOUGH.swarm:BOSS_TOUGH.first)));
-  e.dmg=refDmg(z)*d.dmg*SWARM_BOSS.dmg;
-  e.xp*=5;
-  e.spawnT=0.9;
-  D.sboss=e;D.sbossT=0;
-  world.boss=e;
-  callout(B.name,W/2,60,C.gold,{big:true,life:140});
-  say(e,B.line,2.4,true);
-  shake(0.5);
-  return e;
-}
 function updateSurvival(dt) {
   const D=world.director,L=world.lock,h=world.hero;
   D.spawnT-=dt;
   updateCombo(dt);
-  const alive=world.enemies.filter(e=>!e.dead && !e.boss && !e.swarmBoss).length;
+  const alive=world.enemies.filter(e=>!e.dead && !e.boss).length;
   const bossUp=!!D.sboss,cap=SURVIVE.alive(world.zone)*(bossUp?SWARM_BOSS.alive:1);
-  if(D.spawnT<=0 && alive<cap && !(bossUp && D.sboss.dead) && !(world.boss && world.boss.dead)) {
+  if(D.spawnT<=0 && alive<cap && !(world.boss && world.boss.dead)) {
     D.spawnT=SURVIVE.every(world.zone)*(bossUp?SWARM_BOSS.every:1);
     const pool=enemyPool(world.zone,4,ZONES[world.zone].pool).filter(t=>ENEMIES[t].kind!=='mimic');
     const type=pool[Math.floor(Math.random()*pool.length)],[x,y]=swarmSpot(ENEMIES[type]);
@@ -177,29 +155,23 @@ function updateSurvival(dt) {
     if(D.t<=BOSS_ARRIVES.warn && !D.warned) {
       // the surprise: a themed rumble, then the boss crashes in
       D.warned=true;
-      const z=world.zone,kind=ZONES[z].boss;
-      callout((kind?bossWarning(kind):SWARM_BOSSES[z%SWARM_BOSSES.length].warn)||'SOMETHING IS COMING...',W/2,92,C.coral,{big:true,life:100});
+      callout(bossWarning(levelBoss())||'SOMETHING IS COMING...',W/2,92,C.coral,{big:true,life:100});
       shake(0.6);sfx.enemyCast();
     }
     if(D.t<=0) bossArrives() || endSurvival();
     return;
   }
   D.sbossT+=dt;
-  const b=D.sboss;
-  if(b.swarmBoss && !b.dead && !(b.spawnT>0)) {
-    // swarm bosses fight with their zone's themed moves too, and pull a surprise at half health
-    const B=SWARM_BOSSES[world.zone%SWARM_BOSSES.length];
-    if(!D.surprised && b.hp<b.max/2) {D.surprised=true;castMove(b,B.surprise);bossHearts(b);D.moveT=2.5;}
-    if((D.moveT-=dt)<=0) {D.moveT=SWARM_BOSS.moveEvery*(b.hp<b.max/2?0.75:1);castMove(b,B.moves[Math.floor(Math.random()*B.moves.length)]);}
-  }
-  if(b.swarmBoss ? b.dead : bossDone()) endSurvival();
+  if(bossDone()) endSurvival();
 }
-// the story boss of the zone if it has one, otherwise its swarm boss
+// An overworld level's own boss (a sibling, or the family head in a castle). A classic ten-map
+// run meets each world's head.
+export const levelBoss=()=>world.level?BOSS_OF[world.level.id]:headOfZone(world.zone);
 function bossArrives() {
-  const z=world.zone,kind=ZONES[z].boss,D=world.director;
-  if(!kind) return spawnSwarmBoss();
-  music.play('boss:'+kind,bossSong(kind));
-  startBoss(kind);
+  const D=world.director,kind=levelBoss();
+  const song=headOfZone(world.zone); // the family's battle theme
+  music.play('boss:'+song,bossSong(song));
+  startBoss(kind,world.level?levelTier(world.level.id):1);
   D.sboss=world.boss;D.sbossT=0;D.bossStarted=true;
   return world.boss;
 }

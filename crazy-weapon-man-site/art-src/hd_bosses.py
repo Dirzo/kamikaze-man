@@ -7,7 +7,11 @@ the residents (cute_enemies.py). Three frames, facing right: idle1, idle2 (a 1px
 
   STORY    the six story bosses -> boss-<kind>.png (manifest 'bosses')
   SWARM    the giant swarm bosses of zones without a story boss -> enemy-<type>.png (manifest
-           'enemies'; their stats live in game-src/data/enemies.js)
+           'enemies'; their stats live in game-src/data/enemies.js). The same four are also drawn
+           as boss-<kind>.png: they head their worlds' boss families now.
+  SIBLINGS one boss per overworld level (game-src/data/families.js): the family head's body,
+           drawn smaller (re-rasterised, never pixel-scaled) with its own colours and a hat of its
+           own instead of the head's crown -> boss-sib<level>.png
 
   python3 art-src/hd_bosses.py   writes them all and updates the manifest. build_assets.py uses
                                  the same code.
@@ -19,14 +23,24 @@ from PIL import Image
 from cute_enemies import Sprite, mix, hexc, INK, WHITE, BLUSH, strip
 
 
+LOOK = {}  # the sibling being drawn: {'hat', 'hatcol', 'swap': {hex: rgb}}; empty for the heads
+
+
+def recolour(col):
+    if isinstance(col, str):
+        return LOOK.get('swap', {}).get(col.lower()) or hexc(col)
+    return col
+
+
 class HD(Sprite):
     """Five tones per shape instead of three, so big shapes read as smooth, rounded volumes."""
+    hat = False  # a sibling's own hat replaced the head's headwear
 
     def _shape(self, draw_fn, col, box, shade=True):
         from PIL import ImageDraw
         mask = Image.new('L', (self.w, self.h), 0)
         draw_fn(ImageDraw.Draw(mask))
-        col = hexc(col) if isinstance(col, str) else col
+        col = recolour(col)
         tones = (mix(col, WHITE, 0.5), mix(col, WHITE, 0.24), col, mix(col, INK, 0.2), mix(col, INK, 0.42))
         x0, y0, x1, y1 = box
         cx, cy, rx, ry = (x0 + x1) / 2, (y0 + y1) / 2, max(1, (x1 - x0) / 2), max(1, (y1 - y0) / 2)
@@ -75,6 +89,111 @@ class HD(Sprite):
             self.line([(x - 1, y - 2), (x + w, y - 1)], INK)
 
 
+class Small(HD):
+    """An HD sprite drawn at k times the size: every coordinate is scaled before rasterising, so
+    the shapes stay smooth and the outlines stay one pixel wide (no pixel scaling)."""
+
+    def __init__(self, w, h, k):
+        self.k = k
+        super().__init__(max(1, round(w * k)), max(1, round(h * k)))
+
+    def _p(self, v):
+        return round(v * self.k)
+
+    def oval(self, x0, y0, x1, y1, col, shade=True):
+        super().oval(self._p(x0), self._p(y0), max(self._p(x0) + 1, self._p(x1)), max(self._p(y0) + 1, self._p(y1)), col, shade)
+
+    def box(self, x0, y0, x1, y1, col, shade=True, r=0):
+        super().box(self._p(x0), self._p(y0), self._p(x1), self._p(y1), col, shade, r=round(r * self.k))
+
+    def poly(self, pts, col, shade=True):
+        super().poly([(self._p(x), self._p(y)) for x, y in pts], col, shade)
+
+    def dot(self, x, y, col):
+        super().dot(self._p(x), self._p(y), recolour(col))
+
+    def line(self, pts, col):
+        HD.line(self, pts, col)  # dot() scales each point
+
+
+def hat(s, kind, x, y, w, col):
+    """A sibling's hat, centred on x and sitting on y (the top of the head), w wide."""
+    h2 = w // 2
+    c = col
+    if kind == 'crown':  # a small sibling tiara: they are royalty, just not the head
+        s.poly([(x - h2 + 3, y), (x - h2 + 3, y - 6), (x - 3, y - 3), (x, y - 8), (x + 3, y - 3), (x + h2 - 3, y - 6), (x + h2 - 3, y)], c)
+        s.oval(x - 1, y - 5, x + 1, y - 3, '#5fe0d8')
+    elif kind == 'helm':
+        s.oval(x - h2, y - 9, x + h2, y + 4, c)
+        s.box(x - 1, y - 2, x + 1, y + 5, mixh(c, 0.25))
+    elif kind == 'bandana':
+        s.poly([(x - h2 - 3, y + 1), (x - h2 - 8, y - 3), (x - h2 - 7, y + 4)], c)
+        s.box(x - h2, y - 3, x + h2, y + 2, c, r=1)
+        for dx in range(-h2 + 3, h2 - 1, 5):
+            s.dot(x + dx, y - 1, '#ffffff')
+    elif kind == 'beanie':
+        s.oval(x - h2, y - 10, x + h2, y + 4, c)
+        s.box(x - h2, y - 1, x + h2, y + 3, mixh(c, 0.2), r=1)
+        s.oval(x - 3, y - 15, x + 3, y - 9, '#ffffff')
+    elif kind == 'flower':
+        for fx, fc in ((x - h2 // 2, c), (x + h2 // 3, '#ffd84a')):
+            for ox, oy in ((-3, 0), (3, 0), (0, -3), (0, 3)):
+                s.oval(fx + ox - 3, y - 4 + oy - 3, fx + ox + 3, y - 4 + oy + 3, fc)
+            s.oval(fx - 2, y - 6, fx + 2, y - 2, '#fff2a0')
+    elif kind == 'bow':
+        s.poly([(x, y - 3), (x - 9, y - 9), (x - 9, y + 2)], c)
+        s.poly([(x, y - 3), (x + 9, y - 9), (x + 9, y + 2)], c)
+        s.oval(x - 3, y - 6, x + 3, y, mixh(c, 0.2))
+    elif kind == 'tophat':
+        s.box(x - h2 // 2 - 2, y - 15, x + h2 // 2 + 2, y, c, r=1)
+        s.box(x - h2, y - 2, x + h2, y + 1, c, r=1)
+        s.box(x - h2 // 2 - 2, y - 5, x + h2 // 2 + 2, y - 4, '#ffd84a', shade=False)
+    elif kind == 'kasa':  # a wide straw cone
+        s.poly([(x - h2 - 6, y + 1), (x, y - 10), (x + h2 + 6, y + 1)], c)
+        s.line([(x - h2 - 4, y), (x + h2 + 4, y)], mixh(c, 0.3))
+    elif kind == 'chef':
+        s.box(x - h2 + 2, y - 5, x + h2 - 2, y + 1, c, r=1)
+        for ox in (-h2 // 2, 0, h2 // 2):
+            s.oval(x + ox - 6, y - 15, x + ox + 6, y - 3, c)
+    elif kind == 'party':
+        s.poly([(x - 7, y + 1), (x, y - 17), (x + 7, y + 1)], c)
+        s.line([(x - 4, y - 5), (x + 3, y - 8)], '#ffffff'); s.line([(x - 2, y - 11), (x + 2, y - 13)], '#ffffff')
+        s.oval(x - 3, y - 21, x + 3, y - 15, '#ffd84a')
+    elif kind == 'halo':
+        s.oval(x - h2 + 2, y - 12, x + h2 - 2, y - 6, c)
+        s.oval(x - h2 + 5, y - 11, x + h2 - 5, y - 7, '#fff8d0', shade=False)
+    elif kind == 'mushroom':
+        s.oval(x - h2 - 2, y - 12, x + h2 + 2, y + 3, c)
+        for ox, oy in ((-h2 // 2, -6), (h2 // 3, -8), (h2 // 2 + 1, -2)):
+            s.oval(x + ox - 2, y + oy - 2, x + ox + 2, y + oy + 2, '#ffffff', shade=False)
+    elif kind == 'headband':
+        s.box(x - h2, y - 1, x + h2, y + 3, c, r=1)
+        s.poly([(x + h2, y), (x + h2 + 8, y - 4), (x + h2 + 7, y + 3)], c)
+    elif kind == 'feather':
+        s.oval(x - h2 + 2, y - 8, x + h2 - 2, y + 3, c)
+        s.poly([(x + 2, y - 6), (x + h2 + 6, y - 18), (x + h2 + 2, y - 4)], '#ff5f5f')
+    elif kind == 'hood':
+        s.oval(x - h2 - 2, y - 8, x + h2 + 2, y + 10, c)
+    elif kind == 'leaf':
+        s.box(x, y - 8, x + 1, y, '#5a8a32', shade=False)
+        s.poly([(x, y - 6), (x - 9, y - 12), (x - 2, y - 3)], c)
+        s.poly([(x + 1, y - 7), (x + 9, y - 14), (x + 3, y - 3)], c)
+
+
+def mixh(c, t):
+    return mix(recolour(c), INK, t)
+
+
+def headwear(s, x, y, w, top=False):
+    """Where a head wears its crown or hat: a sibling's own hat goes there instead. Returns True when
+    one was drawn (so the head's own headwear is skipped)."""
+    if not LOOK.get('hat'):
+        return False
+    hat(s, LOOK['hat'], x, y, w, LOOK.get('hatcol', '#e0405a'))
+    s.hat = True
+    return True
+
+
 # ---------------------------------------------------------------- story bosses
 
 def jr(s, f):  # Crazy Weapon Man Jr.: pink spiky hair, goggles, board shorts and the big sword
@@ -94,6 +213,7 @@ def jr(s, f):  # Crazy Weapon Man Jr.: pink spiky hair, goggles, board shorts an
     s.poly([(10, 14 + b), (12, 1 + b), (17, 7 + b), (20, -1 + b), (25, 6 + b), (30, 0 + b), (32, 8 + b), (38, 3 + b), (38, 15 + b), (24, 9 + b)], '#ff5fa2')  # spiky hair
     s.box(11, 11 + b, 37, 13 + b, '#2a6a8a', shade=False)                                       # goggle strap
     s.oval(15, 9 + b, 23, 16 + b, '#5fe0d8'); s.oval(25, 9 + b, 33, 16 + b, '#5fe0d8')          # goggles
+    headwear(s, 24, 5 + b, 26)
     s.finish()
     s.glossy_eye(17, 18 + b, hit=f == 2); s.glossy_eye(27, 18 + b, hit=f == 2)
     s.dot(15, 23 + b, BLUSH); s.dot(16, 23 + b, BLUSH); s.dot(32, 23 + b, BLUSH); s.dot(33, 23 + b, BLUSH)
@@ -116,6 +236,7 @@ def ogre_monk(s, f):  # Ogre King Grumblefoot: a huge green ogre monk, saffron r
     s.oval(48, 30 + b, 62, 44 + b, '#7cc26a'); s.oval(54, 36 + b, 64, 46 + b, '#7cc26a')        # hand on the staff
     s.oval(10, 18 + b, 16, 28 + b, '#6fb35a'); s.oval(52, 18 + b, 58, 28 + b, '#6fb35a')        # ears
     s.oval(14, 2 + b, 54, 36 + b, '#8ad07a')                                                    # big bald head
+    headwear(s, 34, 5 + b, 34)
     for i, bx in enumerate(range(16, 54, 5)):                                                   # prayer beads
         by = 34 + b + round(4 * (1 - ((bx - 34) / 19) ** 2))
         s.oval(bx, by, bx + 4, by + 4, '#7a3a1a' if i % 3 else '#ffd84a')
@@ -146,6 +267,7 @@ def dad(s, f):  # Crazy Weapon Man Sr.: beard, forge goggles, apron, rolled slee
     s.oval(14, 2 + b, 46, 32 + b, '#f2c9a0')                                                    # head
     s.poly([(14, 10 + b), (20, 2 + b), (40, 1 + b), (46, 10 + b), (44, 7 + b), (16, 7 + b)], '#6a4a2a')  # hair
     s.poly([(14, 18 + b), (46, 18 + b), (42, 36 + b), (30, 40 + b), (18, 36 + b)], '#7a5032')   # big beard
+    headwear(s, 30, 5 + b, 30)
     s.finish()
     s.box(15, 8 + b, 45, 10 + b, '#2a3a4a', shade=False)                                        # goggle strap
     s.oval(18, 6 + b, 27, 12 + b, '#5fe0d8', shade=False); s.oval(33, 6 + b, 42, 12 + b, '#5fe0d8', shade=False)
@@ -166,10 +288,12 @@ def grandma(s, f):  # Grandma, Armed: witch hat, round glasses, pink cardigan, a
     s.line([(47, 36 + b), (55, 20 + b)], '#7a4a22'); s.line([(48, 36 + b), (56, 20 + b)], '#7a4a22')  # wand
     s.oval(12, 16 + b, 22, 30 + b, '#dfe3ee'); s.oval(34, 16 + b, 44, 30 + b, '#dfe3ee')        # grey curls
     s.oval(15, 14 + b, 41, 38 + b, '#ffe0c8')                                                   # face
-    s.oval(6, 12 + b, 50, 20 + b, '#6a3ab8')                                                    # hat brim
-    s.poly([(14, 15 + b), (42, 15 + b), (38, 4 + b), (30, -1 + b), (24, 2 + b)], '#7a4bc2')     # hat
+    if not headwear(s, 28, 17 + b, 30):
+        s.oval(6, 12 + b, 50, 20 + b, '#6a3ab8')                                                # hat brim
+        s.poly([(14, 15 + b), (42, 15 + b), (38, 4 + b), (30, -1 + b), (24, 2 + b)], '#7a4bc2') # hat
     s.finish()
-    s.box(15, 12 + b, 41, 13 + b, '#ffd84a', shade=False)                                       # hat band
+    if not s.hat:
+        s.box(15, 12 + b, 41, 13 + b, '#ffd84a', shade=False)                                   # hat band
     s.poly([(53, 16 + b), (56, 20 + b), (59, 17 + b), (57, 21 + b), (59, 24 + b), (56, 22 + b), (53, 24 + b), (55, 21 + b)], '#ffe680', shade=False)  # wand star
     for ex in (19, 31):                                                                         # round glasses
         s.line([(ex, 21 + b), (ex + 5, 21 + b), (ex + 6, 23 + b), (ex + 5, 26 + b), (ex, 26 + b), (ex - 1, 23 + b), (ex, 21 + b)], '#5a5a7a')
@@ -195,9 +319,11 @@ def usurper(s, f):  # The Usurper Ninja Lord: a hooded ninja in navy with a crow
     s.oval(14, 6 + b, 48, 36 + b, '#2a3466')                                                    # hood
     s.box(18, 17 + b, 44, 26 + b, '#ffe0c0', r=3)                                               # eye slit
     s.box(14, 10 + b, 48, 14 + b, '#e0405a', r=1)                                               # headband
-    s.poly([(22, 7 + b), (23, -1 + b), (27, 4 + b), (31, -3 + b), (35, 4 + b), (39, -1 + b), (40, 7 + b)], '#ffd84a')  # stolen crown
+    if not headwear(s, 31, 9 + b, 26):
+        s.poly([(22, 7 + b), (23, -1 + b), (27, 4 + b), (31, -3 + b), (35, 4 + b), (39, -1 + b), (40, 7 + b)], '#ffd84a')  # stolen crown
     s.finish()
-    s.oval(29, 2 + b, 33, 6 + b, '#5fe0d8', shade=False)                                        # crown gem
+    if not s.hat:
+        s.oval(29, 2 + b, 33, 6 + b, '#5fe0d8', shade=False)                                    # crown gem
     s.glossy_eye(23, 20 + b, hit=f == 2, angry=True); s.glossy_eye(36, 20 + b, hit=f == 2, angry=True)
     s.line([(20, 18 + b), (27, 20 + b)], INK); s.line([(35, 20 + b), (42, 18 + b)], INK)        # sharp scowl
 
@@ -213,6 +339,7 @@ def armory(s, f):  # The Sentient Armory: a giant living sword with an angry eye
     s.poly([(35, 20 + b), (37, 20 + b), (36, 70 + b)], '#a8b4c8', shade=False)                  # fuller
     s.box(31, 0 + b, 39, 10 + b, '#5a3a8a', r=2)                                                # grip
     s.oval(30, -1 + b, 40, 5 + b, '#ffd84a')                                                    # pommel
+    headwear(s, 35, 6 + b, 14, top=True)
     s.poly([(4, 12 + b), (66, 12 + b), (62, 20 + b), (8, 20 + b)], '#f0c040')                  # crossguard
     s.oval(0, 8 + b, 9, 17 + b, '#ffd84a'); s.oval(61, 8 + b, 70, 17 + b, '#ffd84a')            # curled ends
     s.oval(26, 8 + b, 44, 26 + b, '#ffd84a')                                                    # eye socket
@@ -249,8 +376,9 @@ def mother_goose(s, f):  # Mother Goose of the Graves: a towering goose queen wi
     s.box(28, 10 + b, 38, 32 + b, '#f6f4ee', r=4)                                               # neck
     s.oval(24, 2 + b, 46, 20 + b, '#f6f4ee')                                                    # head
     s.poly([(44, 10 + b), (56, 12 + b), (55, 15 + b), (44, 16 + b)], '#ff9a2e')                 # beak
-    s.oval(25, 3 + b, 43, 9 + b, '#9aa3b8')                                                     # helm
-    s.poly([(26, 5 + b), (26, 0 + b), (30, 3 + b), (34, 0 + b), (38, 3 + b), (42, 0 + b), (42, 5 + b)], '#ffd84a')  # crown
+    if not headwear(s, 34, 6 + b, 20):
+        s.oval(25, 3 + b, 43, 9 + b, '#9aa3b8')                                                 # helm
+        s.poly([(26, 5 + b), (26, 0 + b), (30, 3 + b), (34, 0 + b), (38, 3 + b), (42, 0 + b), (42, 5 + b)], '#ffd84a')  # crown
     s.finish()
     s.glossy_eye(36, 10 + b, hit=f == 2, angry=True)
     s.line([(45, 14 + b), (54, 13 + b)], '#c86a1e')
@@ -272,7 +400,8 @@ def acorn_king(s, f):  # The Acorn Archer King: a big squirrel ranger with a lea
     s.oval(16, 2 + b, 46, 28 + b, '#c9874a')                                                    # head
     s.poly([(18, 6 + b), (18, -2 + b) if b else (18, 0), (24, 4 + b)], '#c9874a'); s.poly([(44, 6 + b), (44, 0 + b), (38, 4 + b)], '#c9874a')  # ears
     s.oval(30, 14 + b, 44, 24 + b, '#f2d7b0')                                                   # muzzle
-    s.poly([(18, 6 + b), (22, 0 + b), (27, 5 + b), (31, -1 + b), (35, 5 + b), (40, 0 + b), (44, 6 + b)], '#7cc254')  # leaf crown
+    if not headwear(s, 31, 7 + b, 26):
+        s.poly([(18, 6 + b), (22, 0 + b), (27, 5 + b), (31, -1 + b), (35, 5 + b), (40, 0 + b), (44, 6 + b)], '#7cc254')  # leaf crown
     s.poly([(50, 4 + b), (55, 26 + b), (50, 50 + b), (52, 50 + b), (57, 26 + b), (52, 4 + b)], '#8a4f22')  # longbow
     s.line([(51, 5 + b), (51, 49 + b)], '#f2e2c4')
     s.oval(44, 24 + b, 52, 32 + b, '#c9874a')                                                   # paw on the bow
@@ -294,8 +423,9 @@ def kingpin(s, f):  # The Raccoon Kingpin: a fat raccoon boss with a top hat, go
     s.oval(18, 30 + b, 40, 53, '#d0d4dc')                                                       # belly
     s.oval(12, 6 + b, 44, 30 + b, '#b8bec8')                                                    # head
     s.poly([(13, 10 + b), (14, 2 + b), (20, 8 + b)], '#7a808a'); s.poly([(43, 10 + b), (42, 2 + b), (36, 8 + b)], '#7a808a')  # ears
-    s.box(19, 0, 37, 9 + b, '#2a2a3a', r=1); s.box(14, 8 + b, 42, 11 + b, '#2a2a3a', r=1)        # tall top hat
-    s.box(19, 6 + b, 37, 7 + b, '#c83a3a', shade=False)                                         # hat band
+    if not headwear(s, 28, 10 + b, 28):
+        s.box(19, 0, 37, 9 + b, '#2a2a3a', r=1); s.box(14, 8 + b, 42, 11 + b, '#2a2a3a', r=1)    # tall top hat
+        s.box(19, 6 + b, 37, 7 + b, '#c83a3a', shade=False)                                     # hat band
     s.oval(40, 34 + b, 48, 42 + b, '#9aa0aa')                                                   # paw
     s.poly([(46, 38 + b), (55, 32 + b), (56, 34 + b), (47, 40 + b)], '#dfe7f5')                 # dagger
     s.finish()
@@ -329,8 +459,9 @@ def shogun(s, f):  # The Petal Shogun: broad armoured warlord, demon mask, a nod
     s.oval(14, y + 1, 30, y + 16, '#ffe0c0')                                                    # face
     s.poly([(13, y + 4), (31, y + 4), (28, y - 2), (16, y - 2)], '#2a2a4a')                     # helmet
     s.box(12, y + 3, 32, y + 4, '#ffd84a', shade=False)
-    s.poly([(22, y - 1), (9, y - 9), (13, y - 9), (22, y - 4), (31, y - 9), (35, y - 9)], '#ffd84a')  # crescent crest
-    s.oval(20, y - 3, 24, y + 1, '#ff3a3a')
+    if not headwear(s, 22, y - 1, 18):
+        s.poly([(22, y - 1), (9, y - 9), (13, y - 9), (22, y - 4), (31, y - 9), (35, y - 9)], '#ffd84a')  # crescent crest
+        s.oval(20, y - 3, 24, y + 1, '#ff3a3a')
     s.poly([(15, y + 11), (29, y + 11), (27, y + 17), (17, y + 17)], '#c8282e')                 # demon mask
     s.finish()
     for i in range(5):                                                                          # furious brows
@@ -354,16 +485,126 @@ SWARM = {
 }
 
 
-def frames(draw, w, h):
+# ---------------------------------------------------------------- the families' siblings
+# head kind -> its body's main colours [(hex, darken 0..1 or lighten -1..0)] that a sibling's `body`
+# colour replaces, and the clothing colours that a sibling's `hue` turns around the colour wheel
+FAMILY_ART = {
+    'bossgoose': ([('#f6f4ee', 0), ('#e6e2d8', 0.08), ('#e8e4da', 0.06)], ['#9aa3b8']),
+    'bossacorn': ([('#c9874a', 0), ('#b8743a', 0.08), ('#e8b07a', -0.25)], ['#3f8a3a', '#7a4a22']),
+    'bossjr': ([('#ff5fa2', 0)], ['#ff6f8f', '#2fb5b0', '#5fe0d8', '#ffd84a']),
+    'bosskingpin': ([('#9aa0aa', 0), ('#b8bec8', -0.12), ('#7a808a', 0.18)], ['#c8b08a', '#8a6a4a']),
+    'bossshogun': ([], ['#b8282e', '#8a1c22', '#3a2a5c', '#c8282e', '#2a2a4a', '#3a3a5a']),
+    'bossman': ([('#8ad07a', 0), ('#7cc26a', 0.06), ('#6fb35a', 0.12)], ['#ff9a2e', '#e07a1e', '#c83a3a']),
+    'bosssr': ([('#6a4a2a', 0), ('#7a5032', -0.06)], ['#8a2a3a', '#2fa59a', '#24857c', '#6a4a32']),
+    'bossgrandma': ([('#dfe3ee', 0)], ['#ff8ab0', '#8a2a4a', '#4a7ad8', '#ffe0f0']),
+    'bossceo': ([], ['#2a3466', '#3a4a8a', '#e0405a', '#c8282e']),
+    'bossweapon': ([('#dfe7f5', 0), ('#a8b4c8', 0.2)], ['#5a3a8a', '#f0c040', '#ffd84a', '#b07ae8']),
+}
+SCALE = {'level': 0.7, 'secret': 0.76, 'fort': 0.84}
+# sibling kind -> (family head, role, hat, hat colour, body colour or None, hue turn in degrees)
+SIBLINGS = {
+    'sib11': ('bossgoose', 'level', 'helm', '#c8a070', '#fff4b8', 0),       # gosling greg: a pot for a helmet
+    'sib12': ('bossgoose', 'level', 'helm', '#b8c4d8', None, 0),            # sir honksalot
+    'sib13': ('bossgoose', 'level', 'bandana', '#c8282e', '#c8c0b0', 0),    # bandit beaks
+    'sib14': ('bossgoose', 'level', 'flower', '#ff8ab0', '#a8b090', 0),     # auntie mudwing
+    'sib1s': ('bossgoose', 'secret', 'halo', '#ffd84a', '#ffd870', 0),      # the golden gosling
+    'sib1f': ('bossgoose', 'fort', 'beanie', '#5a6a8a', '#d8d0c8', 0),      # uncle shovelbill
+    'sib21': ('bossacorn', 'level', 'mushroom', '#e0405a', '#d8a060', 40),
+    'sib22': ('bossacorn', 'level', 'hood', '#3f6a3a', '#a86a3a', 0),
+    'sib2s': ('bossacorn', 'secret', 'crown', '#ffb0d8', '#e8a0a0', 200),
+    'sib23': ('bossacorn', 'level', 'bow', '#ff5f8f', '#d89058', 300),
+    'sib24': ('bossacorn', 'level', 'kasa', '#d8c070', '#a8a090', 60),
+    'sib25': ('bossacorn', 'level', 'feather', '#4a8a4a', '#c07040', 160),
+    'sib2f': ('bossacorn', 'fort', 'helm', '#8a92a8', '#9a5a2a', 220),
+    'sib31': ('bossjr', 'level', 'beanie', '#5fa6f0', '#ffd84a', 180),
+    'sib32': ('bossjr', 'level', 'headband', '#ffffff', '#3a2a5c', 90),
+    'sib33': ('bossjr', 'level', 'leaf', '#4fa83a', '#4fc06a', 120),
+    'sib34': ('bossjr', 'level', 'bandana', '#2f5fbf', '#ff8a2c', 240),
+    'sib3s': ('bossjr', 'secret', 'crown', '#ffd84a', '#c8a070', 30),
+    'sib35': ('bossjr', 'level', 'helm', '#c87a3a', '#8a5a2a', 300),
+    'sib3f': ('bossjr', 'fort', 'flower', '#ff6f8f', '#ff6f6f', 150),
+    'sib41': ('bosskingpin', 'level', 'beanie', '#3a6a3a', None, 0),
+    'sib42': ('bosskingpin', 'level', 'bow', '#ff5fa2', '#b8a8b8', 0),
+    'sib43': ('bosskingpin', 'level', 'bandana', '#2f5fbf', '#8a8a9a', 0),
+    'sib4s': ('bosskingpin', 'secret', 'crown', '#c8d0e0', '#6a6a7a', 0),
+    'sib44': ('bosskingpin', 'level', 'kasa', '#e8c870', '#a89a8a', 0),
+    'sib4f': ('bosskingpin', 'fort', 'chef', '#f4f1e8', '#a0a8b8', 0),
+    'sib51': ('bossshogun', 'level', 'flower', '#ff8ab0', None, 300),
+    'sib52': ('bossshogun', 'level', 'kasa', '#d8b860', None, 40),
+    'sib53': ('bossshogun', 'level', 'bandana', '#4fa83a', None, 120),
+    'sib54': ('bossshogun', 'level', 'bow', '#ff8a2c', None, 20),
+    'sib5s': ('bossshogun', 'secret', 'halo', '#e8eef8', None, 220),
+    'sib55': ('bossshogun', 'level', 'headband', '#f4f1e8', None, 180),
+    'sib5f': ('bossshogun', 'fort', 'helm', '#3a3a5a', None, 260),
+    'sib61': ('bossman', 'level', 'beanie', '#c83a3a', '#9ab0c0', 0),
+    'sib62': ('bossman', 'level', 'kasa', '#d8b860', '#7ab8d8', 200),
+    'sib63': ('bossman', 'level', 'chef', '#f4f1e8', '#e8a8a0', 320),
+    'sib64': ('bossman', 'level', 'beanie', '#f4f1e8', '#c8e0f8', 180),
+    'sib6s': ('bossman', 'secret', 'halo', '#ffd84a', '#f0b0a0', 280),
+    'sib65': ('bossman', 'level', 'helm', '#c8a040', '#a8a0c8', 60),
+    'sib6f': ('bossman', 'fort', 'hood', '#7a4a22', '#b0c870', 0),
+    'sib71': ('bosssr', 'level', 'party', '#ff6fb5', '#c86a2a', 60),
+    'sib72': ('bosssr', 'level', 'helm', '#8a92a8', '#3a2a22', 0),
+    'sib73': ('bosssr', 'level', 'beanie', '#c4501f', '#e8c070', 200),
+    'sib7s': ('bosssr', 'secret', 'kasa', '#c8a060', '#e8e8f0', 100),
+    'sib74': ('bosssr', 'level', 'bandana', '#2f5fbf', '#8a3a2a', 140),
+    'sib75': ('bosssr', 'level', 'bow', '#5aa6f0', '#c8582a', 280),
+    'sib7f': ('bosssr', 'fort', 'tophat', '#3a3a4a', '#6a6a6a', 30),
+    'sib81': ('bossgrandma', 'level', 'flower', '#ff6fb5', None, 120),
+    'sib82': ('bossgrandma', 'level', 'chef', '#f4f1e8', '#c8a070', 30),
+    'sib8s': ('bossgrandma', 'secret', 'beanie', '#7a4bc2', None, 260),
+    'sib83': ('bossgrandma', 'level', 'hood', '#4a7a3a', '#e8e8e8', 90),
+    'sib84': ('bossgrandma', 'level', 'tophat', '#5a3a2a', '#c8c8d8', 200),
+    'sib85': ('bossgrandma', 'level', 'bow', '#5aa6f0', None, 180),
+    'sib8f': ('bossgrandma', 'fort', 'crown', '#c8d0e0', '#e8e0f0', 320),
+    'sib91': ('bossceo', 'level', 'beanie', '#c8282e', None, 160),
+    'sib92': ('bossceo', 'level', 'bow', '#ff5fa2', None, 300),
+    'sib93': ('bossceo', 'level', 'bandana', '#ff8a2c', None, 30),
+    'sib9s': ('bossceo', 'secret', 'kasa', '#c8a060', None, 100),
+    'sib94': ('bossceo', 'level', 'flower', '#ffd84a', None, 200),
+    'sib95': ('bossceo', 'level', 'tophat', '#1a1a2a', None, 260),
+    'sib9f': ('bossceo', 'fort', 'helm', '#c8a040', None, 330),
+    'sib101': ('bossweapon', 'level', 'beanie', '#5aa6f0', None, 160),
+    'sib102': ('bossweapon', 'level', 'bandana', '#c8282e', '#e0c8a0', 320),
+    'sib103': ('bossweapon', 'level', 'beanie', '#8a5a2a', '#c8d0b8', 60),
+    'sib104': ('bossweapon', 'level', 'bow', '#ff6fb5', '#f0d8e8', 280),
+    'sib10s': ('bossweapon', 'secret', 'party', '#5fe0d8', '#f8e08e', 120),
+    'sib105': ('bossweapon', 'level', 'crown', '#ffd84a', '#d8e8ff', 200),
+    'sib10f': ('bossweapon', 'fort', 'helm', '#5a5a7a', '#a8b0c0', 240),
+}
+
+
+def turn(hexcol, deg):
+    import colorsys
+    r, g, b = (v / 255 for v in hexc(hexcol))
+    h, l, s = colorsys.rgb_to_hls(r, g, b)
+    r, g, b = colorsys.hls_to_rgb((h + deg / 360) % 1, l, s)
+    return (round(r * 255), round(g * 255), round(b * 255))
+
+
+def sibling_look(kind):
+    head, role, hat_kind, hatcol, body, hue = SIBLINGS[kind]
+    bodies, tints = FAMILY_ART[head]
+    swap = {}
+    if body:
+        for hx, d in bodies:
+            swap[hx] = mix(hexc(body), INK, d) if d >= 0 else mix(hexc(body), WHITE, -d)
+    if hue:
+        for hx in tints:
+            swap[hx] = turn(hx, hue)
+    return {'hat': hat_kind, 'hatcol': hatcol, 'swap': swap}, SCALE[role]
+
+
+def frames(draw, w, h, k=1):
     out = []
     for f in range(3):
-        s = HD(w, h)
+        s = Small(w, h, k) if k != 1 else HD(w, h)
         draw(s, f)
         im = s.im
         if f == 2:
             px = im.load()
-            for y in range(h):
-                for x in range(w):
+            for y in range(im.size[1]):
+                for x in range(im.size[0]):
                     r, g, b_, a = px[x, y]
                     if a:
                         px[x, y] = mix((r, g, b_), WHITE, 0.6) + (a,)
@@ -371,9 +612,14 @@ def frames(draw, w, h):
     return out
 
 
+HEADS = {**STORY, 'bossgoose': SWARM['mothergoose'], 'bossacorn': SWARM['acornking'], 'bosskingpin': SWARM['kingpin'], 'bossshogun': SWARM['shogun']}
+
+
 def build(out, man):
+    global LOOK
     man.setdefault('bosses', {})
-    for kind, (w, h, draw) in STORY.items():
+    LOOK = {}
+    for kind, (w, h, draw) in HEADS.items():
         ims = frames(draw, w, h)
         strip(ims).save(os.path.join(out, f'boss-{kind}.png'))
         man['bosses'][kind] = {'w': w, 'h': h, 'frames': ['idle1', 'idle2', 'hit']}
@@ -381,6 +627,13 @@ def build(out, man):
         ims = frames(draw, w, h)
         strip(ims).save(os.path.join(out, f'enemy-{etype}.png'))
         man['enemies'][etype] = {'w': w, 'h': h, 'frames': ['walk1', 'walk2', 'hit']}
+    for kind in SIBLINGS:
+        LOOK, k = sibling_look(kind)
+        w, h, draw = HEADS[SIBLINGS[kind][0]]
+        ims = frames(draw, w, h, k)
+        strip(ims).save(os.path.join(out, f'boss-{kind}.png'))
+        man['bosses'][kind] = {'w': ims[0].size[0], 'h': ims[0].size[1], 'frames': ['idle1', 'idle2', 'hit']}
+    LOOK = {}
 
 
 if __name__ == '__main__':
@@ -390,4 +643,4 @@ if __name__ == '__main__':
     build(root, man)
     with open(path, 'w') as fh:
         json.dump(man, fh, separators=(',', ':'))
-    print('wrote', len(STORY), 'story bosses and', len(SWARM), 'swarm bosses')
+    print('wrote', len(HEADS), 'family heads,', len(SIBLINGS), 'siblings and', len(SWARM), 'swarm giants')

@@ -24,7 +24,8 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
   const w = Math.max(8, Math.round((art.w - 2) * 0.72)),
     h = art.h - 2;
   const z = world.zone;
-  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)));
+  const F = world.foeScale || { hp: 1, dmg: 1 }; // later levels of a world are tougher (waves.js)
+  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)) * F.hp);
   const e = {
     id: newId(),
     type,
@@ -40,7 +41,7 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     face: world.hero && cx(world.hero) < x ? -1 : 1,
     hp,
     max: hp,
-    dmg: refDmg(z) * d.dmg * (elite ? ELITE_DMG : 1),
+    dmg: refDmg(z) * d.dmg * (elite ? ELITE_DMG : 1) * F.dmg,
     speed: d.speed * (elite ? 1.1 : 1),
     elite,
     air: !!d.air,
