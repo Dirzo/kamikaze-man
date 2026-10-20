@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { TYPE_LIST, ELEMENTS, ELEMENT_LIST } from '../game-src/data/weapons.js';
+import { QUIRK_LIST } from '../game-src/data/quirks.js';
 import { buildSong } from '../game-src/engine/audio.js';
 import { ZONES, TITLE_MUSIC, BOSS_MUSIC, bossSong, zoneSong } from '../game-src/data/zones.js';
 
@@ -40,4 +43,28 @@ test('each zone has its own sound and each level kind its own arrangement', () =
     const ids = new Set(['level', 'fort', 'castle', 'secret'].map(k => zoneSong(z, k, k === 'level' ? 3 : 0).id));
     assert.equal(ids.size, 4);
   }
+});
+
+test('a themed loop runs 32 bars and never repeats a section note for note', () => {
+  ZONES.forEach((Z, z) => {
+    const sg = buildSong('vary:' + z, Z.music), bar = Z.music.bar || 16, lead = [];
+    assert.equal(sg.steps.length, 32 * bar, Z.id);
+    for (let s = 0; s < 8; s++) {
+      const part = sg.steps.slice(s * 4 * bar, (s + 1) * 4 * bar).map(st => st.filter(e => e[0] === 'l' || e[0] === 'd').map(e => e.join()).join('/')).join('|');
+      lead.push(part);
+    }
+    assert.equal(new Set(lead).size, 8, Z.id);
+  });
+});
+
+test('every weapon type, element and quirk has its own sound', async () => {
+  const src = readFileSync(new URL('../game-src/engine/audio.js', import.meta.url), 'utf8');
+  const table = (from, to) => src.slice(src.indexOf(from), src.indexOf(to));
+  const has = (body, keys, label) => {
+    for (const k of keys) assert.match(body, new RegExp(`\\n  ${k}: (k )?\\(?\\)? ?=>`), `${label} ${k}`);
+  };
+  has(table('const SIG = {', 'const ELEMENT_SFX'), TYPE_LIST, 'weapon');
+  has(table('const ELEMENT_SFX', 'const QUIRK_SFX'), ELEMENT_LIST.map(e => ELEMENTS[e].effect), 'element');
+  // the honk quirk already honks (sfx.honk)
+  has(table('const QUIRK_SFX', 'export const sfx'), QUIRK_LIST.filter(q => q !== 'honk'), 'quirk');
 });

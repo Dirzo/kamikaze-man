@@ -250,7 +250,7 @@ function startSpecial(h, T) {
   h.specialCd = h.specialMax = T.cool * (1 - heroStats().specialCd);
   h.special = { kind: T.special, t: 0, hit: new Map(), tick: 0 };
   h.attack = null;
-  sfx.special();
+  sfx.special(h.weapon.type);
   callout(T.specialName, 0, 0, C.gold, { follow: h, life: 45 });
   const s = h.special;
   switch (s.kind) {

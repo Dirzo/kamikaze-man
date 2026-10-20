@@ -53,7 +53,7 @@ export function hitEnemy(e, dmg, o = {}) {
     spark(cx(e) - dir * e.w * 0.35, sy, { crit: o.crit, col: o.sparkCol || C.cream });
     e.faceUntil = world.t + 0.42;
     e.funnyFace = ((e.funnyFace || 0) + 1) % 3;
-    sfx.hit(o.crit);
+    sfx.hit(o.crit, o.chain ? null : hero.weapon?.type); // the weapon's signature sound
     sfx.thud(o.crit, e.type === 'goose');
     if (!e.boss && world.t > (e.nextBonk || 0)) {
       callout(['BONK!', 'OOF!', 'PLOP!'][e.funnyFace], 0, 0, C.cream, {follow:e, life:22});
@@ -101,6 +101,7 @@ export function hitEnemy(e, dmg, o = {}) {
 function applyElement(e, dmg, o) {
   const el = ELEMENTS[o.element];
   if (!el) return;
+  sfx.element(el.effect);
   const col = C[el.col];
   switch (el.effect) {
     case 'burn':
