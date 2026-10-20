@@ -9,6 +9,7 @@ import { profMult } from '../data/proficiency.js';
 import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
+import { ZONES } from '../data/zones.js';
 let uid = 1;
 
 // All sources share the zone ceiling: zone 1 tops out at Uncommon; the
@@ -18,7 +19,9 @@ export const maxQ = maxRarity;
 export function makeWeapon(zone, { elite = false, boss = false, standout = null, q = null, type = null } = {}) {
   const r = Math.random;
   const types = availableTypes(zone);
-  type = type || types[Math.floor(r() * types.length)];
+  // a zone's own weapon (bows in the Ranger's Forest, katanas at the shrine...) drops most often
+  const home = ZONES[zone] && ZONES[zone].weapon;
+  type = type || (home && types.includes(home) && r() < 0.4 ? home : types[Math.floor(r() * types.length)]);
   if (q == null) {
     const top = maxQ(zone);
     q = Math.min(10, Math.floor((top + 0.99) * Math.pow(r(), elite || boss ? 1.3 : 1.9)));
@@ -55,7 +58,7 @@ export function trainingSword() {
 export function hitDamage(w) {
   const T = TYPES[w.type],
     h = world.hero;
-  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
+  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * (w.boost || 1) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
 }
 // relative strength in the current zone (for the HUD and auto-equip): damage per second
 export function dps(w) {
@@ -71,4 +74,19 @@ export const rarityName = w => RARITY[w.q].name;
 export function powerScore(w) {
   const bonus = {echo:1.18,seeker:1.3,eruption:1.28,orbit:1.3,cataclysm:1.45}[w.mutation] || 1;
   return dps(w) * bonus * (w.family ? 1.12 : 1);
+}
+
+// A new weapon is never a downgrade: any drop that rolls weaker than the one in your hand is pumped
+// up (w.boost) to match it, plus a little extra, so every pickup is worth a swing. The match stops
+// at par, the best this drop's zone can roll (a standout of the strongest type, with an element and
+// the top power): past that the extra compounded on every pickup and a run's weapon outgrew the
+// zones ~3x each (playtest: 50x enemy health per hit by zone 8).
+export function noWeaker(w) {
+  const h = world.hero;
+  if (!w || !h || !h.weapon || h.weapon === w) return w;
+  const par = Math.max(...Object.keys(TYPES).map(type => powerScore({ ...w, type, standout: true, boost: 1, mutation: 'cataclysm', family: w.family || 'fire' })));
+  const held = Math.min(par, powerScore(h.weapon) / (lustMult(h) * comboMult(world.swarmCombo)));
+  const mine = powerScore(w);
+  if (mine < held) w.boost = (w.boost || 1) * (held / mine) * (1 + Math.random() * 0.1);
+  return w;
 }

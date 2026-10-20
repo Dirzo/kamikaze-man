@@ -14,37 +14,48 @@ import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { gainXp, gainProficiency } from './progress.js';
 
+// Each boss lives in its weapon zone and fights with that zone's theme. They all crash into the
+// survival swarm partway through (waves.js); `warn` is shouted just before they arrive and
+// `surprise` is the twist they pull at each phase change.
 const BOSSES = {
   bossjr: {
     name: 'CRAZY WEAPON MAN JR.',
-    patterns: ['charge', 'slam', 'toss'],
-    intro: ['DAD SAID I COULD USE THE BIG ONE', 'THIS ONE IS A PROTOTYPE. PROBABLY.'],
-    phase: ['OW! OKAY NOW I MEAN IT', 'I AM TELLING DAD'],
+    patterns: ['charge', 'tide', 'shell', 'toss'],
+    surprise: 'surf',
+    warn: 'THE TIDE IS GOING OUT... FAST',
+    intro: ['DAD SAID I COULD USE THE BIG ONE', 'COWABUNGA? IS THAT HOW YOU SAY IT'],
+    phase: ["SURF'S UP, LOSER!", 'I AM TELLING DAD'],
     defeat: 'I WANT A REMATCH... AFTER NAP',
     bolt: 'pink',
     speed: 46
   },
   bossman: {
     name: 'OGRE KING GRUMBLEFOOT',
-    patterns: ['stomp', 'fan', 'summon:crawler'],
-    intro: ['WHO DARES WAKE THE KING', 'I HAVE EATEN BIGGER HEROES'],
-    phase: ['THAT WAS MY GOOD CROWN!', 'GUARDS! ...WHERE ARE MY GUARDS'],
+    patterns: ['stomp', 'avalanche', 'fan', 'summon:monk'],
+    surprise: 'avalanche',
+    warn: 'THE MOUNTAIN GROANS...',
+    intro: ['I WAS MEDITATING. ON HAM.', 'I HAVE EATEN BIGGER HEROES'],
+    phase: ['INNER PEACE... OVER!', 'MONKS! ...WHERE ARE MY MONKS'],
     defeat: 'NO... DESSERT... FOR ME',
     bolt: 'gold',
     speed: 30
   },
   bosssr: {
     name: 'CRAZY WEAPON MAN SR.',
-    patterns: ['anvils', 'charge', 'strikes'],
+    patterns: ['anvils', 'charge', 'strikes', 'molten'],
+    surprise: 'overheat',
+    warn: 'SOMEONE LEFT THE FORGE ON HIGH',
     intro: ['WHO LEFT THE FORGE DOOR OPEN', 'HI HUNGRY, I AM DAD'],
-    phase: ['DO NOT MAKE ME TURN THIS FORGE AROUND', 'BACK IN MY DAY WE SHARED ONE SWORD'],
+    phase: ['DO NOT MAKE ME TURN THIS FORGE AROUND', 'BACK IN MY DAY WE SHARED ONE ANVIL'],
     defeat: 'GO ASK YOUR MOTHER',
     bolt: 'sky',
     speed: 40
   },
   bossgrandma: {
     name: 'GRANDMA, ARMED',
-    patterns: ['lob', 'summon:crawler', 'fan'],
+    patterns: ['lob', 'sparkles', 'cookies', 'summon:crawler'],
+    surprise: 'helpings',
+    warn: 'SOMETHING SMELLS LIKE CASSEROLE...',
     intro: ['YOU LOOK THIN. HAVE A CASSEROLE', 'SIT DOWN, DEAR. THIS WILL HURT'],
     phase: ['SECOND HELPINGS!', 'NOBODY LEAVES MY TABLE HUNGRY'],
     defeat: 'TAKE SOME COOKIES FOR THE ROAD',
@@ -52,17 +63,21 @@ const BOSSES = {
     speed: 28
   },
   bossceo: {
-    name: 'THE USURPER KING',
-    patterns: ['coins', 'charge', 'summon:shieldbro', 'slam'],
-    intro: ['BOW BEFORE YOUR NEW KING', 'I STOLE THIS CROWN FAIR AND SQUARE'],
-    phase: ['MORE GOLD! MORE GUARDS!', 'THE TREASURY FIGHTS FOR ME'],
+    name: 'THE USURPER NINJA LORD',
+    patterns: ['stars', 'vanish', 'coins', 'summon:ninja'],
+    surprise: 'clones',
+    warn: 'A SHADOW MOVES ON THE ROOF...',
+    intro: ['I BOUGHT THIS CASTLE. HOSTILELY.', 'MY NINJAS ARE SALARIED'],
+    phase: ['RELEASE THE INTERNS!', 'THE BOARD DEMANDS YOUR DEFEAT'],
     defeat: 'THE CROWN... WAS ALWAYS... TOO TIGHT',
-    bolt: 'gold',
+    bolt: 'violet',
     speed: 44
   },
   bossweapon: {
     name: 'THE SENTIENT ARMORY',
-    patterns: ['swordrain', 'charge', 'fan', 'strikes'],
+    patterns: ['swordrain', 'charge', 'graves', 'stars', 'strikes'],
+    surprise: 'arsenal',
+    warn: 'EVERY WEAPON YOU DROPPED IS HUMMING...',
     intro: ['I AM EVERY WEAPON YOU DROPPED', 'YOU SOLD MY COUSIN FOR SHARDS'],
     phase: ['THE RACKS ARE EMPTY. I AM THE RACKS.', 'I KNOW ALL YOUR MOVES'],
     defeat: 'EQUIP... ME...',
@@ -70,6 +85,7 @@ const BOSSES = {
     speed: 50
   }
 };
+export const bossWarning = kind => BOSSES[kind]?.warn;
 
 const bossFloor=()=>world.map?.bossFloor??worldFloor();
 const hazards = [];
@@ -92,8 +108,9 @@ export function startBoss(kind) {
     boss: true,
     D,
     name: D.name,
-    x: worldWidth() - 90,
-    y: world.map ? world.map.bossFloor - art.h - 160 : -art.h, // drops into the end chamber
+    // crashes down into the arena on the side away from the hero
+    x: world.map && cx(world.hero) > (world.map.bossLeft + world.map.bossRight) / 2 ? world.map.bossLeft + 30 : worldWidth() - 90,
+    y: world.map ? world.map.bossFloor - art.h - 120 : -art.h,
     w: Math.round((art.w - 2) * 0.7),
     h: art.h - 4,
     vx: 0,
@@ -156,8 +173,9 @@ export function updateBoss(e, dt) {
     callout(`PHASE ${ph}`, W / 2, 60, C.coral, { big: true, life: 80 });
     shake(0.5);
     hitstop(0.1);
+    if (D.surprise) castMove(e, D.surprise);
     e.state = 'idle';
-    e.st = 0.6;
+    e.st = 1.1;
   }
   const rate = e.phase === 1 ? 1 : e.phase === 2 ? 1.25 : 1.5;
   e.st -= dt * rate;
@@ -266,6 +284,142 @@ function doPattern(e) {
       for (let i = 0; i < 3 + e.phase; i++) hazards.push({ kind: 'column', x: i === 0 ? cx(hero) : (world.map?.bossLeft ?? 0) + 20 + Math.random() * ((world.map ? world.map.bossRight-world.map.bossLeft : W)-40), t: 0.9 + i * 0.15, life: 0.25, dmg: e.dmg });
       e.st = 1.6;
       break;
+    case 'vanish':
+      castMove(e, 'vanish');
+      e.st = 0.9;
+      break;
+    default:
+      castMove(e, name);
+      e.st = 1.5;
+  }
+}
+
+// ---------------------------------------------------------------- themed moves
+// Shared by the story bosses (as patterns and phase surprises) and the swarm bosses (waves.js
+// fires their `moves` on a timer and their `surprise` at half health). Everything telegraphs.
+const arenaL = () => world.map?.bossLeft ?? 8, arenaR = () => world.map?.bossRight ?? worldWidth() - 8;
+const randX = () => arenaL() + 16 + Math.random() * (arenaR() - arenaL() - 32);
+const strength = e => e.phase || (e.hp < e.max / 2 ? 2 : 1);
+function ring(e, n, speed, dmg, col, turn = 0) {
+  for (let i = 0; i < n; i++) {
+    const a = turn + (i / n) * Math.PI * 2;
+    bolt(cx(e), cy(e) - 4, Math.cos(a) * speed, Math.sin(a) * speed, dmg, col);
+  }
+}
+function rain(e, look, n, gap = 0.1) {
+  for (let i = 0; i < n; i++) hazards.push({ kind: 'fall', x: i === 0 ? cx(world.hero) : randX(), y: -20, t: 0.8 + i * gap, vy: 0, dmg: e.dmg * 0.8, look });
+}
+function wave(e, dir, look, hgt, speed, delay = 0, bounces = 0) {
+  hazards.push({ kind: 'wave', x: dir > 0 ? arenaL() : arenaR(), dir, t: -delay, life: 9, dmg: e.dmg * 0.9, hit: false, look, hgt, speed, bounces });
+}
+export const MOVES = ['graves', 'arrows', 'tide', 'shell', 'smoke', 'iai', 'petals', 'avalanche', 'molten', 'sparkles', 'cookies', 'stars',
+  'vanish', 'surf', 'overheat', 'helpings', 'clones', 'arsenal', 'honk', 'volley', 'decoys', 'storm'];
+export function castMove(e, name) {
+  const hero = world.hero, k = strength(e), col = C[e.D?.bolt] || C.paper;
+  const say1 = s => callout(s, 0, 0, C.gold, { follow: e, life: 50 });
+  switch (name) {
+    case 'graves': // swords burst up out of the graves, one right under you
+      for (let i = 0; i < 3 + k; i++) hazards.push({ kind: 'spike', x: i === 0 ? cx(hero) : randX(), t: 0.75 + i * 0.12, life: 0.35, dmg: e.dmg * 0.8, look: 'sword' });
+      say1('RISE, SWORDS!');
+      break;
+    case 'arrows': // a volley of arrows from the canopy
+      rain(e, 'arrow', 6 + k * 2, 0.06);
+      say1('LOOSE!');
+      break;
+    case 'tide': // a tall wave rolls across the arena: jump it
+      wave(e, Math.random() < 0.5 ? 1 : -1, 'tide', 18, 150);
+      say1('TIDE!');
+      break;
+    case 'shell': // a turtle shell skids wall to wall
+      wave(e, cx(hero) > cx(e) ? 1 : -1, 'shell', 9, 230, 0, 2 + k);
+      say1('SHELL SHOCK!');
+      break;
+    case 'smoke': // poof: reappear behind the hero
+    case 'vanish': {
+      burst(cx(e), cy(e), 14, 'smoke', ['fog', 'mist', 'slate']);
+      const behind = cx(hero) - (hero.face || 1) * 46;
+      e.x = Math.max(arenaL(), Math.min(arenaR() - e.w, behind - e.w / 2));
+      e.face = Math.sign(cx(hero) - cx(e)) || 1;
+      burst(cx(e), cy(e), 14, 'smoke', ['fog', 'mist', 'slate']);
+      if (name === 'vanish') ring(e, 6 + k * 2, 110, e.dmg * 0.6, col);
+      say1(name === 'vanish' ? 'NINJA VANISH!' : 'POOF!');
+      break;
+    }
+    case 'iai': // a full-width slash at standing height: jump over it
+      hazards.push({ kind: 'slash', y: bossFloor() - 8, t: 0.9, life: 0.22, dmg: e.dmg });
+      if (k > 1) hazards.push({ kind: 'slash', y: bossFloor() - 40, t: 1.5, life: 0.22, dmg: e.dmg });
+      say1('IAI!');
+      break;
+    case 'petals': // a storm of sharp cherry petals
+      rain(e, 'petal', 8 + k * 2, 0.05);
+      ring(e, 8, 90, e.dmg * 0.5, C.pink, Math.random());
+      break;
+    case 'avalanche': // snowballs roll down from both sides, one after another
+      for (let i = 0; i < 1 + k; i++) wave(e, i % 2 ? -1 : 1, 'snow', 12, 140, i * 0.7);
+      shake(0.4);
+      say1('AVALANCHE!');
+      break;
+    case 'molten': // strips of the forge floor glow and then erupt
+      for (let i = 0; i < 4 + k; i++) hazards.push({ kind: 'spike', x: i === 0 ? cx(hero) : randX(), t: 0.9 + i * 0.1, life: 0.6, dmg: e.dmg * 0.8, look: 'lava' });
+      say1('HOT METAL!');
+      break;
+    case 'sparkles': // a bullet-hell bloom of wand sparkles, twice
+      ring(e, 10 + k * 2, 95, e.dmg * 0.6, C.violet, Math.random());
+      ring(e, 10 + k * 2, 70, e.dmg * 0.6, C.pink, Math.random());
+      say1('BIBBIDI BONK!');
+      break;
+    case 'cookies':
+      rain(e, 'cookie', 6 + k * 2, 0.08);
+      say1('FRESH FROM THE OVEN!');
+      break;
+    case 'stars': // shuriken rings, the second one offset to fill the gaps
+      ring(e, 10 + k * 2, 120, e.dmg * 0.6, C.mist);
+      ring(e, 10 + k * 2, 85, e.dmg * 0.6, C.violet, Math.PI / (10 + k * 2));
+      say1('SHURIKEN!');
+      break;
+    // ---- surprises: the twists at a phase change or half health
+    case 'surf':
+      wave(e, 1, 'tide', 18, 150); wave(e, -1, 'tide', 18, 150, 1.2);
+      for (let i = 0; i < 2; i++) spawnEnemy('turtle', i ? arenaR() - 30 : arenaL() + 30, bossFloor(), { wave: 4 });
+      say1("SURF'S UP!");
+      break;
+    case 'overheat':
+      castMove(e, 'molten'); rain(e, 'anvils', 4 + k);
+      callout('THE FORGE OVERHEATS!', W / 2, 92, C.orange, { big: true, life: 90 });
+      break;
+    case 'helpings':
+      castMove(e, 'sparkles'); castMove(e, 'cookies');
+      for (let i = 0; i < 3; i++) spawnEnemy('crawler', randX(), bossFloor(), { wave: 4 });
+      break;
+    case 'clones':
+      castMove(e, 'vanish');
+      for (let i = 0; i < 3; i++) spawnEnemy('ninja', randX(), bossFloor(), { wave: 4 });
+      callout('NINJA CLONES!', W / 2, 92, C.violet, { big: true, life: 90 });
+      break;
+    case 'arsenal':
+      castMove(e, 'graves'); castMove(e, 'stars'); rain(e, 'swordrain', 5);
+      callout('THE WHOLE ARSENAL!', W / 2, 92, C.gold, { big: true, life: 90 });
+      break;
+    case 'honk': // Mother Goose: a shockwave honk and a second row of graves
+      sfx.honk();
+      shake(0.5);
+      wave(e, 1, 'honk', 10, 180); wave(e, -1, 'honk', 10, 180);
+      castMove(e, 'graves');
+      callout('HONK OF THE GRAVES!', W / 2, 92, C.paper, { big: true, life: 90 });
+      break;
+    case 'volley':
+      rain(e, 'arrow', 14, 0.04); ring(e, 8, 100, e.dmg * 0.5, C.orange);
+      callout('ARROW STORM!', W / 2, 92, C.orange, { big: true, life: 90 });
+      break;
+    case 'decoys':
+      castMove(e, 'smoke');
+      for (let i = 0; i < 3; i++) spawnEnemy('raccoon', randX(), bossFloor(), { wave: 4 });
+      callout('WHICH ONE IS REAL?', W / 2, 92, C.ice, { big: true, life: 90 });
+      break;
+    case 'storm':
+      castMove(e, 'iai'); castMove(e, 'petals');
+      callout('PETAL STORM!', W / 2, 92, C.pink, { big: true, life: 90 });
+      break;
   }
 }
 
@@ -358,13 +512,37 @@ export function updateHazards(dt) {
       }
     } else if (h.kind === 'wave') {
       h.t += dt;
-      h.x += h.dir * 170 * dt;
-      if (Math.random() < 0.8) emit(h.x, bossFloor() - 2, 'chip', Math.random() < 0.5 ? C.sand : C.wood);
-      if (!h.hit && hero.onGround && Math.abs(cx(hero) - h.x) < 7 && hero.y + hero.h >= bossFloor() - 2) {
+      if (h.t < 0) continue;
+      h.x += h.dir * (h.speed || 170) * dt;
+      const hgt = h.hgt || 7;
+      if (Math.random() < 0.8) emit(h.x, bossFloor() - 2, 'chip', h.look === 'tide' ? C.sky : h.look === 'snow' ? C.paper : Math.random() < 0.5 ? C.sand : C.wood);
+      if (!h.hit && Math.abs(cx(hero) - h.x) < 5 + (h.look === 'tide' ? 4 : 2) && hero.y + hero.h >= bossFloor() - hgt + 2) {
         h.hit = true;
         hurtHero(h.dmg, h.dir);
       }
-      if (h.t > h.life || h.x < 0 || h.x > worldWidth()) hazards.splice(i, 1);
+      // shells bounce off the arena walls a few times
+      if (h.bounces && (h.x < arenaL() || h.x > arenaR())) { h.dir *= -1; h.bounces--; h.hit = false; sfx.clang(); }
+      else if (h.t > h.life || h.x < arenaL() - 8 || h.x > arenaR() + 8) hazards.splice(i, 1);
+    } else if (h.kind === 'spike') {
+      h.t -= dt;
+      if (h.t <= 0) {
+        if (!h.fired) {
+          h.fired = true;
+          sfx.land();
+          burst(h.x, bossFloor() - 2, 5, 'chip', h.look === 'lava' ? ['orange', 'gold'] : ['mist', 'stone']);
+        }
+        if (!h.hit && Math.abs(cx(hero) - h.x) < 8 && hero.y + hero.h > bossFloor() - 24) { h.hit = true; hurtHero(h.dmg, Math.sign(cx(hero) - h.x) || 1); }
+        h.life -= dt;
+        if (h.life <= 0) hazards.splice(i, 1);
+      }
+    } else if (h.kind === 'slash') {
+      h.t -= dt;
+      if (h.t <= 0) {
+        if (!h.fired) { h.fired = true; sfx.boom(0.5); shake(0.3); }
+        if (!h.hit && hero.y < h.y + 2 && hero.y + hero.h > h.y - 2) { h.hit = true; hurtHero(h.dmg, 1); }
+        h.life -= dt;
+        if (h.life <= 0) hazards.splice(i, 1);
+      }
     }
   }
 }
@@ -388,6 +566,19 @@ export function drawHazards(t) {
         } else if (h.look === 'swordrain') {
           rect(x - 1, y - 7, 3, 10, C.mist);
           rect(x - 4, y - 7, 9, 2, C.gold);
+        } else if (h.look === 'arrow') {
+          rect(x - 3, y - 8, 7, 12, C.ink);
+          rect(x, y - 8, 1, 9, C.wood);
+          rect(x - 1, y - 8, 3, 2, C.lime);
+          rect(x - 1, y + 1, 3, 2, C.mist);
+        } else if (h.look === 'cookie') {
+          rect(x - 4, y - 7, 9, 9, C.wood);
+          rect(x - 3, y - 6, 7, 7, C.sand);
+          rect(x - 1, y - 4, 1, 1, C.ink); rect(x + 2, y - 2, 1, 1, C.ink);
+        } else if (h.look === 'petal') {
+          rect(x - 3, y - 6, 7, 6, C.ink);
+          rect(x - 2, y - 5, 5, 4, C.pink);
+          rect(x - 1, y - 5, 2, 1, C.paper);
         } else {
           rect(x - 4, y - 7, 9, 4, C.stone);
           rect(x - 2, y - 3, 5, 6, C.slate);
@@ -402,9 +593,51 @@ export function drawHazards(t) {
         rect(x - 1, 0, 3, bossFloor(), C.paper);
       }
     } else if (h.kind === 'wave') {
-      rect(x - 3, bossFloor() - 7, 7, 7, C.ink);
-      rect(x - 2, bossFloor() - 6, 5, 6, C.sand);
-      rect(x - 1, bossFloor() - 9, 3, 3, C.wood);
+      if (h.t < 0) continue;
+      const f = bossFloor();
+      if (h.look === 'tide') {
+        rect(x - 7, f - 19, 15, 19, C.ink);
+        rect(x - 6, f - 18, 13, 18, C.blue);
+        rect(x - 6, f - 18, 13, 3, C.sky);
+        rect(x - 4 * h.dir, f - 21, 5, 3, C.paper);
+      } else if (h.look === 'shell') {
+        rect(x - 6, f - 9, 13, 9, C.ink);
+        rect(x - 5, f - 8, 11, 7, C.leaf);
+        rect(x - 3, f - 7, 3, 2, C.lime);
+      } else if (h.look === 'snow') {
+        rect(x - 6, f - 12, 13, 12, C.ink);
+        rect(x - 5, f - 11, 11, 10, C.paper);
+        rect(x - 3, f - 9, 3, 3, C.ice);
+      } else if (h.look === 'honk') {
+        for (let k = 0; k < 3; k++) rect(x - h.dir * k * 4, f - 10 + k * 2, 2, 10 - k * 2, C.paper);
+      } else {
+        rect(x - 3, f - 7, 7, 7, C.ink);
+        rect(x - 2, f - 6, 5, 6, C.sand);
+        rect(x - 1, f - 9, 3, 3, C.wood);
+      }
+    } else if (h.kind === 'spike') {
+      const f = bossFloor(), hot = h.look === 'lava';
+      if (h.t > 0) {
+        if (Math.floor(t * 12) % 2) rect(x - 5, f - 2, 11, 2, hot ? C.orange : C.red);
+      } else if (hot) {
+        rect(x - 5, f - 26, 11, 26, C.ink);
+        rect(x - 4, f - 25, 9, 25, C.orange);
+        rect(x - 2, f - 25, 5, 25, C.gold);
+      } else {
+        rect(x - 2, f - 25, 5, 25, C.ink);
+        rect(x - 1, f - 24, 3, 18, C.mist);
+        rect(x - 4, f - 7, 9, 2, C.gold);
+        rect(x - 1, f - 5, 3, 5, C.wood);
+      }
+    } else if (h.kind === 'slash') {
+      const L = arenaL(), R = arenaR(), y = Math.round(h.y);
+      if (h.t > 0) {
+        if (Math.floor(t * 14) % 2) for (let sx = L; sx < R; sx += 8) rect(sx, y, 4, 1, C.coral);
+      } else {
+        rect(L, y - 2, R - L, 5, C.ink);
+        rect(L, y - 1, R - L, 3, C.paper);
+        rect(L, y, R - L, 1, C.pink);
+      }
     }
   }
 }
@@ -417,7 +650,7 @@ export function drawBoss(e, t) {
   const f = e.flash > 0 ? 2 : Math.floor(e.anim * 2) % 2;
   frame(art.im, f, art.w, art.h, sx, sy, e.face < 0);
   if (e.state === 'wind') {
-    const label = { charge: 'DASH THROUGH', slam: 'JUMP / DASH', stomp: 'JUMP', fan: 'FIND THE GAP', toss: 'KEEP MOVING', summon: 'CLEAR ADDS', strikes: 'MOVE OFF MARKS' }[e.pattern.split(':')[0]] || 'MOVE OFF MARKS';
+    const label = { charge: 'DASH THROUGH', slam: 'JUMP / DASH', stomp: 'JUMP', fan: 'FIND THE GAP', toss: 'KEEP MOVING', summon: 'CLEAR ADDS', strikes: 'MOVE OFF MARKS', tide: 'JUMP THE WAVE', shell: 'JUMP THE SHELL', avalanche: 'JUMP THE SNOWBALLS', stars: 'FIND THE GAP', sparkles: 'FIND THE GAP', vanish: 'WATCH YOUR BACK', iai: 'JUMP!' }[e.pattern.split(':')[0]] || 'MOVE OFF MARKS';
     text(label, cx(e), sy - 30, C.gold, {align:'center'});
     if (e.pattern === 'charge') for(let x=cx(e); x>(world.map?.bossLeft ?? 2) && x<(world.map?.bossRight ?? worldWidth()-2); x+=e.face*6) rect(x, e.y+e.h-2, 3, 1, C.coral);
   }

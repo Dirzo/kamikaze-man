@@ -4,10 +4,10 @@ import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
 import { spawnEnemy, updateEnemy, drawEnemy } from '../game/enemy.js';
 import { hitEnemy, hurtHero, dropWeapon } from '../game/combat.js';
-import { makeWeapon, dps } from '../game/loot.js';
+import { makeWeapon, dps, powerScore } from '../game/loot.js';
 import { updateDrops } from '../game/drops.js';
 import { updateEvolution, attackMutation, impactMutation } from '../game/evolution.js';
-import { startBoss, updateBoss, updateHazards, bossDone, clearBoss } from '../game/bosses.js';
+import { startBoss, updateBoss, updateHazards, drawHazards, bossDone, clearBoss, castMove, MOVES } from '../game/bosses.js';
 import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
 import { startZone, updateWaves, enemiesLeft, spawnSwarmBoss } from '../game/waves.js';
@@ -109,6 +109,18 @@ export function runSmoke(game) {
       e.hp=e.max*0.25;updateBoss(e,STEP);ok(e.phase===3,'phase did not advance');
       e.hp=0;updateBoss(e,STEP);ok(e.dead);for(let i=0;i<150;i++)updateBoss(e,STEP);ok(bossDone(),'boss clear stalled');
     }
+  });
+  check('every themed boss move and surprise telegraphs, plays out and cleans up',()=>{
+    reset();startZone(9);const h=world.hero;h.x=world.map.bossLeft+40;h.y=world.map.bossFloor-h.h;h.inv=1e9;startBoss('bossweapon');const e=world.boss;
+    for(const name of MOVES) {
+      const hp0=h.hp;castMove(e,name);
+      for(let i=0;i<600;i++){world.t+=STEP;updateHazards(STEP);if(i%60===0)drawHazards(i*STEP);h.inv=1e9;}
+      ok(Number.isFinite(e.x) && h.hp===hp0,'move '+name+' broke');
+      world.bolts.length=0;
+    }
+    // with no i-frames, the slash hits a standing hero and a jump clears it
+    h.inv=0;h.hp=h.maxHp;castMove(e,'iai');for(let i=0;i<70;i++){world.t+=STEP;updateHazards(STEP);}
+    ok(h.hp<h.maxHp,'the iai slash missed a standing hero');
   });
   check('forge opens straight to the workshop with no weapon draft, and reset clears it',()=>{
     reset();const before=world.hero.weapon;openForge();ok(!world.forge.draft && !world.forge.offers,'weapon draft still offered');
@@ -214,7 +226,22 @@ export function runSmoke(game) {
     reset();let n=0;const h=world.hero;h.weapon=makeWeapon(0,{q:0,standout:false});
     const e=spawnEnemy('crawler',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e9;
     for(let i=0;i<400;i++){world.t+=1;if(quirkHit(h,e,1,1))n++;}
-    ok(n>80 && n<200,'common quirk rate off: '+n+'/400');
+    ok(n>160 && n<240,'common quirk rate off: '+n+'/400');
+    h.weapon=makeWeapon(9,{q:10,standout:true});n=0;
+    for(let i=0;i<400;i++){world.t+=1;if(quirkHit(h,e,1,1))n++;}
+    ok(n>80,'rare weapons stopped being quirky: '+n+'/400');
+  });
+  check('every new weapon comes with a quirk and is never weaker than the one in hand',()=>{
+    reset();const h=world.hero;
+    for(let z=0;z<10;z++){
+      h.weapon=makeWeapon(z,{q:Math.min(10,z+2),standout:z%3===0});
+      for(let i=0;i<30;i++){
+        const w=makeWeapon(z);ok(QUIRK_LIST.includes(w.quirk),'weapon without a quirk: '+w.name);
+        dropWeapon(h.x+90,h.y,w);
+        ok(powerScore(w)>=powerScore(h.weapon)*0.999,'a new drop was weaker than the held weapon in zone '+(z+1));
+      }
+      world.drops.length=0;
+    }
   });
   check('weapon mastery grows from kills, persists in storage and boosts damage',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'staff',q:0,standout:false});
@@ -232,7 +259,7 @@ export function runSmoke(game) {
         world.enemies=world.enemies.filter(e=>e.boss); // resolve boss outro through its own handler
         if(world.boss && world.boss.swarmBoss && world.boss.dead) world.boss=null;
         if(world.boss){world.hero.x=world.map.bossLeft+40;world.hero.y=world.map.bossFloor-world.hero.h;world.boss.dead=false;world.boss.hp=0;updateBoss(world.boss,STEP);for(let j=0;j<150;j++)updateBoss(world.boss,STEP);world.enemies=[];world.boss=null;}
-        if(world.director.phase==='exit') {world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;}
+        if(world.director.phase==='exit' || world.director.phase==='arena') {world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;}
         updateWaves(STEP);world.t+=STEP;
       }
       ok(z===9?world.phase==='won':!!world.forge,'zone '+z+' stalled');
@@ -256,6 +283,21 @@ export function runSmoke(game) {
     ok(h.onGround && Math.abs(h.y+h.h-l.bottom)<1,'bottom dismount failed');
     updateCamera(STEP,true);ok(Math.abs(world.cameraY-(l.bottom-GROUND+12))<1,'camera missed chamber route');
   });
+  check('story bosses crash into the swarm after a themed warning, and the swarm keeps coming',()=>{
+    reset();startZone(2);const h=world.hero;h.inv=1e9;world.director.phase='fight';
+    for(const e of world.enemies)e.dead=true;
+    updateWaves(STEP);h.x=world.map.bossLeft+40;h.y=world.map.bossFloor-h.h;updateWaves(STEP);
+    ok(world.director.phase==='survive' && !world.boss,'the boss was there before the swarm');
+    let warnedFirst=false,steps=0;
+    for(;steps<1200 && !world.boss;steps++){updateWaves(STEP);h.inv=1e9;if(world.director.warned && !world.boss)warnedFirst=true;}
+    ok(world.boss && world.boss.type==='bossjr' && warnedFirst,'no warned boss arrival in the swarm');
+    ok(steps>=60*5,'the boss arrived too soon to be a swarm moment');
+    world.enemies=world.enemies.filter(e=>!e.swarm);
+    for(let i=0;i<300;i++){updateWaves(STEP);world.t+=STEP;h.inv=1e9;}
+    ok(world.enemies.some(e=>e.swarm && !e.dead),'the swarm stopped when the boss arrived');
+    const b=world.boss;b.hp=0;for(let i=0;i<200;i++){updateBoss(b,STEP);updateWaves(STEP);}
+    ok(world.director.phase==='exit','beating the boss did not end the swarm');
+  });
   check('nonlethal hits trigger expressive faces',()=>{
     reset();const e=spawnEnemy('goose',100,GROUND);e.spawnT=0;e.hp=e.max=10000;
     hitEnemy(e,2,{dir:1});ok(e.faceUntil>world.t);const first=e.funnyFace;
@@ -268,7 +310,8 @@ export function runSmoke(game) {
     ok(world.director.phase==='fight' && !world.forge,'escaped with enemies left');
     ok(world.enemies.length===count && world.enemies.map(e=>e.id).join(',')===ids,'map respawned enemies');
     for(const e of world.enemies)e.dead=true;
-    updateWaves(STEP);ok(world.director.phase==='survive' && world.lock,'clear did not start the survival swarm');
+    updateWaves(STEP);ok(world.director.phase==='arena' && !world.lock,'clear did not send the hero to the arena');
+    updateWaves(STEP);ok(world.director.phase==='survive' && world.lock && world.lock.x1===world.map.width,'the arena did not start the survival swarm');
     let peak=0;for(let i=0;i<240;i++){updateWaves(STEP);peak=Math.max(peak,world.enemies.filter(e=>!e.dead).length);}
     ok(peak>=3,'swarm did not pour in');
     for(const e of world.enemies.filter(e=>e.swarm && !e.dead)) ok(e.x>=world.lock.x0 && e.x+e.w<=world.lock.x1,'swarm left the locked screen');
@@ -276,8 +319,8 @@ export function runSmoke(game) {
     hitEnemy(foe,1,{dir:1});hitEnemy(foe,1,{dir:1});ok(world.swarmCombo.n===2,'swarm hits did not build a combo');
     const boosted=game.hitDamage(world.hero.weapon);world.swarmCombo.n=50;ok(game.hitDamage(world.hero.weapon)>boosted,'combo gave no damage');world.swarmCombo.n=2;
     for(let i=0;i<200;i++)updateWaves(STEP);ok(world.swarmCombo.n===0,'combo did not fall off without hits');
-    world.director.t=0;updateWaves(STEP);
-    const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.swarmBoss && boss.scale>1 && boss.name===SWARM_BOSSES[0].name,'no swarm boss when the timer ran out');
+    if(!world.boss){world.director.t=0;updateWaves(STEP);}
+    const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.swarmBoss && boss.w>30 && boss.name===SWARM_BOSSES[0].name,'no swarm boss when the timer ran out');
     for(let i=0;i<60;i++)updateWaves(STEP);ok(world.director.phase==='survive','swarm ended before its boss fell');
     boss.spawnT=0;hitEnemy(boss,boss.hp+1,{dir:1});updateWaves(STEP);
     ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead) && !world.swarmCombo,'swarm boss defeat did not open the exit');
@@ -297,6 +340,15 @@ export function runSmoke(game) {
     reset();startZone(1);const e=world.enemies.find(e=>e.x>900), x=e.x;e.spawnT=0;
     for(let i=0;i<180;i++)updateEnemy(e,STEP);
     ok(e.x===x,'distant pack left its map section');
+  });
+  check('residents stroll peacefully until the hero comes close or hits them',()=>{
+    reset();const h=world.hero,e=spawnEnemy('stalker',h.x+150,GROUND);e.spawnT=0;h.inv=100;
+    let attacked=false;
+    for(let i=0;i<240;i++){world.t+=STEP;updateEnemy(e,STEP);attacked||=e.state!=='idle';}
+    ok(e.calm && !attacked,'resident attacked from across the screen');
+    const far=spawnEnemy('crawler',h.x+150,GROUND);far.spawnT=0;hitEnemy(far,1,{dir:1});ok(!far.calm,'a hit did not provoke');
+    e.x=h.x+30;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(e,STEP);}
+    ok(!e.calm,'resident ignored the hero right next to it');
   });
   reset();
   const failed=results.filter(s=>s.startsWith('FAIL'));

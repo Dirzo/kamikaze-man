@@ -33,7 +33,9 @@ HERO_FRAMES = {
 }
 
 from enemies import ENEMIES, ENEMY_KEY
-from bosses import BOSSES
+from cute_enemies import DESIGNS as CUTE, frames as cute_frames, strip as cute_strip
+import weapon_zones
+import hd_bosses
 from weapons import WEAPONS, VARIANTS, weapon_image
 from awakening import AWAKENED
 
@@ -81,25 +83,15 @@ def main():
     strip(hero).save(os.path.join(OUT, 'hero.png'))
     man['hero'] = {'w': hero[0].width, 'h': hero[0].height, 'frames': list(HERO_FRAMES)}
 
-    for etype, (rows, alt) in ENEMIES.items():
-        f1 = flip(outlined(sprite(rows + (['.' * len(rows[0])] if 'bob' in alt else []), ENEMY_KEY)))
-        f2 = flip(outlined(sprite(frame2(rows, alt), ENEMY_KEY)))
-        frames = [f1, f2, white(f1)]
-        strip(frames).save(os.path.join(OUT, f'enemy-{etype}.png'))
-        man['enemies'][etype] = {'w': f1.width, 'h': f1.height, 'frames': ['walk1', 'walk2', 'hit']}
+    # residents: cute shaded chibi sprites (cute_enemies.py); the old palette rows in enemies.py stay
+    # for reference only
+    for etype in CUTE:
+        frames = cute_frames(etype)
+        cute_strip(frames).save(os.path.join(OUT, f'enemy-{etype}.png'))
+        man['enemies'][etype] = {'w': frames[0].width, 'h': frames[0].height, 'frames': ['walk1', 'walk2', 'hit']}
 
-    # bosses: idle1, idle2 (1px breathe), white hit frame
-    man['bosses'] = {}
-    for btype, fn in BOSSES.items():
-        base = fn()
-        f1 = flip(outlined(base))
-        shifted = Image.new('RGBA', (base.width, base.height + 1), (0, 0, 0, 0))
-        shifted.alpha_composite(base, (0, 1))
-        f1 = flip(outlined(Image.alpha_composite(Image.new('RGBA', shifted.size, (0, 0, 0, 0)),
-                                                 _pad_top(base))))
-        f2 = flip(outlined(shifted))
-        strip([f1, f2, white(f1)]).save(os.path.join(OUT, f'boss-{btype}.png'))
-        man['bosses'][btype] = {'w': f1.width, 'h': f1.height, 'frames': ['idle1', 'idle2', 'hit']}
+    # bosses: full-size 32-bit style art (hd_bosses.py): the story bosses and the swarm giants
+    hd_bosses.build(OUT, man)
 
     # held weapons: outlined, magenta markers recoloured in game; grip offset +1 for the outline
     man['weapons'] = {}
@@ -140,6 +132,8 @@ def main():
         sl.save(os.path.join(OUT, f'slab-{key}.png'))
         man['slabs'][key] = {'file': f'slab-{key}.png', 'w': sl.width, 'h': sl.height, 'cap': 9}
         man['zones'].append(key)
+    # weapon-themed zones (weapon_zones.py); the ranger forest dresses up the mushroom backdrop
+    weapon_zones.build(OUT, man, Image.open(os.path.join(OUT, 'bg-mushroom-hollow.png')).convert('RGBA'))
 
     with open(os.path.join(OUT, 'manifest.json'), 'w') as f:
         json.dump(man, f, indent=1)

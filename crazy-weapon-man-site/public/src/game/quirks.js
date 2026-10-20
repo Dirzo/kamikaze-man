@@ -2,9 +2,9 @@
 // are procs, so they never roll another quirk or mutation. Chances live in data/quirks.js.
 import { C } from '../config.js';
 import { world, newId } from './world.js';
-import { QUIRKS, quirkChance } from '../data/quirks.js';
+import { QUIRKS, quirkChance, quirkPower } from '../data/quirks.js';
 import { hitEnemy, dropShards } from './combat.js';
-import { callout, emit, burst, spark } from './fx.js';
+import { callout, emit, burst, spark, shake } from './fx.js';
 import { sfx } from '../engine/audio.js';
 import { say } from './bubbles.js';
 import { cx, cy } from './physics.js';
@@ -27,6 +27,7 @@ export function quirkHit(h, e, dmg, dir) {
   if (Math.random() >= quirkChance(w)) return false;
   h.quirkReadyAt = world.t + 0.18;
   world.quirkCount = (world.quirkCount || 0) + 1;
+  dmg *= quirkPower(w);
   const col = C[Q.col] || C.paper,
     o = { dir, chain: true, knock: 6, sparkCol: col };
   switch (id) {
@@ -125,6 +126,43 @@ export function quirkHit(h, e, dmg, dir) {
         }
       say1(h, 'HONK!', col);
       break;
+    case 'confetti':
+      for (const n of [e, ...near(e, 56, 44)]) {
+        if (n.dead) continue;
+        hitEnemy(n, dmg * 0.45, { ...o, dir: Math.sign(cx(n) - cx(e)) || dir });
+        if (!n.boss) n.stun = Math.max(n.stun || 0, 0.5);
+      }
+      burst(cx(e), cy(e) - 4, 16, 'twinkle', ['pink', 'gold', 'sky', 'lime', 'violet']);
+      say1(e, 'PARTY!', col);
+      break;
+    case 'zap': {
+      let from = e;
+      const hit = new Set([e]);
+      if (!e.dead) hitEnemy(e, dmg * 0.4, o);
+      for (let k = 0; k < 3; k++) {
+        const next = world.enemies.filter(n => !n.dead && !hit.has(n) && !(n.spawnT > 0) && Math.hypot(cx(n) - cx(from), cy(n) - cy(from)) < 90)
+          .sort((a, b) => Math.hypot(cx(a) - cx(from), cy(a) - cy(from)) - Math.hypot(cx(b) - cx(from), cy(b) - cy(from)))[0];
+        if (!next) break;
+        for (let i = 1; i < 6; i++) emit(cx(from) + (cx(next) - cx(from)) * i / 6, cy(from) + (cy(next) - cy(from)) * i / 6 + (Math.random() - 0.5) * 6, 'twinkle', C.sky);
+        hitEnemy(next, dmg * 0.4, { ...o, dir: Math.sign(cx(next) - cx(from)) || dir });
+        hit.add(next);
+        from = next;
+      }
+      say1(e, 'ZAP!', col);
+      break;
+    }
+    case 'giant': {
+      const front = world.enemies.filter(n => !n.dead && !(n.spawnT > 0) && Math.sign(cx(n) - cx(h)) !== -dir && Math.abs(cx(n) - cx(h)) < 72 && Math.abs(cy(n) - cy(h)) < 40);
+      for (const n of front) {
+        hitEnemy(n, dmg * 0.8, { ...o, knock: 30 });
+        if (!n.boss && !n.air) { n.vy = -120; n.onGround = false; }
+      }
+      h.giantT = 0.35;
+      shake(0.3);
+      burst(cx(h) + dir * 30, h.y + h.h - 2, 10, 'smoke', ['sand', 'mist', 'cream']);
+      say1(h, 'HUGE!', col);
+      break;
+    }
   }
   return true;
 }

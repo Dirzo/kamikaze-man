@@ -38,6 +38,7 @@ export function updateHero(h, dt) {
   }
   const T = TYPES[h.weapon.type];
   h.inv = Math.max(0, h.inv - dt);
+  h.giantT = Math.max(0, (h.giantT || 0) - dt); // GROWTH SPURT quirk: the weapon is drawn huge
   h.hurtT = Math.max(0, h.hurtT - dt);
   h.cd = Math.max(0, h.cd - dt);
   h.specialCd = Math.max(0, h.specialCd - dt);
