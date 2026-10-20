@@ -1,48 +1,77 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeMap, cameraTarget, cameraTargetY } from '../game-src/data/maps.js';
+import { makeMap, cameraTarget, cameraTargetY, LAYOUTS } from '../game-src/data/maps.js';
+import { surfaceGraph } from './map-reach.mjs';
 import { HERO, GROUND, W } from '../game-src/config.js';
 import { world } from '../game-src/game/world.js';
 import { ZONES } from '../game-src/data/zones.js';
 import { move } from '../game-src/game/physics.js';
-test('ten finite maps grow from eight to twelve screens with residents across their routes',()=>{
-  let prevWidth=0,prevCount=0;
+test('every zone has its own layout style, and seeded routes never change between runs',()=>{
+  const styles=new Set();
   for(let z=0;z<10;z++) {
-    const m=makeMap(z);assert.ok(m.width>=8*W && m.width<=12*W);
-    assert.ok(m.width>=prevWidth && m.spawns.length>=prevCount);prevWidth=m.width;prevCount=m.spawns.length;
+    const m=makeMap(z);styles.add(m.style);
+    assert.equal(m.name,ZONES[z].name);assert.ok(m.title);
+    assert.equal(JSON.stringify(makeMap(z)),JSON.stringify(m));
+    if(z>0)assert.notEqual(m.style,LAYOUTS[z-1].style,'neighbouring zones share a layout');
+  }
+  assert.ok(styles.size>=7,'only '+styles.size+' layout styles');
+  assert.ok(LAYOUTS.filter(l=>l.style==='burrow').length>=2,'ant tunnels should recur');
+});
+test('maps are bounded, populated along their whole route and end at the exit',()=>{
+  for(let z=0;z<10;z++) {
+    const m=makeMap(z);
+    assert.ok(m.width>=2.5*W && m.width<=12*W);
+    assert.ok(m.spawns.length>=28+z*3-1);
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
     assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));
-    assert.ok(m.platforms.every(p=>p.x>=0 && p.x+p.w<=m.width+36));
+    assert.ok(m.platforms.every(p=>p.x>=0 && p.x+p.w<=m.width && p.y<=m.floorY));
     assert.ok(m.exitX>m.width-60);
+    for(const s of m.spawns) {
+      assert.ok(m.platforms.some(p=>s.x>=p.x && s.x<p.x+p.w && s.y===p.y),'resident floating in zone '+z);
+      assert.ok(!m.solids.some(p=>s.x+6>p.x && s.x-6<p.x+p.w && s.y-20<p.y+p.h && s.y-1>p.y),'resident inside rock in zone '+z);
+      assert.ok(!m.solids.some(p=>s.x>p.x && s.x<p.x+p.w && s.airY-12<p.y+p.h && s.airY>p.y),'flyer inside rock in zone '+z);
+    }
   }
 });
-test('original themes are preserved and every hunting shelf is reachable through chamber routes',()=>{
-  const rise=HERO.jump**2/(2*HERO.gravity),reach=HERO.speed*2*HERO.jump/HERO.gravity;
+test('every surface is reachable with real hero physics, and every one leads back to the start',()=>{
   for(let z=0;z<10;z++) {
-    const m=makeMap(z);assert.equal(m.name,ZONES[z].name);
-    assert.ok(m.rooms.length>=4 && m.rooms.length<=7);
-    assert.ok(new Set(m.rooms.map(r=>r.w)).size>2,'rooms repeat the same width');
-    for(let i=1;i<m.rooms.length;i++)assert.ok(m.rooms[i].floor>m.rooms[i-1].floor);
-    const reached=new Set([m.platforms[0]]);let change=true;
-    while(change) {
-      change=false;
-      for(const p of m.platforms)if(!reached.has(p)) {
-        const linked=[...reached].some(q=>{
-          const gap=Math.max(p.x-(q.x+q.w),q.x-(p.x+p.w),0);
-          if(q.y-p.y<=rise && gap<=reach)return true;
-          return m.ladders.some(l=>l.exitY===p.y && l.exitX>=p.x && l.exitX<p.x+p.w && l.bottom===q.y && l.x>=q.x && l.x<=q.x+q.w);
-        });
-        if(linked){reached.add(p);change=true;}
-      }
-    }
-    assert.equal(reached.size,m.platforms.length,'stranded shelf in zone '+z);
-    for(const l of m.ladders) {
-      assert.ok(m.platforms.some(p=>p.y===l.exitY && l.exitX>=p.x && l.exitX<p.x+p.w));
-      assert.ok(!m.solids.some(p=>l.x>p.x-6 && l.x<p.x+p.w+6 && p.y<l.bottom-2 && p.y+p.h>l.top+30),'ladder passes through terrain');
-    }
-    for(const spawn of m.spawns) assert.ok(m.platforms.some(p=>spawn.x>=p.x && spawn.x<p.x+p.w && spawn.y===p.y));
-    assert.equal(cameraTargetY(m.floorY,m.floorY),m.floorY-GROUND);
+    const m=makeMap(z),g=surfaceGraph(m);
+    assert.ok(g.start>=0 && g.exit>=0,'start or exit not on a floor in zone '+z);
+    const stranded=m.platforms.map((p,i)=>i).filter(i=>!g.forward.has(i));
+    const oneWay=m.platforms.map((p,i)=>i).filter(i=>!g.back.has(i));
+    assert.deepEqual(stranded.map(i=>[m.platforms[i].x,m.platforms[i].y]),[],'unreachable surfaces in zone '+(z+1));
+    assert.deepEqual(oneWay.map(i=>[m.platforms[i].x,m.platforms[i].y]),[],'no way back from surfaces in zone '+(z+1));
   }
+});
+test('ladders stand on floors, exit onto floors and never pass through terrain',()=>{
+  for(let z=0;z<10;z++) {
+    const m=makeMap(z);
+    for(const l of m.ladders) {
+      assert.ok(m.platforms.some(p=>p.y===l.exitY && l.exitX>=p.x && l.exitX<p.x+p.w),'ladder exit in the air in zone '+z);
+      assert.ok(m.platforms.some(p=>p.y===l.bottom && l.x>=p.x && l.x<p.x+p.w),'ladder foot in the air in zone '+z);
+      assert.ok(!m.solids.some(p=>l.x>p.x-6 && l.x<p.x+p.w+6 && p.y<l.bottom-2 && p.y+p.h>l.top+30),'ladder passes through terrain in zone '+z);
+    }
+  }
+});
+test('the end chamber is a flat open arena the boss can drop into',()=>{
+  for(let z=0;z<10;z++) {
+    const m=makeMap(z);
+    assert.ok(m.platforms.some(p=>p.solid && p.y===m.bossFloor && p.x<=m.bossLeft && p.x+p.w>=m.bossRight),'arena floor not flat in zone '+z);
+    assert.ok(!m.solids.some(p=>p.x<m.bossRight && p.x+p.w>m.bossLeft+16 && p.y<m.bossFloor && p.y+p.h>m.bossFloor-220),'arena roof too low in zone '+z);
+    assert.equal(m.exitY,m.bossFloor);
+  }
+});
+test('climbing maps start at the bottom and the camera can follow every height',()=>{
+  const climbs=[];
+  for(let z=0;z<10;z++) {
+    const m=makeMap(z);
+    assert.ok(m.platforms.some(p=>p.y===m.startY && m.startX>=p.x && m.startX<p.x+p.w));
+    if(m.startY>m.exitY+200)climbs.push(m.style);
+    assert.equal(cameraTargetY(m.floorY,m.floorY),m.floorY-GROUND);
+    assert.equal(cameraTargetY(0,m.floorY),0);
+    for(const r of m.rooms)assert.ok(r.label && r.end>r.x);
+  }
+  assert.deepEqual(climbs.sort(),['belfry','summit']);
 });
 test('solid floors, ceilings and side walls stop movement',()=>{
   world.map=makeMap(1);

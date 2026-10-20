@@ -1,4 +1,5 @@
-// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|swarm|results|ladder|late.
+// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|swarm|results|ladder|late,
+// or ?capture=tour1..tour10 for a look at each zone's layout with its residents in place.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves } from '../game/waves.js';
@@ -11,9 +12,11 @@ import { MOVES } from '../data/weapons.js';
 import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
+import { updateCamera } from '../game/camera.js';
 export function captureScene(game, mode) {
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));
   game.snapshot(()=>{
     const z=mode==='late'?9:mode==='forge'?3:mode==='canyon'?0:1;
     startZone(z);world.wave=3;world.director={phase:'fight',toSpawn:0,bossStarted:mode==='late'};world.t=12;
@@ -21,14 +24,16 @@ export function captureScene(game, mode) {
     const room=world.map.rooms[mode==='late'?world.map.rooms.length-1:mode==='depths'?2:mode==='canyon'||mode==='forge'?0:1];
     const offset=mode==='late'?world.map.width-480:room.x+60;
     world.cameraX=offset;
-    const floor=room.floor;
-    world.cameraY=Math.max(0,floor-GROUND);
+    // stand everyone on whatever floor is under them: layouts are rarely flat for a whole screen
+    const floorAt=(x,near)=>{const ps=world.map.platforms.filter(p=>x>=p.x && x<p.x+p.w);ps.sort((a,b)=>Math.abs(a.y-near)-Math.abs(b.y-near));return ps[0]?.y??near;};
+    const floor=floorAt(offset+190,room.floor);
+    world.cameraY=Math.max(0,Math.min(world.map.floorY-GROUND,floor-GROUND+12));
     const h=world.hero;h.x=offset+184;h.y=floor-h.h;h.inv=0;h.lv=1+z*3;world.shards=68;
     h.weapon=makeWeapon(z,{type:mode==='late'?'hammer':'katana',q:mode==='late'?10:3,standout:false});
     if(mode==='late') {h.weapon.mutation='cataclysm';startBoss('bossweapon');const b=world.boss;b.x=offset+336;b.y=floor-b.h;b.state='wind';b.pattern='swordrain';b.phase=3;b.hp=b.max*0.3;}
     h.attack={move:MOVES.slashDown,moveName:'slashDown',t:0.16,dur:0.34,hit:new Set(),weapon:h.weapon};
-    for(const [type,x,y] of [['crawler',234,floor],['goose',298,floor],['wizard',388,floor],['shieldbro',72,floor]]){
-      const e=spawnEnemy(type,offset+x,y,{elite:type==='shieldbro',wave:3});e.spawnT=0;if(type==='crawler'){e.flash=0.1;e.faceUntil=world.t+.4;e.funnyFace=0;e.hp=e.max*0.4;}
+    for(const [type,x] of [['crawler',234],['goose',298],['wizard',388],['shieldbro',72]]){
+      const e=spawnEnemy(type,offset+x,floorAt(offset+x,floor),{elite:type==='shieldbro',wave:3});e.spawnT=0;if(type==='crawler'){e.flash=0.1;e.faceUntil=world.t+.4;e.funnyFace=0;e.hp=e.max*0.4;}
     }
     if(mode==='forge') {openForge();world.forge.t=1;}
     if(mode==='swarm') {
@@ -60,6 +65,19 @@ export function captureScene(game, mode) {
       for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) stash(makeWeapon(z,{type,q,standout}));
       world.bag[1].locked=true;openInventory();world.inv.sel=1;
     }
+  });
+  document.documentElement.dataset.capture='ready';
+}
+
+// a zone as the player finds it, a third of the way along its route
+function tour(game,n) {
+  game.snapshot(()=>{
+    const z=Math.max(0,Math.min(9,n-1));
+    startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};world.t=12;
+    const m=world.map,spot=m.spawns[Math.floor(m.spawns.length*0.35)],h=world.hero;
+    h.x=spot.x-30;h.y=spot.y-h.h;h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type:'katana',q:3,standout:false});
+    for(const e of world.enemies) e.spawnT=0;
+    updateCamera(0,true);
   });
   document.documentElement.dataset.capture='ready';
 }

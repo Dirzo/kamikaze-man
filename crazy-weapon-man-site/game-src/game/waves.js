@@ -33,11 +33,12 @@ export function startZone(z) {
   world.zone=z;
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
   world.map=makeMap(z);
+  world.lastRoom=null;
   world.platforms=world.map.platforms;
   world.cameraX=world.cameraY=0;
   const h=world.hero;
   if(h) {
-    h.x=48;h.y=GROUND-HERO.h;h.vx=h.vy=0;h.onGround=true;h.platform=null;
+    h.x=world.map.startX;h.y=world.map.startY-HERO.h;h.vx=h.vy=0;h.onGround=true;h.platform=null;
     h.attack=h.special=h.ladder=null;h.climbLock=0;h.trail=null;h.dashT=h.dropT=0;h.inv=Math.max(h.inv,1);
     if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.3));
   }
@@ -45,7 +46,7 @@ export function startZone(z) {
   for(const spot of world.map.spawns) {
     const pool=enemyPool(z,spot.wave,ZONES[z].pool);
     const type=pool[Math.floor(Math.random()*pool.length)], d=ENEMIES[type];
-    spawnEnemy(type,spot.x,d.air?Math.max(70,spot.y-65):spot.y,{elite:spot.elite,wave:spot.wave});
+    spawnEnemy(type,spot.x,d.air?spot.airY:spot.y,{elite:spot.elite,wave:spot.wave});
   }
   music.play('zone:'+z,ZONES[z].music);
   sfx.zone();
