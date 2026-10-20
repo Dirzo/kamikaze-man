@@ -18,8 +18,9 @@ import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
 import { updateCamera } from '../game/camera.js';
-import { newSave, revealAll, clearLevel, NODES } from '../data/overworld.js';
+import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
 import { bankShards, buyRank, winTrophy, choosePerk } from '../data/meta.js';
+import { useFile, eraseFile } from '../data/saves.js';
 import { openPowers, P as powers } from '../game/powers.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
 function mapScene(game, all) {
@@ -40,9 +41,22 @@ function powersScene(game, tab) {
   openPowers(tab === 3 ? 1 : tab);
   powers.tree.sel = 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
 }
+// the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
+function filesScene(game) {
+  for (const i of [2, 1, 0]) eraseFile(i);
+  useFile(1);
+  bankShards(140);
+  const s1 = newSave(); clearLevel(s1, '1-1'); s1.at = '1-2'; s1.hero = { lv: 3 }; writeSave(s1);
+  useFile(0);
+  bankShards(5400); winTrophy(1); winTrophy(2); addProficiency('sword', 2200);
+  const s0 = revealAll(newSave(), false); for (const id of Object.keys(s0.cleared)) if (!/^[1-3]-/.test(id) && id !== 'home') delete s0.cleared[id];
+  s0.at = '3-C'; s0.hero = { lv: 14 }; writeSave(s0);
+  game.showFiles();
+}
 export function captureScene(game, mode) {
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
+  if(mode==='files') return filesScene(game);
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));

@@ -69,6 +69,10 @@ export function addProficiency(type, xp, kills = 1) {
   save();
   return up;
 }
+// forget the cached copy (the save files menu just swapped what is in storage)
+export function reloadProficiency() {
+  store = null;
+}
 export function resetProficiency() {
   store = blank();
   save();

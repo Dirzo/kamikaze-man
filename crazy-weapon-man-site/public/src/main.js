@@ -31,6 +31,7 @@ import { loadSave, writeSave, clearLevel, FINAL } from './data/overworld.js';
 import { freshUid } from './game/loot.js';
 import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
 import { P as powers, openPowers, closePowers } from './game/powers.js';
+import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
 
 let capture = false;
 let scene = 'loading',
@@ -56,6 +57,12 @@ function startRun() {
 // The overworld run: the hero (level, weapon, bag) carries from level to level and is saved with
 // the map. A level is played on its region's zone map. Dying or leaving only loses that attempt:
 // the hero goes back to how they walked in and the map keeps everything cleared.
+function showFiles() {
+  document.getElementById('start').hidden = true;
+  openFiles();
+  scene = 'files';
+  sceneT = 0;
+}
 function openMap(fresh = []) {
   document.getElementById('start').hidden = true;
   closeInventory();
@@ -116,11 +123,23 @@ function update(dt) {
     if (input.take('confirm') | input.take('jump')) {
       audioOn();
       sfx.ui(true);
+      showFiles();
+    }
+    return;
+  }
+  if (scene === 'files') {
+    const r = updateFiles();
+    if (r === 'play') {
+      ow.save = null; // the chosen file's map
       openMap();
+    } else if (r === 'back') {
+      scene = 'title';
+      document.getElementById('start').hidden = false;
     }
     return;
   }
   if (scene === 'map') {
+    if (!powers.open && input.take('pause')) return showFiles();
     const node = updateOverworld(dt);
     if (node) enterLevel(node);
     return;
@@ -301,6 +320,7 @@ function render() {
     return;
   }
   if (scene === 'title') return drawTitle(t);
+  if (scene === 'files') return drawTitle(t), drawFiles(t);
   if (scene === 'map') return drawOverworld(t);
   drawWorld(world.t);
   drawHud(world.t);
@@ -375,7 +395,7 @@ setInterval(syncButtons, 250);
 
 document.getElementById('start').addEventListener('click', () => {
   if (scene === 'loading') return;
-  audioOn(); scene === 'over' || scene === 'won' ? startRun() : openMap(); document.getElementById('screen').focus();
+  audioOn(); scene === 'over' || scene === 'won' ? startRun() : scene === 'title' ? showFiles() : openMap(); document.getElementById('screen').focus();
 });
 document.getElementById('start').hidden = true;
 document.addEventListener('visibilitychange', () => {
@@ -475,6 +495,7 @@ const debug = {
   },
   startRun,
   openMap,
+  showFiles,
   enterLevel,
   ow,
   A,

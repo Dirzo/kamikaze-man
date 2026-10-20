@@ -180,6 +180,11 @@ function save() {
   }
   cache = null;
 }
+// forget the cached copy (the save files menu just swapped what is in storage)
+export function reloadMeta() {
+  store = null;
+  cache = null;
+}
 export function resetMeta() {
   store = blank();
   save();

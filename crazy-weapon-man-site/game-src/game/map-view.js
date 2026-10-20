@@ -13,6 +13,7 @@ export function drawMapBackdrop() {
   const ox=Math.floor(camera*.25)%W;
   // Keep the authored scene at its native proportions at every depth.
   for(let x=-ox;x<W;x+=W)X.drawImage(bg,0,0,W,GROUND,x,0,W,H);
+  if(map.dark){X.globalAlpha=map.dark*.13;rect(0,0,W,H,C.ink);X.globalAlpha=1;} // deeper down the tunnel, less daylight
   worldLayer();
   const slab=A.slabs[ZONES[world.zone].id];
   // Terrain uses the biome's existing earth texture, never a replacement cave palette.
@@ -57,7 +58,7 @@ export function drawRouteHud() {
   const h=world.hero, room=roomAt(map,h.x+h.w/2,h.y+h.h)||world.lastRoom;
   if(room)world.lastRoom=room;
   const same=room?map.rooms.filter(r=>r.label===room.label):[];
-  text((world.level?world.level.id+' '+world.level.name.toUpperCase()+' - ':'MAP '+(world.zone+1)+'/10 - ')+map.name+(room?' / '+room.label+(same.length>1?' '+(same.indexOf(room)+1):''):''),8,216,C.mist);
+  text((world.level?world.level.id+' '+world.level.name.toUpperCase()+' - ':'MAP '+(world.zone+1)+'/10 - ')+(map.dark?map.title:map.name)+(room?' / '+room.label+(same.length>1?' '+(same.indexOf(room)+1):''):''),8,216,C.mist);
   // the minimap keeps the map's real proportions: tall climbs read tall, long runs read long
   const k=Math.min(120/map.width,58/map.height),w=Math.round(map.width*k),mh=Math.round(map.height*k);
   const x=W-8-w,y=44,sx=k,sy=k;

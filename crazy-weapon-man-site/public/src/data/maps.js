@@ -24,8 +24,23 @@ export const LAYOUTS = [
   { style: 'chambers', title: 'VAULT TUNNELS', label: 'VAULT' }
 ];
 
-export function makeMap(zone) {
-  const lay = LAYOUTS[zone], m = builder(zone);
+// World 1 on the overworld goes down the Ant Tunnel like MapleStory's: the first level is the
+// original Ant Tunnel I map, and every level after it is a little deeper, darker and stranger.
+//   sections / rooms  extra screens / chambers      drops   the fall into each next chamber
+//   shelf             where the chamber shelf sits   alcove  0: even chambers, 1: odd, 2: every one
+//   upper             a second shelf above it         foes    extra residents   elite  every Nth is elite
+//   dark              how dim the backdrop gets (0-4)
+export const DEPTHS = {
+  '1-2': { title: 'ANT TUNNEL II', sections: 1, rooms: 1, drops: [150, 196, 176, 214, 160], shelf: 0.42, foes: 3, dark: 1 },
+  '1-3': { title: 'ANT TUNNEL III', sections: 2, rooms: 2, drops: [214, 168, 230, 150, 206, 180], alcove: 1, foes: 5, dark: 2 },
+  '1-4': { title: 'WET ANT TUNNEL', sections: 1, rooms: 1, drops: [180, 228, 160, 236, 172], shelf: 0.2, upper: true, foes: 5, dark: 2 },
+  '1-S': { title: 'THE DEEP PIT', rooms: 0, drops: [300, 330, 310, 340], shelf: 0.36, upper: true, foes: 2, dark: 3 },
+  '1-F': { title: 'ANT TUNNEL PARK', sections: 2, rooms: 2, drops: [176, 204, 168, 222, 186, 210], alcove: 2, foes: 7, elite: 6, dark: 3 },
+  '1-C': { title: 'THE DEEPEST TUNNEL', sections: 3, rooms: 3, drops: [230, 190, 250, 176, 240, 210, 260], shelf: 0.34, upper: true, alcove: 2, foes: 9, elite: 6, dark: 4 }
+};
+export function makeMap(zone, levelId = null) {
+  const lay = LAYOUTS[zone], m = builder(zone), depth = DEPTHS[levelId];
+  if (depth && lay.style === 'chambers') return chambers(zone, { ...lay, title: depth.title }, depth);
   if (lay.style === 'chambers') return chambers(zone, lay);
   field(m, lay);
   return finish(m, zone, lay);
@@ -94,18 +109,20 @@ function room(m, label, x, end, y0, y1, floor) {
 // ---------------------------------------------------------------- Ant Tunnel chambers
 // The original layout, unchanged except that each ladder up a cliff now has a small landing at the
 // top, so the climb ends standing on it.
-function chambers(zone, lay) {
-  const sections=8+Math.floor(zone/2),width=sections*W,countRooms=4+Math.floor(zone/3);
-  const weights=[1,.76,1.2,.86,1.12,.82,1.04].slice(0,countRooms);
+// With a depth (DEPTHS) the same recipe is tuned into a deeper level of the tunnel.
+function chambers(zone, lay, D = null) {
+  const V = D || {};
+  const sections=8+Math.floor(zone/2)+(V.sections||0),width=sections*W,countRooms=4+Math.floor(zone/3)+(V.rooms||0);
+  const weights=[1,.76,1.2,.86,1.12,.82,1.04,.92,1.16,.8].slice(0,countRooms);
   const total=weights.reduce((a,b)=>a+b,0),rooms=[];
   let x=0,y=GROUND;
   for(let i=0;i<countRooms;i++) {
     const end=i===countRooms-1?width:Math.round((x+width*weights[i]/total)/8)*8;
     rooms.push({x,end,w:end-x,floor:y,index:i,label:lay.label,y0:0,y1:Infinity});x=end;
-    y+=[168,210,150,224,178,202][(i+zone)%6];
+    y+=V.drops?V.drops[i%V.drops.length]:[168,210,150,224,178,202][(i+zone)%6];
   }
   const floorY=rooms.at(-1).floor,platforms=[],solids=[],ladders=[];
-  const hasBoss=!!ZONES[zone].boss;
+  const hasBoss=!!ZONES[zone].boss||!!D; // every overworld level ends in a boss fight
   const ladder=(x,bottom,p)=>ladders.push({x,top:p.y,bottom,exitX:x-HERO.w/2,exitY:p.y,section:Math.floor(x/W)});
   for(const room of rooms) {
     const {x,w,floor,index}=room, bossRoom=hasBoss && index===rooms.length-1;
@@ -113,7 +130,7 @@ function chambers(zone, lay) {
     platforms.push(base);solids.push(base);
     // Massive overhangs shape each neck and chamber; no repeated horizontal storeys.
     if(index>0) {
-      const roof={x:x+148,y:0,w:w-148,h:floor-(bossRoom?218:172+index%2*24),ceiling:true,solid:true};
+      const roof={x:x+148,y:0,w:w-148,h:floor-(bossRoom?218:(V.upper?214:172)+index%2*24),ceiling:true,solid:true};
       solids.push(roof);
       const prev=platforms.find(p=>p.ground && p.room===index-1);
       const landing={x,y:prev.y,w:56,room:index-1,landing:true};
@@ -125,30 +142,35 @@ function chambers(zone, lay) {
     }
     const usable=bossRoom?w-W-40:w;
     if(usable>370) {
-      const shelfX=x+Math.round(usable*.28),shelfW=Math.min(360,Math.round(usable*.44));
+      const shelfX=x+Math.round(usable*(V.shelf??.28)),shelfW=Math.min(360,Math.round(usable*.44));
       const shelf={x:shelfX,y:floor-76,w:shelfW,room:index,hunt:true};
       platforms.push(shelf);
       platforms.push({x:shelfX-90,y:floor-38,w:104,room:index,connector:true});
       platforms.push({x:shelfX+shelfW-12,y:floor-38,w:112,room:index,connector:true});
       ladder(shelfX+shelfW-26,floor,shelf);
+      // deeper tunnels: a second, shorter shelf above the first, up its own ladder
+      if(V.upper) {
+        const top={x:shelfX+40,y:floor-152,w:Math.round(shelfW*.55),room:index,hunt:true};
+        platforms.push(top);ladder(top.x+24,shelf.y,top);
+      }
       // An offset alcove is a branch off the chamber, not another full-width lane.
-      if(index%2===0 && usable>650) {
+      if((V.alcove===2 || index%2===(V.alcove||0)) && usable>650) {
         const alcove={x:x+usable-190,y:floor-112,w:146,room:index,hunt:true};
         platforms.push(alcove);ladder(alcove.x+30,floor,alcove);
       }
     }
   }
-  const count=27+zone*2,spawns=[];
+  const count=27+zone*2+(V.foes||0),spawns=[];
   const hunt=platforms.filter(p=>p.ground||p.hunt);
   for(let i=0;i<count;i++) {
     const p=hunt[i%hunt.length],slot=Math.floor(i/hunt.length);
     const left=p.ground?p.x+Math.min(190,p.w*.24):p.x+24;
     const span=Math.max(1,p.x+p.w-28-left);
-    const sx=left+((slot*137+i*53)%span);
+    const sx=Math.min(D?width-80:Infinity,left+((slot*137+i*53)%span)); // (deeper levels keep clear of the exit)
     const roof=Math.max(0,...solids.filter(s=>s.ceiling && sx>=s.x && sx<s.x+s.w).map(s=>s.y+s.h));
-    spawns.push({x:sx,y:p.y,airY:Math.max(roof+18,p.y-52),section:Math.floor(sx/W),room:p.room,wave:Math.min(4,1+Math.floor(p.room*4/countRooms)),elite:zone>0&&i>0&&i%9===0});
+    spawns.push({x:sx,y:p.y,airY:Math.max(roof+18,p.y-52),section:Math.floor(sx/W),room:p.room,wave:Math.min(4,1+Math.floor(p.room*4/countRooms)),elite:(zone>0||V.elite)&&i>0&&i%(V.elite||9)===0});
   }
-  return {name:ZONES[zone].name,style:lay.style,title:lay.title,width,height:floorY+64,floorY,rooms,sections,platforms,solids,ladders,spawns,
+  return {name:ZONES[zone].name,style:lay.style,title:lay.title,dark:V.dark||0,width,height:floorY+64,floorY,rooms,sections,platforms,solids,ladders,spawns,
     startX:48,startY:GROUND,exitX:width-36,exitY:floorY,bossFloor:floorY,bossLeft:width-W+8,bossRight:width-8};
 }
 

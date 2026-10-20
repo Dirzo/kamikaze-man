@@ -35,7 +35,7 @@ export function startZone(z) {
   world.swarmCombo=null;
   world.zone=z;
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
-  world.map=makeMap(z);
+  world.map=makeMap(z,world.level?.id);
   const tier=world.level?levelTier(world.level.id):0; // the road to the castle gets harder
   world.foeScale={hp:1+FOE_TIER.hp*tier,dmg:(1+FOE_TIER.dmg*tier)*(world.level?1+WORLD_RAMP.foeDmg*z:1)};
   placeSecret(z);
