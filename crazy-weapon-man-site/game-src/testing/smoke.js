@@ -320,7 +320,7 @@ export function runSmoke(game) {
     const boosted=game.hitDamage(world.hero.weapon);world.swarmCombo.n=50;ok(game.hitDamage(world.hero.weapon)>boosted,'combo gave no damage');world.swarmCombo.n=2;
     for(let i=0;i<200;i++)updateWaves(STEP);ok(world.swarmCombo.n===0,'combo did not fall off without hits');
     if(!world.boss){world.director.t=0;updateWaves(STEP);}
-    const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.swarmBoss && boss.scale>1 && boss.name===SWARM_BOSSES[0].name,'no swarm boss when the timer ran out');
+    const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.swarmBoss && boss.w>30 && boss.name===SWARM_BOSSES[0].name,'no swarm boss when the timer ran out');
     for(let i=0;i<60;i++)updateWaves(STEP);ok(world.director.phase==='survive','swarm ended before its boss fell');
     boss.spawnT=0;hitEnemy(boss,boss.hp+1,{dir:1});updateWaves(STEP);
     ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead) && !world.swarmCombo,'swarm boss defeat did not open the exit');
