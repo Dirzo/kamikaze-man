@@ -13,7 +13,19 @@ for (const f of walk(src)) if (f.endsWith('.js')) files.set('src/' + path.relati
 const version = crypto.createHash('sha256').update([...files.values()].join('')).digest('hex').slice(0, 10);
 files.set('index.html', fs.readFileSync(path.join(src, 'shell/index.html'), 'utf8').replace('/next/src/main.js', '/src/main.js?v=' + version));
 files.set('next/index.html', '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/"><title>Crazy Weapon Man</title><a href="/">Play Crazy Weapon Man</a>\n');
-files.set('_headers', '/src/*\n  Cache-Control: no-cache\n/\n  Cache-Control: no-cache\n');
+files.set('_headers', [
+  '/*',
+  '  X-Content-Type-Options: nosniff',
+  '  Referrer-Policy: strict-origin-when-cross-origin',
+  '  X-Frame-Options: SAMEORIGIN',
+  '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()',
+  '  Strict-Transport-Security: max-age=31536000',
+  '/src/*',
+  '  Cache-Control: no-cache',
+  '/',
+  '  Cache-Control: no-cache',
+  ''
+].join('\n'));
 let dirty = false;
 for (const [f, contents] of files) {
   const target = path.join(out, f);
