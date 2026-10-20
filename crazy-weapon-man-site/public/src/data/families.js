@@ -40,7 +40,7 @@ export const FAMILIES = {
   6: { head: 'bossman', name: 'THE OGRE BROTHERHOOD', pool: ['stomp', 'avalanche', 'fan', 'slam', 'summon:monk'], surprise: 'avalanche', bolt: 'gold' },
   7: { head: 'bosssr', name: 'THE CRAZY UNCLES', pool: ['anvils', 'molten', 'strikes', 'charge', 'toss'], surprise: 'overheat', bolt: 'sky' },
   8: { head: 'bossgrandma', name: "GRANDMA'S SISTERS", pool: ['lob', 'sparkles', 'cookies', 'summon:crawler'], surprise: 'helpings', bolt: 'orange' },
-  9: { head: 'bossceo', name: 'THE SHADOW BOARD', pool: ['stars', 'vanish', 'coins', 'charge', 'summon:ninja'], surprise: 'clones', bolt: 'violet' },
+  9: { head: 'bossceo', name: 'THE SHADOW CLAN', pool: ['stars', 'vanish', 'coins', 'charge', 'summon:ninja'], surprise: 'clones', bolt: 'violet' },
   10: { head: 'bossweapon', name: 'THE LIVING ARSENAL', pool: ['swordrain', 'graves', 'stars', 'strikes', 'charge'], surprise: 'arsenal', bolt: 'violet' }
 };
 
@@ -59,8 +59,8 @@ export const NEW_HEADS = {
   },
   bosskingpin: {
     name: 'THE RACCOON KINGPIN', patterns: ['smoke', 'coins', 'fan', 'toss', 'decoys'], surprise: 'decoys',
-    warn: 'YOUR POCKETS FEEL LIGHTER...', intro: ['EVERYTHING HERE IS STOLEN. EVEN ME.', 'YOU OWE THE FAMILY. BIG.'],
-    phase: ['BOYS! THE MERCHANDISE!', 'NOBODY ROBS THE ROBBERS'], defeat: 'KEEP THE CHANGE...', bolt: 'ice', speed: 46
+    warn: 'YOUR POCKETS FEEL LIGHTER...', intro: ['EVERY DAGGER HERE IS STOLEN. EVEN ME.', 'NICE WEAPON. MINE NOW.'],
+    phase: ['BOYS! THE GOOD DAGGERS!', 'NOBODY ROBS THE ROBBERS'], defeat: 'KEEP THE CHANGE...', bolt: 'ice', speed: 46
   },
   bossshogun: {
     name: 'THE PETAL SHOGUN', patterns: ['iai', 'petals', 'charge', 'fan', 'storm'], surprise: 'storm',
@@ -73,81 +73,81 @@ export const NEW_HEADS = {
 // art-src/hd_bosses.py (hat, colour swaps) and lives there; the name here is what the HUD shows.
 const SIBLINGS = [
   // 1 the grave geese
-  ['1-1', 'GOSLING GREG', 'MOM SAYS I AM THE WELCOME COMMITTEE', "I'M TELLING MOM", ['charge', 'toss']],
-  ['1-2', 'SIR HONKSALOT', 'HALT! THIS HILL IS HONKED', 'A KNIGHT... BESTED...', ['charge', 'graves']],
-  ['1-3', 'BANDIT BEAKS', 'YOUR LOOT OR YOUR... ALSO LOOT', 'TAKE IT! TAKE THE LOOT!', ['toss', 'charge', 'slam']],
-  ['1-4', 'AUNTIE MUDWING', 'WIPE YOUR FEET, DEAR', 'MY GOOD FEATHERS...', ['graves', 'toss', 'slam']],
-  ['1-S', 'THE GOLDEN GOSLING', 'YOU FOUND ME. NOW LOSE.', 'shiny... honk...', ['graves', 'honk']],
-  ['1-F', 'UNCLE SHOVELBILL', 'I DIG GRAVES. YOURS IS NEXT.', 'GO ON, THEN. MOTHER IS WAITING', ['graves', 'slam', 'charge', 'toss']],
+  ['1-1', 'GOSLING GREG', 'I FOUND A SWORD! IT IS MINE NOW', 'MOM! HE TOOK MY SWORD', ['charge', 'toss']],
+  ['1-2', 'SIR HONKSALOT', 'HALT! THIS BLADE IS KNIGHTED', 'A KNIGHT... DISARMED...', ['charge', 'graves']],
+  ['1-3', 'BANDIT BEAKS', 'DROP THE SWORD. NICE AND SLOW.', 'TAKE IT! TAKE ALL THE SWORDS!', ['toss', 'charge', 'slam']],
+  ['1-4', 'AUNTIE MUDWING', 'I POLISH EVERY GRAVE SWORD BY HAND', 'MY CLEAN SWORDS...', ['graves', 'toss', 'slam']],
+  ['1-S', 'THE GOLDEN GOSLING', 'THE GOLDEN SWORD CHOSE ME', 'shiny... honk...', ['graves', 'honk']],
+  ['1-F', 'UNCLE SHOVELBILL', 'I BURY SWORDS. AND THEIR OWNERS.', 'GO ON, THEN. MOTHER IS WAITING', ['graves', 'slam', 'charge', 'toss']],
   // 2 the acorn clan
-  ['2-1', 'PIP THE SQUIRRELING', 'I CAN SHOOT! KIND OF!', 'I WANT MY ACORN BACK', ['fan', 'toss']],
+  ['2-1', 'PIP THE SQUIRRELING', 'MY FIRST BOW! WATCH THIS!', 'THE STRING SNAPPED...', ['fan', 'toss']],
   ['2-2', 'SNIPER NUTKIN', 'HOLD STILL. THANK YOU.', 'YOU MOVED. RUDE.', ['arrows', 'fan']],
-  ['2-S', 'PRINCESS SPORELLA', 'THIS HOLLOW IS ROYAL PROPERTY', 'DADDY WILL HEAR OF THIS', ['arrows', 'volley']],
+  ['2-S', 'PRINCESS SPORELLA', 'MY BOW IS CARVED FROM THE ROYAL CAP', 'DADDY WILL HEAR OF THIS', ['arrows', 'volley']],
   ['2-3', 'BULLSEYE BETTY', 'EVERYTHING IS A TARGET', 'MISSED... BY A MILE', ['fan', 'arrows', 'charge']],
-  ['2-4', 'OLD MAN MOSSTAIL', 'BACK IN MY DAY WE SHOT ROCKS', 'NAP TIME, THEN', ['toss', 'arrows', 'fan']],
+  ['2-4', 'OLD MAN MOSSTAIL', 'BACK IN MY DAY WE SHOT ROCKS', 'MY OLD BOW... RETIRES...', ['toss', 'arrows', 'fan']],
   ['2-5', 'QUIVER QUENTIN', 'I HAVE NINETY-NINE ARROWS', 'NINETY-EIGHT... LEFT...', ['arrows', 'charge', 'fan']],
   ['2-F', 'CAPTAIN HAZELNUT', 'ARCHERS! ...IT IS JUST ME', 'THE KING WILL AVENGE ME', ['arrows', 'fan', 'charge', 'toss']],
   // 3 jr.'s surf crew
-  ['3-1', 'BABY BRO BUBBLES', 'I AM FOUR AND THREE QUARTERS', 'WAAAH! JR.!', ['toss', 'shell']],
-  ['3-2', 'SENSEI SIS SANDY', 'BOW TO THE DOJO', 'GOOD FORM. ANNOYING, BUT GOOD', ['charge', 'tide']],
-  ['3-3', 'COUSIN KELPY', 'KELP ME? NO. KELP YOU!', 'THAT PUN WAS MY BEST ONE', ['shell', 'tide']],
-  ['3-4', 'RIPTIDE RICKY', 'GNARLY. YOU ARE GOING DOWN', 'WIPEOUT, DUDE', ['charge', 'tide', 'toss']],
-  ['3-S', 'THE SANDAL PRINCE', 'WHO TOUCHED MY SANDAL', 'MY SANDAL...', ['shell', 'surf']],
+  ['3-1', 'BABY BRO BUBBLES', 'MY NUNCHUCKS ARE FOAM. STILL!', 'WAAAH! JR.!', ['toss', 'shell']],
+  ['3-2', 'SENSEI SIS SANDY', 'BOW TO THE DOJO. THEN TO MY CHUCKS.', 'GOOD FORM. ANNOYING, BUT GOOD', ['charge', 'tide']],
+  ['3-3', 'COUSIN KELPY', 'SEAWEED NUNCHUCKS. VERY SLAPPY.', 'TOO... SLIPPERY...', ['shell', 'tide']],
+  ['3-4', 'RIPTIDE RICKY', 'I SPIN MY CHUCKS LIKE A WAVE', 'WIPEOUT, DUDE', ['charge', 'tide', 'toss']],
+  ['3-S', 'THE SANDAL PRINCE', 'MY SANDAL IS A WEAPON. TRUST ME.', 'MY SANDAL...', ['shell', 'surf']],
   ['3-5', 'SPUD THE SPARRING PARTNER', 'I GET HIT FOR A LIVING', 'SAME TIME TOMORROW?', ['charge', 'shell', 'toss']],
   ['3-F', 'BIG SIS CORAL', 'NOBODY PICKS ON MY LITTLE BROTHER', 'FINE. GO BOTHER JR.', ['tide', 'shell', 'charge', 'toss']],
   // 4 the raccoon racket
-  ['4-1', 'LOOKOUT LENNY', 'I SAW NOTHING. I SEE YOU.', 'I SAW... STARS', ['smoke', 'toss']],
-  ['4-2', 'PICKPOCKET PATTY', 'NICE WALLET. WAS NICE.', 'KEEP IT, KEEP IT!', ['smoke', 'coins']],
-  ['4-3', 'ROOFTOP RODNEY', 'THE ROOFS ARE OUR TURF', 'THE GUTTER... IS COMFY', ['toss', 'fan', 'smoke']],
-  ['4-S', 'THE BASEMENT BARON', 'WELCOME TO THE BLACK MARKET', 'NO REFUNDS...', ['coins', 'decoys']],
-  ['4-4', 'HALF-PRICE HAROLD', 'EVERYTHING MUST GO! INCLUDING YOU', 'CLEARANCE... SALE...', ['coins', 'fan', 'toss']],
-  ['4-F', 'COUSIN PAWNSWORTH', 'I WILL GIVE YOU TWO SHARDS FOR THAT', 'THE BOSS WILL NOT LIKE THIS', ['smoke', 'coins', 'fan', 'toss']],
+  ['4-1', 'LOOKOUT LENNY', 'I SAW NOTHING. I SEE YOUR DAGGER.', 'I SAW... STARS', ['smoke', 'toss']],
+  ['4-2', 'PICKPOCKET PATTY', 'NICE DAGGER. WAS NICE.', 'KEEP IT, KEEP IT!', ['smoke', 'coins']],
+  ['4-3', 'ROOFTOP RODNEY', 'DAGGERS FROM THE ROOFTOPS!', 'THE GUTTER... IS COMFY', ['toss', 'fan', 'smoke']],
+  ['4-S', 'THE BASEMENT BARON', 'EVERY BLADE HERE IS STOLEN. EVEN MINE.', 'THE BLACK MARKET... CLOSES...', ['coins', 'decoys']],
+  ['4-4', 'TWIN-DAGGER HAROLD', 'TWO DAGGERS. ONE OF YOU.', 'BOTH... BLUNTED...', ['coins', 'fan', 'toss']],
+  ['4-F', 'COUSIN PAWNSWORTH', 'TWO SHARDS FOR THAT SWORD. FINAL OFFER.', 'THE BOSS WILL NOT LIKE THIS', ['smoke', 'coins', 'fan', 'toss']],
   // 5 the petal house
-  ['5-1', 'PETAL PAGE HANAKO', 'THE SHOGUN SENDS HIS REGARDS', 'I MUST PRACTICE MORE', ['petals', 'charge']],
-  ['5-2', 'LANTERN KEEPER TORO', 'THE BRIDGE IS CLOSED. FOREVER.', 'THE LIGHTS GO OUT...', ['fan', 'iai']],
-  ['5-3', 'BAMBOO BROTHER TAKE', 'I GROW THREE FEET A DAY', 'SNAPPED LIKE A SHOOT', ['iai', 'charge']],
-  ['5-4', 'KOI SISTER NISHIKI', 'THE POND IS ALWAYS WATCHING', 'BLUB...', ['petals', 'fan', 'iai']],
-  ['5-S', 'THE MOON PRINCE', 'THE TORII OPENS FOR NO ONE', 'THE MOON... SETS...', ['iai', 'storm']],
+  ['5-1', 'PETAL PAGE HANAKO', 'MY FIRST KATANA. STILL SHARP.', 'I MUST PRACTICE MORE', ['petals', 'charge']],
+  ['5-2', 'LANTERN KEEPER TORO', 'MY BLADE CUTS THE LANTERN LIGHT', 'THE LIGHTS GO OUT...', ['fan', 'iai']],
+  ['5-3', 'BAMBOO BROTHER TAKE', 'I CUT BAMBOO FOR A LIVING. NOW YOU.', 'SNAPPED LIKE A SHOOT', ['iai', 'charge']],
+  ['5-4', 'KOI SISTER NISHIKI', 'MY KATANA IS FASTER THAN THE KOI', 'BLUB...', ['petals', 'fan', 'iai']],
+  ['5-S', 'THE MOON PRINCE', 'MY BLADE WAS FORGED FROM MOONLIGHT', 'THE MOON... SETS...', ['iai', 'storm']],
   ['5-5', 'THOUSAND-CUT KENTA', 'NINE HUNDRED NINETY-NINE TO GO', 'ONE THOUSAND... AND ONE', ['iai', 'charge', 'fan']],
-  ['5-F', 'GENERAL ORIGAMI', 'MY WALLS ARE PAPER. MY WILL IS NOT.', 'FOLDED...', ['petals', 'iai', 'charge', 'fan']],
+  ['5-F', 'GENERAL ORIGAMI', 'PAPER WALLS. STEEL BLADE.', 'FOLDED...', ['petals', 'iai', 'charge', 'fan']],
   // 6 the ogre brotherhood
-  ['6-1', 'BROTHER PEBBLE', 'I AM THE SMALL ONE. STILL BIG.', 'OOF. TINY OOF.', ['stomp', 'fan']],
-  ['6-2', 'BROTHER WHEELY', 'SPIN THE WHEEL! PRAY!', 'DIZZY...', ['fan', 'avalanche']],
-  ['6-3', 'BROTHER HAM', 'HAAAAM. HAAAAAAAM.', 'NO MORE HAM...', ['stomp', 'slam', 'summon:monk']],
-  ['6-4', 'SISTER SNOWDRIFT', 'BUNDLE UP, LITTLE ONE', 'I NEED COCOA', ['avalanche', 'stomp']],
-  ['6-S', 'THE HOT SPRING HERMIT', 'YOU ARE DRIPPING ON MY SPRING', 'TOO RELAXED TO LOSE...', ['avalanche', 'slam']],
+  ['6-1', 'BROTHER PEBBLE', 'MY STAFF IS SMALL. STILL HURTS.', 'OOF. TINY OOF.', ['stomp', 'fan']],
+  ['6-2', 'BROTHER WHEELY', 'SPIN THE STAFF! SPIN IT!', 'DIZZY...', ['fan', 'avalanche']],
+  ['6-3', 'BROTHER HAMMERHAND', 'ONE STAFF. TWO FISTS. NO MERCY.', 'MY STAFF... BENT...', ['stomp', 'slam', 'summon:monk']],
+  ['6-4', 'SISTER SNOWDRIFT', 'MY STAFF CALLS THE AVALANCHE', 'THE SNOW... SETTLES...', ['avalanche', 'stomp']],
+  ['6-S', 'THE HOT SPRING HERMIT', 'I TEMPER MY STAFF IN THE SPRING', 'TOO RELAXED TO LOSE...', ['avalanche', 'slam']],
   ['6-5', 'BROTHER GONG', 'BONG.', 'bong...', ['stomp', 'fan', 'slam']],
-  ['6-F', 'ABBOT ROLLO', 'THE KING IS MEDITATING. GO AWAY.', 'GO. WAKE HIM. I DARE YOU.', ['avalanche', 'stomp', 'fan', 'summon:monk']],
+  ['6-F', 'ABBOT ROLLO', 'THE KING IS MEDITATING. MY STAFF SAYS LEAVE.', 'GO. WAKE HIM. I DARE YOU.', ['avalanche', 'stomp', 'fan', 'summon:monk']],
   // 7 the crazy uncles (Sr.'s brothers)
-  ['7-1', 'UNCLE SPARKY', 'PULL MY FINGER. IT IS A FUSE.', 'FIZZLED OUT', ['strikes', 'charge']],
-  ['7-2', 'UNCLE ANDY ANVIL', 'HEADS UP!', 'HEADS... DOWN...', ['anvils', 'charge']],
-  ['7-3', 'UNCLE BELLOWS', 'I AM FULL OF HOT AIR', 'PFFFFFFT', ['slam', 'molten']],
-  ['7-S', 'GRANDPA WRENCH', 'GET OFF MY TOOLSHED', 'KIDS THESE DAYS...', ['anvils', 'strikes']],
+  ['7-1', 'UNCLE SPARKY', 'MY HAMMER THROWS SPARKS', 'FIZZLED OUT', ['strikes', 'charge']],
+  ['7-2', 'UNCLE ANDY ANVIL', 'HEADS UP! ANVILS!', 'HEADS... DOWN...', ['anvils', 'charge']],
+  ['7-3', 'UNCLE BELLOWS', 'I BLOW THE FORGE HOT. TOO HOT.', 'PFFFFFFT', ['slam', 'molten']],
+  ['7-S', 'GRANDPA WRENCH', 'I HAMMERED THE FIRST HAMMER', 'KIDS THESE DAYS...', ['anvils', 'strikes']],
   ['7-4', 'UNCLE SLAGGY', 'WHEEE! SLAG SLIDE!', 'I AM STUCK IN THE SLAG', ['molten', 'charge', 'toss']],
-  ['7-5', 'AUNT QUENCHY', 'TIME TO COOL YOU OFF', 'SSSSSS...', ['strikes', 'molten', 'toss']],
-  ['7-F', 'UNCLE BOLTS', 'YOUR DAD OWES ME AN ANVIL', 'TELL SR. I SAID HI', ['anvils', 'molten', 'strikes', 'charge']],
+  ['7-5', 'AUNT QUENCHY', 'TIME TO QUENCH YOUR BLADE', 'SSSSSS...', ['strikes', 'molten', 'toss']],
+  ['7-F', 'UNCLE BOLTS', 'YOUR DAD STILL OWES ME AN ANVIL', 'TELL SR. I SAID HI', ['anvils', 'molten', 'strikes', 'charge']],
   // 8 grandma's sisters
-  ['8-1', 'GREAT-AUNT DOILY', 'MIND THE FLOWERBEDS', 'MY DOILIES...', ['lob', 'cookies']],
-  ['8-2', 'AUNTIE SNICKERDOODLE', 'HAVE A COOKIE. HAVE ALL OF THEM.', 'CRUMBS...', ['cookies', 'lob']],
-  ['8-S', 'NANA PURLS', 'KNIT ONE, PURL YOU', 'I DROPPED A STITCH', ['sparkles', 'summon:crawler']],
-  ['8-3', 'GREAT-AUNT CASSIE', 'THE CASSEROLE IS ONLY A LITTLE CURSED', 'SEND IT BACK TO THE KITCHEN', ['lob', 'sparkles', 'cookies']],
-  ['8-4', 'GRANDPA TICKTOCK', 'YOU ARE LATE. FOR DINNER.', 'DONG... DONG...', ['sparkles', 'lob']],
-  ['8-5', 'AUNTIE ROCKSALOT', 'ROCK ON, DEARIE', 'MY HIP...', ['cookies', 'sparkles', 'summon:crawler']],
-  ['8-F', 'LADY EARL GREY', 'PINKIES OUT. SWORDS OUT.', 'TEA... TIME... OVER', ['sparkles', 'cookies', 'lob', 'summon:crawler']],
+  ['8-1', 'GREAT-AUNT DOILY', 'MY WAND IS MADE OF LACE. AND LIGHTNING.', 'MY DOILIES...', ['lob', 'cookies']],
+  ['8-2', 'AUNTIE SNICKERDOODLE', 'MY WAND CASTS COOKIES. HARD ONES.', 'CRUMBS...', ['cookies', 'lob']],
+  ['8-S', 'NANA PURLS', 'KNIT ONE, HEX YOU', 'I DROPPED A STITCH', ['sparkles', 'summon:crawler']],
+  ['8-3', 'GREAT-AUNT CASSIE', 'MY WAND HAS SEVEN CURSES. PICK ONE.', 'THE CURSE... BACKFIRED...', ['lob', 'sparkles', 'cookies']],
+  ['8-4', 'GRANDPA TICKTOCK', 'MY WAND STOPS CLOCKS. AND HEROES.', 'DONG... DONG...', ['sparkles', 'lob']],
+  ['8-5', 'AUNTIE ROCKSALOT', 'MY WAND HAS A ROCK ON IT. ROCK ON.', 'MY HIP...', ['cookies', 'sparkles', 'summon:crawler']],
+  ['8-F', 'LADY EARL GREY', 'PINKIES OUT. WANDS OUT.', 'TEA... TIME... OVER', ['sparkles', 'cookies', 'lob', 'summon:crawler']],
   // 9 the shadow board
-  ['9-1', 'INTERN KOJI', 'IS THIS PAID? NO? OKAY.', 'I QUIT. FOR TODAY.', ['stars', 'charge']],
-  ['9-2', 'SHADOW SIS SHOJI', 'YOU CANNOT SEE ME. MOSTLY.', 'SEEN...', ['vanish', 'stars']],
-  ['9-3', 'ROOFTOP RYU', 'NINJAS LOVE ROOFS', 'TOO MANY ROOFS', ['stars', 'vanish', 'charge']],
-  ['9-S', 'THE SCROLL KEEPER', 'THIS SCROLL SAYS YOU LOSE', 'THE SCROLL WAS WRONG', ['vanish', 'clones']],
-  ['9-4', 'STARRY SUZU', 'ONE STAR REVIEW FOR YOU', 'FIVE STARS. FOR YOU.', ['stars', 'coins']],
-  ['9-5', 'VICE PRESIDENT KAGE', 'I APPROVE YOUR TERMINATION', 'SCHEDULE A FOLLOW-UP...', ['coins', 'stars', 'summon:ninja']],
-  ['9-F', 'CHAIRMAN SHURI', 'THE BOARD VOTES: YOU LOSE', 'MOTION... DENIED...', ['stars', 'vanish', 'coins', 'summon:ninja']],
+  ['9-1', 'GENIN KOJI', 'MY FIRST SHURIKEN! ...WHERE DID IT GO', 'I NEED MORE STARS', ['stars', 'charge']],
+  ['9-2', 'SHADOW SIS SHOJI', 'YOU CANNOT SEE MY STARS. MOSTLY.', 'SEEN...', ['vanish', 'stars']],
+  ['9-3', 'ROOFTOP RYU', 'STARS FROM EVERY ROOFTOP', 'TOO MANY ROOFS', ['stars', 'vanish', 'charge']],
+  ['9-S', 'THE SCROLL KEEPER', 'THIS SCROLL TEACHES THE HIDDEN STAR', 'THE SCROLL WAS WRONG', ['vanish', 'clones']],
+  ['9-4', 'STARRY SUZU', 'A HUNDRED STARS. ALL FOR YOU.', 'OUT OF... STARS...', ['stars', 'coins']],
+  ['9-5', 'JONIN KAGE', 'MY SHADOW THROWS STARS TOO', 'THE SHADOWS... FADE...', ['coins', 'stars', 'summon:ninja']],
+  ['9-F', 'MASTER SHURI', 'THE LORD TOOK THIS CASTLE. I HOLD IT.', 'THE WALLS... FALL...', ['stars', 'vanish', 'coins', 'summon:ninja']],
   // 10 the living arsenal
   ['10-1', "LIL' RACKLEY", 'I JUST CAME OFF THE RACK', 'BACK ON THE RACK...', ['strikes', 'charge']],
-  ['10-2', 'THE UPRISING BLADE', 'WEAPONS OF THE WORLD, UNITE!', 'THE REVOLUTION... IS DULL', ['swordrain', 'charge']],
+  ['10-2', 'THE UPRISING BLADE', 'WEAPONS OF THE WORLD, UNITE!', 'THE UPRISING... IS DULL', ['swordrain', 'charge']],
   ['10-3', 'BAGGY THE BROADSWORD', 'NO BAG SPACE FOR YOU', 'INVENTORY... FULL...', ['graves', 'strikes']],
   ['10-4', 'MIMI THE MIMIC SWORD', 'PICK ME UP! ...GOTCHA', 'YOU SHOULD HAVE PICKED ME', ['charge', 'stars', 'graves']],
-  ['10-S', 'THE CLOSET CUTLASS', 'I LIVE IN THE CLOSET OF NONSENSE', 'BACK IN THE CLOSET...', ['swordrain', 'stars']],
+  ['10-S', 'THE CLOSET CUTLASS', 'I WAS THE SWORD YOU FORGOT', 'BACK IN THE CLOSET...', ['swordrain', 'stars']],
   ['10-5', 'EVERY-SWORD EDNA', 'I AM EVERY SWORD. ALMOST.', 'NOT EVERY SWORD...', ['swordrain', 'strikes', 'stars']],
   ['10-F', 'THE LAST LONGSWORD', 'NONE SHALL PASS. I AM SO LONG.', 'THE ARMORY... AWAITS...', ['swordrain', 'graves', 'strikes', 'charge']]
 ];
@@ -160,6 +160,8 @@ for (const R of REGIONS) {
 }
 export const levelTier = id => order[id] ?? 0;
 
+// what each family fights with, for the siblings' phase-change shout
+const ARMS = { 1: 'SWORD', 2: 'BOW', 3: 'NUNCHUCKS', 4: 'DAGGER', 5: 'KATANA', 6: 'STAFF', 7: 'HAMMER', 8: 'WAND', 9: 'SHURIKEN', 10: 'EVERY BLADE' };
 export const SIBLING_KINDS = SIBLINGS.map(([id]) => 'sib' + id.toLowerCase().replace('-', ''));
 export const BOSS_OF = {}; // level id -> boss kind
 export const SIBLING_DEFS = {}; // sibling kind -> its bosses.js definition
@@ -172,7 +174,7 @@ for (const [id, name, intro, defeat, moves] of SIBLINGS) {
     // forts and secret rooms pull the family's own trick at each phase change; a plain level's
     // sibling repeats its signature move
     surprise: role === 'level' ? moves[0] : F.surprise,
-    warn: `${name} IS COMING...`, intro: [intro], phase: [name === 'BROTHER GONG' ? 'BONG!' : 'NOW I AM MAD!', `${F.name} NEVER LOSE!`],
+    warn: `${name} IS COMING...`, intro: [intro], phase: [name === 'BROTHER GONG' ? 'BONG!' : `${ARMS[n.region]}, FULL POWER!`, `${F.name} NEVER DROP THEIR WEAPONS!`],
     defeat, bolt: F.bolt, speed: 44
   };
 }

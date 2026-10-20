@@ -263,7 +263,11 @@ const SCALES = {
   dorian: [0, 2, 3, 5, 7, 9, 10],
   phrygian: [0, 1, 3, 5, 7, 8, 10],
   major: [0, 2, 4, 5, 7, 9, 11],
-  harmonic: [0, 2, 3, 5, 7, 8, 11]
+  harmonic: [0, 2, 3, 5, 7, 8, 11],
+  // five-note scales: the shrine's in-sen, the ninja castle's hirajoshi, the mountain's pentatonic
+  insen: [0, 1, 5, 7, 10],
+  hirajoshi: [0, 2, 3, 7, 8],
+  penta: [0, 2, 4, 7, 9]
 };
 const DRUMS = {
   march: 'K.h.S.h.K.hKS.h.',
@@ -273,59 +277,111 @@ const DRUMS = {
   slow: 'K.......S.....h.',
   swing: 'K..h.hS..hK..hS.',
   boss: 'KhKhSKhKKhKhSKSS',
-  title: 'K...S...K.K.S...'
+  title: 'K...S...K.K.S...',
+  // the zones' own kits: C sword clang / anvil, W woodblock, G gong, T taiko
+  graveyard: 'K.h.S.h.K.hKS.hC',
+  forest: 'K.W.K.hSK.W.K.hS',
+  forge: 'K.CKS.hKK.CKS.hC',
+  shrine: 'G.......W...W...',
+  chant: 'G...h...T...h.h.',
+  waltz: 'K...h...h...',
+  taiko: 'T.hTS.hTT.hTS.TS',
+  vault: 'KCh.SCh.KCKCS.CS'
 };
 function rng(seed) {
   let s = seed >>> 0 || 1;
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
 const songCache = new Map();
-// spec: { key, scale, bpm, prog, drums }
-function buildSong(id, spec) {
+// spec: { key, scale, bpm, prog, drums } and optionally a zone's signature:
+//   theme / themeB  the melody for the first / second half of the loop: one token per eighth note,
+//                   a scale degree from the key (negative is lower), '-' holds, '.' rests
+//   bar             steps per bar (16, or 12 for a waltz)   lead  the melody's wave
+//   arp             'roll' (default), 'tremolo' (every step, surf style), 'waltz' (on the beats), 'off'
+//   bass            'pulse' (default), 'drone' (one long root a bar) or 'gallop' (boss rock)
+//   oct             the melody's octave
+// Without a theme the melody is a seeded random motif, as it always was.
+const tokens = s => (s || '').trim().split(/\s+/).filter(t => t !== '|');
+export function buildSong(id, spec) {
   if (songCache.has(id)) return songCache.get(id);
   const sc = SCALES[spec.scale],
+    L = sc.length,
+    bar = spec.bar || 16,
     r = rng([...id].reduce((h, c) => h * 31 + c.charCodeAt(0), 7));
-  const deg = (d, oct = 0) => spec.key + sc[((d % 7) + 7) % 7] + 12 * (Math.floor(d / 7) + oct);
-  const steps = Array.from({ length: 256 }, () => []);
+  const deg = (d, oct = 0) => spec.key + sc[((d % L) + L) % L] + 12 * (Math.floor(d / L) + oct);
+  const steps = Array.from({ length: 16 * bar }, () => []);
   const motif = [];
-  for (let i = 0; i < 32; i++) {
-    const strong = i % 4 === 0;
-    if (!strong && r() < 0.42) continue;
-    const len = strong && r() < 0.4 ? 4 : r() < 0.5 ? 2 : 1;
-    motif.push([i, Math.floor(r() * 5) - (strong ? 0 : 1), len]);
-  }
-  for (let bar = 0; bar < 16; bar++) {
-    const chord = spec.prog[Math.floor(bar / 2) % spec.prog.length],
-      section = bar >= 8 ? 1 : 0;
-    for (let i = 0; i < 16; i++) {
-      const s = bar * 16 + i;
-      const dch = DRUMS[spec.drums][i];
+  if (!spec.theme)
+    for (let i = 0; i < 32; i++) {
+      const strong = i % 4 === 0;
+      if (!strong && r() < 0.42) continue;
+      const len = strong && r() < 0.4 ? 4 : r() < 0.5 ? 2 : 1;
+      motif.push([i, Math.floor(r() * 5) - (strong ? 0 : 1), len]);
+    }
+  // a theme becomes notes: [step within its 4-bar phrase, degree, length in steps]
+  const phrase = t => {
+    const out = [], tk = tokens(t);
+    tk.forEach((x, i) => {
+      if (x === '-' || x === '.') return;
+      let n = 1;
+      while (tk[i + n] === '-') n++;
+      out.push([i * 2, +x, n * 2]);
+    });
+    return out;
+  };
+  const A = phrase(spec.theme), B = spec.themeB ? phrase(spec.themeB) : A;
+  // the bass sits two octaves down, or one for the low keys (it would be below hearing)
+  const arp = spec.arp || 'roll', oct = spec.oct ?? 1, beat = bar / 4, lo = spec.key < 48 ? -1 : -2;
+  for (let b = 0; b < 16; b++) {
+    const chord = spec.prog[Math.floor(b / 2) % spec.prog.length],
+      section = b >= 8 ? 1 : 0;
+    for (let i = 0; i < bar; i++) {
+      const s = b * bar + i;
+      const dch = DRUMS[spec.drums][i % DRUMS[spec.drums].length];
       if (dch !== '.') steps[s].push(['d', dch]);
-      if (i % 4 === 0) steps[s].push(['b', deg(chord, -2), 3]);
-      else if (i % 4 === 2) steps[s].push(['b', deg(chord + 4, -2), 1]);
-      const arpN = [0, 2, 4, 7, 4, 2][(i + bar) % 6];
-      if (spec.drums !== 'slow' || i % 2 === 0) steps[s].push(['a', deg(chord + arpN, 1), 1]);
+      if (spec.bass === 'drone') { if (i === 0) steps[s].push(['b', deg(chord, lo), bar]); }
+      // the boss gallop: da-da-DUM on every beat
+      else if (spec.bass === 'gallop') { if (i % 4 !== 1) steps[s].push(['b', deg(chord, i % 4 === 0 ? lo : lo + 1), 1]); }
+      else if (i % beat === 0) steps[s].push(['b', deg(chord, lo), 3]);
+      else if (i % beat === beat / 2) steps[s].push(['b', deg(chord + (L > 5 ? 4 : 3), lo), 1]);
+      const arpN = [0, 2, 4, 7, 4, 2][(i + b) % 6];
+      if (arp === 'tremolo') steps[s].push(['a', deg(chord + [0, 2, 4][Math.floor(i / 4) % 3], 1), 1]);
+      else if (arp === 'waltz') { if (i % beat === 0 && i) steps[s].push(['a', deg(chord + (i / beat === 2 ? 4 : 2), 1), 2]); }
+      else if (arp !== 'off' && (spec.drums !== 'slow' || i % 2 === 0)) steps[s].push(['a', deg(chord + arpN, 1), 1]);
     }
-    for (const [pos, d, len] of motif) {
-      if (Math.floor(pos / 16) !== bar % 2) continue;
-      steps[bar * 16 + (pos % 16)].push(['l', deg(chord + d + (section ? 2 : 0), 1), len]);
-    }
+    if (spec.theme) {
+      // the phrase spans 4 bars: this bar plays its slice of it
+      const P = section ? B : A, from = (b % 4) * bar, to = from + bar;
+      for (const [pos, d, len] of P) if (pos >= from && pos < to) steps[b * bar + pos - from].push(['l', deg(d, oct), len]);
+    } else
+      for (const [pos, d, len] of motif) {
+        if (Math.floor(pos / 16) !== b % 2) continue;
+        steps[b * bar + (pos % 16)].push(['l', deg(chord + d + (section ? 2 : 0), 1), len]);
+      }
   }
-  const out = { steps, stepDur: 60 / spec.bpm / 4 };
+  const out = { steps, stepDur: 60 / spec.bpm / 4, lead: spec.lead || 'p25' };
   songCache.set(id, out);
   return out;
 }
 const VOICE = {
-  l: (m, n, t) => chip([[N(m), n * 6 - 1], [0, 1]], { wave: 'p25', vol: 0.05, decay: 0.002, at: t, music: true }),
+  l: (m, n, t, w = 'p25') => chip([[N(m), n * 6 - 1], [0, 1]], { wave: w, vol: w === 'tri' ? 0.09 : 0.05, decay: w === 'p12' ? 0.004 : 0.002, at: t, music: true }),
   a: (m, n, t) => chip([[N(m), 3]], { wave: 'p12', vol: 0.022, decay: 0.004, at: t, music: true }),
   b: (m, n, t) => chip([[N(m), n * 6 - 1], [0, 1]], { wave: 'tri', vol: 0.11, decay: 0.002, at: t, music: true })
 };
 function drum(kind, t) {
   if (kind === 'K') chip([[N(45), 1], [N(38), 1], [N(31), 2]], { wave: 'tri', vol: 0.12, decay: 0.02, at: t, music: true });
   else if (kind === 'S') hiss(5, { vol: 0.07, rate: 0.55, drop: 0.05, at: t, music: true });
+  // a sword ringing on steel (the graveyard), the anvil (the forge)
+  else if (kind === 'C') (chip([[N(100), 1], [N(95), 1], [N(99), 2]], { wave: 'p12', vol: 0.03, decay: 0.006, at: t, music: true }), hiss(2, { vol: 0.03, rate: 2.2, short: true, at: t, music: true }));
+  else if (kind === 'w') chip([[N(77), 1], [N(72), 1]], { wave: 'p50', vol: 0.03, decay: 0.015, at: t, music: true });
+  else if (kind === 'W') chip([[N(84), 1], [N(79), 1]], { wave: 'p50', vol: 0.035, decay: 0.015, at: t, music: true });
+  else if (kind === 'G') (chip([[N(43), 18], [N(42), 18]], { wave: 'tri', vol: 0.09, decay: 0.0025, at: t, music: true }), hiss(10, { vol: 0.025, rate: 0.3, at: t, music: true }));
+  else if (kind === 'T') chip([[N(40), 1], [N(33), 2], [N(28), 3]], { wave: 'tri', vol: 0.15, decay: 0.022, at: t, music: true });
   else hiss(2, { vol: 0.03, rate: 1.6, short: true, at: t, music: true });
 }
-const mus = { id: '', spec: null, pos: 0, next: 0 };
+// the combo layer: Yoshi-style bongos that join whatever is playing while a swarm combo is alive
+const BONGOS = 'W.wW.wW.W.wWw.W.';
+const mus = { id: '', spec: null, pos: 0, next: 0, layer: false };
 export const music = {
   play(id, spec) {
     if (mus.id === id) return;
@@ -334,7 +390,12 @@ export const music = {
     mus.pos = 0;
     mus.next = ctx ? ctx.currentTime + 0.1 : 0;
   },
+  // the combo bongos on or off (set every frame, cheap)
+  layer(on) {
+    mus.layer = !!on;
+  },
   stop() {
+    mus.layer = false;
     mus.id = '';
     mus.spec = null;
   },
@@ -347,8 +408,11 @@ export const music = {
       const t = mus.next;
       for (const ev of sg.steps[mus.pos % sg.steps.length]) {
         if (ev[0] === 'd') drum(ev[1], t);
-        else VOICE[ev[0]](ev[1], ev[2], t);
+        else VOICE[ev[0]](ev[1], ev[2], t, sg.lead);
       }
+      const bg = mus.layer && BONGOS[mus.pos % 16];
+      if (bg === 'W') drum('W', t);
+      else if (bg === 'w') drum('w', t);
       mus.pos++;
       mus.next += sg.stepDur;
     }

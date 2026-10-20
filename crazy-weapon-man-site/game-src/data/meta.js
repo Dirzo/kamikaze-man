@@ -133,7 +133,7 @@ export const TROPHIES = {
   6: { name: "THE OGRE KING'S BEADS", perk: 'INNER PEACE', desc: 'Heal 0.25% of max health a second', stats: { regen: 0.0025 } },
   7: { name: "DAD'S HAMMER", perk: "DAD'S TOUGHNESS", desc: 'Take 12% less damage', stats: { armor: 0.12 } },
   8: { name: "GRANDMA'S CASSEROLE DISH", perk: 'SECOND HELPINGS', desc: 'Hearts heal 50% more and drop more often', stats: { heal: 0.5, hearts: 0.04 } },
-  9: { name: 'THE STOLEN CROWN', perk: 'HOSTILE TAKEOVER', desc: '+15% damage to bosses and elites', stats: { bossDmg: 0.15 } },
+  9: { name: 'THE STOLEN CROWN', perk: "USURPER'S EDGE", desc: '+15% damage to bosses and elites', stats: { bossDmg: 0.15 } },
   10: { name: 'THE FIRST WEAPON', perk: 'EVERY WEAPON EVER', desc: '+15% damage with everything', stats: { dmg: 0.15 } }
 };
 

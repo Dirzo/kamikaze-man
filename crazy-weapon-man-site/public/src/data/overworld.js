@@ -107,15 +107,15 @@ const N = [
   ['8-5', 8, 'level', 'Rocking Chair Rapids', 208, 206, ['8-C']],
   ['8-F', 8, 'fort', 'Teacup Fort', 264, 110, ['8-C']],
   ['8-C', 8, 'castle', "Grandma's Good Chair", 318, 170, ['9-1'], null, { boss: 'bossgrandma' }],
-  // 9 Shuriken Ninja Castle (the CEO)
+  // 9 Shuriken Ninja Castle (the Usurper Ninja Lord)
   ['9-1', 9, 'level', 'Moat Hop', 40, 156, ['9-2', '9-3']],
   ['9-2', 9, 'level', 'Shoji Shadows', 100, 96, ['9-4']],
   ['9-3', 9, 'level', 'Rooftop Run', 100, 210, ['9-4'], ['9-S']],
   ['9-S', 9, 'secret', 'Hidden Scroll Room', 162, 250, ['9-C']],
   ['9-4', 9, 'level', 'Throwing Star Gallery', 164, 156, ['9-5']],
   ['9-5', 9, 'level', 'Hostile Takeover Tower', 220, 106, ['9-F']],
-  ['9-F', 9, 'fort', 'Boardroom Fort', 268, 176, ['9-C']],
-  ['9-C', 9, 'castle', "The CEO's Castle", 318, 116, ['10-1'], null, { boss: 'bossceo' }],
+  ['9-F', 9, 'fort', 'Throwing Star Fort', 268, 176, ['9-C']],
+  ['9-C', 9, 'castle', "The Usurper's Castle", 318, 116, ['10-1'], null, { boss: 'bossceo' }],
   // 10 Sentient Armory Vault: the final castle; a closet of bonus nonsense for the thorough
   ['W4b', 10, 'warp', 'Vault Landing', 40, 54, ['10-1'], null, { to: 'W4' }],
   ['10-1', 10, 'level', 'Weapon Rack Rally', 40, 140, ['10-2']],

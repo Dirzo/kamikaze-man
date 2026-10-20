@@ -42,8 +42,8 @@ const EPITHET = ['Bane of Goblins', 'Eater of Lunches', 'Who Honks at Kings', 't
   'Breaker of Shins', 'the Very Loud', 'Doom of Small Goblins', 'Friend to No One', 'the Last Excuse', 'Who Pokes the Gods',
   'the Ill-Advised', 'Ender of Feasts', 'Terror of Geese'];
 const TITLE = ['the Unreasonable', 'the Very Loud', 'the Slightly Damp', 'the Twice-Cursed', 'the Overconfident', 'the Unwashed',
-  'the Magnificent', 'the Mostly Harmless', 'the Unpaid', 'the Sleepless', 'the Legally Distinct'];
-const WHAT_TAIL = ['(DO NOT FEED IT)', '(IT KNOWS)', '(NO REFUNDS)', '(STILL WARM)', '(ASK LATER)', '(SHH)'];
+  'the Magnificent', 'the Mostly Harmless', 'the Unbroken', 'the Sleepless', 'the Twice-Forged'];
+const WHAT_TAIL = ['(DO NOT FEED IT)', '(IT KNOWS)', '(STILL SHARP)', '(STILL WARM)', '(ASK LATER)', '(SHH)'];
 const ROMAN = ['II', 'III', 'IV', 'VII', 'IX', 'XII', 'XL', 'MMX'];
 const WHAT = ['THE GOOSE', 'IT', 'A SWORD?', 'THE LAST SPOON', 'BONK', 'MOM', 'THE GOOD ONE', 'NO', 'THE ENDING', 'A DOOR',
   'UNCLE', 'THE MOON, BUT SHARP'];

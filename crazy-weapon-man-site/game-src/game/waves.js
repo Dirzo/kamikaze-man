@@ -4,7 +4,7 @@
 // zone's swarm boss arrives; beat it to open the exit. Hits during the swarm build a combo.
 import { W, GROUND, HERO, C } from '../config.js';
 import { world } from './world.js';
-import { ZONES, bossSong } from '../data/zones.js';
+import { ZONES, bossSong, zoneSong } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
 import { makeMap } from '../data/maps.js';
 import { enemyPool } from '../data/progression.js';
@@ -54,14 +54,16 @@ export function startZone(z) {
     const type=pool[Math.floor(Math.random()*pool.length)], d=ENEMIES[type];
     spawnEnemy(type,spot.x,d.air?spot.airY:spot.y,{elite:spot.elite,wave:spot.wave});
   }
-  music.play('zone:'+z,ZONES[z].music);
+  const song=zoneSong(z,world.level?.kind,world.map.dark); // the level's arrangement of the zone theme
+  music.play(song.id,song.spec);
   sfx.zone();
   updateCamera(0,true);
 }
 const aliveResidents=()=>world.enemies.filter(e=>!e.dead && !e.boss).length;
 
 export function updateWaves(dt) {
-  const D=world.director;
+  const D=world.director,c=world.swarmCombo;
+  music.layer(D && D.phase==='survive' && c && c.n>=10 && world.phase!=='dead'); // combo bongos
   if(!D || world.phase==='dead') return;
   D.t-=dt;
   switch(D.phase) {
@@ -170,7 +172,7 @@ export const levelBoss=()=>world.level?BOSS_OF[world.level.id]:headOfZone(world.
 function bossArrives() {
   const D=world.director,kind=levelBoss();
   const song=headOfZone(world.zone); // the family's battle theme
-  music.play('boss:'+song,bossSong(song));
+  music.play('boss:'+song+':'+world.zone,bossSong(song,world.zone));
   startBoss(kind,world.level?levelTier(world.level.id):1);
   D.sboss=world.boss;D.sbossT=0;D.bossStarted=true;
   return world.boss;
