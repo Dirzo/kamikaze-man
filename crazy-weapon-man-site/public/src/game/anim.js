@@ -198,8 +198,8 @@ const BACK_SHEATH = { at: [12, 14], ang: 128 };
 export const DRAW_TIME = 0.18;
 function climbPose(h) {
   const ph = Math.floor((h.climbT || 0) * 6) % 2,
-    lift = ph ? 0 : 5;
-  return { back: ph, fh: [14, 1 + lift], bh: [2, 6 - lift], sh: BACK_SHOULDERS, ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: true, ab: false, sheath: true };
+    lift = ph ? 0 : 3; // short reach: hands grip the rungs beside the head
+  return { back: ph, fh: [15, 7 + lift], bh: [1, 10 - lift], sh: BACK_SHOULDERS, ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: true, ab: false, sheath: true };
 }
 
 // back view, 17x25 like the hero sheet: spiky hair, red headband with tails, cape over the body
@@ -249,7 +249,7 @@ const BACK_LOW = [
     '...anlna..aaa....'
   ]
 ];
-const BACK_SHOULDERS = [[3, 15], [13, 15]];
+const BACK_SHOULDERS = [[3, 14], [13, 14]];
 const backFrames = [];
 function backFrame(i) {
   if (backFrames[i]) return backFrames[i];
