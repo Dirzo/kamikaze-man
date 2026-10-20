@@ -144,11 +144,13 @@ export const sfx = {
     switch (type) {
       case 'sword':
       case 'katana':
+      case 'scythe':
         hiss(4, { vol: v, rate: type === 'katana' ? 0.9 : 0.6, drop: 0.12 });
         chip([[N(79 + up), 1], [N(74 + up), 1], [N(67 + up), 2]], { wave: 'p12', vol: v * 0.8, decay: 0.006 });
         break;
       case 'dagger':
       case 'shuriken':
+      case 'boomerang':
         chip([[N(88 + up), 1], [N(83 + up), 2]], { wave: 'p12', vol: v * 0.7, decay: 0.01 });
         hiss(2, { vol: v * 0.6, rate: 1.4, short: true });
         break;
@@ -162,6 +164,7 @@ export const sfx = {
         arp([72 + up, 76 + up, 79 + up, 84 + up], 1, { wave: 'p25', vol: v * 0.7, decay: 0.003 });
         break;
       case 'staff':
+      case 'spear':
         arp([60 + up, 67 + up, 72 + up], 2, { wave: 'p50', vol: v * 0.75, decay: 0.003 });
         hiss(5, { vol: v * 0.4, rate: 0.3 });
         break;

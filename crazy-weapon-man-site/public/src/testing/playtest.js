@@ -1,10 +1,10 @@
 // Bot playtester (?playtest). Plays whole runs headlessly with real key presses through the real
-// update loop, so every number (damage, health, loot, the Forge) is the live game's. Only the
+// update loop, so every number (damage, health, loot) is the live game's. Only the
 // route is helped: when the bot cannot find a way to its target for a few seconds it is moved next
 // to it (counted as a "warp"), so the results measure the fights rather than the bot's platforming.
 //   ?playtest=20&bot=skilled|casual&from=0
-//   casual: walks in and holds attack, takes DOWN upgrades, buys a heal when low
-//   skilled: also dodges bolts, uses specials, keeps the best weapon in the bag equipped, reforges
+//   casual: walks in and holds attack, takes DOWN upgrades
+//   skilled: also dodges bolts, uses specials, keeps the best weapon in the bag equipped
 // Results land in window.CWM_PLAYTEST (and data-playtest="done" on <html>).
 import { world } from '../game/world.js';
 import { STEP } from '../config.js';
@@ -50,7 +50,7 @@ export function runPlaytest(game) {
 function newRun(game, skill, from) {
   const skilled = skill === 'skilled';
   from ? game.jump(from) : game.startRun();
-  const S = { t: 0, target: null, targetT: 0, best: Infinity, bestT: 0, jumpT: 0, forgeStep: 0, forgeWait: 0, lastHp: world.hero.hp, zone: -1, zt: 0 };
+  const S = { t: 0, target: null, targetT: 0, best: Infinity, bestT: 0, jumpT: 0, lastHp: world.hero.hp, zone: -1, zt: 0 };
   const trace = new URLSearchParams(location.search).has('trace');
   const report = { won: false, zone: from, zones: [], warps: 0, skips: 0, trace: [] };
   let Z = null;
@@ -77,15 +77,14 @@ function newRun(game, skill, from) {
       return;
     }
     if (S.t > 60 * 60) { report.zone = world.zone; report.timeout = `${world.director?.phase} ${S.target?.type || '-'}`; bot.done = true; return; }
-    if (world.zone !== S.zone && !world.forge) startZoneLog();
+    if (world.zone !== S.zone) startZoneLog();
     S.t += STEP;
     const want = new Set();
-    if (world.forge) forge(want);
-    else if (!world.inv) play(want, h, D);
+    if (!world.inv) play(want, h, D);
     press(want);
     game.update(STEP);
     // bookkeeping
-    if (Z && !world.forge) {
+    if (Z) {
       const p = phaseKey();
       Z.time += STEP;
       Z[p === 'fight' ? 'fightT' : p === 'swarm' ? 'swarmT' : 'bossT'] += STEP;
@@ -110,22 +109,6 @@ function newRun(game, skill, from) {
     let bi = -1, bs = powerScore(h.weapon);
     world.bag.forEach((w, i) => { if (w && powerScore(w) > bs * 1.02) { bs = powerScore(w); bi = i; } });
     if (bi >= 0) equipFromBag(bi);
-  }
-
-  // the Forge: patch up when hurt, then (skilled) reforge while it's affordable, then go
-  function forge(want) {
-    const F = world.forge, h = world.hero;
-    if (S.forgeWait-- > 0 || F.t < 0.5) return;
-    const heal = 8 + world.zone * 4, reforge = 20 + world.zone * 8;
-    let sel = 2;
-    if (S.forgeStep === 0 && h.hp < h.maxHp * 0.75 && world.shards >= heal) sel = 0;
-    else if (skilled && S.forgeStep < 4 && world.shards >= reforge && F.msg !== "AT THIS ZONE'S LIMIT") sel = 1;
-    F.sel = sel;
-    S.forgeStep++;
-    S.forgeWait = 3;
-    if (held.has('attack')) return; // release first so the next press is an edge
-    want.add('attack');
-    if (sel === 2) S.forgeStep = 0;
   }
 
   function pickTarget(h, D) {

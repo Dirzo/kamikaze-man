@@ -1,5 +1,5 @@
 // Finite map director: enter -> clear every resident -> boss (if any) -> survival swarm -> open exit
-// -> Forge. While exploring there are no timer spawns; the remaining count includes undiscovered
+// -> next zone. While exploring there are no timer spawns; the remaining count includes undiscovered
 // enemies. The swarm locks the screen and pours enemies in until its timer runs out, then the
 // zone's swarm boss arrives; beat it to open the exit. Hits during the swarm build a combo.
 import { W, GROUND, HERO, C } from '../config.js';
@@ -14,18 +14,20 @@ import { overlap } from './physics.js';
 import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
 import { startBoss, bossDone, clearBoss, castMove, bossWarning } from './bosses.js';
-import { makeWeapon } from './loot.js';
+import { clearAbilities } from './abilities.js';
+import { placeSecret } from './secrets.js';
+import { makeWeapon, steadyDps } from './loot.js';
 import { dropWeapon } from './combat.js';
-import { openForge, updateForge } from './forge.js';
 import { updateCamera } from './camera.js';
 import { splitZone } from './speedrun.js';
 import { refHP, refDmg } from '../data/curve.js';
-import { COMBO, SWARM_BOSS, SWARM_BOSSES, BOSS_ARRIVES } from '../data/swarm.js';
+import { COMBO, SWARM_BOSS, SWARM_BOSSES, BOSS_ARRIVES, BOSS_TOUGH } from '../data/swarm.js';
 import { dropShards } from './combat.js';
 import { say } from './bubbles.js';
 
 export function startZone(z) {
   clearBoss();
+  clearAbilities();
   world.boss=null;
   for(const key of ['echoes','shots','drops','pickups','enemies','bolts']) world[key].length=0;
   world.nearDrop=null;
@@ -34,6 +36,7 @@ export function startZone(z) {
   world.zone=z;
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
   world.map=makeMap(z);
+  placeSecret(z);
   world.lastRoom=null;
   world.platforms=world.map.platforms;
   world.cameraX=world.cameraY=0;
@@ -81,11 +84,8 @@ export function updateWaves(dt) {
       if(D.t<=0 && Math.abs(world.hero.x+world.hero.w/2-world.map.exitX)<24 && Math.abs(world.hero.y+world.hero.h-world.map.exitY)<20) {
         splitZone();
         if(world.zone+1>=ZONES.length) world.phase='won';
-        else {D.phase='forge';openForge();}
+        else startZone(world.zone+1);
       }
-      break;
-    case 'forge':
-      if(updateForge(dt)) startZone(world.zone+1);
       break;
   }
 }
@@ -145,7 +145,7 @@ export function spawnSwarmBoss() {
   e.scale=B.scale;e.swarm=e.swarmBoss=true;
   e.d={...d,range:d.range*(d.kind==='melee'||d.kind==='shield'||d.kind==='blink'?B.scale:1)};
   e.name=B.name;
-  e.max=e.hp=Math.round(refHP(z)*(z?SWARM_BOSS.hp:SWARM_BOSS.firstHp));
+  e.max=e.hp=Math.round(Math.max(refHP(z)*(z?SWARM_BOSS.hp:SWARM_BOSS.firstHp),steadyDps()*(z?BOSS_TOUGH.swarm:BOSS_TOUGH.first)));
   e.dmg=refDmg(z)*d.dmg*SWARM_BOSS.dmg;
   e.xp*=5;
   e.spawnT=0.9;

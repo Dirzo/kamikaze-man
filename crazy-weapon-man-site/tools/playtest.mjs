@@ -46,7 +46,10 @@ const wins = all.filter(r => r.won).length;
 console.log(`\n${bot} bot: ${wins}/${all.length} wins (${pct(wins, all.length)}), avg warps/run ${(all.reduce((n, r) => n + r.warps, 0) / all.length).toFixed(1)}, residents written off/run ${(all.reduce((n, r) => n + (r.skips || 0), 0) / all.length).toFixed(1)}`);
 const stuck = all.filter(r => r.timeout);
 if (stuck.length) console.log(`bot stuck (hour limit, not counted as deaths): ${stuck.map(r => `zone ${r.zone + 1} ${r.timeout}`).join(', ')}`);
-console.log('\nzone | reached | cleared | died: fight / swarm / boss | hp in | min hp | dmg% fight/swarm/boss | lv | power | time s');
+console.log('\nzone | reached | cleared | died: fight / swarm / boss | hp in | min hp | dmg% fight/swarm/boss | lv | power | time s | boss s (cleared: median, p10-p90)');
+// boss fight length on visits where the boss went down (the run went on, or was won)
+const bossTimes = z => all.flatMap(r => r.zones.filter((x, i) => x.zone === z && (i < r.zones.length - 1 || r.won)).map(x => x.bossT)).sort((a, b) => a - b);
+const q = (a, f) => a.length ? a[Math.min(a.length - 1, Math.floor(a.length * f))].toFixed(0) : '-';
 const zones = Math.max(...all.map(r => r.zones.length ? r.zones.at(-1).zone : 0)) + 1;
 for (let z = from; z < zones; z++) {
   const at = all.flatMap(r => r.zones.filter(x => x.zone === z)), reached = at.length;
@@ -54,7 +57,7 @@ for (let z = from; z < zones; z++) {
   const dead = all.filter(r => !r.won && !r.timeout && r.zone === z), avg = f => (at.reduce((n, x) => n + f(x), 0) / reached);
   const d = k => dead.filter(r => r.diedIn === k).length;
   console.log([z + 1, reached, pct(reached - dead.length, reached), `${d('fight')} / ${d('swarm')} / ${d('boss')}`, avg(x => x.hpIn).toFixed(0), avg(x => x.minHp).toFixed(0),
-    `${avg(x => x.dmg.fight).toFixed(0)}/${avg(x => x.dmg.swarm).toFixed(0)}/${avg(x => x.dmg.boss).toFixed(0)}`, avg(x => x.lv).toFixed(1), avg(x => x.power).toFixed(2), avg(x => x.time).toFixed(0)].join(' | '));
+    `${avg(x => x.dmg.fight).toFixed(0)}/${avg(x => x.dmg.swarm).toFixed(0)}/${avg(x => x.dmg.boss).toFixed(0)}`, avg(x => x.lv).toFixed(1), avg(x => x.power).toFixed(2), avg(x => x.time).toFixed(0), `${q(bossTimes(z), 0.5)} (${q(bossTimes(z), 0.1)}-${q(bossTimes(z), 0.9)})`].join(' | '));
 }
 console.log('\ntop damage sources (% of max hp per visit):');
 for (let z = from; z < zones; z++) {

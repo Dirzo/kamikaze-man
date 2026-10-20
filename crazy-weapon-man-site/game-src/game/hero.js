@@ -16,6 +16,7 @@ import { attackBox, activeWindow, canAttack } from './attack-rules.js';
 import { attackMutation, impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
+import { abilityHit, swingMult, critBonus, dashCut } from './abilities.js';
 
 
 export function createHero() {
@@ -68,6 +69,7 @@ export function updateHero(h, dt) {
     h.attack = null;
     h.cd = 0;
     h.inv = Math.max(h.inv, HERO.dashTime);
+    h.dashHit = null;
     sfx.dash();
     burst(cx(h), h.y + h.h - 2, 5, 'dust', ['mist', 'fog']);
   }
@@ -77,6 +79,7 @@ export function updateHero(h, dt) {
     h.vy = Math.min(h.vy, 0) * 0.5;
     if (Math.random() < 0.6) emit(cx(h) - h.face * 6, h.y + 6 + Math.random() * 14, 'streak', C.mist);
     move(h, dt, world.platforms, { gravity: 0 });
+    dashCut(h);
     return;
   }
   // run
@@ -91,6 +94,7 @@ export function updateHero(h, dt) {
   }
   // jump / drop-through
   h.coyote = h.onGround ? HERO.coyote : Math.max(0, h.coyote - dt);
+  if (h.onGround || h.ladder) h.hopped = false;
   if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0) {
     if (input.held('down') && h.onGround && h.platform && !h.platform.solid) {
       input.consume('jump');
@@ -103,6 +107,14 @@ export function updateHero(h, dt) {
       h.onGround = false;
       h.jumpHeld = true;
       sfx.jump();
+    } else if (h.weapon.ability === 'hops' && !h.hopped && !h.ladder) {
+      // DOUBLE JUMP: one more hop off thin air
+      input.consume('jump');
+      h.vy = -HERO.jump * 0.9;
+      h.hopped = true;
+      h.jumpHeld = true;
+      sfx.jump();
+      burst(cx(h), h.y + h.h, 6, 'twinkle', ['sky', 'paper']);
     }
   }
   if (h.jumpHeld && !input.held('jump')) {
@@ -131,7 +143,7 @@ export function updateHero(h, dt) {
 
 // ---------------------------------------------------------------- attacks
 function rollCrit(h) {
-  let c = CRIT.chance + (h.lv - 1) * 0.004;
+  let c = CRIT.chance + (h.lv - 1) * 0.004 + critBonus(h);
   if (h.weapon.family === 'radiant') c += 0.15;
   return Math.random() < c;
 }
@@ -140,16 +152,17 @@ function startAttack(h, T) {
   const w = h.weapon;
   attackMutation(h);
   h.combo = h.comboT > 0 ? (h.combo + 1) % (T.combo ? T.combo.length : 3) : 0;
-  h.cd = T.cd;
+  const fast = swingMult(h);
+  h.cd = T.cd * fast;
   sfx.attack(w.type, w.q);
   if (!T.melee) {
     // the shot leaves when the animation releases it (bow string, throw, wand flick)
-    h.attack = { ranged: true, t: 0, dur: T.cd, weapon: w, fired: false, fireAt: fireAt(w.type) };
-    h.comboT = T.cd + 0.25;
+    h.attack = { ranged: true, t: 0, dur: T.cd * fast, weapon: w, fired: false, fireAt: fireAt(w.type) };
+    h.comboT = T.cd * fast + 0.25;
     return;
   }
   const mv = MOVES[T.combo[h.combo]];
-  h.attack = { move: mv, moveName: T.combo[h.combo], t: 0, dur: T.cd * mv.dur, weapon: w, hit: new Set() };
+  h.attack = { move: mv, moveName: T.combo[h.combo], t: 0, dur: T.cd * mv.dur * fast, weapon: w, hit: new Set() };
   h.cd = h.attack.dur + (h.combo === T.combo.length - 1 ? RECOVERY : 0); // finisher has end lag
   h.comboT = h.attack.dur + 0.3;
 }
@@ -184,6 +197,7 @@ function updateAttack(h, dt, T) {
       });
       impactMutation(h, e, a);
       quirkHit(h, e, dmg, h.face);
+      abilityHit(h, e, dmg, a.move.big);
     }
   }
   if (a.t >= a.dur) h.attack = null;
@@ -216,6 +230,8 @@ function shoot(h, T, ang, mult = 1, extra = {}) {
     weapon: w,
     emitters: L.emitters,
     spin: 0,
+    boomerang: !!T.boomerang,
+    t: 0,
     proc: mult !== 1,
     move: { big: h.combo === 2 }
   });
@@ -255,6 +271,23 @@ function startSpecial(h, T) {
         shoot(h, T, Math.atan2(Math.sin(ang), Math.abs(Math.cos(ang))), 0.8, { pierce: 2 });
         h.face = f;
       }
+      h.special = null;
+      h.castT = 0.3;
+      break;
+    case 'skewer':
+      h.inv = Math.max(h.inv, 0.3);
+      break;
+    case 'tomahawk': { // axe: hurl a big spinning copy that cuts both ways and comes back
+      const L = lookOf(h.weapon);
+      world.shots.push({ id: newId(), type: h.weapon.type, sprite: true, boomerang: true, x: cx(h) + h.face * 6, y: h.y + 8, w: 10, h: 8,
+        vx: h.face * 250, vy: 0, g: 0, dmg: hitDamage(h.weapon) * 1.8, crit: false, knock: 22, pierce: 99, homing: 0, life: 1.6, hit: new Set(),
+        element: h.weapon.family, col: L.mid, light: L.light, weapon: h.weapon, emitters: L.emitters, spin: 0, proc: true, t: 0 });
+      h.special = null;
+      h.castT = 0.3;
+      break;
+    }
+    case 'ricochet': // boomerang: three at once, fanned
+      for (let i = -1; i <= 1; i++) shoot(h, T, i * 0.28, 1.1, { pierce: 3 });
       h.special = null;
       h.castT = 0.3;
       break;
@@ -380,6 +413,38 @@ function updateSpecial(h, dt) {
         hitstop(0.05);
       }
       if (s.t > 0.9 || (s.slam && s.t > 0.4)) h.special = null;
+      break;
+    case 'skewer': // spear: charge forward, skewering everything in front once
+      if (s.t < 0.24) {
+        h.vx = h.face * 400;
+        h.vy = Math.min(h.vy, 0);
+        const box = { x: h.face > 0 ? cx(h) : cx(h) - 40, y: h.y + 6, w: 40, h: 14 };
+        for (const e of world.enemies)
+          if (!e.dead && !s.hit.has(e) && overlap(box, e)) {
+            s.hit.set(e, 1);
+            const crit = rollCrit(h);
+            hitEnemy(e, hitDamage(h.weapon) * 1.8 * (crit ? CRIT.mult : 1), { crit, dir: h.face, knock: 30, element: h.weapon.family, special: true, sparkCol: light });
+          }
+        emit(cx(h) - h.face * 6, h.y + 10 + Math.random() * 6, 'streak', light);
+      } else h.vx *= 0.8;
+      if (s.t > 0.36) h.special = null;
+      break;
+    case 'reap': // scythe: one huge sweep all around; each foe it cuts gives a little health back
+      if (!s.cut) {
+        s.cut = true;
+        let n = 0;
+        for (const e of world.enemies) {
+          if (e.dead || Math.abs(cx(e) - cx(h)) > 56 || Math.abs(cy(e) - cy(h)) > 34) continue;
+          const crit = rollCrit(h);
+          hitEnemy(e, hitDamage(h.weapon) * 1.7 * (crit ? CRIT.mult : 1), { crit, dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 18, element: h.weapon.family, special: true, sparkCol: light });
+          n++;
+        }
+        if (n) h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * 0.025 * Math.min(5, n)));
+        ringBurst(cx(h), cy(h), 36, light);
+        shake(0.35);
+      }
+      h.vx = 0;
+      if (s.t > 0.4) h.special = null;
       break;
     default:
       h.special = null;

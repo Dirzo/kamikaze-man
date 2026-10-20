@@ -11,7 +11,6 @@ import { startBoss, updateBoss, updateHazards, drawHazards, bossDone, clearBoss,
 import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
 import { startZone, updateWaves, enemiesLeft, spawnSwarmBoss } from '../game/waves.js';
-import { openForge, updateForge } from '../game/forge.js';
 import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE } from '../game/inventory.js';
 import { SWARM_BOSSES } from '../data/swarm.js';
 import { quirkHit } from '../game/quirks.js';
@@ -27,6 +26,13 @@ import { heroPose } from '../game/anim.js';
 import { tickRun, splitZone } from '../game/speedrun.js';
 import { resetRecords } from '../data/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
+import { ENEMIES } from '../data/enemies.js';
+import { TYPES, TYPE_LIST } from '../data/weapons.js';
+import { ABILITY_LIST } from '../data/abilities.js';
+import { fireTrait } from '../game/traits.js';
+import { updateBolts } from '../game/enemy.js';
+import { updateSecret, SECRETS, SECRET_KEY } from '../game/secrets.js';
+import { updateAbilities, abilityHit } from '../game/abilities.js';
 
 export function runSmoke(game) {
   const results=[];
@@ -122,10 +128,8 @@ export function runSmoke(game) {
     h.inv=0;h.hp=h.maxHp;castMove(e,'iai');for(let i=0;i<70;i++){world.t+=STEP;updateHazards(STEP);}
     ok(h.hp<h.maxHp,'the iai slash missed a standing hero');
   });
-  check('forge opens straight to the workshop with no weapon draft, and reset clears it',()=>{
-    reset();const before=world.hero.weapon;openForge();ok(!world.forge.draft && !world.forge.offers,'weapon draft still offered');
-    world.forge.t=1;key('KeyZ',true);poll();updateForge(STEP);key('KeyZ',false);poll();ok(world.hero.weapon===before,'forge changed the weapon');
-    game.startRun();ok(!world.forge && world.echoes.length===0 && !world.deadT);
+  check('a new run starts clean',()=>{
+    reset();game.startRun();ok(world.echoes.length===0 && !world.deadT && world.zone===0);
   });
   check('drops hover, fly to you and auto-loot; DOWN equips a looted upgrade and feeds Weapon Lust',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});const old=h.weapon;
@@ -214,6 +218,56 @@ export function runSmoke(game) {
     }
     ok(tested>0,'no one-way platform to test');
   });
+  check('every enemy type has its own alerted trick that flies, can hurt and cleans up',()=>{
+    const types=Object.keys(ENEMIES).filter(k=>ENEMIES[k].alert);ok(types.length>=25,'only '+types.length+' tricks');
+    ok(new Set(types.map(k=>ENEMIES[k].alert.do)).size===types.length,'two enemy types share a trick');
+    for(const type of types) {
+      reset();const h=world.hero;h.inv=99;const e=spawnEnemy(type,h.x-60,GROUND);e.spawnT=0;e.calm=false;e.face=1;
+      const before=world.bolts.length;fireTrait(e);ok(world.bolts.length>before,type+' trick made nothing');
+      for(let i=0;i<400;i++){world.t+=STEP;updateBolts(STEP);}
+      ok(world.bolts.length===0,type+' trick never cleaned up');
+    }
+    // calm residents keep wandering: no tricks until they notice you
+    reset();const h=world.hero;const e=spawnEnemy('squirrel',h.x+400,GROUND);e.spawnT=0;
+    for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
+    ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
+  });
+  check('the four new weapon types swing, shoot and use their specials',()=>{
+    for(const type of ['spear','axe','scythe','boomerang']) {
+      ok(TYPE_LIST.includes(type),type+' missing');
+      reset();const h=world.hero;h.weapon=makeWeapon(5,{type,q:3});const e=spawnEnemy('brute',h.x+24,GROUND);e.spawnT=0;e.hp=e.max=1e7;
+      for(let i=0;i<60;i++){key('KeyZ',i%10<5);poll();world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);}
+      key('KeyZ',false);poll();h.specialCd=0;h.attack=null;h.cd=0;
+      key('KeyC',true);poll();for(let i=0;i<60;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);poll();}key('KeyC',false);poll();
+      ok(e.hp<e.max,type+' never hit');ok(!h.special,type+' special never ended');heroPose(h,world.t);
+    }
+  });
+  check('every weapon ability does its thing',()=>{
+    const fresh=ab=>{reset();const h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});h.weapon.ability=ab;const e=spawnEnemy('brute',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e7;return [h,e];};
+    let [h,e]=fresh('vampire');h.hp=10;abilityHit(h,e,5,false);ok(h.hp>10,'thirsty did not heal');
+    [h,e]=fresh('meteor');abilityHit(h,e,5,true);for(let i=0;i<120;i++){world.t+=STEP;updateAbilities(STEP);}ok(e.hp<e.max,'no meteor landed');
+    [h,e]=fresh('bubble');let hp=h.hp;hurtHero(10,1);ok(h.hp===hp,'bubble did not block');h.inv=0;hurtHero(10,1);ok(h.hp<hp,'bubble blocked twice');
+    [h,e]=fresh('thorns');h.x=e.x-4;hurtHero(5,1);ok(e.hp<e.max,'thorns did not bite back');
+    [h,e]=fresh('frenzy');e.hp=1;hitEnemy(e,5,{dir:1});ok(h.frenzyT>0,'no frenzy on kill');
+    [h,e]=fresh('giantslayer');e.elite=true;const d1=hitEnemy(e,100,{dir:1});h.weapon.ability=null;const d2=hitEnemy(e,100,{dir:1});ok(d1>d2,'giant slayer did nothing');
+    [h,e]=fresh('hops');h.y-=60;h.onGround=false;h.coyote=0;h.vy=50;key('KeyX',true);poll();updateHero(h,STEP);key('KeyX',false);poll();ok(h.vy<0 && h.hopped,'no double jump');
+    [h,e]=fresh('dashcut');h.x=e.x-30;h.face=1;key('KeyV',true);poll();for(let i=0;i<15;i++){world.t+=STEP;updateHero(h,STEP);poll();}key('KeyV',false);poll();ok(e.hp<e.max,'dash cut missed');
+    ok(ABILITY_LIST.length===9);
+  });
+  check('every map hides one easter egg on an existing ledge, found by touching it',()=>{
+    try{localStorage.removeItem(SECRET_KEY);}catch(_){}
+    for(let z=0;z<10;z++) {
+      reset();startZone(z);const s=world.secret,m=world.map;ok(s && s.zone===z,'no secret on map '+(z+1));
+      ok(m.platforms.some(p=>p.y===s.y+s.h && s.x+s.w/2>=p.x && s.x+s.w/2<=p.x+p.w),'secret '+(z+1)+' floats');
+      ok(s.x<m.bossLeft-20,'secret '+(z+1)+' is in the arena');
+      const h=world.hero;h.x=s.x;h.y=s.y+s.h-h.h;const lv=h.lv,drops=world.drops.length;updateSecret(STEP);
+      ok(s.found && world.secretsFound===1,'secret '+(z+1)+' not found');
+      updateSecret(STEP);ok(world.secretsFound===1,'secret '+(z+1)+' found twice');
+    }
+    ok(JSON.parse(localStorage.getItem(SECRET_KEY)).length===10,'found secrets not remembered');
+    ok(SECRETS.length===10);
+    try{localStorage.removeItem(SECRET_KEY);}catch(_){}
+  });
   check('every quirk fires on cheap weapons and never recurses',()=>{
     for(const id of QUIRK_LIST) {
       reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});h.weapon.quirk=id;h.hp=h.maxHp-20;
@@ -251,10 +305,10 @@ export function runSmoke(game) {
     ok(game.hitDamage(h.weapon)>dmg0,'mastery did not add damage');
     const saved=JSON.parse(localStorage.getItem(PROF_KEY));ok(saved.staff.lv===proficiency('staff').lv,'mastery not saved');
   });
-  check('all ten zones can clear and transition through the forge',()=>{
+  check('all ten zones can clear and go straight on to the next zone',()=>{
     for(let z=0;z<10;z++) {
       reset();startZone(z);world.hero.inv=100;
-      for(let i=0;i<10000 && !world.forge && world.phase!=='won';i++) {
+      for(let i=0;i<10000 && world.zone===z && world.phase!=='won';i++) {
         for(const e of world.enemies) if(!e.boss) {e.dead=true;e.deathT=0;}
         world.enemies=world.enemies.filter(e=>e.boss); // resolve boss outro through its own handler
         if(world.boss && world.boss.swarmBoss && world.boss.dead) world.boss=null;
@@ -262,7 +316,7 @@ export function runSmoke(game) {
         if(world.director.phase==='exit' || world.director.phase==='arena') {world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;}
         updateWaves(STEP);world.t+=STEP;
       }
-      ok(z===9?world.phase==='won':!!world.forge,'zone '+z+' stalled');
+      ok(z===9?world.phase==='won':world.zone===z+1,'zone '+z+' stalled');
     }
   });
   check('ladders connect chamber floors to suspended hunting ledges',()=>{
@@ -307,7 +361,7 @@ export function runSmoke(game) {
     reset();startZone(0);const count=world.enemies.length, ids=world.enemies.map(e=>e.id).join(',');
     world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;
     for(let i=0;i<1200;i++)updateWaves(STEP);
-    ok(world.director.phase==='fight' && !world.forge,'escaped with enemies left');
+    ok(world.director.phase==='fight' && world.zone===0,'escaped with enemies left');
     ok(world.enemies.length===count && world.enemies.map(e=>e.id).join(',')===ids,'map respawned enemies');
     for(const e of world.enemies)e.dead=true;
     updateWaves(STEP);ok(world.director.phase==='arena' && !world.lock,'clear did not send the hero to the arena');
@@ -322,10 +376,10 @@ export function runSmoke(game) {
     if(!world.boss){world.director.t=0;updateWaves(STEP);}
     const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.swarmBoss && boss.w>30 && boss.name===SWARM_BOSSES[0].name,'no swarm boss when the timer ran out');
     for(let i=0;i<60;i++)updateWaves(STEP);ok(world.director.phase==='survive','swarm ended before its boss fell');
-    boss.spawnT=0;hitEnemy(boss,boss.hp+1,{dir:1});updateWaves(STEP);
+    boss.spawnT=0;boss.hp=1;hitEnemy(boss,2,{dir:1});updateWaves(STEP);
     ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead) && !world.swarmCombo,'swarm boss defeat did not open the exit');
     for(let i=0;i<90;i++)updateWaves(STEP);
-    ok(!!world.forge,'cleared exit did not advance');
+    ok(world.zone===1,'cleared exit did not advance');
   });
   check('world-space movement, camera and projectiles work beyond the first screen',()=>{
     reset();const h=world.hero;h.x=850;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});

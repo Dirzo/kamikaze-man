@@ -33,7 +33,7 @@ browser regression suite. These are absent from normal runs.
 | `game-src/game/evolution.js` | Five bounded weapon mutation behaviours |
 | `game-src/game/anim.js`, `slash.js`, `looks.js` | Pixel poses, slash frames and weapon silhouettes |
 | `game-src/game/enemy.js`, `bosses.js` | Enemy state machines, bosses, tells and hazards |
-| `game-src/game/waves.js`, `forge.js` | Finite map clears, survival swarm, gated exits and shard workshop |
+| `game-src/game/waves.js` | Finite map clears, survival swarm and gated exits |
 | `game-src/game/inventory.js`, `quirks.js`, `lust.js` | Bag/equipment windows, weapon quirks, Weapon Lust |
 | `game-src/game/speedrun.js`, `data/speedrun.js` | Run clock, splits, damage log, results screen |
 | `game-src/data/proficiency.js`, `quirks.js`, `lust.js` | Weapon mastery (saved), quirk table and rates, Weapon Lust numbers |
@@ -58,7 +58,7 @@ Every boss fights with its zone's theme (`castMove` in `bosses.js`: sword graves
 and skidding shells, smoke-bomb decoys, iai slashes you jump, avalanches, molten forge floors, cookie
 rain, wand-sparkle and shuriken rings) and pulls a themed surprise at each phase change (story bosses)
 or at half health (swarm bosses). `?capture=boss1`..`boss10` screenshots each one mid-surprise. Swarm hits build a combo (+1% damage per 5 hits, up to +30%) that
-drops when you go about two seconds without hitting anything; the best combo pays out shards. Walk into the unlocked portal for the Forge and the next map. A living enemy
+drops when you go about two seconds without hitting anything; the best combo pays out shards. Walk into the unlocked portal for the next map. A living enemy
 anywhere on the route keeps the exit locked. Summoned enemies also count toward completion.
 
 The opening map starts with sword/dagger/bow and introduces geese farther along its route. Subsequent
@@ -77,7 +77,7 @@ Bosses stay in the last-screen arena and their warnings/hazards use that arena's
 
 All mutations have distinct awakened sprites, never trigger recursive procs, and reset between runs.
 Bosses have warning frames, locked charges, three health phases and stronger late-fight patterns.
-Map clears lead to the arena swarm and its boss, then the Forge (healing/reforging for shards). There is no
+Map clears lead to the arena swarm and its boss, then straight on to the next map. There is no
 free weapon draft and no auto-equip. Drops hover where they land and fly into the bag (E / B / Tab).
 Nothing is salvaged until all 24 slots are full; after that a better drop replaces the weakest
 unlocked weapon of its type (or the weakest unlocked weapon overall), and a worse one is salvaged.
@@ -122,4 +122,4 @@ main combat loop can be reviewed without the obsolete patch stack.
 
 ## Mobile browser controls
 
-Rotate your phone to landscape. The left thumb joystick moves and climbs; hold HIT on the right to chain attacks. JUMP, DASH and SKILL sit beside it. Both thumbs work independently. In the Forge, nudge the joystick to select, HIT to take or buy, and JUMP to keep the weapon or continue. The viewport fits between thumb gutters, responds to browser-bar and orientation changes, and respects safe-area insets. Fullscreen requests landscape rotation where the browser supports it; normal browser play works without fullscreen.
+Rotate your phone to landscape. The left thumb joystick moves and climbs; hold HIT on the right to chain attacks. JUMP, DASH and SKILL sit beside it. Both thumbs work independently. The viewport fits between thumb gutters, responds to browser-bar and orientation changes, and respects safe-area insets. Fullscreen requests landscape rotation where the browser supports it; normal browser play works without fullscreen.

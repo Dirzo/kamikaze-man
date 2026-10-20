@@ -26,7 +26,7 @@ try {
   const report=await evaluate('document.getElementById("smoke-results")?.textContent');
   console.log(report);writeFileSync(join(out,'mobile-results.txt'),report||'Mobile checks did not finish');
   if(result!=='pass')throw Error('Mobile browser regression failed');
-  for(const scene of ['combat','canyon','forge']) {
+  for(const scene of ['combat','canyon','bag']) {
     await send('Page.navigate',{url:`http://127.0.0.1:${port}/?capture=${scene}`});
     for(let i=0;i<100;i++){if(await evaluate('document.documentElement.dataset.capture==="ready"'))break;await delay(100);}
     await delay(300);

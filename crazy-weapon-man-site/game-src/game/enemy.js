@@ -13,6 +13,8 @@ import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { drawItem } from './drops.js';
 import { makeWeapon } from './loot.js';
+import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
+import { callout } from './fx.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
@@ -227,6 +229,10 @@ export function provoke(e) {
   if (!e.calm) return;
   e.calm = false;
   e.cool = Math.max(e.cool, 0.5);
+  // a little "!" so you can see who noticed you; its trick comes a moment later
+  if (world.t > (e.alertedAt || -9) + 4) callout('!', 0, 0, C.gold, { follow: e, life: 30 });
+  e.alertedAt = world.t;
+  e.traitT = Math.max(e.traitT || 0, 1.4 + Math.random());
 }
 // stroll back and forth on the home platform, pausing now and then
 function wander(e, dt, slow) {
@@ -258,6 +264,17 @@ function think(e, dt, dxh, dist, toward, slow) {
     if (e.calm) return wander(e, dt, slow);
   }
   e.face = toward;
+  // the alerted trick (traits.js): on its own slow timer, slower still in the swarm
+  const A = d.alert;
+  if (A && !e.swarmBoss && dist < (A.range || 140) && Math.abs(cy(hero) - cy(e)) < 70) {
+    e.traitT = (e.traitT ?? 1.2 + Math.random()) - dt;
+    if (e.traitT <= 0) {
+      e.traitT = A.every * (e.swarm ? 1.6 : 1) * (0.85 + Math.random() * 0.3);
+      e.trait = true;
+      windup(e, A.wind || 0.4);
+      return;
+    }
+  }
   switch (e.kind) {
     case 'melee':
     case 'shield':
@@ -321,6 +338,14 @@ function attack(e, toward) {
     hero = world.hero;
   e.state = 'attack';
   e.hitDone = false;
+  if (e.trait) {
+    e.trait = false;
+    e.hitDone = true; // a trick, not a lunge: no body hitbox
+    e.vx = 0;
+    e.st = 0.25;
+    fireTrait(e);
+    return;
+  }
   switch (e.kind) {
     case 'melee':
     case 'shield':
@@ -413,6 +438,8 @@ export function updateBolts(dt) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.life -= dt;
+    const used = traitBolt(b, dt);
+    if (used) { if (used === 'hit') hurtHero(b.dmg, Math.sign(cx(hero) - b.x) || 1); world.bolts.splice(i, 1); continue; }
     if (world.map?.solids.some(p=>overlap(b,p))) {world.bolts.splice(i,1);continue;}
     if (Math.random() < 0.5) emit(b.x + 2, b.y + 2, 'dot', b.col);
     if (overlap(b, hero) && hero.inv <= 0 && hero.dashT <= 0) {
@@ -422,8 +449,9 @@ export function updateBolts(dt) {
     if (b.life <= 0 || b.x < -10 || b.x > worldWidth() + 10 || b.y > worldFloor() + 4 || b.y < -20) world.bolts.splice(i, 1);
   }
 }
-export function drawBolts() {
+export function drawBolts(t = world.t) {
   for (const b of world.bolts) {
+    if (b.look && drawTraitBolt(b, t)) continue;
     const x = Math.round(b.x),
       y = Math.round(b.y);
     rect(x - 1, y - 1, 6, 6, C.ink);

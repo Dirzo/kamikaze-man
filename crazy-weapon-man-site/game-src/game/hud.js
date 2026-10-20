@@ -104,7 +104,6 @@ export function drawHud(t) {
     else if (D.phase === 'arena') sub = 'MAP CLEAR - THE ARENA IS AT THE END >';
     else if (D.phase === 'survive') sub = swarmBossUp() ? 'BEAT THE BOSS' : 'SURVIVE THE SWARM';
     else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
-    else if (D.phase === 'forge') sub = 'ZONE CLEAR';
   }
   text(sub, 6, 15, C.mist);
   text(mutationLabel(h.weapon), W - 6, 16, h.weapon.mutation ? C.gold : C.fog, {align:'right'});

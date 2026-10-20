@@ -12,6 +12,8 @@ import { gainXp, gainProficiency } from './progress.js';
 import { say } from './bubbles.js';
 import { comboHit } from './waves.js';
 import { logDamage } from './speedrun.js';
+import { BOSS_TOUGH } from '../data/swarm.js';
+import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -35,6 +37,9 @@ export function hitEnemy(e, dmg, o = {}) {
     }
     o = { ...o, knock: (o.knock || 0) * 0.3 };
   }
+  dmg *= bigFoeMult(e);
+  // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
+  if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
   logDamage(Math.min(dmg, Math.max(0, e.hp)));
   e.hp -= dmg;
@@ -201,6 +206,7 @@ export function kill(e, o = {}) {
   if (e.sleeper) say(e, pickLine(LINES.last), 1.4, true);
   gainXp(e.xp);
   gainProficiency(e.elite ? 'elite' : 'normal');
+  abilityKill();
   // loot
   const zone = world.zone;
   dropShards(cx(e), cy(e), e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0));
@@ -240,6 +246,7 @@ export function explode(x, y, dmg, friendly = false, radius = 34) {
 export function hurtHero(dmg, dir = 1) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
+  if (abilityBlock(h)) return 0;
   dmg = Math.max(1, Math.round(dmg));
   h.hp -= dmg;
   h.inv = 0.8;
@@ -253,10 +260,19 @@ export function hurtHero(dmg, dir = 1) {
   shake(0.4);
   hitstop(0.05);
   burst(cx(h), cy(h), 6, 'chip', ['red', 'paper']);
+  if (h.hp <= 0 && h.oneUp) {
+    // the golden mushroom's spare life (secrets.js)
+    h.oneUp = false;
+    h.hp = Math.round(h.maxHp / 2);
+    h.inv = 2;
+    callout('1UP!', 0, 0, C.lime, { follow: h, life: 70 });
+    burst(cx(h), cy(h), 16, 'twinkle', ['lime', 'gold', 'paper']);
+  }
   if (h.hp <= 0) {
     h.hp = 0;
     h.dead = true;
     world.phase = 'dead';
   }
+  abilityHurt(h);
   return dmg;
 }

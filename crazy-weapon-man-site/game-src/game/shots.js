@@ -7,6 +7,7 @@ import { hitEnemy } from './combat.js';
 import { lookOf, runEmitters } from './looks.js';
 import { impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
+import { abilityHit } from './abilities.js';
 import { emit } from './fx.js';
 
 export function updateShots(dt) {
@@ -64,6 +65,7 @@ export function updateShots(dt) {
       if (!s.proc) {
         impactMutation(world.hero, e, s);
         quirkHit(world.hero, e, s.dmg, Math.sign(s.vx) || 1);
+        abilityHit(world.hero, e, s.dmg, s.move?.big);
       }
       if (s.pierce-- <= 0) {
         s.life = 0;
@@ -91,7 +93,7 @@ export function drawShots(t) {
       rect(-6, -1, 2, 1, C.paper);
       rect(-6, 1, 2, 1, C.paper);
       X.restore();
-    } else if (s.type === 'shuriken' || s.sprite) {
+    } else if (s.type === 'shuriken' || s.type === 'boomerang' || s.sprite) {
       const L = lookOf(s.weapon);
       X.save();
       X.translate(x + 3, y + 2);

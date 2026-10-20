@@ -8,7 +8,8 @@ import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { refHP, refDmg } from '../data/curve.js';
 import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
-import { makeWeapon } from './loot.js';
+import { makeWeapon, steadyDps } from './loot.js';
+import { BOSS_TOUGH } from '../data/swarm.js';
 import { spawnEnemy } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
@@ -97,7 +98,7 @@ export function startBoss(kind) {
   const D = BOSSES[kind],
     art = A.bosses[kind],
     z = world.zone;
-  const hp = refHP(z) * 14;
+  const hp = Math.round(Math.max(refHP(z) * 14, steadyDps() * BOSS_TOUGH.story));
   done = false;
   outroT = 0;
   hazards.length = 0;
@@ -177,7 +178,7 @@ export function updateBoss(e, dt) {
     e.state = 'idle';
     e.st = 1.1;
   }
-  const rate = e.phase === 1 ? 1 : e.phase === 2 ? 1.25 : 1.5;
+  const rate = e.phase === 1 ? 1.1 : e.phase === 2 ? 1.4 : 1.75;
   e.st -= dt * rate;
   const toward = Math.sign(cx(hero) - cx(e)) || 1;
   switch (e.state) {

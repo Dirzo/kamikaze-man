@@ -14,8 +14,15 @@ export const TYPES = {
   staff: { melee: true, cd: 0.4 / ATTACK_SPEED, reach: 36, height: 14, hit: 1.3, knock: 24, combo: ['stab', 'slashUp', 'stabBig'], special: 'vault', specialName: 'VAULT SLAM', cool: 5.5 },
   bow: { melee: false, cd: 0.44 / ATTACK_SPEED, hit: 1.25, knock: 14, speed: 320, pierce: 0, special: 'volley', specialName: 'VOLLEY', cool: 5 },
   shuriken: { melee: false, cd: 0.3 / ATTACK_SPEED, hit: 0.8, knock: 10, speed: 250, pierce: 1, spin: true, special: 'storm', specialName: 'STAR STORM', cool: 5 },
-  wand: { melee: false, cd: 0.36 / ATTACK_SPEED, hit: 1.05, knock: 12, speed: 190, pierce: 0, homing: 3, special: 'nova', specialName: 'NOVA', cool: 5.5 }
+  wand: { melee: false, cd: 0.36 / ATTACK_SPEED, hit: 1.05, knock: 12, speed: 190, pierce: 0, homing: 3, special: 'nova', specialName: 'NOVA', cool: 5.5 },
+  // newer arrivals; each borrows a fighting style from anim.js (see STYLE_OF) but has its own special
+  spear: { melee: true, cd: 0.36 / ATTACK_SPEED, reach: 42, height: 12, hit: 1.2, knock: 22, combo: ['stab', 'stab', 'stabBig'], special: 'skewer', specialName: 'SKEWER RUSH', cool: 5 },
+  axe: { melee: true, cd: 0.46 / ATTACK_SPEED, reach: 26, height: 26, hit: 1.75, knock: 28, hop: true, combo: ['slashDown', 'slashUp', 'slashBig'], special: 'tomahawk', specialName: 'TOMAHAWK', cool: 5 },
+  scythe: { melee: true, cd: 0.42 / ATTACK_SPEED, reach: 34, height: 28, hit: 1.45, knock: 16, combo: ['slashDown', 'stab', 'slashBig'], special: 'reap', specialName: 'GRIM REAP', cool: 6 },
+  boomerang: { melee: false, cd: 0.42 / ATTACK_SPEED, hit: 0.8, knock: 12, speed: 230, pierce: 3, spin: true, boomerang: true, special: 'ricochet', specialName: 'BOOMERANG BARRAGE', cool: 5 }
 };
+// which existing animation set (anim.js STYLES) a type fights with
+export const STYLE_OF = { spear: 'staff', axe: 'sword', scythe: 'katana', boomerang: 'shuriken' };
 export const TYPE_LIST = Object.keys(TYPES);
 export const RECOVERY = 0.12 / ATTACK_SPEED; // extra pause after the last hit of a combo
 
