@@ -58,7 +58,7 @@ export function trainingSword() {
 export function hitDamage(w) {
   const T = TYPES[w.type],
     h = world.hero;
-  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
+  return refHP(w.home) * (w.standout ? STANDOUT_SHARE : share(w.q) * T.hit) * (w.boost || 1) * profMult(w.type) * (h && h.weapon === w ? lustMult(h) * comboMult(world.swarmCombo) : 1);
 }
 // relative strength in the current zone (for the HUD and auto-equip): damage per second
 export function dps(w) {
@@ -74,4 +74,15 @@ export const rarityName = w => RARITY[w.q].name;
 export function powerScore(w) {
   const bonus = {echo:1.18,seeker:1.3,eruption:1.28,orbit:1.3,cataclysm:1.45}[w.mutation] || 1;
   return dps(w) * bonus * (w.family ? 1.12 : 1);
+}
+
+// A new weapon is never a downgrade: any drop that rolls weaker than the one in your hand is pumped
+// up (w.boost) to match it, plus a little extra, so every pickup is worth a swing.
+export function noWeaker(w) {
+  const h = world.hero;
+  if (!w || !h || !h.weapon || h.weapon === w) return w;
+  const held = powerScore(h.weapon) / (lustMult(h) * comboMult(world.swarmCombo));
+  const mine = powerScore(w);
+  if (mine < held) w.boost = (w.boost || 1) * (held / mine) * (1 + Math.random() * 0.1);
+  return w;
 }

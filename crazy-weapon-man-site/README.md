@@ -87,7 +87,11 @@ damage dealt by each weapon and mastery gained. Bests are kept in localStorage
 (`crazyWeaponMan.speedrun.v1`).
 
 Every weapon has a quirk taken from its name (Rusty gives tetanus, Loose heads fly off, Bent weapons
-boomerang, Sad ones make foes weep). Common weapons trigger about every third hit; relics rarely.
+boomerang, Sad ones make foes weep, Rowdy ones pop confetti, Feral ones grow huge). Common weapons go off
+about every other hit and rarer ones still fire a third of the time, harder (`quirkPower`). A new drop
+is never weaker than the weapon in your hand: weaker rolls are boosted to match it (`noWeaker`).
+Each zone is the home of one weapon (`weapon` in `data/zones.js`): 40% of its drops and its map-clear
+gift are that weapon, and its residents and backdrop (`art-src/weapon_zones.py`) carry the theme.
 Weapon mastery is tracked per type, earned by kills and saved across runs: +1.5% damage per level, 20 levels.
 
 Keyboard: arrows/AD move, X/Alt jump, Z/Ctrl attack (hold for combos), C/Space special,

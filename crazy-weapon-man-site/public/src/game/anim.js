@@ -427,6 +427,7 @@ export function drawHeroAnimated(h, t) {
     X.save();
     X.translate(Math.round(wx), Math.round(wy));
     if (face < 0) X.scale(-1, 1);
+    if (h.giantT > 0) X.scale(2.4, 2.4);
     motion(w.look, t, k);
     if (w.look.adj === 'Sneaky' && Math.floor(t * 3) % 3 === 0) X.globalAlpha = 0.5;
     X.drawImage(R, -rr.c, -rr.c);

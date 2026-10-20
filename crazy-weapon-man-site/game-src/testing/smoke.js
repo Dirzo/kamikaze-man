@@ -4,7 +4,7 @@ import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
 import { spawnEnemy, updateEnemy, drawEnemy } from '../game/enemy.js';
 import { hitEnemy, hurtHero, dropWeapon } from '../game/combat.js';
-import { makeWeapon, dps } from '../game/loot.js';
+import { makeWeapon, dps, powerScore } from '../game/loot.js';
 import { updateDrops } from '../game/drops.js';
 import { updateEvolution, attackMutation, impactMutation } from '../game/evolution.js';
 import { startBoss, updateBoss, updateHazards, bossDone, clearBoss } from '../game/bosses.js';
@@ -214,7 +214,22 @@ export function runSmoke(game) {
     reset();let n=0;const h=world.hero;h.weapon=makeWeapon(0,{q:0,standout:false});
     const e=spawnEnemy('crawler',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e9;
     for(let i=0;i<400;i++){world.t+=1;if(quirkHit(h,e,1,1))n++;}
-    ok(n>80 && n<200,'common quirk rate off: '+n+'/400');
+    ok(n>160 && n<240,'common quirk rate off: '+n+'/400');
+    h.weapon=makeWeapon(9,{q:10,standout:true});n=0;
+    for(let i=0;i<400;i++){world.t+=1;if(quirkHit(h,e,1,1))n++;}
+    ok(n>80,'rare weapons stopped being quirky: '+n+'/400');
+  });
+  check('every new weapon comes with a quirk and is never weaker than the one in hand',()=>{
+    reset();const h=world.hero;
+    for(let z=0;z<10;z++){
+      h.weapon=makeWeapon(z,{q:Math.min(10,z+2),standout:z%3===0});
+      for(let i=0;i<30;i++){
+        const w=makeWeapon(z);ok(QUIRK_LIST.includes(w.quirk),'weapon without a quirk: '+w.name);
+        dropWeapon(h.x+90,h.y,w);
+        ok(powerScore(w)>=powerScore(h.weapon)*0.999,'a new drop was weaker than the held weapon in zone '+(z+1));
+      }
+      world.drops.length=0;
+    }
   });
   check('weapon mastery grows from kills, persists in storage and boosts damage',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'staff',q:0,standout:false});

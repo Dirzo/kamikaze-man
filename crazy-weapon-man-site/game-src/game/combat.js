@@ -4,7 +4,7 @@ import { C } from '../config.js';
 import { world, newId } from './world.js';
 import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel } from './fx.js';
 import { sfx } from '../engine/audio.js';
-import { makeWeapon } from './loot.js';
+import { makeWeapon, noWeaker } from './loot.js';
 import { cx, cy } from './physics.js';
 import { ELEMENTS } from '../data/weapons.js';
 import { LINES } from '../data/enemies.js';
@@ -211,6 +211,7 @@ export function kill(e, o = {}) {
 }
 
 export function dropWeapon(x, y, w) {
+  noWeaker(w);
   world.killsSinceDrop = 0;
   if (world.drops.length >= 8) world.drops.shift();
   world.drops.push({ id: newId(), x: x - 6, y: y - 6, w: 12, h: 8, vx: (Math.random() - 0.5) * 50, vy: -150, item: w, life: 40, t: 0 });
