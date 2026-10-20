@@ -9,7 +9,7 @@ import { xpToLevel, fmt } from '../data/curve.js';
 import { dps } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { mutationLabel, MUTATIONS } from '../data/progression.js';
-import { enemiesLeft, survivalLeft, swarmBossUp } from './waves.js';
+import { enemiesLeft, swarmBossUp } from './waves.js';
 import { COMBO, comboMult } from '../data/swarm.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
@@ -101,8 +101,8 @@ export function drawHud(t) {
   if (D) {
     if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
     else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
-    else if (D.phase === 'boss') sub = `${enemiesLeft()} LEFT - BOSS AT THE EXIT`;
-    else if (D.phase === 'survive') sub = swarmBossUp() ? 'BEAT THE SWARM BOSS' : 'SURVIVE THE SWARM';
+    else if (D.phase === 'arena') sub = 'MAP CLEAR - THE ARENA IS AT THE END >';
+    else if (D.phase === 'survive') sub = swarmBossUp() ? 'BEAT THE BOSS' : 'SURVIVE THE SWARM';
     else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
     else if (D.phase === 'forge') sub = 'ZONE CLEAR';
   }
@@ -128,11 +128,8 @@ export function drawHud(t) {
   bar(32, 48, 60, 3, lust / 100, C.pink);
   if (h.newToyT > 0) text('NEW TOY!', 98, 46, Math.floor(t * 6) % 2 ? C.pink : C.paper);
   // ---- survival countdown ----
-  if (D && D.phase === 'survive' && !swarmBossUp()) {
-    const s = Math.ceil(survivalLeft());
-    text(String(s), W / 2, 48, s <= 5 ? C.coral : C.cream, { align: 'center', k: 3 });
-    text('SURVIVE', W / 2, 74, C.mist, { align: 'center' });
-  }
+  // no countdown: the boss's arrival is meant to be a surprise
+  if (D && D.phase === 'survive' && !swarmBossUp()) text('SURVIVE!', W / 2, 50, Math.floor(t * 3) % 2 ? C.coral : C.cream, { align: 'center', k: 2 });
   // ---- swarm combo meter: drains while you're not hitting anything ----
   const cb = world.swarmCombo;
   if (D && D.phase === 'survive' && cb) {

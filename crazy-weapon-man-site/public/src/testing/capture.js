@@ -1,13 +1,16 @@
 // Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|swarm|results|ladder|late,
-// or ?capture=tour1..tour10 for a look at each zone's layout with its residents in place.
+// ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
+// ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
-import { startZone, updateWaves } from '../game/waves.js';
+import { startZone, updateWaves, startSurvival } from '../game/waves.js';
 import { updateEnemy } from '../game/enemy.js';
 import { spawnEnemy } from '../game/enemy.js';
 import { openForge } from '../game/forge.js';
 import { openInventory, stash } from '../game/inventory.js';
-import { startBoss } from '../game/bosses.js';
+import { startBoss, updateBoss, updateHazards, castMove } from '../game/bosses.js';
+import { SWARM_BOSSES } from '../data/swarm.js';
+import { ZONES } from '../data/zones.js';
 import { MOVES } from '../data/weapons.js';
 import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
@@ -17,6 +20,7 @@ export function captureScene(game, mode) {
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));
+  if(/^boss\d+$/.test(mode)) return bossFight(game,+mode.slice(4));
   game.snapshot(()=>{
     const z=mode==='late'?9:mode==='forge'?3:mode==='canyon'?0:1;
     startZone(z);world.wave=3;world.director={phase:'fight',toSpawn:0,bossStarted:mode==='late'};world.t=12;
@@ -39,6 +43,7 @@ export function captureScene(game, mode) {
     if(mode==='swarm') {
       h.attack=null;h.lust=70;h.newToyT=3;world.director={phase:'fight',t:0,bossStarted:true};
       for(const e of world.enemies) e.dead=true;
+      updateWaves(1/60);h.x=world.map.bossLeft+150;h.y=world.map.bossFloor-h.h; // map clear: into the arena
       for(let i=0;i<420;i++){world.t+=1/60;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
       world.director.t=0; // timer out: the zone's swarm boss arrives
       for(let i=0;i<90;i++){world.t+=1/60;h.inv=1;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
@@ -78,6 +83,26 @@ function tour(game,n) {
     h.x=spot.x-30;h.y=spot.y-h.h;h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type:'katana',q:3,standout:false});
     for(const e of world.enemies) e.spawnT=0;
     updateCamera(0,true);
+  });
+  document.documentElement.dataset.capture='ready';
+}
+
+// a zone's boss a moment after it crashed into the swarm, in the middle of its surprise
+function bossFight(game,n) {
+  game.snapshot(()=>{
+    const z=Math.max(0,Math.min(9,n-1)),m=(startZone(z),world.map),h=world.hero;
+    world.enemies.length=0;world.director.phase='fight';
+    h.lv=1+z*3;h.weapon=makeWeapon(z,{type:ZONES[z].weapon||'sword',q:Math.min(10,z+2),standout:false});
+    h.x=m.bossLeft+150;h.y=m.bossFloor-h.h;h.face=1;
+    startSurvival();
+    const step=()=>{world.t+=1/60;h.inv=1;updateWaves(1/60);updateHazards(1/60);for(const e of world.enemies) if(!e.dead) e.boss?updateBoss(e,1/60):updateEnemy(e,1/60);};
+    for(let i=0;i<300;i++) step();
+    world.director.t=Math.min(world.director.t,0.01);
+    for(let i=0;i<150 && !(world.boss && world.boss.onGround);i++) step();
+    const b=world.boss;
+    if(b) {b.spawnT=0;b.hp=b.max*0.6;castMove(b,ZONES[z].boss?b.D.surprise:SWARM_BOSSES[z].surprise);}
+    for(let i=0;i<48;i++) step();
+    h.inv=0;
   });
   document.documentElement.dataset.capture='ready';
 }

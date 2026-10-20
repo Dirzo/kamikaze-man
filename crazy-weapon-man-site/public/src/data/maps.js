@@ -160,7 +160,8 @@ function chambers(zone, lay) {
 function field(m, lay) {
   const width = lay.screens * W, T = lay.tiers, sp = 84, end = width - W;
   const [pw0, pw1] = lay.plat || [32, 56], [gp0, gp1] = lay.gaps || [28, 48];
-  const base = 150 + T * sp;
+  // peaks get sky above the summit so the boss arena isn't jammed under the HUD
+  const base = 150 + T * sp + (lay.peak ? 96 : 0);
   m.width = width;
   // ground: gentle hills, a staircase down, or flat; always long enough to walk comfortably
   const grounds = [];

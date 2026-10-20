@@ -13,19 +13,20 @@ import { kill } from './combat.js';
 import { overlap } from './physics.js';
 import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
-import { startBoss, bossDone, clearBoss } from './bosses.js';
+import { startBoss, bossDone, clearBoss, castMove, bossWarning } from './bosses.js';
 import { makeWeapon } from './loot.js';
 import { dropWeapon } from './combat.js';
 import { openForge, updateForge } from './forge.js';
 import { updateCamera } from './camera.js';
 import { splitZone } from './speedrun.js';
 import { refHP, refDmg } from '../data/curve.js';
-import { COMBO, SWARM_BOSS, SWARM_BOSSES } from '../data/swarm.js';
+import { COMBO, SWARM_BOSS, SWARM_BOSSES, BOSS_ARRIVES } from '../data/swarm.js';
 import { dropShards } from './combat.js';
 import { say } from './bubbles.js';
 
 export function startZone(z) {
   clearBoss();
+  world.boss=null;
   for(const key of ['echoes','shots','drops','pickups','enemies','bolts']) world[key].length=0;
   world.nearDrop=null;
   world.lock=null;
@@ -63,16 +64,14 @@ export function updateWaves(dt) {
       if(D.t<=0) D.phase='fight';
       break;
     case 'fight':
+      // map clear: the swarm, and the boss inside it, wait in the arena at the end of the map
       if(aliveResidents()===0) {
-        if(ZONES[world.zone].boss && !D.bossStarted) {
-          D.bossStarted=true;D.phase='boss';
-          music.play('boss:'+ZONES[world.zone].boss,bossSong(ZONES[world.zone].boss));
-          startBoss(ZONES[world.zone].boss);
-        } else startSurvival();
+        D.phase='arena';
+        callout('MAP CLEAR - TO THE ARENA >',W/2,64,C.gold,{big:true,life:120});
       }
       break;
-    case 'boss':
-      if(bossDone() && aliveResidents()===0) startSurvival();
+    case 'arena':
+      if(world.hero.x+world.hero.w/2>=world.map.bossLeft+8) startSurvival();
       break;
     case 'survive':
       updateSurvival(dt);
@@ -91,12 +90,15 @@ export function updateWaves(dt) {
   }
 }
 // ---------------------------------------------------------------- survival swarm
-export const SURVIVE = { time: z => 30 + z * 2, alive: z => Math.min(22, 12 + z), every: z => Math.max(0.22, 0.5 - z * 0.025), hp: 0.55 };
-function startSurvival() {
-  const D=world.director,h=world.hero;
-  D.phase='survive';D.t=SURVIVE.time(world.zone);D.spawnT=1;D.swarmKills=world.kills;D.sboss=null;D.sbossT=0;
-  updateCamera(0,true); // lock the screen the hero is standing in
-  world.lock={x0:Math.round(world.cameraX),x1:Math.round(world.cameraX)+W,y0:Math.round(world.cameraY),feet:h.y+h.h};
+export const SURVIVE = { alive: z => Math.min(22, 12 + z), every: z => Math.max(0.22, 0.5 - z * 0.025), hp: 0.55 };
+export function startSurvival() {
+  const D=world.director,h=world.hero,m=world.map;
+  // the boss shows up a few seconds in, at a moment you can't count down to
+  D.phase='survive';D.t=BOSS_ARRIVES.min+Math.random()*BOSS_ARRIVES.spread;D.warned=false;
+  D.spawnT=1;D.swarmKills=world.kills;D.sboss=null;D.sbossT=0;D.moveT=2;D.surprised=false;
+  updateCamera(0,true);
+  // the arena screen is locked; the boss fights inside the same walls
+  world.lock={x0:m.width-W,x1:m.width,y0:Math.max(0,Math.min(m.floorY-GROUND,m.bossFloor-GROUND+12)),feet:m.bossFloor};
   world.swarmCombo={n:0,t:0,best:0,lost:0};
   world.bolts.length=0;
   sfx.clear();
@@ -149,7 +151,7 @@ export function spawnSwarmBoss() {
   e.spawnT=0.9;
   D.sboss=e;D.sbossT=0;
   world.boss=e;
-  callout(B.name,W/2,104,C.gold,{big:true,life:140});
+  callout(B.name,W/2,60,C.gold,{big:true,life:140});
   say(e,B.line,2.4,true);
   shake(0.5);
   return e;
@@ -160,7 +162,7 @@ function updateSurvival(dt) {
   updateCombo(dt);
   const alive=world.enemies.filter(e=>!e.dead && !e.boss && !e.swarmBoss).length;
   const bossUp=!!D.sboss,cap=SURVIVE.alive(world.zone)*(bossUp?SWARM_BOSS.alive:1);
-  if(D.spawnT<=0 && alive<cap && !(bossUp && D.sboss.dead)) {
+  if(D.spawnT<=0 && alive<cap && !(bossUp && D.sboss.dead) && !(world.boss && world.boss.dead)) {
     D.spawnT=SURVIVE.every(world.zone)*(bossUp?SWARM_BOSS.every:1);
     const pool=enemyPool(world.zone,4,ZONES[world.zone].pool).filter(t=>ENEMIES[t].kind!=='mimic');
     const type=pool[Math.floor(Math.random()*pool.length)],[x,y]=swarmSpot(ENEMIES[type]);
@@ -171,11 +173,34 @@ function updateSurvival(dt) {
   h.x=Math.max(L.x0+2,Math.min(L.x1-2-h.w,h.x));
   for(const e of world.enemies) if(!e.dead && e.swarm) e.x=Math.max(L.x0,Math.min(L.x1-e.w,e.x));
   if(!bossUp) {
-    if(D.t<=0) spawnSwarmBoss() || endSurvival();
+    if(D.t<=BOSS_ARRIVES.warn && !D.warned) {
+      // the surprise: a themed rumble, then the boss crashes in
+      D.warned=true;
+      const z=world.zone,kind=ZONES[z].boss;
+      callout((kind?bossWarning(kind):SWARM_BOSSES[z%SWARM_BOSSES.length].warn)||'SOMETHING IS COMING...',W/2,92,C.coral,{big:true,life:100});
+      shake(0.6);sfx.enemyCast();
+    }
+    if(D.t<=0) bossArrives() || endSurvival();
     return;
   }
   D.sbossT+=dt;
-  if(D.sboss.dead) endSurvival();
+  const b=D.sboss;
+  if(b.swarmBoss && !b.dead && !(b.spawnT>0)) {
+    // swarm bosses fight with their zone's themed moves too, and pull a surprise at half health
+    const B=SWARM_BOSSES[world.zone%SWARM_BOSSES.length];
+    if(!D.surprised && b.hp<b.max/2) {D.surprised=true;castMove(b,B.surprise);D.moveT=2.5;}
+    if((D.moveT-=dt)<=0) {D.moveT=SWARM_BOSS.moveEvery*(b.hp<b.max/2?0.75:1);castMove(b,B.moves[Math.floor(Math.random()*B.moves.length)]);}
+  }
+  if(b.swarmBoss ? b.dead : bossDone()) endSurvival();
+}
+// the story boss of the zone if it has one, otherwise its swarm boss
+function bossArrives() {
+  const z=world.zone,kind=ZONES[z].boss,D=world.director;
+  if(!kind) return spawnSwarmBoss();
+  music.play('boss:'+kind,bossSong(kind));
+  startBoss(kind);
+  D.sboss=world.boss;D.sbossT=0;D.bossStarted=true;
+  return world.boss;
 }
 function endSurvival() {
   const D=world.director,h=world.hero,c=world.swarmCombo||{best:0};
@@ -202,7 +227,5 @@ function openExit() {
 }
 export function enemiesLeft() {
   if(!world.director) return 0;
-  const alive=world.enemies.filter(e=>!e.dead).length;
-  // Reserve the boss in the count from the start: "0 left" always means the map is really clear.
-  return alive+(ZONES[world.zone].boss && !world.director.bossStarted?1:0);
+  return world.enemies.filter(e=>!e.dead).length;
 }

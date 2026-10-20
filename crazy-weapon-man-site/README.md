@@ -50,9 +50,14 @@ regressions. New weapon powers belong in the mutation schedule, not a new script
 
 Each of the ten biomes is a finite map. Map 1 and the root and vault tunnels keep the offset descending chambers of Ant Tunnel; the others are MapleStory-style fields with wide ground, long one-way platforms stacked in tiers and a ladder hanging from each platform. Each field zone tunes the recipe (hills, a cave roof, a downhill run, a climb to a peak). Ladders end level with their platform, so climbing to the top stands you on it. Residents wander their platform peacefully until you come close or hit them. Their art (`art-src/cute_enemies.py`) gives each type its own colour, silhouette and prop. Layouts are seeded per zone, so routes are identical every run. `tests/map-reach.mjs` plays every map with the real collision code to prove every surface can be reached and left again; `node tools/map-overview.mjs out/` draws each whole layout to a PNG and `?capture=tour1`..`tour10` screenshots each zone in game. UP/DOWN climbs; jump plus direction dismounts onto shelves. Every map resident is
 placed once on entry. Undiscovered packs wait for you, and the minimap marks all remaining enemies.
-There are no timed waves or director respawns. Kill every resident (and the end-chamber boss on boss
-maps), then survive the swarm: the screen locks and enemies pour in until the timer runs out, then the
-zone's unique swarm boss arrives. Swarm hits build a combo (+1% damage per 5 hits, up to +30%) that
+There are no timed waves or director respawns. Kill every resident, then head into the arena on the
+last screen: it locks and the swarm (the bullet hell) pours in. A few seconds in, at a moment with no
+countdown, a themed warning rumbles and the zone's boss crashes into the swarm: the story boss on
+boss zones, a giant named resident elsewhere. The swarm keeps coming at half pace until the boss falls.
+Every boss fights with its zone's theme (`castMove` in `bosses.js`: sword graves, arrow storms, tides
+and skidding shells, smoke-bomb decoys, iai slashes you jump, avalanches, molten forge floors, cookie
+rain, wand-sparkle and shuriken rings) and pulls a themed surprise at each phase change (story bosses)
+or at half health (swarm bosses). `?capture=boss1`..`boss10` screenshots each one mid-surprise. Swarm hits build a combo (+1% damage per 5 hits, up to +30%) that
 drops when you go about two seconds without hitting anything; the best combo pays out shards. Walk into the unlocked portal for the Forge and the next map. A living enemy
 anywhere on the route keeps the exit locked. Summoned enemies also count toward completion.
 
@@ -60,7 +65,7 @@ The opening map starts with sword/dagger/bow and introduces geese farther along 
 maps introduce heavy weapons, katana, shuriken and finally nunchucks/wand. Elements, rarity ceilings
 and mutations follow the shared introduction schedule. Loot has seven-kill dry-drop protection.
 Maps have 28–55 initial residents distributed across ground and ledges; only nearby packs engage.
-Bosses stay in the last-screen chamber and their warnings/hazards use that chamber's world bounds.
+Bosses stay in the last-screen arena and their warnings/hazards use that arena's world bounds.
 
 | Earliest zone | Mutation | Behaviour |
 | --- | --- | --- |
@@ -72,7 +77,7 @@ Bosses stay in the last-screen chamber and their warnings/hazards use that chamb
 
 All mutations have distinct awakened sprites, never trigger recursive procs, and reset between runs.
 Bosses have warning frames, locked charges, three health phases and stronger late-fight patterns.
-Map clears lead to the survival swarm, then the Forge (healing/reforging for shards). There is no
+Map clears lead to the arena swarm and its boss, then the Forge (healing/reforging for shards). There is no
 free weapon draft and no auto-equip. Drops hover where they land and fly into the bag (E / B / Tab).
 Nothing is salvaged until all 24 slots are full; after that a better drop replaces the weakest
 unlocked weapon of its type (or the weakest unlocked weapon overall), and a worse one is salvaged.

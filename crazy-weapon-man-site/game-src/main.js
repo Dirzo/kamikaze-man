@@ -9,7 +9,7 @@ import { createHero, updateHero, drawHero } from './game/hero.js';
 import { updateEnemy, drawEnemy, updateBolts, drawBolts } from './game/enemy.js';
 import { updateShots, drawShots } from './game/shots.js';
 import { updateDrops, drawDrops } from './game/drops.js';
-import { updateWaves, startZone } from './game/waves.js';
+import { updateWaves, startZone, startSurvival } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
 import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
@@ -315,7 +315,6 @@ loadAssets(f => (loadFrac = f))
 // debug hooks for tests
 import { makeWeapon, hitDamage } from './game/loot.js';
 import { heroMaxHp } from './data/curve.js';
-import { startBoss } from './game/bosses.js';
 import { drawHeroAnimated } from './game/anim.js';
 import { TYPES as WTYPES, MOVES } from './data/weapons.js';
 // debug: contact sheet of every weapon style's poses -> data URL
@@ -390,9 +389,13 @@ const debug = {
     h.maxHp = h.hp = heroMaxHp(h.lv);
     h.weapon = makeWeapon(z, { q: Math.min(10, z + 1), type, standout: false });
     startZone(z);
-    if (boss && ZONES[z].boss) {
-      world.director.phase = 'boss';
-      startBoss(ZONES[z].boss);
+    if (boss) {
+      // straight into the arena swarm, with the boss about to arrive
+      for (const e of world.enemies) e.dead = true;
+      world.enemies.length = 0;
+      h.x = world.map.bossLeft + 40; h.y = world.map.bossFloor - h.h;
+      startSurvival();
+      world.director.t = 1.7;
     }
   }
 };
