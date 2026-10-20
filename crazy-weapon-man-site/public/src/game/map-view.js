@@ -3,6 +3,7 @@ import { W, H, GROUND, C } from '../config.js';
 import { world } from './world.js';
 import { A } from '../engine/assets.js';
 import { ZONES } from '../data/zones.js';
+import { roomAt } from '../data/maps.js';
 import { X, rect, text, textWidth, screenLayer, worldLayer } from '../engine/gfx.js';
 const visible=(x,y,w,h)=>x+w>=world.cameraX && x<=world.cameraX+W && y+h>=world.cameraY && y<=world.cameraY+H;
 export function drawMapBackdrop() {
@@ -53,9 +54,13 @@ export function drawMapExit(t) {
 }
 export function drawRouteHud() {
   const map=world.map;if(!map)return;
-  const h=world.hero, room=map.rooms.find(r=>h.x>=r.x && h.x<r.end);
-  text('MAP '+(world.zone+1)+'/10 - '+map.name+' / CHAMBER '+((room?.index||0)+1),8,216,C.mist);
-  const x=W-128,y=44,w=120,mh=58,sx=w/map.width,sy=mh/map.height;
+  const h=world.hero, room=roomAt(map,h.x+h.w/2,h.y+h.h)||world.lastRoom;
+  if(room)world.lastRoom=room;
+  const same=room?map.rooms.filter(r=>r.label===room.label):[];
+  text('MAP '+(world.zone+1)+'/10 - '+map.name+(room?' / '+room.label+(same.length>1?' '+(same.indexOf(room)+1):''):''),8,216,C.mist);
+  // the minimap keeps the map's real proportions: tall climbs read tall, long runs read long
+  const k=Math.min(120/map.width,58/map.height),w=Math.round(map.width*k),mh=Math.round(map.height*k);
+  const x=W-8-w,y=44,sx=k,sy=k;
   rect(x-3,y-3,w+6,mh+6,C.ink);rect(x-2,y-2,w+4,mh+4,C.stone);rect(x-1,y-1,w+2,mh+2,C.ink);
   rect(x,y,w,mh,C.night);
   for(const p of map.solids)rect(x+p.x*sx,y+p.y*sy,Math.max(2,p.w*sx),Math.max(1,p.h*sy),C.slate);

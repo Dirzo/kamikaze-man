@@ -160,7 +160,7 @@ export function drawHud(t) {
     const a = Math.min(1, (2.6 - D.t) * 4, D.t * 3);
     if (a > 0.1) {
       dither(0, 92, W, 50, C.ink, 11);
-      text(`ZONE ${world.zone + 1}`, W / 2, 98, C.gold, { align: 'center' });
+      text(`ZONE ${world.zone + 1}` + (world.map ? ` - ${world.map.title}` : ''), W / 2, 98, C.gold, { align: 'center' });
       text(Z.name, W / 2, 108, C.paper, { align: 'center', k: 2 });
       text(fitText(Z.sub, 460), W / 2, 128, C.mist, { align: 'center' });
     }

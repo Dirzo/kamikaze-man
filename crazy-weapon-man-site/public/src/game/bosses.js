@@ -93,7 +93,7 @@ export function startBoss(kind) {
     D,
     name: D.name,
     x: worldWidth() - 90,
-    y: -art.h,
+    y: world.map ? world.map.bossFloor - art.h - 160 : -art.h, // drops into the end chamber
     w: Math.round((art.w - 2) * 0.7),
     h: art.h - 4,
     vx: 0,
