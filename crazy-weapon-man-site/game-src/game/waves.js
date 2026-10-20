@@ -1,5 +1,5 @@
 // Finite map director: enter -> clear every resident -> boss (if any) -> survival swarm -> open exit
-// -> Forge. While exploring there are no timer spawns; the remaining count includes undiscovered
+// -> next zone. While exploring there are no timer spawns; the remaining count includes undiscovered
 // enemies. The swarm locks the screen and pours enemies in until its timer runs out, then the
 // zone's swarm boss arrives; beat it to open the exit. Hits during the swarm build a combo.
 import { W, GROUND, HERO, C } from '../config.js';
@@ -13,19 +13,21 @@ import { kill } from './combat.js';
 import { overlap } from './physics.js';
 import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
-import { startBoss, bossDone, clearBoss, castMove, bossWarning } from './bosses.js';
-import { makeWeapon } from './loot.js';
+import { startBoss, bossDone, clearBoss, castMove, bossWarning, bossHearts } from './bosses.js';
+import { clearAbilities } from './abilities.js';
+import { placeSecret } from './secrets.js';
+import { makeWeapon, steadyDps } from './loot.js';
 import { dropWeapon } from './combat.js';
-import { openForge, updateForge } from './forge.js';
 import { updateCamera } from './camera.js';
 import { splitZone } from './speedrun.js';
 import { refHP, refDmg } from '../data/curve.js';
-import { COMBO, SWARM_BOSS, SWARM_BOSSES, BOSS_ARRIVES } from '../data/swarm.js';
+import { COMBO, SWARM_BOSS, SWARM_BOSSES, BOSS_ARRIVES, BOSS_TOUGH } from '../data/swarm.js';
 import { dropShards } from './combat.js';
 import { say } from './bubbles.js';
 
 export function startZone(z) {
   clearBoss();
+  clearAbilities();
   world.boss=null;
   for(const key of ['echoes','shots','drops','pickups','enemies','bolts']) world[key].length=0;
   world.nearDrop=null;
@@ -34,6 +36,7 @@ export function startZone(z) {
   world.zone=z;
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
   world.map=makeMap(z);
+  placeSecret(z);
   world.lastRoom=null;
   world.platforms=world.map.platforms;
   world.cameraX=world.cameraY=0;
@@ -41,7 +44,7 @@ export function startZone(z) {
   if(h) {
     h.x=world.map.startX;h.y=world.map.startY-HERO.h;h.vx=h.vy=0;h.onGround=true;h.platform=null;
     h.attack=h.special=h.ladder=null;h.climbLock=0;h.trail=null;h.dashT=h.dropT=0;h.inv=Math.max(h.inv,1);
-    if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.3));
+    if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.6)); // a breather between maps
   }
   world.director={phase:'intro',t:2.6,toSpawn:0,initialCount:world.map.spawns.length,bossStarted:false};
   for(const spot of world.map.spawns) {
@@ -81,11 +84,8 @@ export function updateWaves(dt) {
       if(D.t<=0 && Math.abs(world.hero.x+world.hero.w/2-world.map.exitX)<24 && Math.abs(world.hero.y+world.hero.h-world.map.exitY)<20) {
         splitZone();
         if(world.zone+1>=ZONES.length) world.phase='won';
-        else {D.phase='forge';openForge();}
+        else startZone(world.zone+1);
       }
-      break;
-    case 'forge':
-      if(updateForge(dt)) startZone(world.zone+1);
       break;
   }
 }
@@ -145,7 +145,7 @@ export function spawnSwarmBoss() {
   e.scale=B.scale;e.swarm=e.swarmBoss=true;
   e.d={...d,range:d.range*(d.kind==='melee'||d.kind==='shield'||d.kind==='blink'?B.scale:1)};
   e.name=B.name;
-  e.max=e.hp=Math.round(refHP(z)*(z?SWARM_BOSS.hp:SWARM_BOSS.firstHp));
+  e.max=e.hp=Math.round(Math.max(refHP(z)*(z?SWARM_BOSS.hp:SWARM_BOSS.firstHp),steadyDps()*(z?BOSS_TOUGH.swarm:BOSS_TOUGH.first)));
   e.dmg=refDmg(z)*d.dmg*SWARM_BOSS.dmg;
   e.xp*=5;
   e.spawnT=0.9;
@@ -188,7 +188,7 @@ function updateSurvival(dt) {
   if(b.swarmBoss && !b.dead && !(b.spawnT>0)) {
     // swarm bosses fight with their zone's themed moves too, and pull a surprise at half health
     const B=SWARM_BOSSES[world.zone%SWARM_BOSSES.length];
-    if(!D.surprised && b.hp<b.max/2) {D.surprised=true;castMove(b,B.surprise);D.moveT=2.5;}
+    if(!D.surprised && b.hp<b.max/2) {D.surprised=true;castMove(b,B.surprise);bossHearts(b);D.moveT=2.5;}
     if((D.moveT-=dt)<=0) {D.moveT=SWARM_BOSS.moveEvery*(b.hp<b.max/2?0.75:1);castMove(b,B.moves[Math.floor(Math.random()*B.moves.length)]);}
   }
   if(b.swarmBoss ? b.dead : bossDone()) endSurvival();
@@ -221,9 +221,10 @@ function openExit() {
   world.bolts.length=0;
   sfx.clear();
   callout('MAP CLEAR - EXIT OPEN',W/2,64,C.gold,{big:true,life:120});
-  // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard)
+  // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard), already
+  // tuned for the next map so there is always something ready to carry on with
   const z=world.zone,home=ZONES[z].weapon;
-  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(z,{type:home,q:z===0?1:Math.min(10,z+1),standout:false}));
+  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:home,q:z===0?1:Math.min(10,z+1),standout:false}));
 }
 export function enemiesLeft() {
   if(!world.director) return 0;

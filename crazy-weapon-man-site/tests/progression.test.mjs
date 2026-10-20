@@ -6,6 +6,7 @@ import { TYPES, MOVES, RECOVERY } from '../game-src/data/weapons.js';
 import { activeWindow, attackBox, canAttack } from '../game-src/game/attack-rules.js';
 import { refHP, ENEMY_HP } from '../game-src/data/curve.js';
 import { ZONES } from '../game-src/data/zones.js';
+import { ABILITIES } from '../game-src/data/abilities.js';
 import { move } from '../game-src/game/physics.js';
 
 test('20,000 random drops obey introduction gates, including boss/elite rewards', () => {
@@ -16,8 +17,16 @@ test('20,000 random drops obey introduction gates, including boss/elite rewards'
     if(w.family) assert.ok(ELEMENT_UNLOCKS[w.family]<=zone);
     if(w.mutation) { const m=MUTATIONS[w.mutation]; assert.ok(m.zone<=zone && m.q<=w.q); }
     assert.ok(Number.isFinite(dps(w)) && dps(w)>0);
-    assert.ok(w.name.length<=40);
+    assert.ok(w.name.length<=90,w.name);
+    if(w.ability) assert.ok(ABILITIES[w.ability].clause.some(c=>w.name.endsWith(c)),w.name);
   }
+});
+test('names run longer at higher rarity, and rare weapons often carry an ability',()=>{
+  const ws=Array.from({length:3000},()=>makeWeapon(9,{boss:true}));
+  assert.ok(Math.max(...ws.map(w=>w.name.length))>55);
+  assert.ok(ws.every(w=>w.ability));
+  const commons=Array.from({length:500},()=>makeWeapon(0,{q:0,standout:false}));
+  assert.ok(commons.every(w=>!w.ability));
 });
 test('opening loot has three fundamentals and no elemental/mutation overload',()=>{
   assert.deepEqual(availableTypes(0),['sword','dagger','bow']);
@@ -27,7 +36,7 @@ test('opening loot has three fundamentals and no elemental/mutation overload',()
   assert.ok(enemyPool(0,4,ZONES[0].pool).includes('bombchicken'));
 });
 test('all powers eventually unlock; late-run pressure increases without unbounded hordes',()=>{
-  assert.equal(availableTypes(9).length,9); assert.equal(availableElements(9).length,10);
+  assert.equal(availableTypes(9).length,13); assert.equal(availableElements(9).length,10);
   assert.equal(availableMutations(9,10).length,5);
   assert.ok(waveBudget(9,4).count>waveBudget(0,1).count);
   assert.ok(waveBudget(9,4).interval<waveBudget(0,1).interval);

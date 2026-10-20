@@ -16,6 +16,7 @@ import { X, frame, rect } from '../engine/gfx.js';
 import { lookOf, frameOfLook, overlays, runEmitters, motion } from './looks.js';
 import { world } from './world.js';
 import { view } from '../engine/gfx.js';
+import { STYLE_OF } from '../data/weapons.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = {
@@ -149,7 +150,8 @@ const STYLES = {
     fireAt: 0.42
   }
 };
-export const fireAt = type => STYLES[type].fireAt || 0;
+const styleOf = type => STYLES[type] || STYLES[STYLE_OF[type]] || STYLES.sword;
+export const fireAt = type => styleOf(type).fireAt || 0;
 
 // nunchuck spin move: hand circles the shoulder, weapon whirls
 function spinPose(p, turns, big) {
@@ -159,7 +161,7 @@ function spinPose(p, turns, big) {
 
 // ---------------------------------------------------------------- which pose now
 export function heroPose(h, t) {
-  const st = STYLES[h.weapon.type];
+  const st = styleOf(h.weapon.type);
   const b = Math.floor(t * 1.6) % 2;
   let pose;
   if (h.dead || h.hurtT > 0) pose = { ...st.idle(t, 0), f: 'hurt', fh: [17, 15], bh: [0, 14], ang: st.idle(t, 0).ang - 40 };
@@ -290,6 +292,10 @@ function specialPose(h, st) {
     case 'vault':
       if (!s.down) return { f: 'jump', fh: [13, 20], ang: 90 };
       return s.slam ? { f: 'crouch', fh: [19, 21], ang: 30 } : { f: 'fall', fh: [12, 8], ang: -100 };
+    case 'skewer': // spear thrust held out in front for the whole charge
+      return { f: 'lean', fh: [19, 17], ang: 0 };
+    case 'reap': // scythe: wound back, then the full sweep
+      return keys([[0, { f: 'back', fh: [6, 10], ang: -175, wb: true, ab: true }], [0.5, { f: 'wide', fh: [18, 18], ang: 60 }, 'out'], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']], Math.min(1, T / 0.4));
     default:
       return st.idle(T, 0);
   }
@@ -398,7 +404,7 @@ export function drawHeroAnimated(h, t) {
   const sh = pose.sh || Hh.shoulders[pose.f] || Hh.shoulders.idle;
   const w = h.weapon,
     L = lookOf(w, frameOfLook(w.look, t)),
-    st = STYLES[w.type];
+    st = styleOf(w.type);
   // front hand; two-handed styles put the back hand on the handle
   const fh = W2(pose.fh[0], pose.fh[1]);
   const angW = face > 0 ? pose.ang : 180 - pose.ang; // world-space angle

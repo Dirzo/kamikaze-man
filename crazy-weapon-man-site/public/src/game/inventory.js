@@ -15,6 +15,7 @@ import { toast } from './progress.js';
 import { lustBoost } from './lust.js';
 import { drawHeroAnimated } from './anim.js';
 import { TYPE_LIST } from '../data/weapons.js';
+import { ABILITIES } from '../data/abilities.js';
 import { MUTATIONS } from '../data/progression.js';
 import { ELEMENTS } from '../data/weapons.js';
 import { QUIRKS } from '../data/quirks.js';
@@ -94,7 +95,7 @@ export function equipFromBag(i) {
 }
 
 export function openInventory() {
-  if (world.inv || world.forge || !world.hero || world.hero.dead) return false;
+  if (world.inv || !world.hero || world.hero.dead) return false;
   const first = world.bag.findIndex(Boolean);
   world.inv = { sel: Math.max(0, first), t: 0, msg: '', confirm: false, lastClick: -9 };
   world.bagNew = 0;
@@ -271,26 +272,31 @@ export function drawInventory(t) {
   text('LV ' + h.lv, sx + 36, sy + 12, C.paper);
   text(fmt(dps(w)) + ' DPS', sx + 36, sy + 22, C.gold);
   text(typeName(w.type), sx + 36, sy + 32, C.mist);
-  const nameLines = wrap(w.name, 180);
-  nameLines.forEach((l, i) => text(l, EQ.x + 10, EQ.y + 92 + i * 9, w.standout ? C.gold : rarityColour(w.q)));
+  const nameLines = wrap(w.name, 180).slice(0, 3);
+  nameLines.forEach((l, i) => text(l, EQ.x + 10, EQ.y + 90 + i * 9, w.standout ? C.gold : rarityColour(w.q)));
+  let ty = EQ.y + 90 + nameLines.length * 9;
   const q = QUIRKS[w.quirk];
-  if (q) text('QUIRK: ' + q.label, EQ.x + 10, EQ.y + 92 + nameLines.length * 9, C[q.col] || C.paper);
+  if (q) { text('QUIRK: ' + q.label, EQ.x + 10, ty, C[q.col] || C.paper); ty += 9; }
+  const ab = ABILITIES[w.ability];
+  if (ab) text('ABILITY: ' + ab.label, EQ.x + 10, ty, C[ab.col] || C.paper);
 
-  // weapon mastery (persists between runs)
-  const my = EQ.y + 116;
+  // weapon mastery (persists between runs), two columns so every type fits
+  const my = EQ.y + 138;
   rect(EQ.x + 6, my - 3, EQ.w - 12, 1, C.slate);
   text('WEAPON MASTERY', EQ.x + 10, my, C.gold);
   text('KEPT EVERY RUN', EQ.x + EQ.w - 10, my, C.fog, { align: 'right' });
+  const per = Math.ceil(TYPE_LIST.length / 2), colW = (EQ.w - 14) / 2;
   TYPE_LIST.forEach((type, i) => {
     const p = proficiency(type),
-      y = my + 11 + i * 10,
+      x = EQ.x + 7 + Math.floor(i / per) * colW,
+      y = my + 11 + (i % per) * 11,
       on = type === w.type;
-    if (on) rect(EQ.x + 7, y - 2, EQ.w - 14, 10, C.slate);
-    text(typeName(type), EQ.x + 10, y, on ? C.cream : C.mist);
-    text('LV' + p.lv, EQ.x + 74, y, p.lv >= PROF_MAX ? C.gold : C.paper);
+    if (on) rect(x, y - 2, colW - 2, 10, C.slate);
+    text(typeName(type), x + 2, y, on ? C.cream : C.mist);
+    text('LV' + p.lv, x + colW - 4, y, p.lv >= PROF_MAX ? C.gold : C.paper, { align: 'right' });
     const frac = p.lv >= PROF_MAX ? 1 : p.xp / profToNext(p.lv);
-    bar(EQ.x + 98, y + 2, 50, frac, p.lv >= PROF_MAX ? C.gold : C.sky);
-    text('+' + Math.round(p.lv * PROF_DMG * 1000) / 10 + '%', EQ.x + EQ.w - 9, y, C.lime, { align: 'right' });
+    rect(x + 2, y + 8, colW - 8, 1, C.night);
+    rect(x + 2, y + 8, Math.round((colW - 8) * Math.max(0, Math.min(1, frac))), 1, p.lv >= PROF_MAX ? C.gold : C.sky);
   });
 
   // ---- INVENTORY ----
@@ -328,10 +334,10 @@ export function drawInventory(t) {
     if (it.mutation) extras.push(MUTATIONS[it.mutation].label);
     text(extras.length ? extras.join('  ') : 'NO ELEMENT', tx, dy + 32, it.mutation ? C.gold : C.fog);
     const qq = QUIRKS[it.quirk];
-    if (qq) {
-      text('QUIRK: ' + qq.label, tx, dy + 42, C[qq.col] || C.paper);
-      text(fitText(qq.desc, INV.w - 30), tx, dy + 51, C.mist);
-    }
+    const ia = ABILITIES[it.ability];
+    if (qq) text('QUIRK: ' + qq.label, tx, dy + 42, C[qq.col] || C.paper);
+    if (ia) text('ABILITY: ' + ia.label, INV.x + INV.w - 12, dy + 42, C[ia.col] || C.paper, { align: 'right' });
+    if (ia || qq) text(fitText((ia || qq).desc, INV.w - 30), tx, dy + 51, C.mist);
     const p = proficiency(it.type);
     text(`${typeName(it.type)} MASTERY LV ${p.lv} ${profRank(p.lv)}`, tx, dy + 61, C.sky);
   }

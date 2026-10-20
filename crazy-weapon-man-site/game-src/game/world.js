@@ -36,7 +36,6 @@ export function resetWorld() {
     cameraX: 0,
   cameraY: 0,
     hero: null,
-    forge: null,
     nearDrop: null,
     deadT: 0,
     killsSinceDrop: 0,
@@ -61,6 +60,8 @@ export function resetWorld() {
     boss: null,
     kills: 0,
     shards: 0,
+    secret: null, // this map's easter egg (secrets.js)
+    secretsFound: 0,
     best: null,
     toasts: [],
     phase: 'play'

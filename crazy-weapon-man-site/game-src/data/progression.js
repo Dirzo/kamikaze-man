@@ -1,8 +1,9 @@
-// The run's introduction schedule. All random loot, the Forge and the director use these gates.
+// The run's introduction schedule. All random loot and the director use these gates.
 // One new idea at a time: basic weapons -> finishers -> elements -> build-defining mutations.
 export const TYPE_UNLOCKS = {
   sword: 0, dagger: 0, bow: 0, hammer: 1, staff: 1, katana: 2,
-  nunchucks: 2, shuriken: 3, wand: 4
+  nunchucks: 2, shuriken: 3, wand: 4,
+  spear: 1, axe: 2, boomerang: 3, scythe: 5
 };
 export const ELEMENT_UNLOCKS = {
   fire: 1, ice: 1, poison: 2, water: 2, lightning: 3, earth: 3,

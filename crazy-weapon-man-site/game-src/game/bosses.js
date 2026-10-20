@@ -8,7 +8,8 @@ import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { refHP, refDmg } from '../data/curve.js';
 import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
-import { makeWeapon } from './loot.js';
+import { makeWeapon, steadyDps } from './loot.js';
+import { BOSS_TOUGH } from '../data/swarm.js';
 import { spawnEnemy } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
@@ -88,6 +89,10 @@ const BOSSES = {
 export const bossWarning = kind => BOSSES[kind]?.warn;
 
 const bossFloor=()=>world.map?.bossFloor??worldFloor();
+// long boss fights shake loose a couple of hearts at each turning point (phase change / half health)
+export function bossHearts(e) {
+  for (let i = 0; i < 2; i++) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: e.y + 6, vx: (i ? 1 : -1) * (50 + Math.random() * 40), vy: -170, life: 14 });
+}
 const hazards = [];
 let boss = null,
   done = false,
@@ -97,7 +102,7 @@ export function startBoss(kind) {
   const D = BOSSES[kind],
     art = A.bosses[kind],
     z = world.zone;
-  const hp = refHP(z) * 14;
+  const hp = Math.round(Math.max(refHP(z) * 14, steadyDps() * BOSS_TOUGH.story));
   done = false;
   outroT = 0;
   hazards.length = 0;
@@ -118,7 +123,7 @@ export function startBoss(kind) {
     face: -1,
     hp,
     max: hp,
-    dmg: refDmg(z) * 1.5,
+    dmg: refDmg(z) * 0.5,
     state: 'enter',
     st: 1.2,
     stun: 0,
@@ -174,6 +179,7 @@ export function updateBoss(e, dt) {
     shake(0.5);
     hitstop(0.1);
     if (D.surprise) castMove(e, D.surprise);
+    bossHearts(e);
     e.state = 'idle';
     e.st = 1.1;
   }

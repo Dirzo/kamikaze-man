@@ -9,6 +9,7 @@ import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { toast } from './progress.js';
 import { ZONES } from '../data/zones.js';
 import { TYPE_LIST } from '../data/weapons.js';
+import { SECRETS } from './secrets.js';
 import { proficiency, profToNext, PROF_MAX } from '../data/proficiency.js';
 import { clock, delta, shortDelta, records, recordSplit, recordClear } from '../data/speedrun.js';
 import { fmt } from '../data/curve.js';
@@ -117,7 +118,7 @@ export function drawResults(won, T, t) {
   if (!rows.length && T >= 1.2) text('NO ZONE CLEARED', lx, 92, C.fog);
   const sy = 200;
   rect(lx, sy - 4, lw, 1, C.slate);
-  [['KILLS', fmt(world.kills)], ['LEVEL', String(h ? h.lv : 1)], ['SHARDS', fmt(world.shards)]].forEach(([a, b], i) => {
+  [['KILLS', fmt(world.kills)], ['LEVEL', String(h ? h.lv : 1)], ['SECRETS', `${world.secretsFound || 0}/${SECRETS.length}`]].forEach(([a, b], i) => {
     text(a, lx + i * 64, sy, C.mist);
     text(b, lx + i * 64, sy + 10, C.paper, { k: 1 });
   });

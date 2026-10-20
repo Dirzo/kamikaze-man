@@ -1,12 +1,14 @@
-// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|forge|bag|swarm|results|ladder|late,
+// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late,
+// ?capture=secret1..secret10 for where each map hides its easter egg,
 // ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
 // ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
-import { updateEnemy } from '../game/enemy.js';
+import { updateEnemy, updateBolts } from '../game/enemy.js';
+import { fireTrait } from '../game/traits.js';
+import { ENEMIES } from '../data/enemies.js';
 import { spawnEnemy } from '../game/enemy.js';
-import { openForge } from '../game/forge.js';
 import { openInventory, stash } from '../game/inventory.js';
 import { startBoss, updateBoss, updateHazards, castMove } from '../game/bosses.js';
 import { SWARM_BOSSES } from '../data/swarm.js';
@@ -20,12 +22,13 @@ export function captureScene(game, mode) {
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));
+  if(/^secret\d+$/.test(mode)) return secret(game,+mode.slice(6));
   if(/^boss\d+$/.test(mode)) return bossFight(game,+mode.slice(4));
   game.snapshot(()=>{
-    const z=mode==='late'?9:mode==='forge'?3:mode==='canyon'?0:1;
+    const z=mode==='late'?9:mode==='canyon'?0:1;
     startZone(z);world.wave=3;world.director={phase:'fight',toSpawn:0,bossStarted:mode==='late'};world.t=12;
     world.enemies=[];
-    const room=world.map.rooms[mode==='late'?world.map.rooms.length-1:mode==='depths'?2:mode==='canyon'||mode==='forge'?0:1];
+    const room=world.map.rooms[mode==='late'?world.map.rooms.length-1:mode==='depths'?2:mode==='canyon'?0:1];
     const offset=mode==='late'?world.map.width-480:room.x+60;
     world.cameraX=offset;
     // stand everyone on whatever floor is under them: layouts are rarely flat for a whole screen
@@ -39,7 +42,6 @@ export function captureScene(game, mode) {
     for(const [type,x] of [['crawler',234],['goose',298],['wizard',388],['shieldbro',72]]){
       const e=spawnEnemy(type,offset+x,floorAt(offset+x,floor),{elite:type==='shieldbro',wave:3});e.spawnT=0;if(type==='crawler'){e.flash=0.1;e.faceUntil=world.t+.4;e.funnyFace=0;e.hp=e.max*0.4;}
     }
-    if(mode==='forge') {openForge();world.forge.t=1;}
     if(mode==='swarm') {
       h.attack=null;h.lust=70;h.newToyT=3;world.director={phase:'fight',t:0,bossStarted:true};
       for(const e of world.enemies) e.dead=true;
@@ -65,9 +67,18 @@ export function captureScene(game, mode) {
       R.prevBest=1530;world.phase='won';
       game.results(true,99);world.run.prevBest=1530;world.run.newBest=true;
     }
+    if(/^traits\d$/.test(mode)) {
+      // every alerted trick in flight, a row of residents at a time (traits1..traits3)
+      const types=Object.keys(ENEMIES).filter(k=>ENEMIES[k].alert),n=+mode.slice(6)-1,row=types.slice(n*9,n*9+9);
+      world.enemies=[];h.attack=null;h.x=offset+440;h.y=floor-h.h;h.inv=99;
+      row.forEach((type,i)=>{const e=spawnEnemy(type,offset+24+i*44,ENEMIES[type].air?floor-50:floorAt(offset+24+i*44,floor),{wave:3});e.spawnT=0;e.calm=false;e.face=1;e.hoverY=e.y;});
+      for(const e of world.enemies) fireTrait(e);
+      for(let i=0;i<20;i++){world.t+=1/60;updateBolts(1/60);}
+      h.inv=0;
+    }
     if(mode==='bag') {
-      h.attack=null;
-      for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) stash(makeWeapon(z,{type,q,standout}));
+      h.attack=null;h.weapon=makeWeapon(z,{type:'scythe',q:6,standout:true});
+      for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['spear',4,false],['axe',2,false],['boomerang',3,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) stash(makeWeapon(z,{type,q,standout}));
       world.bag[1].locked=true;openInventory();world.inv.sel=1;
     }
   });
@@ -81,6 +92,19 @@ function tour(game,n) {
     startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};world.t=12;
     const m=world.map,spot=m.spawns[Math.floor(m.spawns.length*0.35)],h=world.hero;
     h.x=spot.x-30;h.y=spot.y-h.h;h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type:'katana',q:3,standout:false});
+    for(const e of world.enemies) e.spawnT=0;
+    updateCamera(0,true);
+  });
+  document.documentElement.dataset.capture='ready';
+}
+
+// where each map's easter egg hides (secret1..secret10): the hero a few steps away from it
+function secret(game,n) {
+  game.snapshot(()=>{
+    const z=Math.max(0,Math.min(9,n-1));
+    startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};world.t=12;
+    const s=world.secret,h=world.hero;
+    const on=x=>world.map.platforms.some(p=>p.y===s.y+s.h && x>=p.x && x<=p.x+p.w);h.x=on(s.x-36)?s.x-36:s.x+40;h.y=s.y+s.h-h.h;h.inv=0;h.face=Math.sign(s.x-h.x);
     for(const e of world.enemies) e.spawnT=0;
     updateCamera(0,true);
   });

@@ -8,13 +8,14 @@ import { world, resetWorld } from './game/world.js';
 import { createHero, updateHero, drawHero } from './game/hero.js';
 import { updateEnemy, drawEnemy, updateBolts, drawBolts } from './game/enemy.js';
 import { updateShots, drawShots } from './game/shots.js';
+import { updateAbilities, drawAbilities } from './game/abilities.js';
+import { updateSecret, drawSecret } from './game/secrets.js';
 import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone, startSurvival } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
 import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
-import { drawForge } from './game/forge.js';
 import { updateInventory, drawInventory, toggleInventory, closeInventory } from './game/inventory.js';
 import { ZONES, TITLE_MUSIC } from './data/zones.js';
 import { rarityColour } from './game/looks.js';
@@ -80,14 +81,8 @@ function update(dt) {
     scene = 'pause';
     return;
   }
-  if (input.take('inv') && !world.forge && world.phase === 'play') {
+  if (input.take('inv') && world.phase === 'play') {
     toggleInventory();
-    return;
-  }
-  if (world.forge) {
-    updateWaves(dt);
-    updateFx(dt);
-    tickToasts(dt);
     return;
   }
   if (feel.stop > 0) {
@@ -95,13 +90,15 @@ function update(dt) {
     return; // hit-stop: the world holds its breath
   }
   world.t += dt;
-  if (!world.forge) updateHero(world.hero, dt);
+  updateHero(world.hero, dt);
   updateLust(world.hero, dt);
   for (const e of world.enemies) e.boss ? updateBoss(e, dt) : updateEnemy(e, dt);
   world.enemies = world.enemies.filter(e => !e.dead || e.deathT > 0);
   if (world.boss && world.boss.dead && world.boss.deathT <= 0) world.boss = null;
   updateEvolution(dt);
   updateShots(dt);
+  updateAbilities(dt);
+  updateSecret(dt);
   updateBolts(dt);
   updateHazards(dt);
   updateDrops(dt);
@@ -145,6 +142,7 @@ function drawWorld(t) {
   drawMapBackdrop();
   for (const p of world.platforms) if(p.x+p.w>=world.cameraX && p.x<=world.cameraX+W && p.y>=world.cameraY-32 && p.y<=world.cameraY+H) drawSlab(Z.id, p);
   drawMapExit(t);
+  drawSecret(t);
   drawDrops(t);
   drawHazards(t);
   for (const e of world.enemies) if (e.dead) e.boss ? drawBoss(e, t) : drawEnemy(e, t);
@@ -154,6 +152,7 @@ function drawWorld(t) {
   drawSlash(world.hero);
   drawHero(world.hero, t);
   drawShots(t);
+  drawAbilities(t);
   drawParticles();
   drawSparks();
   drawNumbers();
@@ -213,7 +212,6 @@ function render() {
   drawWorld(world.t);
   drawHud(world.t);
   drawRouteHud();
-  drawForge(world.t);
   drawInventory(clock);
   if (scene === 'pause') drawPause();
   if (scene === 'over') drawResults(false, sceneT, clock);

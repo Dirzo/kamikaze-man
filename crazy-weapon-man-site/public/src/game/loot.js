@@ -5,6 +5,7 @@ import { refHP, share, STANDOUT_SHARE, standoutChance } from '../data/curve.js';
 
 import { maxRarity, availableTypes, availableElements, availableMutations } from '../data/progression.js';
 import { quirkFor } from '../data/quirks.js';
+import { rollAbility } from '../data/abilities.js';
 import { profMult } from '../data/proficiency.js';
 import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
@@ -35,8 +36,9 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
   const mutation = mutations.length && (boss || r() < 0.18 + q * 0.025) ? mutations[Math.floor(r() * mutations.length)] : null;
   if (standout == null) standout = r() < standoutChance(zone);
   // standouts are named one tier grander, but never beyond what the zone allows
-  const { name, look } = nameWeapon(type, q, family, standout, r, Math.min(10, maxQ(zone) + 1));
-  return { uid: uid++, type, q, family, mutation, standout, home: zone, name, look, quirk: quirkFor(look, r) };
+  const ability = rollAbility(q, { standout, boss }, r);
+  const { name, look } = nameWeapon(type, q, family, standout, r, Math.min(10, maxQ(zone) + 1), ability);
+  return { uid: uid++, type, q, family, mutation, standout, home: zone, name, look, quirk: quirkFor(look, r), ability };
 }
 
 export function trainingSword() {
@@ -89,4 +91,11 @@ export function noWeaker(w) {
   const mine = powerScore(w);
   if (mine < held) w.boost = (w.boost || 1) * (held / mine) * (1 + Math.random() * 0.1);
   return w;
+}
+
+// the held weapon's damage per second without the moment-to-moment Weapon Lust and combo bonuses:
+// what bosses measure the hero by when they arrive
+export function steadyDps() {
+  const h = world.hero;
+  return h && h.weapon ? dps(h.weapon) / (lustMult(h) * comboMult(world.swarmCombo)) : 0;
 }
