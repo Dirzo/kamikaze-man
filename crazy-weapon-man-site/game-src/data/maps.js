@@ -13,14 +13,14 @@ import { ZONES } from './zones.js';
 
 export const LAYOUTS = [
   { style: 'chambers', title: 'ANT TUNNEL', label: 'CHAMBER' },
-  { style: 'field', title: 'ARCHERY GLADE', label: 'GLADE', screens: 8, tiers: 3, hills: true },
-  { style: 'field', title: 'SEA CAVES', label: 'GROTTO', screens: 8, tiers: 2, descend: true, cave: true, plat: [22, 44] },
-  { style: 'field', title: 'MARKET ROOFTOPS', label: 'STALL', screens: 8, tiers: 3, cave: true, plat: [36, 64], gaps: [14, 28] },
-  { style: 'field', title: 'CHERRY PAGODA', label: 'STOREY', screens: 3, tiers: 7, peak: true, plat: [16, 30], gaps: [10, 20] },
-  { style: 'field', title: 'MONASTERY STEPS', label: 'TERRACE', screens: 6, tiers: 5, hills: true, peak: true },
-  { style: 'field', title: 'FORGE CATWALKS', label: 'CATWALK', screens: 9, tiers: 3, plat: [14, 26], gaps: [10, 18] },
+  { style: 'field', title: 'ARCHERY GLADE', label: 'GLADE', screens: 8, tiers: 2, hills: true },
+  { style: 'field', title: 'SEA CAVES', label: 'GROTTO', screens: 8, tiers: 2, descend: true, cave: true, plat: [28, 48] },
+  { style: 'field', title: 'MARKET ROOFTOPS', label: 'STALL', screens: 8, tiers: 2, cave: true, plat: [36, 64], gaps: [28, 44] },
+  { style: 'field', title: 'CHERRY PAGODA', label: 'STOREY', screens: 3, tiers: 5, peak: true, plat: [20, 34], gaps: [16, 28] },
+  { style: 'field', title: 'MONASTERY STEPS', label: 'TERRACE', screens: 6, tiers: 4, hills: true, peak: true },
+  { style: 'field', title: 'FORGE CATWALKS', label: 'CATWALK', screens: 9, tiers: 2, plat: [20, 34], gaps: [20, 32] },
   { style: 'chambers', title: 'ROOT TUNNELS', label: 'BURROW' },
-  { style: 'field', title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 9, tiers: 4, cave: true },
+  { style: 'field', title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 9, tiers: 3, cave: true },
   { style: 'chambers', title: 'VAULT TUNNELS', label: 'VAULT' }
 ];
 
@@ -159,7 +159,7 @@ function chambers(zone, lay) {
 // reached from the highest tier.
 function field(m, lay) {
   const width = lay.screens * W, T = lay.tiers, sp = 84, end = width - W;
-  const [pw0, pw1] = lay.plat || [28, 56], [gp0, gp1] = lay.gaps || [12, 34];
+  const [pw0, pw1] = lay.plat || [32, 56], [gp0, gp1] = lay.gaps || [28, 48];
   const base = 150 + T * sp;
   m.width = width;
   // ground: gentle hills, a staircase down, or flat; always long enough to walk comfortably
@@ -242,28 +242,40 @@ function finish(m, zone, lay) {
   for (const r of m.rooms) { r.end = Math.min(r.end, width); r.w = r.end - r.x; }
   const blocked = (x, y) => m.solids.some(p => x + 8 > p.x && x - 8 < p.x + p.w && y - 24 < p.y + p.h && y - 1 > p.y);
   const roofAbove = (x, y) => Math.max(0, ...m.solids.filter(p => x + 8 > p.x && x - 8 < p.x + p.w && p.y + p.h <= y - 1).map(p => p.y + p.h));
-  // spread residents evenly along every walkable surface, in route order
+  // residents gather in small packs spread along the route; members stand a body apart so no two
+  // overlap, and a pack never spills off its platform
+  const GAP = 24;
   const spans = [];
   for (const p of m.platforms) {
     if (!(p.ground || p.hunt) || p.w < 40) continue;
     let left = Math.max(p.x + 14, 70), right = Math.min(p.x + p.w - 14, width - 70);
     if (Math.abs(p.y - m.start.y) < 4 && p.x <= m.start.x) left = Math.max(left, m.start.x + 170);
-    if (right - left >= 8) spans.push({ p, left, right });
+    if (right - left >= GAP * 3) spans.push({ p, left, right });
   }
   spans.sort((a, b) => a.p.room - b.p.room || a.p.y - b.p.y || a.left - b.left);
   const total = spans.reduce((s, q) => s + q.right - q.left, 0), count = 28 + zone * 3, spawns = [];
-  for (let i = 0; i < count; i++) {
-    let pos = (i + 0.5) / count * total, q = spans[0];
+  const packs = [];
+  for (let left = count; left > 0; ) {
+    const n = Math.min(left, m.int(3, zone >= 5 ? 5 : 4));
+    packs.push(n);
+    left -= n;
+  }
+  for (const [k, n] of packs.entries()) {
+    let pos = (k + 0.5) / packs.length * total, q = spans[0];
     for (q of spans) { if (pos <= q.right - q.left) break; pos -= q.right - q.left; }
-    let sx = Math.round(Math.min(q.right, q.left + pos));
-    // slide off any wall or doorframe standing on the surface
-    for (let d = 8, x0 = sx; blocked(sx, q.p.y) && d < q.right - q.left; d += 8)
-      sx = [x0 + d, x0 - d].find(v => v >= q.left && v <= q.right && !blocked(v, q.p.y)) ?? sx;
-    const roof = roofAbove(sx, q.p.y);
-    spawns.push({
-      x: sx, y: q.p.y, airY: Math.max(roof + 18, q.p.y - 65), section: Math.floor(sx / W), room: q.p.room,
-      wave: Math.min(4, 1 + Math.floor(q.p.room * 4 / m.rooms.length)), elite: zone > 0 && i > 0 && i % 9 === 0
-    });
+    const gap = Math.min(GAP, (q.right - q.left) / Math.max(1, n - 1)), half = (n - 1) * gap / 2;
+    const mid = Math.max(q.left + half, Math.min(q.right - half, q.left + pos));
+    for (let j = 0; j < n; j++) {
+      let sx = Math.round(mid - half + j * gap);
+      // slide off any wall or doorframe standing on the surface
+      for (let d = 8, x0 = sx; blocked(sx, q.p.y) && d < q.right - q.left; d += 8)
+        sx = [x0 + d, x0 - d].find(v => v >= q.left && v <= q.right && !blocked(v, q.p.y)) ?? sx;
+      const roof = roofAbove(sx, q.p.y), i = spawns.length;
+      spawns.push({
+        x: sx, y: q.p.y, airY: Math.max(roof + 18, q.p.y - 65), section: Math.floor(sx / W), room: q.p.room, pack: k,
+        wave: Math.min(4, 1 + Math.floor(q.p.room * 4 / m.rooms.length)), elite: zone > 0 && i > 0 && i % 9 === 0
+      });
+    }
   }
   return {
     name: ZONES[zone].name, style: lay.style, title: lay.title, width, height, floorY, rooms: m.rooms,

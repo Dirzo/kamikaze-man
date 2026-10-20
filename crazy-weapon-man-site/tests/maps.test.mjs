@@ -100,3 +100,14 @@ test('camera tracks the route and never reveals space outside the map',()=>{
     assert.equal(cameraTarget(m.width+500,m.width),m.width-W);
   }
 });
+
+test('field residents come in packs of 3-5 that stand a body apart', () => {
+  for (let z = 0; z < 10; z++) {
+    if (LAYOUTS[z].style !== 'field') continue;
+    const m = makeMap(z), packs = new Map();
+    for (const s of m.spawns) packs.set(s.pack, [...(packs.get(s.pack) || []), s]);
+    assert.ok([...packs.values()].filter(p => p.length >= 3).length >= packs.size - 1, 'zone ' + (z + 1) + ' has stragglers');
+    for (const a of m.spawns) for (const b of m.spawns)
+      if (a !== b && a.y === b.y) assert.ok(Math.abs(a.x - b.x) >= 20, 'residents overlap in zone ' + (z + 1));
+  }
+});

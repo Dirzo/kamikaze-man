@@ -240,6 +240,11 @@ function wander(e, dt, slow) {
   // turn around at the platform edge instead of pressing into it
   const p = e.platform;
   if (!e.air && p && ((e.vx < 0 && e.x < p.x + 6) || (e.vx > 0 && e.x + e.w > p.x + p.w - 6))) { e.wanderDir *= -1; e.vx = 0; }
+  // packs mill about their own spot and give each other room instead of piling into one blob
+  if (e.homeX == null) e.homeX = e.x;
+  if ((e.vx < 0 && e.x < e.homeX - 28) || (e.vx > 0 && e.x > e.homeX + 28)) { e.wanderDir *= -1; e.vx = 0; }
+  const dir = Math.sign(e.vx);
+  if (dir && world.enemies.some(n => n !== e && !n.dead && n.calm && Math.abs(cy(n) - cy(e)) < 12 && Math.sign(cx(n) - cx(e)) === dir && Math.abs(cx(n) - cx(e)) < (n.w + e.w) / 2 + 4)) { e.wanderDir = -dir; e.vx = 0; }
 }
 function think(e, dt, dxh, dist, toward, slow) {
   const d = e.d,
