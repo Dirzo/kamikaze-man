@@ -1,6 +1,7 @@
 // The POWERS window on the overworld (E / B / Tab, or the Bag button): three tabs over the map.
 //   SHARD TREE  a web of linked nodes: invest banked shards in a rank (ENTER), take back the last
-//               rank (U), refund everything (Q). The right panel shows the picked node.
+//               rank (U), refund everything (Q), change specialization (G, twice). The right panel
+//               shows the picked node.
 //   MASTERY     a night sky of weapon constellations. Open one (ENTER) to pick its perk stars, one of
 //               two at each step of the road to mastery level 100. Q goes back to the sky.
 //   TROPHIES    the ten family heads' trophies and the perks they gave you
@@ -16,7 +17,7 @@ import { fmt } from '../data/curve.js';
 import { FAMILIES } from '../data/families.js';
 import { bossName } from './bosses.js';
 import {
-  meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy,
+  meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, CLASSES, weaponLock, setLock,
   MASTERY_TIERS, masteryPerk, perkChoice, choosePerk, tiersOpen, unpicked
 } from '../data/meta.js';
 
@@ -59,6 +60,20 @@ function undo() {
   if (!id) return say('NOTHING TO UNDO');
   P.tree.sel = id;
   say(`${TREE_BY_ID[id].name} BACK TO RANK ${rank(id)}`, true);
+}
+// the specialization: G (or a button) picks one, then ENTER (or the same button again) locks it in
+const LOCKS = [null, 'blades', 'blunt', 'ranged'];
+function pendLock(c) {
+  P.lockPend = c;
+  if (c === weaponLock()) say(c ? `ALREADY A ${CLASSES[c].name} SPECIALIST` : 'NO LOCK: EVERY WEAPON DROPS');
+  else say(c ? `ENTER: ONLY ${CLASSES[c].name} DROP. THE REST, AND YOUR BAG'S, MELT INTO SHARDS` : 'ENTER: DROP THE LOCK, EVERY WEAPON DROPS AGAIN');
+}
+function chooseLock(c) {
+  if (P.lockPend !== c) return pendLock(c);
+  P.lockPend = undefined;
+  if (c === weaponLock()) return;
+  setLock(c);
+  say(c ? `${CLASSES[c].name} SPECIALIST! ITS CLUSTER IS OPEN` : 'LOCK OFF. EVERY WEAPON DROPS AGAIN', true);
 }
 function refundAll() {
   if (!P.confirm) {
@@ -104,9 +119,10 @@ export function updatePowers(dt) {
   if (dx || dy) sfx.ui();
   if (P.tab === 0) {
     const n = TREE_BY_ID[P.tree.sel];
-    if (dx || dy) P.tree.sel = (step(n, TREE, dx, dy) || n).id;
-    if (ok) buy(TREE_BY_ID[P.tree.sel]);
+    if (dx || dy) (P.tree.sel = (step(n, TREE, dx, dy) || n).id), (P.lockPend = undefined);
+    if (ok) P.lockPend !== undefined ? chooseLock(P.lockPend) : buy(TREE_BY_ID[P.tree.sel]);
     if (input.take('undo')) undo();
+    if (input.take('lock')) pendLock(LOCKS[(LOCKS.indexOf(P.lockPend !== undefined ? P.lockPend : weaponLock()) + 1) % LOCKS.length]);
     if (input.take('leave')) refundAll();
   } else if (P.tab === 1) {
     if (!M.open) {
@@ -153,7 +169,7 @@ export function drawPowers(t) {
   else if (P.tab === 1) drawMastery(t);
   else drawTrophies(t);
   if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
-  const hint = P.tab === 0 ? 'ARROWS: PICK   ENTER: INVEST   U: UNDO   Q: REFUND ALL   SHIFT: NEXT TAB   E: CLOSE'
+  const hint = P.tab === 0 ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
     : P.tab === 1 ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
     : 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE';
   text(hint, W / 2, H - 18, C.fog, { align: 'center' });
@@ -218,13 +234,13 @@ const at = n => [ORIGIN.x + n.x, ORIGIN.y + n.y];
 
 function drawTree(t) {
   starfield(t);
-  cloud(ORIGIN.x - 92, ORIGIN.y - 12, 34, C.wine, 4);
-  cloud(ORIGIN.x + 92, ORIGIN.y - 12, 34, C.navy, 5);
-  cloud(ORIGIN.x, ORIGIN.y + 66, 30, C.woodD, 4);
+  for (const [B, c] of [[BRANCHES[0], C.wine], [BRANCHES[1], C.woodD], [BRANCHES[2], C.navy]]) cloud(ORIGIN.x + B.dir[0] * 90, ORIGIN.y + B.dir[1] * 90, 32, c, weaponLock() === B.id ? 5 : 3);
   for (const B of BRANCHES) {
-    const lx = ORIGIN.x + B.dir[0] * 112, ly = ORIGIN.y + B.dir[1] * 112;
-    text(B.name, Math.max(MAP.x + 16, Math.min(MAP.x + MAP.w - 16, lx)), Math.min(MAP.y + MAP.h - 10, ly - 3), C[B.col], { align: 'center' });
+    const lx = ORIGIN.x + B.dir[0] * 90 + B.side[0] * 52, ly = ORIGIN.y + B.dir[1] * 90 + B.side[1] * 50;
+    text(B.name, Math.max(MAP.x + 20, Math.min(MAP.x + MAP.w - 20, lx)), Math.min(MAP.y + MAP.h - 10, ly), weaponLock() === B.id ? C[B.col] : C.stone, { align: 'center' });
   }
+  const L = weaponLock();
+  text(L ? `${CLASSES[L].name} SPECIALIST` : 'NOT SPECIALIZED', MAP.x + 4, MAP.y + MAP.h - 10, L ? C[CLASSES[L].col] : C.fog);
   for (const [a, b] of TREE_LINKS) {
     const A = TREE_BY_ID[a], Bn = TREE_BY_ID[b], ra = rank(a), rb = rank(b);
     const col = ra && rb ? (A.branch === Bn.branch || !A.branch ? colOf(Bn.branch ? Bn : A) : C.gold) : ra || rb ? C.fog : C.slate;
@@ -234,7 +250,8 @@ function drawTree(t) {
     const [x, y] = at(n), r = R[n.size], k = rank(n.id), col = colOf(n), open = linked(n.id), sel = P.tree.sel === n.id;
     if (n.size === 'key') cloud(x, y, 9, col, k ? 6 : 3);
     if (sel && Math.floor(t * 4) % 2) disc(x, y, r + 2, C.gold);
-    disc(x, y, r, k ? col : open ? (cantBuy(n.id) ? C.fog : C.ice) : C.slate);
+    const shut = n.branch && weaponLock() !== n.branch; // another specialization's cluster
+    disc(x, y, r, k ? (shut ? C.stone : col) : shut ? C.night : open ? (cantBuy(n.id) ? C.fog : C.ice) : C.slate);
     disc(x, y, r - 1, C.ink);
     if (k) disc(x, y, Math.max(1, Math.round(((r - 2) * k) / n.max)), col);
     if (k >= n.max) px(x, y, C.cream);
@@ -257,10 +274,20 @@ function drawNodePanel(t) {
   let y = para(n.name, S.x + 34, S.y + 7, S.w - 38, C.gold);
   text(`RANK ${k}/${n.max}`, S.x + 34, Math.max(y, S.y + 22), k ? col : C.fog);
   y = S.y + 38;
-  text(n.el ? 'ELEMENT KEYSTONE' : n.branch ? BRANCHES.find(B => B.id === n.branch).name : 'THE CORE', S.x + 6, y, C.stone);
+  text(n.el ? 'ELEMENT KEYSTONE' : n.branch ? CLASSES[n.branch].name + ' ONLY' : n.id === 'core' ? 'THE CORE' : 'SHARED: EVERY WEAPON', S.x + 6, y, C.stone);
   y += 11;
   if (k) y = para('NOW: ' + nodeText(n, k), S.x + 6, y, S.w - 12, C.paper) + 2;
   if (k < n.max) y = para((k ? 'NEXT: ' : '') + nodeText(n, k + 1), S.x + 6, y, S.w - 12, k ? C.mist : C.paper) + 2;
+  if (n.id === 'core') {
+    text('SPECIALIZE (G)', S.x + 6, y + 4, C.gold);
+    LOCKS.forEach((c, i) => {
+      const bx = S.x + 6 + (i % 2) * 64, yy = y + 15 + Math.floor(i / 2) * 16, on = weaponLock() === c, pend = P.lockPend === c && !on;
+      rect(bx, yy, 62, 13, on ? (c ? C[CLASSES[c].col] : C.mist) : pend && Math.floor(t * 4) % 2 ? C.gold : C.slate);
+      rect(bx + 1, yy + 1, 60, 11, on ? C.night : C.ink);
+      text(c ? CLASSES[c].name : 'NONE', bx + 31, yy + 3, on ? (c ? C[CLASSES[c].col] : C.paper) : pend ? C.gold : C.fog, { align: 'center' });
+      box(bx, yy, 62, 13, () => chooseLock(c));
+    });
+  }
   const by = S.y + S.h - 62;
   if (k < n.max) {
     text('SHARD COST', S.x + 6, by - 12, C.fog);

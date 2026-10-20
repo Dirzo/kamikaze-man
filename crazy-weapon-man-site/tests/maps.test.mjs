@@ -1,13 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeMap, cameraTarget, cameraTargetY, LAYOUTS, DEPTHS } from '../game-src/data/maps.js';
+import { makeMap, cameraTarget, cameraTargetY, LAYOUTS, DEPTHS, ownMap } from '../game-src/data/maps.js';
 import { surfaceGraph } from './map-reach.mjs';
 import { HERO, GROUND, W } from '../game-src/config.js';
 import { world } from '../game-src/game/world.js';
 import { ZONES } from '../game-src/data/zones.js';
 import { move } from '../game-src/game/physics.js';
 // every zone's map, then World 1's deeper Ant Tunnel levels
-const MAPS=[...Array.from({length:10},(_,z)=>[z,null]),...Object.keys(DEPTHS).map(id=>[0,id])];
+import { LEVELS } from '../game-src/data/overworld.js';
+const MAPS=[...Array.from({length:10},(_,z)=>[z,null]),...LEVELS.map(n=>[n.zone,n.id])];
 const label=(z,id)=>id?'level '+id:'zone '+(z+1);
 test('World 1 goes deeper down the Ant Tunnel: level 1-1 is map 1 exactly, every later level is its own map',()=>{
   assert.equal(JSON.stringify(makeMap(0,'1-1')),JSON.stringify(makeMap(0)));
@@ -19,6 +20,19 @@ test('World 1 goes deeper down the Ant Tunnel: level 1-1 is map 1 exactly, every
     seen.add(JSON.stringify(m.platforms));
   }
   assert.ok(makeMap(0,'1-C').floorY>makeMap(0,'1-2').floorY,'the castle is the deepest');
+});
+test('every overworld level plays its own map, and the road to each castle grows',()=>{
+  const seen=new Set();
+  for(const n of LEVELS) {
+    const m=makeMap(n.zone,n.id),key=JSON.stringify(m.platforms);
+    assert.ok(!seen.has(key),n.id+' repeats another level\'s map');
+    seen.add(key);
+  }
+  for(const R of [...new Set(LEVELS.map(n=>n.region))]) {
+    const ids=LEVELS.filter(n=>n.region===R),first=makeMap(ids[0].zone,ids[0].id),castle=ids.find(n=>n.kind==='castle');
+    const c=makeMap(castle.zone,castle.id);
+    assert.ok(c.spawns.length>first.spawns.length && c.width>=first.width,'castle of world '+R+' is no bigger than its first level');
+  }
 });
 test('map 1 keeps its Ant Tunnel layout; the others are distinct MapleStory-style fields',()=>{
   assert.equal(LAYOUTS[0].style,'chambers');
@@ -39,7 +53,7 @@ test('ladders end level with the platform they hang from, so the climb stops the
 test('maps are bounded, populated along their whole route and end at the exit',()=>{
   for(const [z,id] of MAPS) {
     const m=makeMap(z,id);
-    assert.ok(m.width>=2.5*W && m.width<=12*W);
+    assert.ok(m.width>=2.5*W && m.width<=14*W);
     assert.ok(m.spawns.length>=27+z*2-1);
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
     assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));
@@ -76,7 +90,7 @@ test('the end chamber is a flat open arena the boss can drop into',()=>{
   for(const [z,id] of MAPS) {
     const m=makeMap(z,id);
     assert.ok(m.platforms.some(p=>p.solid && p.y===m.bossFloor && p.x<=m.bossLeft && p.x+p.w>=m.bossRight),'arena floor not flat in zone '+z);
-    if(ZONES[z].boss||id)assert.ok(!m.solids.some(p=>p.x<m.bossRight && p.x+p.w>m.bossLeft+16 && p.y<m.bossFloor && p.y+p.h>m.bossFloor-200),'arena roof too low in zone '+z);
+    if(ZONES[z].boss||ownMap(id))assert.ok(!m.solids.some(p=>p.x<m.bossRight && p.x+p.w>m.bossLeft+16 && p.y<m.bossFloor && p.y+p.h>m.bossFloor-200),'arena roof too low in zone '+z);
     assert.equal(m.exitY,m.bossFloor);
   }
 });

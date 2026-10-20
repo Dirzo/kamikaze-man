@@ -1,6 +1,7 @@
 // Progression that outlives every level and run (Slormancer style), kept in localStorage:
-//   SHARD TREE   shards you collect are banked and spent on ranks in a web of linked nodes, out
-//                from CORE through three clusters to element keystones. Respec is free.
+//   SPECIALIZE   lock to BLADES, BLUNT or RANGED: other weapon classes drop as shards instead.
+//   SHARD TREE   shards you collect are banked and spent on ranks in a web of linked nodes: a ring
+//                of shared nodes round CORE, and a cluster for each specialization. Respec is free.
 //   TROPHIES     beating a world's family head (its castle) gives that world's trophy and a
 //                permanent perk.
 //   MASTERY      every weapon type's mastery (proficiency.js) opens a choice of two perks at each
@@ -11,63 +12,94 @@ import { proficiency } from './proficiency.js';
 
 export const META_KEY = 'crazyWeaponMan.meta.v1';
 
+// ---------------------------------------------------------------- specializations
+// The weapon lock: specialize in one class and every weapon of another class that drops is turned
+// into shards (game/classlock.js). Each class has its own cluster of the shard tree, which you can
+// only invest in while specialized in it and which only works with that class in hand.
+export const CLASSES = {
+  blades: { name: 'BLADES', col: 'coral', types: ['sword', 'dagger', 'katana', 'axe', 'scythe'], starter: 'sword' },
+  blunt: { name: 'BLUNT', col: 'sand', types: ['hammer', 'nunchucks', 'staff', 'spear'], starter: 'hammer' },
+  ranged: { name: 'RANGED', col: 'sky', types: ['bow', 'shuriken', 'wand', 'boomerang'], starter: 'bow' }
+};
+export const CLASS_OF = Object.fromEntries(Object.entries(CLASSES).flatMap(([c, C]) => C.types.map(t => [t, c])));
+
 // ---------------------------------------------------------------- the shard tree
-// A web of nodes (Slormancer's Ancestral Legacy): CORE in the middle, a cluster for each branch
-// around it. You can invest in a node once a node linked to it has a rank. Every cluster ends in two
-// element keystones that infuse your hits with that element. Respec is free, and UNDO takes back
-// the last rank you bought.
+// A web of nodes (Slormancer's Ancestral Legacy). CORE sits in the middle of a ring of shared
+// nodes that work with every weapon; a cluster for each specialization grows out of the ring, and
+// each ends in two element keystones that infuse your hits with that element. You can invest in a
+// node once a node linked to it has a rank. Respec is free, and UNDO takes back the last rank.
 export const BRANCHES = [
-  { id: 'might', name: 'MIGHT', col: 'coral', dir: [-1.4, -0.35], side: [0, 1] },
-  { id: 'guard', name: 'GUARD', col: 'sky', dir: [1.4, -0.35], side: [0, 1] },
-  { id: 'fortune', name: 'FORTUNE', col: 'gold', dir: [0, 1.12], side: [1.25, 0] }
+  { id: 'blades', name: 'BLADES', col: 'coral', dir: [-1.2, -0.3], side: [0, 1], anchors: ['sharp', 'band'] },
+  { id: 'blunt', name: 'BLUNT', col: 'sand', dir: [1.2, -0.3], side: [0, 1], anchors: ['skin', 'hearts'] },
+  { id: 'ranged', name: 'RANGED', col: 'sky', dir: [0, 0.92], side: [1.15, 0], anchors: ['magnet', 'learn'] }
 ];
-// every cluster has the same shape: [along, across, size, depth] for each slot, then the links
-const SLOTS = [[22, -10, 'small', 0], [22, 10, 'small', 0], [44, -22, 'small', 1], [44, 0, 'small', 1], [44, 22, 'small', 1],
-  [66, -12, 'small', 2], [66, 12, 'small', 2], [90, 0, 'medium', 3], [84, -34, 'key', 4], [84, 34, 'key', 4]];
-const SLOT_LINKS = [[-1, 0], [-1, 1], [0, 1], [0, 2], [0, 3], [1, 3], [1, 4], [2, 5], [3, 5], [3, 6], [4, 6], [5, 7], [6, 7], [2, 8], [5, 8], [4, 9], [6, 9]];
-const DEPTH_COST = [50, 100, 150, 200, 300];
-// per branch, in slot order: [id, name, max ranks, stat, per rank, description ({v} = the total at this rank)]
-// a keystone's stat is 'infuse' and its element comes after the description
+// the shared ring: [id, x, y, depth, name, max ranks, stat, per rank, description ({v} = the total)]
+const SHARED = [
+  ['sharp', -30, -8, 0, 'SHARPENED', 5, 'dmg', 0.03, '+{v}% damage'],
+  ['band', -24, 16, 0, 'BANDAGES', 5, 'heal', 0.1, 'Hearts heal {v}% more'],
+  ['skin', 30, -8, 0, 'THICK SKIN', 5, 'hp', 0.04, '+{v}% max health'],
+  ['hearts', 24, 16, 0, 'HEARTFELT', 5, 'hearts', 0.02, '+{v}% heart drops'],
+  ['magnet', -10, 28, 0, 'MAGNET', 5, 'shards', 0.06, '+{v}% shards'],
+  ['learn', 10, 28, 0, 'STUDIOUS', 5, 'xp', 0.06, '+{v}% hero XP'],
+  ['tutor', 0, -28, 1, 'MENTOR', 5, 'mastery', 0.08, '+{v}% weapon mastery'],
+  ['bounty', -22, -50, 2, 'BOUNTY', 5, 'bossShards', 0.2, '+{v}% shards from bosses'],
+  ['lust', 22, -50, 2, 'COVETOUS', 3, 'lust', 0.1, 'Weapon Lust builds {v}% faster'],
+  ['stand', 0, -72, 3, 'LUCKY LOOT', 3, 'standout', 0.02, '+{v}% standout weapon drops'],
+  ['combo', -46, 40, 1, 'MOMENTUM', 5, 'combo', 0.08, 'Swarm combos last {v}% longer'],
+  ['grace', 46, 40, 1, 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit']
+];
+const SHARED_LINKS = [['core', 'sharp'], ['core', 'skin'], ['core', 'magnet'], ['core', 'learn'], ['core', 'tutor'], ['sharp', 'band'], ['band', 'magnet'],
+  ['skin', 'hearts'], ['hearts', 'learn'], ['magnet', 'learn'], ['tutor', 'bounty'], ['tutor', 'lust'], ['bounty', 'stand'], ['lust', 'stand'],
+  ['band', 'combo'], ['hearts', 'grace'], ['sharp', 'bounty'], ['skin', 'lust']];
+// every class cluster has the same shape: [along, across, size, depth] for each slot, then the links
+// (-1 and -2 are the cluster's two anchors on the ring)
+const SLOTS = [[56, -10, 'small', 1], [56, 10, 'small', 1], [78, -22, 'small', 2], [78, 0, 'small', 2], [78, 22, 'small', 2],
+  [100, -12, 'small', 3], [100, 12, 'small', 3], [124, 0, 'medium', 4], [118, -34, 'key', 5], [118, 34, 'key', 5]];
+const SLOT_LINKS = [[-1, 0], [-2, 1], [0, 1], [0, 2], [0, 3], [1, 3], [1, 4], [2, 5], [3, 5], [3, 6], [4, 6], [5, 7], [6, 7], [2, 8], [5, 8], [4, 9], [6, 9]];
+// shards per rank by depth (a rank costs this times the rank being bought)
+const DEPTH_COST = [45, 90, 135, 180, 240, 320];
+// per class, in slot order: [id, name, max ranks, stat, per rank, description, keystone element]
 const NODES = {
-  might: [
-    ['sharp', 'SHARPENED', 5, 'dmg', 0.03, '+{v}% damage'],
-    ['luck', 'LUCKY HITS', 5, 'crit', 0.01, '+{v}% critical chance'],
-    ['swarm', 'SWARMBANE', 5, 'swarmDmg', 0.04, '+{v}% damage in the swarm'],
-    ['brutal', 'BIG CRITS', 5, 'critDmg', 0.08, 'Crits deal +{v}% more'],
-    ['giant', 'GIANTBANE', 5, 'bossDmg', 0.04, '+{v}% damage to bosses and elites'],
-    ['spec', 'SPECIALIST', 5, 'specialCd', 0.04, 'Specials recharge {v}% faster'],
-    ['exec', 'EXECUTION', 3, 'execute', 0.12, '+{v}% damage to foes under a third of their health'],
-    ['over', 'OVERCHARGE', 3, 'dmg', 0.06, '+{v}% damage'],
-    ['fire', 'BLAZING WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Fire: {v}% chance to burn', 'fire'],
-    ['bolt', 'THUNDER WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Lightning: {v}% chance to chain', 'lightning']
+  blades: [
+    ['edge', 'KEEN EDGE', 5, 'crit', 0.01, '+{v}% critical chance with blades'],
+    ['swarm', 'SWARMBANE', 5, 'swarmDmg', 0.04, '+{v}% blade damage in the swarm'],
+    ['brutal', 'BIG CRITS', 5, 'critDmg', 0.08, 'Blade crits deal +{v}% more'],
+    ['fleet', 'FLEET FOOT', 5, 'speed', 0.03, '+{v}% move speed with a blade'],
+    ['exec', 'EXECUTION', 3, 'execute', 0.12, '+{v}% blade damage to foes under a third of their health'],
+    ['slice', 'QUICK SLICE', 5, 'attackSpeed', 0.03, 'Blades swing {v}% faster'],
+    ['blink', 'BLINK STEP', 5, 'dashCd', 0.06, 'Dash recharges {v}% faster with a blade'],
+    ['bladem', 'BLADE MASTER', 3, 'dmg', 0.06, '+{v}% blade damage'],
+    ['fire', 'BLAZING BLADES', 5, 'infuse', 0.06, 'Blades are infused with Fire: {v}% chance to burn', 'fire'],
+    ['bolt', 'THUNDER BLADES', 5, 'infuse', 0.06, 'Blades are infused with Lightning: {v}% chance to chain', 'lightning']
   ],
-  guard: [
-    ['skin', 'THICK SKIN', 5, 'hp', 0.04, '+{v}% max health'],
-    ['band', 'BANDAGES', 5, 'heal', 0.1, 'Hearts heal {v}% more'],
-    ['armor', 'PADDING', 5, 'armor', 0.025, 'Take {v}% less damage'],
-    ['fleet', 'FLEET FOOT', 5, 'speed', 0.03, '+{v}% move speed'],
-    ['blink', 'BLINK STEP', 5, 'dashCd', 0.06, 'Dash recharges {v}% faster'],
-    ['grace', 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit'],
-    ['regen', 'REGENERATE', 3, 'regen', 0.001, 'Heal {v}% of max health a second'],
-    ['stone', 'STONESKIN', 3, 'armor', 0.04, 'Take {v}% less damage'],
-    ['frost', 'ICY WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Ice: {v}% chance to chill', 'ice'],
-    ['quake', 'QUAKE WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Earth: {v}% chance to quake', 'earth']
+  blunt: [
+    ['armor', 'PADDING', 5, 'armor', 0.025, 'Take {v}% less damage with a blunt weapon'],
+    ['giant', 'GIANTBANE', 5, 'bossDmg', 0.04, '+{v}% blunt damage to bosses and elites'],
+    ['stone', 'STONESKIN', 3, 'armor', 0.04, 'Take {v}% less damage with a blunt weapon'],
+    ['regen', 'REGENERATE', 3, 'regen', 0.001, 'Heal {v}% of max health a second with a blunt weapon'],
+    ['crush', 'CRUSH', 5, 'swarmDmg', 0.04, '+{v}% blunt damage in the swarm'],
+    ['heavy', 'HEAVY HANDS', 5, 'specialCd', 0.04, 'Blunt specials recharge {v}% faster'],
+    ['bones', 'BONEBREAKER', 5, 'critDmg', 0.08, 'Blunt crits deal +{v}% more'],
+    ['bluntm', 'CRUSHER', 3, 'dmg', 0.06, '+{v}% blunt damage'],
+    ['quake', 'QUAKE STRIKES', 5, 'infuse', 0.06, 'Blunt hits are infused with Earth: {v}% chance to quake', 'earth'],
+    ['frost', 'FROST STRIKES', 5, 'infuse', 0.06, 'Blunt hits are infused with Ice: {v}% chance to chill', 'ice']
   ],
-  fortune: [
-    ['magnet', 'MAGNET', 5, 'shards', 0.06, '+{v}% shards'],
-    ['learn', 'STUDIOUS', 5, 'xp', 0.06, '+{v}% hero XP'],
-    ['combo', 'MOMENTUM', 5, 'combo', 0.08, 'Swarm combos last {v}% longer'],
-    ['hearts', 'HEARTFELT', 5, 'hearts', 0.02, '+{v}% heart drops'],
-    ['tutor', 'MENTOR', 5, 'mastery', 0.08, '+{v}% weapon mastery'],
-    ['bounty', 'BOUNTY', 5, 'bossShards', 0.2, '+{v}% shards from bosses'],
-    ['lust', 'COVETOUS', 3, 'lust', 0.1, 'Weapon Lust builds {v}% faster'],
-    ['stand', 'LUCKY LOOT', 3, 'standout', 0.02, '+{v}% standout weapon drops'],
-    ['venom', 'VENOM WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Poison: {v}% chance to poison', 'poison'],
-    ['gale', 'GALE WEAPONS', 5, 'infuse', 0.06, 'Your hits are infused with Wind: {v}% chance to toss', 'wind']
+  ranged: [
+    ['spec', 'SPECIALIST', 5, 'specialCd', 0.04, 'Ranged specials recharge {v}% faster'],
+    ['aim', 'STEADY AIM', 5, 'crit', 0.01, '+{v}% critical chance at range'],
+    ['quick', 'QUICK DRAW', 5, 'attackSpeed', 0.03, 'Ranged weapons fire {v}% faster'],
+    ['snipe', 'SNIPER', 5, 'bossDmg', 0.04, '+{v}% ranged damage to bosses and elites'],
+    ['kite', 'KITING', 5, 'speed', 0.03, '+{v}% move speed with a ranged weapon'],
+    ['volley', 'VOLLEY', 5, 'swarmDmg', 0.04, '+{v}% ranged damage in the swarm'],
+    ['pin', 'PIN DOWN', 3, 'execute', 0.12, '+{v}% ranged damage to foes under a third of their health'],
+    ['rangem', 'DEADEYE', 3, 'dmg', 0.06, '+{v}% ranged damage'],
+    ['venom', 'VENOM SHOTS', 5, 'infuse', 0.06, 'Shots are infused with Poison: {v}% chance to poison', 'poison'],
+    ['gale', 'GALE SHOTS', 5, 'infuse', 0.06, 'Shots are infused with Wind: {v}% chance to toss', 'wind']
   ]
 };
 // x, y are offsets in pixels from CORE
 export const TREE = [{ id: 'core', branch: null, depth: 0, size: 'medium', name: 'AWAKENING', max: 1, stat: 'dmg', per: 0.02, desc: '+{v}% damage. Every path starts here', cost: 25, x: 0, y: 0, links: [] }];
+for (const [id, x, y, depth, name, max, stat, per, desc] of SHARED) TREE.push({ id, branch: null, depth, size: 'small', name, max, stat, per, desc, cost: DEPTH_COST[depth], x, y, links: [] });
 for (const B of BRANCHES)
   NODES[B.id].forEach(([id, name, max, stat, per, desc, el], i) => {
     const [a, s, size, depth] = SLOTS[i];
@@ -78,12 +110,17 @@ const link = (a, b) => {
   TREE_BY_ID[a].links.push(b);
   TREE_BY_ID[b].links.push(a);
 };
-for (const B of BRANCHES) for (const [a, b] of SLOT_LINKS) link(a < 0 ? 'core' : NODES[B.id][a][0], NODES[B.id][b][0]);
-// bridges between neighbouring clusters
-link('giant', 'combo');
-link('blink', 'tutor');
+for (const [a, b] of SHARED_LINKS) link(a, b);
+for (const B of BRANCHES) for (const [a, b] of SLOT_LINKS) link(a < 0 ? B.anchors[-a - 1] : NODES[B.id][a][0], NODES[B.id][b][0]);
+// bridges from the clusters back to the ring
+link('exec', 'combo');
+link('pin', 'combo');
+link('crush', 'grace');
+link('kite', 'grace');
 export const TREE_LINKS = TREE.flatMap(n => n.links.filter(id => id > n.id).map(id => [n.id, id]));
 export const rankCost = (n, rank) => n.cost * rank; // rank = the rank being bought, from 1
+// bumped whenever the web changes shape: an older save gets every shard it spent back
+const TREE_V = 2;
 
 // ---------------------------------------------------------------- world boss perks and trophies
 // region -> the trophy you take off the family head and the perk it gives
@@ -144,7 +181,7 @@ try {
 } catch (_) {
   storage = null;
 }
-const blank = () => ({ v: 1, shards: 0, earned: 0, tree: {}, hist: [], perks: {}, trophies: {} });
+const blank = () => ({ v: 1, tv: TREE_V, shards: 0, earned: 0, lock: null, tree: {}, hist: [], perks: {}, trophies: {} });
 let store = null;
 function load() {
   const out = blank();
@@ -155,9 +192,10 @@ function load() {
       out.earned = Math.max(out.shards, Math.floor(+raw.earned || 0));
       for (const [id, r] of Object.entries(raw.tree || {})) if (TREE_BY_ID[id]) out.tree[id] = Math.max(0, Math.min(TREE_BY_ID[id].max, Math.floor(+r || 0)));
       if (Array.isArray(raw.hist)) out.hist = raw.hist.filter(id => out.tree[id]).slice(-HIST_MAX);
-      if (!reachable(out.tree)) {
-        // a save from before the web: every rank refunded
-        for (const [id, r] of Object.entries(out.tree)) out.shards += (TREE_BY_ID[id].cost * r * (r + 1)) / 2;
+      if (CLASSES[raw.lock]) out.lock = raw.lock;
+      if (raw.tv !== TREE_V || !reachable(out.tree)) {
+        // a save from an older tree: only the tree spends shards, so every shard earned comes back
+        out.shards = out.earned;
         out.tree = {};
         out.hist = [];
       }
@@ -218,6 +256,7 @@ export function cantBuy(id) {
   const n = TREE_BY_ID[id];
   if (!n) return 'NO SUCH NODE';
   if (rank(id) >= n.max) return 'MAXED';
+  if (n.branch && meta().lock !== n.branch) return `SPECIALIZE IN ${CLASSES[n.branch].name} TO INVEST HERE`;
   if (!linked(id)) return 'INVEST IN A LINKED NODE FIRST';
   if (meta().shards < rankCost(n, rank(id) + 1)) return 'NOT ENOUGH SHARDS';
   return null;
@@ -252,6 +291,18 @@ export function respec() {
   save();
 }
 export const treeSpent = () => TREE.reduce((s, n) => s + n.cost * (rank(n.id) * (rank(n.id) + 1)) / 2, 0);
+
+// ---- the weapon lock
+export const weaponLock = () => meta().lock;
+// null drops the lock (every class drops again)
+export function setLock(cls) {
+  if (cls !== null && !CLASSES[cls]) return false;
+  meta().lock = cls;
+  save();
+  return true;
+}
+// does a weapon type drop as itself under the current lock?
+export const allowedType = type => !meta().lock || CLASS_OF[type] === meta().lock;
 
 // ---- trophies
 export const hasTrophy = region => !!meta().trophies[region];
@@ -289,8 +340,9 @@ export function stats(type = null) {
   const key = type ? type + tiersOpen(type) : '-'; // a mastery level-up opens a tier: new key
   if (cache[key]) return cache[key];
   const out = { ...ZERO, innate: new Set(), infuse: {} };
+  const cls = type && CLASS_OF[type];
   for (const n of TREE) {
-    if (!rank(n.id)) continue;
+    if (!rank(n.id) || (n.branch && n.branch !== cls)) continue; // a class cluster only works with that class in hand
     if (n.el) out.infuse[n.el] = n.per * rank(n.id);
     else out[n.stat] += n.per * rank(n.id);
   }
@@ -313,6 +365,6 @@ export function stats(type = null) {
 }
 // a single number for "how strong has the account become" (tests and the playtest report)
 export function metaPower() {
-  const s = stats();
+  const s = stats(meta().lock ? CLASSES[meta().lock].starter : null); // with the class cluster, if specialized
   return +((1 + s.dmg) * (1 + s.hp) / (1 - s.armor)).toFixed(2);
 }

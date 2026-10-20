@@ -16,7 +16,7 @@ import { music, sfx } from '../engine/audio.js';
 import { startBoss, bossDone, clearBoss, bossWarning } from './bosses.js';
 import { clearAbilities } from './abilities.js';
 import { placeSecret } from './secrets.js';
-import { makeWeapon } from './loot.js';
+import { makeWeapon, classType } from './loot.js';
 import { dropWeapon } from './combat.js';
 import { updateCamera } from './camera.js';
 import { splitZone } from './speedrun.js';
@@ -197,7 +197,8 @@ function openExit() {
   // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard), already
   // tuned for the next map so there is always something ready to carry on with
   const z=world.zone,home=ZONES[z].weapon;
-  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:home,q:z===0?1:Math.min(10,z+1),standout:false}));
+  // (a specialist gets one of their own class instead)
+  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:classType(home),q:z===0?1:Math.min(10,z+1),standout:false}));
 }
 export function enemiesLeft() {
   if(!world.director) return 0;

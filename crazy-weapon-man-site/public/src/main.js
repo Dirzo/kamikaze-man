@@ -32,6 +32,7 @@ import { freshUid } from './game/loot.js';
 import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
 import { P as powers, openPowers, closePowers } from './game/powers.js';
 import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
+import { applyLock } from './game/classlock.js';
 
 let capture = false;
 let scene = 'loading',
@@ -88,6 +89,13 @@ function enterLevel(node) {
   }
   world.level = node;
   newRun();
+  // specialized: off-class weapons in the kit melt into banked shards, for good (a failed
+  // attempt restores the kit from the save, so the save is cleaned too)
+  const melted = applyLock();
+  if (melted) {
+    bankShards(melted);
+    if (snap) (ow.save.hero = heroSnapshot()), writeSave(ow.save);
+  }
   startZone(node.zone);
   h.hp = h.maxHp; // every level starts at full health
   scene = 'play';

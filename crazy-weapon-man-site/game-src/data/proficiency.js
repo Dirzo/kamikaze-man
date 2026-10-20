@@ -7,6 +7,9 @@ export const PROF_KEY = 'crazyWeaponMan.proficiency.v1';
 export const PROF_MAX = 100;
 export const PROF_DMG = 0.003; // +0.3% damage per level, +30% at grandmastery
 export const PROF_KILL_XP = { normal: 1, elite: 4, boss: 25 };
+// on the overworld, kills in later worlds train a type faster (+12% a world), so a main weapon
+// reaches about mastery 70 by the final castle and the last perk tiers are for the road after it
+export const PROF_WORLD = 0.12;
 // kills to go from level n to n+1: 6, 8, 10 ... (about 10,500 kills to grandmaster a type)
 export const profToNext = lv => 6 + lv * 2;
 const RANKS = ['NOVICE', 'APPRENTICE', 'ADEPT', 'EXPERT', 'MASTER'];

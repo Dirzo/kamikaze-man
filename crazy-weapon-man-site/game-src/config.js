@@ -49,5 +49,6 @@ export const KEYS = {
   inv: ['KeyE', 'KeyB', 'Tab'],
   leave: ['KeyQ'],
   undo: ['KeyU', 'Backspace'],
+  lock: ['KeyG'],
   confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ', 'ControlLeft']
 };

@@ -19,7 +19,7 @@ import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
 import { updateCamera } from '../game/camera.js';
 import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
-import { bankShards, buyRank, winTrophy, choosePerk } from '../data/meta.js';
+import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
 import { openPowers, P as powers } from '../game/powers.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
@@ -32,14 +32,14 @@ function mapScene(game, all) {
 }
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
-  bankShards(2600);
-  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'luck', 'sharp', 'sharp', 'brutal', 'brutal', 'swarm', 'over', 'skin', 'skin', 'band', 'magnet', 'magnet', 'learn', 'combo', 'fire']) buyRank(id);
+  bankShards(4200); setLock('blades');
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'edge', 'edge', 'swarm', 'brutal', 'brutal', 'fire']) buyRank(id);
   winTrophy(1); winTrophy(2);
   addProficiency('sword', 2200); addProficiency('bow', 300);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
   openPowers(tab === 3 ? 1 : tab);
-  powers.tree.sel = 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
+  powers.tree.sel = tab === 0 ? 'core' : 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
 }
 // the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
 function filesScene(game) {

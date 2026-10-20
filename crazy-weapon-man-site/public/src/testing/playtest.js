@@ -20,7 +20,7 @@ import { resetProficiency } from '../data/proficiency.js';
 import { cx, cy } from '../game/physics.js';
 import { kill } from '../game/combat.js';
 import { NODES, LEVELS, newSave, isOpen } from '../data/overworld.js';
-import { resetMeta, meta, TREE, cantBuy, buyRank, rank, choosePerk, unpicked, metaPower, stats } from '../data/meta.js';
+import { resetMeta, meta, TREE, cantBuy, buyRank, rank, choosePerk, unpicked, metaPower, stats, setLock, treeSpent } from '../data/meta.js';
 import { TYPE_LIST } from '../data/weapons.js';
 import { proficiency } from '../data/proficiency.js';
 
@@ -57,7 +57,7 @@ export function runPlaytest(game) {
 
 // ---------------------------------------------------------------- campaign
 // the bot's spec: cheap ranks first, damage and health before the rest
-const SPEC = ['core', 'sharp', 'skin', 'luck', 'armor', 'brutal', 'magnet', 'band', 'giant', 'over', 'stone', 'regen', 'swarm', 'spec', 'blink', 'exec', 'learn', 'tutor', 'bounty'];
+const SPEC = ['core', 'sharp', 'skin', 'edge', 'brutal', 'magnet', 'band', 'swarm', 'slice', 'exec', 'bladem', 'hearts', 'fleet', 'blink', 'learn', 'tutor', 'bounty', 'fire', 'grace', 'combo'];
 function spend() {
   for (let bought = true; bought;) {
     bought = false;
@@ -70,7 +70,7 @@ function runCampaign(game, campaigns, skill, out) {
   let n = 0;
   const next = () => {
     if (n++ >= campaigns) { press(new Set()); document.documentElement.dataset.playtest = 'done'; return; }
-    resetProficiency(); resetMeta();
+    resetProficiency(); resetMeta(); setLock('blades'); // the bot specializes in blades
     const save = newSave(), C = { levels: [], won: false };
     out.runs.push(C);
     game.ow.save = save;
@@ -93,6 +93,8 @@ function runCampaign(game, campaigns, skill, out) {
       if (!bot.done) return setTimeout(chunk, 0);
       const r = bot.report, h = world.hero;
       r.mastery = proficiency(h.weapon.type).lv; r.weapon = h.weapon.type;
+      r.topMastery = Math.max(...TYPE_LIST.map(t => proficiency(t).lv));
+      r.treePct = Math.round(100 * treeSpent() / TREE.filter(n => !n.branch || n.branch === meta().lock).reduce((s, n) => s + n.cost * n.max * (n.max + 1) / 2, 0));
       C.levels.push(r);
       if (start()) setTimeout(chunk, 0);
     };

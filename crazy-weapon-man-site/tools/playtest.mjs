@@ -48,7 +48,7 @@ if (campaign) { report(all); process.exit(0); }
 function report(all) {
   const L = all.flatMap(c => c.levels), med = a => (a.sort((x, y) => x - y), a.length ? a[Math.floor(a.length / 2)] : 0);
   console.log(`\n${bot} bot, ${all.length} campaigns: ${all.filter(c => c.won).length} beat the Sentient Armory, attempts per campaign ${(L.length / all.length).toFixed(0)}`);
-  console.log('\nworld | attempts/level | castle tries (median) | 1st-try clears level/fort/castle | boss s level/fort/castle | hero lv | weapon power | account power | tree ranks | shards earned');
+  console.log('\nworld | attempts/level | castle tries (median) | 1st-try clears level/fort/castle | boss s level/fort/castle | hero lv | weapon power | account power | tree ranks | shards earned | tree % bought | mastery (held, best type)');
   for (let r = 1; r <= 10; r++) {
     const at = L.filter(x => x.region === r);
     if (!at.length) continue;
@@ -57,7 +57,7 @@ function report(all) {
     const bossT = k => { const w = at.filter(x => x.won && (k === 'level' ? x.kind !== 'fort' && x.kind !== 'castle' : x.kind === k)).map(x => x.zones[0]?.bossT || 0); return w.length ? med(w).toFixed(0) : '-'; };
     const avg = f => (at.reduce((s, x) => s + f(x), 0) / at.length);
     console.log([r, (at.length / ids.size / all.length).toFixed(2), castle.length ? med(castle) : '-', `${first('level')} / ${first('fort')} / ${first('castle')}`, `${bossT('level')} / ${bossT('fort')} / ${bossT('castle')}`,
-      avg(x => x.lv).toFixed(1), avg(x => x.zones[0]?.power || 0).toFixed(2), avg(x => x.meta).toFixed(2), avg(x => x.ranks).toFixed(0), avg(x => x.banked).toFixed(0)].join(' | '));
+      avg(x => x.lv).toFixed(1), avg(x => x.zones[0]?.power || 0).toFixed(2), avg(x => x.meta).toFixed(2), avg(x => x.ranks).toFixed(0), avg(x => x.banked).toFixed(0), avg(x => x.treePct || 0).toFixed(0) + '%', avg(x => x.mastery || 0).toFixed(0) + ', ' + avg(x => x.topMastery || 0).toFixed(0)].join(' | '));
   }
   const lost = L.filter(x => !x.won && x.kind === 'castle');
   if (lost.length) console.log('\ncastle losses: boss health left (median) ' + med(lost.map(x => x.bossHp ?? 1)).toFixed(2) + ', died in ' + JSON.stringify(lost.reduce((m, x) => ((m[x.diedIn || 'timeout'] = (m[x.diedIn || 'timeout'] || 0) + 1), m), {})));

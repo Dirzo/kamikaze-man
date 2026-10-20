@@ -16,6 +16,7 @@ import { BOSS_TOUGH } from '../data/swarm.js';
 import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.js';
 import { heroStats, foeMult } from './perks.js';
 import { stats } from '../data/meta.js';
+import { convertDrop } from './classlock.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -223,15 +224,17 @@ export function kill(e, o = {}) {
 }
 
 export function dropWeapon(x, y, w) {
-  noWeaker(w);
   world.killsSinceDrop = 0;
+  if (convertDrop(x, y, w, dropShards)) return; // specialized: another class bursts into shards
+  noWeaker(w);
   if (world.drops.length >= 8) world.drops.shift();
   world.drops.push({ id: newId(), x: x - 6, y: y - 6, w: 12, h: 8, vx: (Math.random() - 0.5) * 50, vy: -150, item: w, life: 40, t: 0 });
   sfx.loot(w.q);
 }
-export function dropShards(x, y, n) {
+// n pickups worth `total` shards between them (one each by default)
+export function dropShards(x, y, n, total = n) {
   for (let i = 0; i < n; i++)
-    world.pickups.push({ kind: 'shard', x: x - 2, y: y - 2, vx: (Math.random() - 0.5) * 90, vy: -100 - Math.random() * 80, life: 20, value: 1 });
+    world.pickups.push({ kind: 'shard', x: x - 2, y: y - 2, vx: (Math.random() - 0.5) * 90, vy: -100 - Math.random() * 80, life: 20, value: Math.floor(total / n) + (i < total % n ? 1 : 0) });
 }
 
 // explosion: hurts the hero and (if `friendly`) other enemies; big pixel burst, no circles

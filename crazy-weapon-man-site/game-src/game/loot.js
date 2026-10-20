@@ -11,7 +11,7 @@ import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
 import { ZONES } from '../data/zones.js';
-import { stats } from '../data/meta.js';
+import { stats, weaponLock, allowedType, CLASSES } from '../data/meta.js';
 let uid = 1;
 // what the hero has grown into with a type: its mastery level and every damage perk
 const growth = type => profMult(type) * (1 + stats(type).dmg);
@@ -26,6 +26,7 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
   // a zone's own weapon (bows in the Ranger's Forest, katanas at the shrine...) drops most often
   const home = ZONES[zone] && ZONES[zone].weapon;
   type = type || (home && types.includes(home) && r() < 0.4 ? home : types[Math.floor(r() * types.length)]);
+  if ((boss || standout === true) && weaponLock()) type = classType(type); // a guaranteed prize is always one you can use
   if (q == null) {
     const top = maxQ(zone);
     q = Math.min(10, Math.floor((top + 0.99) * Math.pow(r(), elite || boss ? 1.3 : 1.9)));
@@ -47,16 +48,24 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
 // a weapon loaded from a save gets a new id (looks are cached by id)
 export const freshUid = w => ((w.uid = uid++), w);
 
+// a type of your specialization's class for a drop that must be a weapon you can use
+export function classType(type) {
+  if (allowedType(type)) return type;
+  const T = CLASSES[weaponLock()].types;
+  return T[Math.floor(Math.random() * T.length)];
+}
+// the first weapon: a sword, or your specialization's own starter
 export function trainingSword() {
+  const STARTER = weaponLock() ? CLASSES[weaponLock()].starter : 'sword', BASE = STARTER[0].toUpperCase() + STARTER.slice(1);
   return {
     uid: uid++,
-    type: 'sword',
+    type: STARTER,
     q: 0,
     family: null,
     standout: false,
     home: 0,
-    name: 'Training Sword',
-    look: { q: 0, base: 'Sword', family: null, cond: 'Plain' },
+    name: 'Training ' + BASE,
+    look: { q: 0, base: BASE, family: null, cond: 'Plain' },
     quirk: 'bonk'
   };
 }
