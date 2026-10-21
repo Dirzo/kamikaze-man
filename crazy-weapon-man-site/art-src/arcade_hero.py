@@ -230,11 +230,10 @@ for i, legs in enumerate(BACK_LEGS):
     FRAMES['climb%d' % i] = [r.ljust(W, '.')[:W] for r in BACK_UP + legs]
 
 # shoulder pixels (back, front) in the 20x28 art, before the outline
-SH = {'idle': ((6, 12), (13, 12)), 'idle2': ((6, 13), (13, 13)), 'run1': ((7, 12), (14, 12)), 'run2': ((7, 12), (14, 12)),
-      'run3': ((7, 12), (14, 12)), 'lean': ((8, 12), (15, 12)), 'back': ((5, 12), (13, 12)), 'hurt': ((5, 12), (13, 12)),
-      'crouch': ((6, 14), (13, 14)), 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
-# (the near shoulder sits on the front of the turned chest and the far one behind it, so the far
-# arm passes behind the body and the near arm is never outlined across the chest)
+SH = {'idle': ((6, 12), (8, 12)), 'idle2': ((6, 13), (8, 13)), 'run1': ((7, 12), (9, 12)), 'run2': ((7, 12), (9, 12)),
+      'run3': ((7, 12), (9, 12)), 'lean': ((8, 12), (10, 12)), 'back': ((6, 12), (9, 12)), 'hurt': ((6, 12), (9, 12)),
+      'crouch': ((6, 14), (8, 14)), 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
+# (both sockets sit under the ear, the near one a step forward of the far one)
 
 
 def frame_image(rows):
