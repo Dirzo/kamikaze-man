@@ -49,10 +49,12 @@ function keys(list, p) {
 }
 function mix(a, b, t) {
   const o = { ...a, ...(t >= 0.5 ? b : {}) };
-  for (const k of ['ang', 'slide', 'dy']) if (a[k] != null || b[k] != null) o[k] = lerp(a[k] || 0, b[k] || 0, t);
+  for (const k of ['ang', 'dy']) if (a[k] != null || b[k] != null) o[k] = lerp(a[k] || 0, b[k] || 0, t);
+  if (a.slide != null && b.slide != null) o.slide = lerp(a.slide, b.slide, t);
+  else o.slide = t < 0.5 ? a.slide : b.slide;
   if (a.ang == null || b.ang == null) o.ang = t < 0.5 ? a.ang : b.ang;
   for (const k of ['fh', 'bh']) if (a[k] && b[k]) o[k] = [lerp(a[k][0], b[k][0], t), lerp(a[k][1], b[k][1], t)];
-  for (const k of ['f', 'wb', 'hide', 'nock', 'ab', 'flip']) o[k] = t < 0.5 ? a[k] : b[k];
+  for (const k of ['f', 'wb', 'hide', 'nock', 'ab', 'flip', 'one']) o[k] = t < 0.5 ? a[k] : b[k];
   return o;
 }
 
@@ -68,8 +70,8 @@ const STYLES = {
     dash: { f: 'lean', fh: [8, 19], bh: [15, 18], ang: 165, wb: true, ab: true },
     moves: {
       slashDown: [[0, { f: 'back', fh: [7, 12], bh: [5, 18], ang: -150, wb: true, ab: true }], [0.25, { f: 'back', fh: [6, 11], bh: [5, 18], ang: -160, wb: true, ab: true }, 'out'], [0.45, { f: 'lean', fh: [17, 17], bh: [3, 19], ang: 35 }, 'out'], [0.65, { f: 'lean', fh: [16, 21], bh: [3, 20], ang: 80 }], [1, { f: 'idle', fh: [14, 20], bh: [4, 21], ang: 50 }, 'io']],
-      slashUp: [[0, { f: 'idle', fh: [15, 21], bh: [5, 19], ang: 75 }], [0.25, { f: 'idle', fh: [15, 22], bh: [5, 19], ang: 80 }], [0.5, { f: 'lean', fh: [15, 11], bh: [3, 18], ang: -105 }, 'out'], [0.7, { f: 'lean', fh: [14, 10], bh: [3, 18], ang: -125 }], [1, { f: 'idle', fh: [14, 20], bh: [4, 21], ang: 50 }, 'io']],
-      slashBig: [[0, { f: 'back', fh: [6, 10], bh: [4, 12], ang: -175, wb: true, ab: true }], [0.35, { f: 'back', fh: [5, 9], bh: [4, 11], ang: -185, wb: true, ab: true, dy: -2 }, 'io'], [0.55, { f: 'lean', fh: [18, 19], bh: [14, 19], ang: 45, dy: 0 }, 'out'], [0.75, { f: 'wide', fh: [17, 22], bh: [12, 21], ang: 90 }], [1, { f: 'idle', fh: [14, 20], bh: [4, 21], ang: 50 }, 'io']]
+      slashUp: [[0, { f: 'idle', fh: [14, 21], bh: [5, 19], ang: 120, wb: true }], [0.25, { f: 'idle', fh: [13, 22], bh: [5, 19], ang: 135, wb: true }], [0.5, { f: 'lean', fh: [18, 5], bh: [3, 18], ang: -95 }, 'out'], [0.7, { f: 'lean', fh: [17, 3], bh: [3, 18], ang: -112 }], [1, { f: 'idle', fh: [14, 20], bh: [4, 21], ang: 50 }, 'io']],
+      slashBig: [[0, { f: 'back', fh: [6, 13], bh: [4, 15], ang: -175, wb: true, ab: true }], [0.35, { f: 'back', fh: [5, 12], bh: [4, 14], ang: -185, wb: true, ab: true, dy: -2 }, 'io'], [0.55, { f: 'lean', fh: [18, 19], bh: [14, 19], ang: 45, dy: 0 }, 'out'], [0.75, { f: 'wide', fh: [17, 22], bh: [12, 21], ang: 90 }], [1, { f: 'idle', fh: [14, 20], bh: [4, 21], ang: 50 }, 'io']]
     }
   },
   // reverse-grip knife fighter: low guard, fast jabs, fist up
@@ -87,13 +89,13 @@ const STYLES = {
   katana: {
     grip2: -4,
     idle: (t, b) => ({ f: b ? 'idle2' : 'idle', fh: [15, 18 + b], ang: -40 + sin(t * 1.5) * 3 }),
-    run: s => ({ fh: [12 + s, 20], ang: 160, wb: true }),
+    run: s => ({ fh: [14, 19 + Math.abs(s)], ang: -35 + s * 5 }),
     air: up => (up ? { f: 'jump', fh: [14, 14], ang: -70 } : { f: 'fall', fh: [15, 17], ang: -30 }),
     dash: { f: 'lean', fh: [11, 20], ang: 170, wb: true },
     moves: {
-      slashDown: [[0, { f: 'back', fh: [12, 5], ang: -110 }], [0.28, { f: 'back', fh: [11, 4], ang: -125 }, 'io'], [0.48, { f: 'lean', fh: [17, 18], ang: 25 }, 'out'], [0.7, { f: 'lean', fh: [16, 21], ang: 55 }], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']],
+      slashDown: [[0, { f: 'idle', fh: [17, 4], ang: -100 }], [0.28, { f: 'jump', fh: [16, 2], ang: -120, dy: -1 }, 'io'], [0.48, { f: 'lean', fh: [17, 18], ang: 25 }, 'out'], [0.7, { f: 'lean', fh: [16, 21], ang: 55 }], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']],
       stab: [[0, { f: 'idle', fh: [12, 17], ang: 0 }], [0.3, { f: 'idle', fh: [11, 17], ang: 0 }], [0.5, { f: 'lean', fh: [19, 16], ang: 0 }, 'out'], [0.7, { f: 'lean', fh: [18, 16], ang: 0 }], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']],
-      slashBig: [[0, { f: 'back', fh: [6, 16], ang: -175, wb: true, ab: true }], [0.35, { f: 'back', fh: [5, 16], ang: -185, wb: true, ab: true }, 'io'], [0.55, { f: 'lean', fh: [18, 16], ang: 0 }, 'out'], [0.75, { f: 'wide', fh: [15, 15], ang: 130 }], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']]
+      slashBig: [[0, { f: 'back', fh: [6, 16], ang: -175, wb: true, ab: true }], [0.35, { f: 'back', fh: [5, 16], ang: -185, wb: true, ab: true }, 'io'], [0.55, { f: 'lean', fh: [18, 16], ang: 0 }, 'out'], [0.75, { f: 'lean', fh: [18, 19], ang: 35 }], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']]
     }
   },
   // two-handed heavy, full-body windmill: at rest the big head sits on the ground in front of him,
@@ -105,11 +107,11 @@ const STYLES = {
     grip2: -6,
     idle: (t, b) => ({ f: b ? 'idle2' : 'wide', fh: [15, 18 + b], ang: 64 + sin(t * 1.2) * 2 }),
     run: s => ({ fh: [13, 19 + Math.abs(s)], ang: -62 + s * 4 }),
-    air: up => (up ? { f: 'jump', fh: [12, 10], ang: -95 } : { f: 'fall', fh: [14, 15], ang: -40 }),
+    air: up => (up ? { f: 'jump', fh: [15, 8], ang: -95 } : { f: 'fall', fh: [14, 15], ang: -40 }),
     dash: { f: 'lean', fh: [11, 19], ang: 160, wb: true },
     moves: {
-      smash: [[0, { f: 'wide', fh: [15, 18], ang: -296 }], [0.28, { f: 'back', fh: [6, 20], ang: -205, wb: true, ab: true }, 'io'], [0.44, { f: 'jump', fh: [9, 3], ang: -95, dy: -2 }, 'in'], [0.55, { f: 'crouch', fh: [18, 22], ang: 72, dy: 0 }, 'in'], [0.8, { f: 'crouch', fh: [18, 22], ang: 76 }], [1, { f: 'wide', fh: [15, 18], ang: 64 }, 'io']],
-      smashBig: [[0, { f: 'wide', fh: [15, 18], ang: -296 }], [0.2, { f: 'back', fh: [6, 20], ang: -205, wb: true, ab: true }, 'io'], [0.32, { f: 'jump', fh: [9, 3], ang: -95, dy: -4 }, 'in'], [0.4, { f: 'jump', fh: [18, 15], ang: 0, dy: -7 }, 'lin'], [0.47, { f: 'fall', fh: [10, 22], ang: 90, dy: -7, wb: true }, 'lin'], [0.54, { f: 'fall', fh: [6, 12], ang: 180, dy: -5, wb: true, ab: true }, 'lin'], [0.6, { f: 'jump', fh: [9, 3], ang: 265, dy: -3 }, 'lin'], [0.66, { f: 'crouch', fh: [19, 22], ang: 435, dy: 0 }, 'in'], [0.85, { f: 'crouch', fh: [19, 22], ang: 438 }], [1, { f: 'wide', fh: [15, 18], ang: 424 }, 'io']]
+      smash: [[0, { f: 'wide', fh: [15, 18], ang: -296 }], [0.28, { f: 'back', fh: [6, 20], ang: -205, wb: true, ab: true }, 'io'], [0.44, { f: 'jump', fh: [15, 2], ang: -95, dy: -2 }, 'in'], [0.55, { f: 'crouch', fh: [18, 22], ang: 72, dy: 0 }, 'in'], [0.8, { f: 'crouch', fh: [18, 22], ang: 76 }], [1, { f: 'wide', fh: [15, 18], ang: 64 }, 'io']],
+      smashBig: [[0, { f: 'wide', fh: [15, 18], ang: -296 }], [0.2, { f: 'back', fh: [6, 20], ang: -205, wb: true, ab: true }, 'io'], [0.32, { f: 'jump', fh: [15, 2], ang: -95, dy: -4 }, 'in'], [0.4, { f: 'jump', fh: [18, 15], ang: 0, dy: -7 }, 'lin'], [0.47, { f: 'fall', fh: [10, 22], ang: 90, dy: -7, wb: true }, 'lin'], [0.54, { f: 'fall', fh: [6, 12], ang: 180, dy: -5, wb: true, ab: true }, 'lin'], [0.6, { f: 'jump', fh: [15, 2], ang: 265, dy: -3 }, 'lin'], [0.66, { f: 'crouch', fh: [19, 22], ang: 435, dy: 0 }, 'in'], [0.85, { f: 'crouch', fh: [19, 22], ang: 438 }], [1, { f: 'wide', fh: [15, 18], ang: 424 }, 'io']]
     }
   },
   // chain weapon: twirls at the side, spins around the shoulder
@@ -132,8 +134,8 @@ const STYLES = {
     dash: { f: 'lean', fh: [14, 18], ang: 6 },
     moves: {
       stab: [[0, { f: 'idle', fh: [12, 18], ang: -8 }], [0.22, { f: 'back', fh: [7, 18], ang: -2 }, 'out'], [0.4, { f: 'lean', fh: [18, 17], ang: 0 }, 'out'], [0.62, { f: 'lean', fh: [18, 17], ang: 0 }], [1, { f: 'idle', fh: [13, 19], ang: -78 }, 'io']],
-      slashUp: [[0, { f: 'idle', fh: [12, 20], ang: 30 }], [0.24, { f: 'crouch', fh: [12, 20], ang: 36 }, 'out'], [0.45, { f: 'lean', fh: [15, 9], ang: -72, dy: -1 }, 'out'], [0.62, { f: 'lean', fh: [14, 7], ang: -100, dy: -1 }], [1, { f: 'idle', fh: [13, 19], ang: -78 }, 'io']],
-      stabBig: [[0, { f: 'idle', fh: [13, 17], ang: -78 }], [0.08, { f: 'wide', fh: [14, 16], ang: -40 }], [0.52, { f: 'wide', fh: [14, 16], ang: 680 }, 'lin'], [0.62, { f: 'lean', fh: [19, 17], ang: 720 }, 'out'], [0.78, { f: 'lean', fh: [19, 17], ang: 720 }], [1, { f: 'idle', fh: [13, 19], ang: 642 }, 'io']]
+      slashUp: [[0, { f: 'idle', fh: [12, 20], ang: 30 }], [0.24, { f: 'crouch', fh: [12, 20], ang: 36 }, 'out'], [0.45, { f: 'lean', fh: [17, 11], ang: -50, dy: -1 }, 'out'], [0.62, { f: 'lean', fh: [17, 10], ang: -58, dy: -1 }], [1, { f: 'idle', fh: [13, 19], ang: -78 }, 'io']],
+      stabBig: [[0, { f: 'idle', fh: [13, 17], ang: -78 }], [0.08, { f: 'wide', fh: [17, 15], bh: [7, 19], ang: -40, slide: 17, one: true }], [0.52, { f: 'wide', fh: [17, 15], bh: [7, 19], ang: 680, slide: 17, one: true }, 'lin'], [0.6, { f: 'lean', fh: [19, 17], ang: 720 }, 'out'], [0.78, { f: 'lean', fh: [19, 17], ang: 720 }], [1, { f: 'idle', fh: [13, 19], ang: 642 }, 'io']]
     }
   },
   // spear: rear hand near the butt, front hand a third of the way up. Long two-handed thrusts; the
@@ -160,9 +162,9 @@ const STYLES = {
     air: up => (up ? { f: 'jump', fh: [14, 12], ang: -70 } : { f: 'fall', fh: [15, 16], ang: 10 }),
     dash: { f: 'lean', fh: [11, 19], ang: 160, wb: true },
     moves: {
-      slashDown: [[0, { f: 'idle', fh: [14, 19], ang: 42 }], [0.32, { f: 'back', fh: [8, 4], ang: -145, wb: true, ab: true }, 'io'], [0.52, { f: 'lean', fh: [18, 18], ang: 45 }, 'in'], [0.75, { f: 'lean', fh: [18, 20], ang: 62 }], [1, { f: 'idle', fh: [14, 19], ang: 42 }, 'io']],
-      slashUp: [[0, { f: 'idle', fh: [14, 19], ang: 42 }], [0.3, { f: 'back', fh: [6, 21], ang: 155, wb: true, ab: true }, 'io'], [0.52, { f: 'lean', fh: [16, 9], ang: -62, dy: -1 }, 'in'], [0.75, { f: 'lean', fh: [15, 8], ang: -76, dy: -1 }], [1, { f: 'idle', fh: [14, 19], ang: 42 }, 'io']],
-      slashBig: [[0, { f: 'idle', fh: [14, 19], ang: 42 }], [0.22, { f: 'back', fh: [5, 17], ang: 178, wb: true, ab: true }, 'io'], [0.38, { f: 'wide', fh: [8, 16], ang: 182, flip: true, dy: -2 }], [0.54, { f: 'wide', fh: [19, 17], ang: 8, dy: 0 }, 'out'], [0.75, { f: 'wide', fh: [18, 19], ang: 40 }], [1, { f: 'idle', fh: [14, 19], ang: 42 }, 'io']]
+      slashDown: [[0, { f: 'idle', fh: [14, 19], ang: 42 }], [0.32, { f: 'jump', fh: [15, 2], ang: -150, wb: true, dy: -1 }, 'io'], [0.52, { f: 'lean', fh: [18, 18], ang: 45 }, 'in'], [0.75, { f: 'lean', fh: [18, 20], ang: 62 }], [1, { f: 'idle', fh: [14, 19], ang: 42 }, 'io']],
+      slashUp: [[0, { f: 'idle', fh: [14, 19], ang: 42 }], [0.3, { f: 'back', fh: [6, 21], ang: 155, wb: true, ab: true }, 'io'], [0.52, { f: 'lean', fh: [18, 7], ang: -62, dy: -1 }, 'in'], [0.75, { f: 'lean', fh: [17, 5], ang: -76, dy: -1 }], [1, { f: 'idle', fh: [14, 19], ang: 42 }, 'io']],
+      slashBig: [[0, { f: 'idle', fh: [14, 19], ang: 42 }], [0.22, { f: 'back', fh: [5, 17], ang: 178, wb: true, ab: true }, 'io'], [0.38, { f: 'wide', fh: [9, 16], ang: 182, flip: true, wb: true, dy: -2 }], [0.54, { f: 'wide', fh: [19, 17], ang: 8, dy: 0 }, 'out'], [0.75, { f: 'wide', fh: [18, 19], ang: 40 }], [1, { f: 'idle', fh: [14, 19], ang: 42 }, 'io']]
     }
   },
   // scythe: held upright like a reaper at rest. A huge overhead reap, a hook-and-pull, and a full
@@ -175,9 +177,9 @@ const STYLES = {
     air: up => (up ? { f: 'jump', fh: [14, 13], ang: -100 } : { f: 'fall', fh: [14, 16], ang: -50 }),
     dash: { f: 'lean', fh: [11, 19], ang: 170, wb: true },
     moves: {
-      slashDown: [[0, { f: 'idle', fh: [13, 19], ang: -72 }], [0.3, { f: 'back', fh: [7, 7], ang: -165, wb: true, ab: true }, 'io'], [0.5, { f: 'lean', fh: [18, 19], ang: 38 }, 'in'], [0.72, { f: 'lean', fh: [17, 21], ang: 58 }], [1, { f: 'idle', fh: [13, 19], ang: -72 }, 'io']],
+      slashDown: [[0, { f: 'idle', fh: [13, 19], ang: -72 }], [0.3, { f: 'jump', fh: [14, 3], ang: -165, wb: true }, 'io'], [0.5, { f: 'lean', fh: [18, 19], ang: 38 }, 'in'], [0.72, { f: 'lean', fh: [17, 21], ang: 58 }], [1, { f: 'idle', fh: [13, 19], ang: -72 }, 'io']],
       stab: [[0, { f: 'idle', fh: [13, 19], ang: -72 }], [0.3, { f: 'lean', fh: [19, 14], ang: -18 }, 'out'], [0.48, { f: 'lean', fh: [19, 15], ang: -10 }], [0.64, { f: 'back', fh: [11, 19], ang: 22 }, 'in'], [1, { f: 'idle', fh: [13, 19], ang: -72 }, 'io']],
-      slashBig: [[0, { f: 'idle', fh: [13, 19], ang: -72 }], [0.24, { f: 'back', fh: [5, 12], ang: -172, wb: true, ab: true }, 'io'], [0.4, { f: 'wide', fh: [8, 16], ang: 172, flip: true, dy: -1 }], [0.55, { f: 'wide', fh: [18, 18], ang: 30, dy: 0 }, 'out'], [0.76, { f: 'wide', fh: [17, 20], ang: 66 }], [1, { f: 'idle', fh: [13, 19], ang: -72 }, 'io']]
+      slashBig: [[0, { f: 'idle', fh: [13, 19], ang: -72 }], [0.24, { f: 'back', fh: [5, 12], ang: -172, wb: true, ab: true }, 'io'], [0.4, { f: 'wide', fh: [9, 16], ang: -188, flip: true, wb: true, dy: -1 }], [0.55, { f: 'wide', fh: [18, 18], ang: 30, dy: 0 }, 'out'], [0.76, { f: 'wide', fh: [17, 20], ang: 66 }], [1, { f: 'idle', fh: [13, 19], ang: -72 }, 'io']]
     }
   },
   // bow: lowered at rest; raise, draw the string back with the back hand, release
@@ -205,7 +207,7 @@ const STYLES = {
     run: s => ({ fh: [14 + s * 2, 19], bh: [5 - s * 2, 19], ang: 40 }),
     air: up => (up ? { f: 'jump', fh: [14, 12], bh: [3, 14], ang: -80 } : { f: 'fall', fh: [15, 16], bh: [2, 15], ang: 20 }),
     dash: { f: 'lean', fh: [10, 18], bh: [15, 16], ang: 160, wb: true },
-    ranged: [[0, { f: 'idle', fh: [14, 17], bh: [5, 19], ang: 20 }], [0.3, { f: 'back', fh: [14, 5], bh: [5, 19], ang: -75 }, 'io'], [0.45, { f: 'lean', fh: [19, 15], bh: [5, 19], ang: 0 }, 'out'], [0.7, { f: 'lean', fh: [18, 15], bh: [5, 19], ang: 0 }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 30 }, 'io']],
+    ranged: [[0, { f: 'idle', fh: [14, 17], bh: [5, 19], ang: 20 }], [0.3, { f: 'idle', fh: [17, 3], bh: [5, 19], ang: -80 }, 'io'], [0.45, { f: 'lean', fh: [19, 15], bh: [5, 19], ang: 0 }, 'out'], [0.7, { f: 'lean', fh: [18, 15], bh: [5, 19], ang: 0 }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 30 }, 'io']],
     fireAt: 0.42
   }
 };
@@ -215,7 +217,7 @@ export const fireAt = type => styleOf(type).fireAt || 0;
 // nunchuck spin move: hand circles the shoulder, weapon whirls
 function spinPose(p, turns, big) {
   const th = -Math.PI / 2 + p * Math.PI * 2 * turns;
-  return { f: big ? 'wide' : p < 0.5 ? 'lean' : 'idle', fh: [12 + Math.cos(th) * 5, 15 + Math.sin(th) * 4], bh: [5, 19], ang: -180 + p * 360 * (turns + 1), wb: Math.cos(th) < -0.2, ab: Math.cos(th) < -0.2 };
+  return { f: big ? 'wide' : p < 0.5 ? 'lean' : 'idle', fh: [15 + Math.cos(th) * 4, 16 + Math.sin(th) * 4], bh: [5, 19], ang: -180 + p * 360 * (turns + 1), wb: Math.cos(th) < -0.2 || Math.sin(th) < -0.6, ab: Math.cos(th) < -0.2 }; // over the head the chain passes behind it
 }
 
 // ---------------------------------------------------------------- which pose now
@@ -375,8 +377,8 @@ const angIndex = deg => (((Math.round((deg / 360) * ROT_STEPS) % ROT_STEPS) + RO
 // pass 'line' draws the ink silhouette only and 'fill' the colours only, so the near arm's outline
 // can go under the body (no ink lines across the chest) while its colours go on top.
 const ARM = {
-  front: { lit: '#ffd2a0', skin: '#eea070', dark: '#c86c48', rim: '#6e2c1c', glove: '#2a2a3a', gloveLit: '#5a5a74' },
-  back: { lit: '#eea070', skin: '#c86c48', dark: '#94442e', rim: '#4a1c12', glove: '#1c1c28', gloveLit: '#3a3a4e' }
+  front: { lit: '#ffd2a0', skin: '#eea070', dark: '#c86c48', rim: '#3a1810', glove: '#2a2a3a', gloveLit: '#5a5a74' },
+  back: { lit: '#eea070', skin: '#c86c48', dark: '#94442e', rim: '#2a100a', glove: '#1c1c28', gloveLit: '#3a3a4e' }
 };
 const UPPER = 6,
   FORE = 6;
@@ -421,11 +423,11 @@ function drawArm(x0, y0, x1, y1, front, face = 1, pass = 'both', onBody = null) 
   const sx = x0 + 1, sy = y0 + 1, mx = ex + 1, my = ey + 1, hx = x1 + 1, hy = y1 + 1;
   const gx = mx + (hx - mx) * 0.55, gy = my + (hy - my) * 0.55;
   const bones = [
-    [sx, sy, sx, sy, front ? 2.1 : 1.6, 'skin'],
-    [sx, sy, mx, my, 1.6, 'skin'],
-    [mx, my, gx, gy, 1.35, 'skin'],
-    [gx, gy, hx, hy, 1.5, 'glove'],
-    [hx, hy, hx, hy, 1.7, 'glove']
+    [sx, sy, sx, sy, front ? 2.4 : 2, 'skin'],
+    [sx, sy, mx, my, 2, 'skin'],
+    [mx, my, gx, gy, 1.7, 'skin'],
+    [gx, gy, hx, hy, 1.8, 'glove'],
+    [hx, hy, hx, hy, 2, 'glove']
   ];
   const near = (px, py) => {
     let best = null;
@@ -490,12 +492,12 @@ export function drawHeroAnimated(h, t) {
   const rad = (angW * Math.PI) / 180;
   // two-handed: the back hand rides the handle grip2 px from the front hand along the weapon
   let bh;
-  if (st.grip2 && !pose.sheath) bh = [fh[0] + Math.cos(rad) * st.grip2, fh[1] + Math.sin(rad) * st.grip2];
+  if (st.grip2 && !pose.sheath && !pose.one) bh = [fh[0] + Math.cos(rad) * st.grip2, fh[1] + Math.sin(rad) * st.grip2];
   else bh = G2(pose.bh ? pose.bh[0] : 5, pose.bh ? pose.bh[1] : 20);
   const shB = W2(sh[0][0], sh[0][1]),
     shF = W2(sh[1][0], sh[1][1]);
   // weapon origin: the sprite's grip sits `slide` px behind the front hand along the weapon
-  const slide = pose.sheath ? 0 : st.slide || 0;
+  const slide = pose.sheath ? 0 : pose.slide ?? st.slide ?? 0;
   const back = pose.sheath ? G2(...(pose.at || SHEATH.at)) : null;
   const wx = back ? back[0] : fh[0] + 1 - Math.cos(rad) * slide,
     wy = back ? back[1] : fh[1] + 1 - Math.sin(rad) * slide; // +1: the middle of the 3px fist
