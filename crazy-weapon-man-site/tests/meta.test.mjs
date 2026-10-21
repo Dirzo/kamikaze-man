@@ -170,3 +170,21 @@ test('mastery runs to 100 and opens ten perk choices along the way, per weapon t
   resetProficiency();
   resetMeta();
 });
+test('area augments: two shared, two per class, each class pair only with that class in hand', () => {
+  resetMeta();
+  bankShards(1e7);
+  const aoe = TREE.filter(n => n.aoe);
+  assert.equal(aoe.filter(n => !n.branch).length, 2);
+  for (const c of Object.keys(CLASSES)) assert.equal(aoe.filter(n => n.branch === c).length, 2, c);
+  for (const id of ['core', 'sharp', 'bounty', 'nova']) assert.ok(buyRank(id), id);
+  assert.ok(Math.abs(stats('bow').nova - 0.04) < 1e-9 && Math.abs(stats('hammer').nova - 0.04) < 1e-9, 'shared nova works with everything');
+  setLock('blades');
+  for (const id of ['edge', 'brutal', 'whirl']) assert.ok(buyRank(id), id);
+  assert.ok(Math.abs(stats('sword').wave - 0.12) < 1e-9);
+  assert.equal(stats('bow').wave, 0);
+  // the web still fits the window: nodes stay apart and inside its 322 x 210 frame
+  for (const a of TREE) for (const b of TREE) if (a !== b) assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= 16, a.id + ' ' + b.id);
+  const ys = TREE.map(n => n.y);
+  assert.ok(Math.max(...ys) - Math.min(...ys) + 24 <= 210 && TREE.every(n => Math.abs(n.x) + 12 <= 161));
+  resetMeta();
+});

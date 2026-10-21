@@ -34,14 +34,14 @@ function mapScene(game, all) {
 }
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
-  bankShards(4200); setLock('blades');
-  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'edge', 'edge', 'swarm', 'brutal', 'brutal', 'fire']) buyRank(id);
+  bankShards(9000); setLock('blades');
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'edge', 'edge', 'swarm', 'brutal', 'brutal', 'fire', 'whirl', 'whirl', 'bounty', 'nova']) buyRank(id);
   winTrophy(1); winTrophy(2);
   addProficiency('sword', 2200); addProficiency('bow', 300);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
   openPowers(tab === 3 ? 1 : tab);
-  powers.tree.sel = tab === 0 ? 'core' : 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
+  powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
 }
 // the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
 function filesScene(game) {

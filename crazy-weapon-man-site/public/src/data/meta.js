@@ -31,7 +31,7 @@ export const CLASS_OF = Object.fromEntries(Object.entries(CLASSES).flatMap(([c, 
 export const BRANCHES = [
   { id: 'blades', name: 'BLADES', col: 'coral', dir: [-1.2, -0.3], side: [0, 1], anchors: ['sharp', 'band'] },
   { id: 'blunt', name: 'BLUNT', col: 'sand', dir: [1.2, -0.3], side: [0, 1], anchors: ['skin', 'hearts'] },
-  { id: 'ranged', name: 'RANGED', col: 'sky', dir: [0, 0.92], side: [1.15, 0], anchors: ['magnet', 'learn'] }
+  { id: 'ranged', name: 'RANGED', col: 'sky', dir: [0, 0.92], side: [1.15, 0], anchors: ['magnet', 'learn'], label: 82 }
 ];
 // the shared ring: [id, x, y, depth, name, max ranks, stat, per rank, description ({v} = the total)]
 const SHARED = [
@@ -46,16 +46,21 @@ const SHARED = [
   ['lust', 22, -50, 2, 'COVETOUS', 3, 'lust', 0.1, 'Weapon Lust builds {v}% faster'],
   ['stand', 0, -72, 3, 'LUCKY LOOT', 3, 'standout', 0.02, '+{v}% standout weapon drops'],
   ['combo', -46, 40, 1, 'MOMENTUM', 5, 'combo', 0.08, 'Swarm combos last {v}% longer'],
-  ['grace', 46, 40, 1, 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit']
+  ['grace', 46, 40, 1, 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit'],
+  // area-of-effect augments that work with every weapon
+  ['nova', -48, -66, 3, 'SHARD NOVA', 5, 'nova', 0.04, 'Kills burst into shards that hit foes nearby for {v}% of the fallen foe\'s health'],
+  ['ripple', 48, -66, 3, 'RIPPLE', 5, 'splash', 0.03, 'Every hit splashes {v}% of its damage onto foes nearby']
 ];
 const SHARED_LINKS = [['core', 'sharp'], ['core', 'skin'], ['core', 'magnet'], ['core', 'learn'], ['core', 'tutor'], ['sharp', 'band'], ['band', 'magnet'],
   ['skin', 'hearts'], ['hearts', 'learn'], ['magnet', 'learn'], ['tutor', 'bounty'], ['tutor', 'lust'], ['bounty', 'stand'], ['lust', 'stand'],
-  ['band', 'combo'], ['hearts', 'grace'], ['sharp', 'bounty'], ['skin', 'lust']];
+  ['band', 'combo'], ['hearts', 'grace'], ['sharp', 'bounty'], ['skin', 'lust'], ['bounty', 'nova'], ['stand', 'nova'], ['lust', 'ripple'], ['stand', 'ripple']];
 // every class cluster has the same shape: [along, across, size, depth] for each slot, then the links
 // (-1 and -2 are the cluster's two anchors on the ring)
 const SLOTS = [[56, -10, 'small', 1], [56, 10, 'small', 1], [78, -22, 'small', 2], [78, 0, 'small', 2], [78, 22, 'small', 2],
-  [100, -12, 'small', 3], [100, 12, 'small', 3], [124, 0, 'medium', 4], [118, -34, 'key', 5], [118, 34, 'key', 5]];
-const SLOT_LINKS = [[-1, 0], [-2, 1], [0, 1], [0, 2], [0, 3], [1, 3], [1, 4], [2, 5], [3, 5], [3, 6], [4, 6], [5, 7], [6, 7], [2, 8], [5, 8], [4, 9], [6, 9]];
+  [100, -12, 'small', 3], [100, 12, 'small', 3], [124, 0, 'medium', 4], [118, -34, 'key', 5], [118, 34, 'key', 5],
+  [94, -42, 'aoe', 4], [94, 42, 'aoe', 4]]; // the cluster's two area-of-effect augments, beside its keystones
+const SLOT_LINKS = [[-1, 0], [-2, 1], [0, 1], [0, 2], [0, 3], [1, 3], [1, 4], [2, 5], [3, 5], [3, 6], [4, 6], [5, 7], [6, 7], [2, 8], [5, 8], [4, 9], [6, 9],
+  [2, 10], [8, 10], [4, 11], [9, 11]];
 // shards per rank by depth (a rank costs this times the rank being bought)
 const DEPTH_COST = [45, 90, 135, 180, 240, 320];
 // per class, in slot order: [id, name, max ranks, stat, per rank, description, keystone element]
@@ -70,7 +75,9 @@ const NODES = {
     ['blink', 'BLINK STEP', 5, 'dashCd', 0.06, 'Dash recharges {v}% faster with a blade'],
     ['bladem', 'BLADE MASTER', 3, 'dmg', 0.06, '+{v}% blade damage'],
     ['fire', 'BLAZING BLADES', 5, 'infuse', 0.06, 'Blades are infused with Fire: {v}% chance to burn', 'fire'],
-    ['bolt', 'THUNDER BLADES', 5, 'infuse', 0.06, 'Blades are infused with Lightning: {v}% chance to chain', 'lightning']
+    ['bolt', 'THUNDER BLADES', 5, 'infuse', 0.06, 'Blades are infused with Lightning: {v}% chance to chain', 'lightning'],
+    ['whirl', 'WHIRLWIND', 5, 'wave', 0.12, 'Blade finishers spin out a whirlwind: {v}% damage to every foe around you'],
+    ['cleave', 'WIDE CLEAVE', 5, 'splash', 0.07, 'Blade hits cleave through: {v}% of the damage splashes onto foes nearby']
   ],
   blunt: [
     ['armor', 'PADDING', 5, 'armor', 0.025, 'Take {v}% less damage with a blunt weapon'],
@@ -82,7 +89,9 @@ const NODES = {
     ['bones', 'BONEBREAKER', 5, 'critDmg', 0.08, 'Blunt crits deal +{v}% more'],
     ['bluntm', 'CRUSHER', 3, 'dmg', 0.06, '+{v}% blunt damage'],
     ['quake', 'QUAKE STRIKES', 5, 'infuse', 0.06, 'Blunt hits are infused with Earth: {v}% chance to quake', 'earth'],
-    ['frost', 'FROST STRIKES', 5, 'infuse', 0.06, 'Blunt hits are infused with Ice: {v}% chance to chill', 'ice']
+    ['frost', 'FROST STRIKES', 5, 'infuse', 0.06, 'Blunt hits are infused with Ice: {v}% chance to chill', 'ice'],
+    ['shock', 'SHOCKWAVE', 5, 'wave', 0.15, 'Blunt finishers slam a shockwave: {v}% damage to every foe around you'],
+    ['after', 'AFTERSHOCK', 5, 'nova', 0.06, 'Blunt kills quake: {v}% of the fallen foe\'s health to foes nearby']
   ],
   ranged: [
     ['spec', 'SPECIALIST', 5, 'specialCd', 0.04, 'Ranged specials recharge {v}% faster'],
@@ -94,7 +103,9 @@ const NODES = {
     ['pin', 'PIN DOWN', 3, 'execute', 0.12, '+{v}% ranged damage to foes under a third of their health'],
     ['rangem', 'DEADEYE', 3, 'dmg', 0.06, '+{v}% ranged damage'],
     ['venom', 'VENOM SHOTS', 5, 'infuse', 0.06, 'Shots are infused with Poison: {v}% chance to poison', 'poison'],
-    ['gale', 'GALE SHOTS', 5, 'infuse', 0.06, 'Shots are infused with Wind: {v}% chance to toss', 'wind']
+    ['gale', 'GALE SHOTS', 5, 'infuse', 0.06, 'Shots are infused with Wind: {v}% chance to toss', 'wind'],
+    ['frag', 'FRAG SHOTS', 5, 'splash', 0.08, 'Shots burst on impact: {v}% of the damage splashes onto foes nearby'],
+    ['scatter', 'SCATTER BURST', 5, 'nova', 0.06, 'Ranged kills scatter shrapnel: {v}% of the fallen foe\'s health to foes nearby']
   ]
 };
 // x, y are offsets in pixels from CORE
@@ -105,6 +116,9 @@ for (const B of BRANCHES)
     const [a, s, size, depth] = SLOTS[i];
     TREE.push({ id, branch: B.id, depth, size, name, max, stat, per, desc, el, cost: DEPTH_COST[depth], x: Math.round(a * B.dir[0] + s * B.side[0]), y: Math.round(a * B.dir[1] + s * B.side[1]), links: [] });
   });
+// area-of-effect augments get their own look on the web
+export const AOE_STATS = ['splash', 'wave', 'nova'];
+for (const n of TREE) if (AOE_STATS.includes(n.stat)) (n.aoe = true), (n.size = n.size === 'small' ? 'aoe' : n.size);
 export const TREE_BY_ID = Object.fromEntries(TREE.map(n => [n.id, n]));
 const link = (a, b) => {
   TREE_BY_ID[a].links.push(b);
@@ -375,7 +389,7 @@ export const unpicked = type => Array.from({ length: tiersOpen(type) }, (_, i) =
 
 // ---------------------------------------------------------------- the sum of it all
 const ZERO = { dmg: 0, crit: 0, critDmg: 0, swarmDmg: 0, bossDmg: 0, execute: 0, specialCd: 0, attackSpeed: 0, hp: 0, heal: 0, armor: 0, speed: 0,
-  dashCd: 0, inv: 0, regen: 0, shards: 0, xp: 0, combo: 0, hearts: 0, mastery: 0, bossShards: 0, standout: 0, lust: 0 };
+  dashCd: 0, inv: 0, regen: 0, shards: 0, xp: 0, combo: 0, hearts: 0, mastery: 0, bossShards: 0, standout: 0, lust: 0, splash: 0, wave: 0, nova: 0 };
 let cache = null;
 function add(out, s) {
   for (const k in s) out[k] += s[k];
@@ -407,6 +421,7 @@ export function stats(type = null) {
   out.armor = Math.min(0.6, out.armor);
   out.specialCd = Math.min(0.6, out.specialCd);
   out.dashCd = Math.min(0.6, out.dashCd);
+  out.splash = Math.min(0.6, out.splash);
   return (cache[key] = out);
 }
 // a single number for "how strong has the account become" (tests and the playtest report)

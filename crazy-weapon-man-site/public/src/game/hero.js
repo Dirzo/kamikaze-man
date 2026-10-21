@@ -200,6 +200,7 @@ function updateAttack(h, dt, T) {
         dir: h.face,
         knock: T.knock * (a.move.big ? 1.3 : 1),
         hop: T.hop && a.move.big,
+        big: a.move.big,
         element: h.weapon.family,
         sparkCol: lookOf(h.weapon).light
       });

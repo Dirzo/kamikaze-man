@@ -22,7 +22,8 @@ const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 let lastStopAt = -9;
 
-// o: { crit, dir, knock (px), hop, element (family), special, chain, chip (small/no-feedback hit), col }
+// o: { crit, dir, knock (px), hop, element (family), special, big (a finisher), chain, chip (small/no-feedback
+// hit), aoe (an area augment's hit: starts no more area hits), nova, col }
 export function hitEnemy(e, dmg, o = {}) {
   if (!e || e.dead || e.hp <= 0 || e.spawnT > 0) return 0;
   const hero = world.hero;
@@ -95,8 +96,50 @@ export function hitEnemy(e, dmg, o = {}) {
     // shard tree keystones: a chance to also strike with another element
     if (!o.chain) for (const [el, p] of Object.entries(heroStats().infuse)) if (el !== o.element && Math.random() < p) applyElement(e, dmg, { ...o, element: el });
   }
+  if (!o.chip && !o.chain && !o.aoe) areaHits(e, dmg, o);
   if (e.hp <= 0) kill(e, o);
   return dmg;
+}
+
+// ---------------------------------------------------------------- area augments (shard tree)
+// the living foes around a point, nearest first
+function around(x, y, r, not = null) {
+  return world.enemies
+    .filter(n => n !== not && !n.dead && n.spawnT <= 0 && Math.abs(cx(n) - x) < r + n.w / 2 && Math.abs(cy(n) - y) < 30 + n.h / 2)
+    .sort((a, b) => Math.abs(cx(a) - x) - Math.abs(cx(b) - x));
+}
+const AREA_MAX = 8; // foes one area effect can reach
+// RIPPLE / WIDE CLEAVE / FRAG SHOTS splash part of a hit onto its neighbours; WHIRLWIND / SHOCKWAVE
+// turn a finisher or special into a ring around the hero
+function areaHits(e, dmg, o) {
+  const S = heroStats(), h = world.hero;
+  if (S.splash > 0) {
+    const ns = around(cx(e), cy(e), 34, e).slice(0, AREA_MAX);
+    if (ns.length) burst(cx(e), cy(e), 6, 'spark', ['orange', 'gold', 'paper']);
+    for (const n of ns) hitEnemy(n, dmg * S.splash, { aoe: true, dir: Math.sign(cx(n) - cx(e)) || 1, knock: 6, sparkCol: C.orange, col: C.gold });
+  }
+  if (S.wave > 0 && h && (o.big || o.special) && world.t - (world.lastWave ?? -9) > 0.3) {
+    world.lastWave = world.t;
+    const x = cx(h), y = h.y + h.h;
+    for (let i = -6; i <= 6; i++) emit(x + i * 9, y - 2, 'dust', i % 2 ? C.mist : C.paper);
+    spark(x - 52, y - 6, { big: true, col: C.orange });
+    spark(x + 52, y - 6, { big: true, col: C.orange });
+    shake(0.25);
+    sfx.thud(true);
+    for (const n of around(x, cy(h), 56, e).slice(0, AREA_MAX)) hitEnemy(n, dmg * S.wave, { aoe: true, dir: Math.sign(cx(n) - x) || 1, knock: 22, hop: true, sparkCol: C.orange, col: C.gold });
+  }
+}
+// SHARD NOVA / AFTERSHOCK / SCATTER BURST: a kill bursts into shards that hit the foes around it
+// for part of the fallen foe's health (a nova's own kills don't nova again)
+function nova(e, o) {
+  const p = heroStats().nova;
+  if (!(p > 0) || o.nova) return;
+  const x = cx(e), y = cy(e), ns = around(x, y, 44, e).slice(0, AREA_MAX);
+  burst(x, y, 10, 'chip', ['ice', 'sky', 'violet']);
+  for (const n of ns) {
+    zap(x, y, cx(n), cy(n), C.ice);
+    hitEnemy(n, e.max * p, { aoe: true, nova: true, dir: Math.sign(cx(n) - x) || 1, knock: 14, sparkCol: C.ice, col: C.ice });
+  }
 }
 
 function applyElement(e, dmg, o) {
@@ -221,6 +264,7 @@ export function kill(e, o = {}) {
   gainXp(e.xp);
   gainProficiency(e.elite ? 'elite' : 'normal');
   abilityKill();
+  nova(e, o);
   // loot: the shards come out of the body when it shatters (shatter below)
   const zone = world.zone;
   e.shardLoot = e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0);

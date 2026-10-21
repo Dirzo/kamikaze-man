@@ -236,7 +236,7 @@ function starfield(t, twinkle = true) {
 }
 
 // ---------------------------------------------------------------- the shard web
-const R = { small: 5, medium: 7, key: 9 };
+const R = { small: 5, aoe: 6, medium: 7, key: 9 };
 const colOf = n => (n.el ? C[ELEMENTS[n.el].col] : n.branch ? C[BRANCHES.find(B => B.id === n.branch).col] : C.gold);
 const minY = Math.min(...TREE.map(n => n.y)) - 12, maxY = Math.max(...TREE.map(n => n.y)) + 12;
 const ORIGIN = { x: MAP.x + MAP.w / 2, y: Math.round(MAP.y + (MAP.h - (maxY - minY)) / 2 - minY) };
@@ -246,7 +246,7 @@ function drawTree(t) {
   starfield(t);
   for (const [B, c] of [[BRANCHES[0], C.wine], [BRANCHES[1], C.woodD], [BRANCHES[2], C.navy]]) cloud(ORIGIN.x + B.dir[0] * 90, ORIGIN.y + B.dir[1] * 90, 32, c, weaponLock() === B.id ? 5 : 3);
   for (const B of BRANCHES) {
-    const lx = ORIGIN.x + B.dir[0] * 90 + B.side[0] * 52, ly = ORIGIN.y + B.dir[1] * 90 + B.side[1] * 50;
+    const lx = ORIGIN.x + B.dir[0] * 90 + B.side[0] * (B.label || 52), ly = ORIGIN.y + B.dir[1] * 90 + B.side[1] * 50;
     text(B.name, Math.max(MAP.x + 20, Math.min(MAP.x + MAP.w - 20, lx)), Math.min(MAP.y + MAP.h - 10, ly), weaponLock() === B.id ? C[B.col] : C.stone, { align: 'center' });
   }
   const L = weaponLock();
@@ -266,6 +266,8 @@ function drawTree(t) {
     if (k) disc(x, y, Math.max(1, Math.round(((r - 2) * k) / n.max)), col);
     if (k >= n.max) px(x, y, C.cream);
     if (n.size === 'key') for (const [ox, oy] of [[0, -r - 2], [0, r + 2], [-r - 2, 0], [r + 2, 0]]) px(x + ox, y + oy, k ? col : C.stone);
+    // an area augment wears a burst of eight rays
+    if (n.aoe) for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) px(Math.round(x + ox * (r + 2)), Math.round(y + oy * (r + 2)), k ? C.orange : C.stone);
     box(x - r - 2, y - r - 2, r * 2 + 5, r * 2 + 5, () => {
       if (P.tree.sel === n.id) buy(n);
       else (P.tree.sel = n.id), sfx.ui();
@@ -284,7 +286,7 @@ function drawNodePanel(t) {
   let y = para(n.name, S.x + 34, S.y + 7, S.w - 38, C.gold);
   text(`RANK ${k}/${n.max}`, S.x + 34, Math.max(y, S.y + 22), k ? col : C.fog);
   y = S.y + 38;
-  text(n.el ? 'ELEMENT KEYSTONE' : n.branch ? CLASSES[n.branch].name + ' ONLY' : n.id === 'core' ? 'THE CORE' : 'SHARED: EVERY WEAPON', S.x + 6, y, C.stone);
+  text(n.el ? 'ELEMENT KEYSTONE' : n.aoe ? (n.branch ? CLASSES[n.branch].name + ' AREA AUGMENT' : 'AREA AUGMENT: EVERY WEAPON') : n.branch ? CLASSES[n.branch].name + ' ONLY' : n.id === 'core' ? 'THE CORE' : 'SHARED: EVERY WEAPON', S.x + 6, y, C.stone);
   y += 11;
   if (k) y = para('NOW: ' + nodeText(n, k), S.x + 6, y, S.w - 12, C.paper) + 2;
   if (k < n.max) y = para((k ? 'NEXT: ' : '') + nodeText(n, k + 1), S.x + 6, y, S.w - 12, k ? C.mist : C.paper) + 2;

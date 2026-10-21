@@ -30,6 +30,7 @@ import { tickRun, splitZone } from '../game/speedrun.js';
 import { resetRecords } from '../data/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { ENEMIES } from '../data/enemies.js';
+import { resetMeta, bankShards, buyRank, setLock } from '../data/meta.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
@@ -265,6 +266,19 @@ export function runSmoke(game) {
       key('KeyC',true);poll();for(let i=0;i<60;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);poll();}key('KeyC',false);poll();
       ok(e.hp<e.max,type+' never hit');ok(!h.special,type+' special never ended');heroPose(h,world.t);
     }
+  });
+  check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
+    const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});
+      const es=[0,18,40].map(dx=>{const e=spawnEnemy('brute',h.x+30+dx,GROUND);e.spawnT=0;e.hp=e.max=1e6;return e;});return [h,es];};
+    let [h,es]=fresh('sword',['core','sharp','bounty','stand','ripple']);hitEnemy(es[0],1000,{dir:1});
+    ok(es[1].hp<es[1].max && es[1].hp>es[1].max-1000*0.1,'ripple did not splash a little onto the neighbour');
+    [h,es]=fresh('hammer',['core','skin','armor','stone','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
+    ok(es[1].hp===es[1].max,'a shockwave without a finisher');hitEnemy(es[0],1000,{dir:1,big:true});ok(es[1].hp<es[1].max,'the finisher sent no shockwave');
+    [h,es]=fresh('bow',['core','learn','aim','kite','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    ok(es[0].dead && es[1].hp<es[1].max,'the kill did not scatter onto the next foe');
+    [h,es]=fresh('sword',['core','learn','aim','kite','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    ok(es[1].hp===es[1].max,'a ranged augment worked with a sword');
+    resetMeta();
   });
   check('every weapon ability does its thing',()=>{
     const fresh=ab=>{reset();const h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});h.weapon.ability=ab;const e=spawnEnemy('brute',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e7;return [h,e];};
