@@ -179,8 +179,17 @@ ARMS = {
         '.O445',
         '33344',
     ],
+    # drawing a bow: elbow out behind, forearm folded forward so the fist sits at the cheek. Only
+    # picked when a pose asks for it (pull), never as the nearest match
+    ('draw', 'near'): [
+        '.5444444VVv',
+        '54433334vFvv',
+        '43......zzvz',
+        '3444455O44',
+        '.33333333',
+    ],
 }
-DIRS = {'fwd': 0, 'dfwd': 45, 'down': 90, 'dback': 135, 'back': 180, 'uback': -135, 'up': -90, 'ufwd': -45}
+DIRS = {'draw': -45, 'fwd': 0, 'dfwd': 45, 'down': 90, 'dback': 135, 'back': 180, 'uback': -135, 'up': -90, 'ufwd': -45}
 # the far arm is the same drawing one shade darker, so it sits back in depth
 DARKER = {'5': '4', '4': '3', '3': '2', '2': '1', 'O': '3', 'V': 'v', 'v': 'z', 'F': 'z', 'z': 'z'}
 

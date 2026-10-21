@@ -54,7 +54,7 @@ function mix(a, b, t) {
   else o.slide = t < 0.5 ? a.slide : b.slide;
   if (a.ang == null || b.ang == null) o.ang = t < 0.5 ? a.ang : b.ang;
   for (const k of ['fh', 'bh']) if (a[k] && b[k]) o[k] = [lerp(a[k][0], b[k][0], t), lerp(a[k][1], b[k][1], t)];
-  for (const k of ['f', 'wb', 'hide', 'nock', 'ab', 'flip', 'one', 'bf']) o[k] = t < 0.5 ? a[k] : b[k];
+  for (const k of ['f', 'wb', 'hide', 'nock', 'ab', 'flip', 'one', 'bf', 'pull']) o[k] = t < 0.5 ? a[k] : b[k];
   return o;
 }
 
@@ -188,7 +188,7 @@ const STYLES = {
     run: s => ({ fh: [14 + s * 2, 19], bh: [5 - s * 2, 19], ang: 50 }),
     air: up => (up ? { f: 'jump', fh: [15, 14], bh: [3, 14], ang: 0 } : { f: 'fall', fh: [15, 16], bh: [3, 15], ang: 20 }),
     dash: { f: 'lean', fh: [10, 19], bh: [14, 17], ang: 90, wb: true },
-    ranged: [[0, { f: 'idle', fh: [17, 15], bh: [13, 15], ang: 0, nock: true, bf: true }], [0.42, { f: 'wide', fh: [19, 15], bh: [3, 13], ang: 0, nock: true, bf: true }, 'out'], [0.46, { f: 'wide', fh: [19, 15], bh: [4, 12], ang: 0, bf: true }, 'lin'], [0.7, { f: 'wide', fh: [18, 15], bh: [6, 14], ang: 0, bf: true }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 35 }, 'io']],
+    ranged: [[0, { f: 'idle', fh: [18, 15], bh: [15, 15], ang: 0, nock: true, bf: true }], [0.3, { f: 'wide', fh: [19, 15], bh: [11, 12], ang: 0, nock: true, bf: true, pull: true }, 'out'], [0.46, { f: 'wide', fh: [19, 15], bh: [11, 12], ang: 0, bf: true, pull: true }, 'lin'], [0.7, { f: 'wide', fh: [18, 15], bh: [11, 12], ang: 0, bf: true, pull: true }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 35 }, 'io']],
     fireAt: 0.44,
     string: true
   },
@@ -375,11 +375,11 @@ const angIndex = deg => (((Math.round((deg / 360) * ROT_STEPS) % ROT_STEPS) + RO
 // Hand-drawn arms (art-src/arcade_arms.py): eight directions, each bent and straight, front arms
 // plus a darker copy for the far arm. A pose asks for a hand position; we draw the arm whose fist
 // offset from the shoulder is closest and report where its fist really is, so the weapon sits in it.
-function pickArm(dx, dy, far) {
+function pickArm(dx, dy, far, only) {
   let best = null,
     bd = 1e9;
   for (const m of A.hero.arms.list) {
-    if (m.back !== far) continue;
+    if (m.back !== far || (only ? m.dir !== only : m.dir === 'draw')) continue;
     const ex = m.f[0] - m.o[0] - dx,
       ey = m.f[1] - m.o[1] - dy,
       d = ex * ex + ey * ey;
@@ -388,8 +388,8 @@ function pickArm(dx, dy, far) {
   return best;
 }
 // shoulder (sx, sy) in world px, target fist (tx, ty); returns the arm and its fist in world px
-function armFor(sx, sy, tx, ty, far, face) {
-  const m = pickArm((tx - sx) * face, ty - sy, far);
+function armFor(sx, sy, tx, ty, far, face, only) {
+  const m = pickArm((tx - sx) * face, ty - sy, far, only);
   return { m, sx, sy, face, fist: [sx + (m.f[0] - m.o[0]) * face, sy + m.f[1] - m.o[1]] };
 }
 // layer 'line' is the ink outline only, 'fill' the colours only, 'both' everything: the near arm's
@@ -433,16 +433,19 @@ export function drawHeroAnimated(h, t) {
   const shB = W2(sh[0][0], sh[0][1]),
     shF = W2(sh[1][0], sh[1][1]);
   // front hand: the drawn arm closest to the pose's hand, and the weapon goes in its fist
+  // bf (drawing the bow): the far arm holds the bow out and the near arm pulls the string, so the
+  // weapon goes in the back fist and fh/bh swap arms
   const want = G2(pose.fh[0], pose.fh[1]);
-  const armF = armFor(shF[0], shF[1], want[0] + 1, want[1] + 1, false, face);
-  const fh = [armF.fist[0] - 1, armF.fist[1] - 1];
+  const bowB = pose.bf ? armFor(shB[0], shB[1], want[0] + 1, want[1] + 1, true, face) : null;
+  const armF = bowB ? armFor(shF[0], shF[1], ...G2(pose.bh[0], pose.bh[1]).map(v => v + 1), false, face, pose.pull && 'draw') : armFor(shF[0], shF[1], want[0] + 1, want[1] + 1, false, face);
+  const fh = bowB ? [bowB.fist[0] - 1, bowB.fist[1] - 1] : [armF.fist[0] - 1, armF.fist[1] - 1];
   const angW = face > 0 ? pose.ang : 180 - pose.ang; // world-space angle
   const rad = (angW * Math.PI) / 180;
   // two-handed: the back hand rides the handle grip2 px from the front hand along the weapon
   let bh;
   if (st.grip2 && !pose.sheath && !pose.one) bh = [fh[0] + Math.cos(rad) * st.grip2, fh[1] + Math.sin(rad) * st.grip2];
   else bh = G2(pose.bh ? pose.bh[0] : 5, pose.bh ? pose.bh[1] : 20);
-  const armB = armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, true, face);
+  const armB = bowB || armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, true, face);
   // weapon origin: the sprite's grip sits `slide` px behind the front hand along the weapon
   const slide = pose.sheath ? 0 : pose.slide ?? st.slide ?? 0;
   const back = pose.sheath ? G2(...(pose.at || SHEATH.at)) : null;
@@ -507,7 +510,7 @@ export function drawHeroAnimated(h, t) {
     const [ax, ay] = toW(tipTop),
       [bx, by] = toW(tipBot);
     // the string runs to the drawing hand's fist, wherever the drawn arm put it
-    const [nx, ny] = armB.fist;
+    const [nx, ny] = (pose.bf ? armF : armB).fist;
     line(ax, ay, nx, ny, C.paper);
     line(bx, by, nx, ny, C.paper);
     // nocked arrow
@@ -519,7 +522,7 @@ export function drawHeroAnimated(h, t) {
   // draw order: back arm, (weapon behind), body, (weapon), front arm
   let tip = null;
   const backView = pose.back != null; // seen from behind: both arms reach up in front of the back
-  if (!flashing && !backView && !pose.bf) drawArm(armB);
+  if (!flashing && !backView) drawArm(armB);
   if (pose.wb) tip = drawWeapon();
   if (pose.ab && !flashing) drawArm(armF);
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'line'); // outline tucked under the body
@@ -527,7 +530,6 @@ export function drawHeroAnimated(h, t) {
   if (backView && !flashing) drawArm(armB);
   if (!pose.wb) tip = drawWeapon();
   drawString();
-  if (pose.bf && !flashing && !backView) drawArm(armB); // drawing the bow: the string hand comes back past the face
   if (!pose.ab && !flashing) drawArm(armF, backView ? 'both' : 'fill');
   // swing smear: connect recent blade-tip positions while attacking
   const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry'].includes(h.special.kind));
