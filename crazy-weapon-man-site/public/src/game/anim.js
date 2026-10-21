@@ -132,7 +132,7 @@ const STYLES = {
     dash: { f: 'lean', fh: [14, 18], ang: 6 },
     moves: {
       stab: [[0, { f: 'idle', fh: [12, 18], ang: -8 }], [0.22, { f: 'back', fh: [7, 18], ang: -2 }, 'out'], [0.4, { f: 'lean', fh: [18, 17], ang: 0 }, 'out'], [0.62, { f: 'lean', fh: [18, 17], ang: 0 }], [1, { f: 'idle', fh: [13, 19], ang: -78 }, 'io']],
-      slashUp: [[0, { f: 'idle', fh: [12, 20], ang: 30 }], [0.24, { f: 'back', fh: [8, 21], ang: 48 }, 'out'], [0.45, { f: 'lean', fh: [15, 9], ang: -72, dy: -1 }, 'out'], [0.62, { f: 'lean', fh: [14, 7], ang: -100, dy: -1 }], [1, { f: 'idle', fh: [13, 19], ang: -78 }, 'io']],
+      slashUp: [[0, { f: 'idle', fh: [12, 20], ang: 30 }], [0.24, { f: 'crouch', fh: [12, 20], ang: 36 }, 'out'], [0.45, { f: 'lean', fh: [15, 9], ang: -72, dy: -1 }, 'out'], [0.62, { f: 'lean', fh: [14, 7], ang: -100, dy: -1 }], [1, { f: 'idle', fh: [13, 19], ang: -78 }, 'io']],
       stabBig: [[0, { f: 'idle', fh: [13, 17], ang: -78 }], [0.08, { f: 'wide', fh: [14, 16], ang: -40 }], [0.52, { f: 'wide', fh: [14, 16], ang: 680 }, 'lin'], [0.62, { f: 'lean', fh: [19, 17], ang: 720 }, 'out'], [0.78, { f: 'lean', fh: [19, 17], ang: 720 }], [1, { f: 'idle', fh: [13, 19], ang: 642 }, 'io']]
     }
   },
@@ -375,8 +375,8 @@ const angIndex = deg => (((Math.round((deg / 360) * ROT_STEPS) % ROT_STEPS) + RO
 // pass 'line' draws the ink silhouette only and 'fill' the colours only, so the near arm's outline
 // can go under the body (no ink lines across the chest) while its colours go on top.
 const ARM = {
-  front: { lit: '#ffd2a0', skin: '#eea070', dark: '#c86c48', glove: '#2a2a3a', gloveLit: '#5a5a74' },
-  back: { lit: '#eea070', skin: '#c86c48', dark: '#94442e', glove: '#1c1c28', gloveLit: '#3a3a4e' }
+  front: { lit: '#ffd2a0', skin: '#eea070', dark: '#c86c48', rim: '#6e2c1c', glove: '#2a2a3a', gloveLit: '#5a5a74' },
+  back: { lit: '#eea070', skin: '#c86c48', dark: '#94442e', rim: '#4a1c12', glove: '#1c1c28', gloveLit: '#3a3a4e' }
 };
 const UPPER = 6,
   FORE = 6;
@@ -394,12 +394,6 @@ function elbowOf(x0, y0, x1, y1, face) {
     ny = dx / d;
   if (ny + nx * -face * 0.3 < 0) (nx = -nx), (ny = -ny); // prefer down and behind
   return [mx + nx * h, my + ny * h];
-}
-function segment(x0, y0, x1, y1) {
-  const n = Math.max(1, Math.round(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)))),
-    pts = [];
-  for (let i = 0; i <= n; i++) pts.push([Math.round(x0 + ((x1 - x0) * i) / n), Math.round(y0 + ((y1 - y0) * i) / n)]);
-  return pts;
 }
 // opaque pixels of each body frame, so the near arm can be rimmed in dark skin where it lies on the
 // body (32-bit style coloured inner outline) and in ink where it meets the background
@@ -421,66 +415,53 @@ function bodyMask(Hh, fi) {
 function drawArm(x0, y0, x1, y1, front, face = 1, pass = 'both', onBody = null) {
   const P = front ? ARM.front : ARM.back;
   const [ex, ey] = elbowOf(x0, y0, x1, y1, face);
-  const up = segment(x0, y0, ex, ey),
-    lo = segment(ex, ey, x1, y1);
-  const hx = Math.round(x1),
-    hy = Math.round(y1);
-  const sx = Math.round(x0),
-    sy = Math.round(y0);
-  if (pass !== 'fill') {
-    X.fillStyle = C.ink;
-    if (front) X.fillRect(sx - 1, sy - 2, 5, 5); // deltoid cap
-    for (const [x, y] of up) X.fillRect(x - 1, y - 1, 5, 5);
-    for (const [x, y] of lo) X.fillRect(x - 1, y - 1, 5, 5);
-    X.fillRect(hx - 1, hy - 1, 5, 5);
-  }
-  if (pass === 'line') return;
-  if (onBody) {
-    // inner outline: dark skin wherever the arm's silhouette lies over the body
-    const seen = new Set();
-    X.fillStyle = P === ARM.front ? '#94442e' : '#5a2418';
-    for (const [x, y] of [...up, ...lo, [hx, hy]])
-      for (let dy = -1; dy <= 3; dy++)
-        for (let dx = -1; dx <= 3; dx++) {
-          const k = (x + dx) * 4096 + (y + dy);
-          if (seen.has(k)) continue;
-          seen.add(k);
-          if (onBody(x + dx, y + dy)) X.fillRect(x + dx, y + dy, 1, 1);
+  // the limb is a chain of capsules around pixel centres (+1: points name the top-left of the old 3px stroke):
+  // shoulder cap, bicep, forearm, gauntlet. Each pixel is shaded by which side of the bone it sits on, so
+  // the arm reads as one rounded form with a single clean contour instead of stamped squares.
+  const sx = x0 + 1, sy = y0 + 1, mx = ex + 1, my = ey + 1, hx = x1 + 1, hy = y1 + 1;
+  const gx = mx + (hx - mx) * 0.55, gy = my + (hy - my) * 0.55;
+  const bones = [
+    [sx, sy, sx, sy, front ? 2.1 : 1.6, 'skin'],
+    [sx, sy, mx, my, 1.6, 'skin'],
+    [mx, my, gx, gy, 1.35, 'skin'],
+    [gx, gy, hx, hy, 1.5, 'glove'],
+    [hx, hy, hx, hy, 1.7, 'glove']
+  ];
+  const near = (px, py) => {
+    let best = null;
+    for (const [ax, ay, bx, by, r, kind] of bones) {
+      const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
+      const t = L2 ? Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / L2)) : 0;
+      const dx = px - (ax + vx * t), dy = py - (ay + vy * t);
+      const d = Math.hypot(dx, dy) - r;
+      // light comes from above and slightly in front of the face
+      if (!best || d < best.d) best = { d, kind, lit: dx * face * 0.45 - dy * 0.9 };
+    }
+    return best;
+  };
+  const x_0 = Math.floor(Math.min(sx, mx, hx) - 4), x_1 = Math.ceil(Math.max(sx, mx, hx) + 4);
+  const y_0 = Math.floor(Math.min(sy, my, hy) - 4), y_1 = Math.ceil(Math.max(sy, my, hy) + 4);
+  for (let y = y_0; y <= y_1; y++)
+    for (let x = x_0; x <= x_1; x++) {
+      const n = near(x + 0.5, y + 0.5);
+      if (n.d > 1) continue;
+      if (pass === 'line' || pass === 'both') {
+        X.fillStyle = C.ink;
+        X.fillRect(x, y, 1, 1);
+        if (pass === 'line') continue;
+      }
+      if (n.d > 0) {
+        // contour: ink against the background (line pass), deep skin where the arm lies over the body
+        if (onBody && onBody(x, y)) {
+          X.fillStyle = P.rim;
+          X.fillRect(x, y, 1, 1);
         }
-  }
-  // upper arm: shaded skin, dark rim underneath so it reads against the chest
-  for (const [x, y] of up) {
-    X.fillStyle = P.dark;
-    X.fillRect(x, y + 1, 3, 2);
-  }
-  for (const [x, y] of up) {
-    X.fillStyle = P.skin;
-    X.fillRect(x, y, 3, 2);
-    X.fillStyle = P.lit;
-    X.fillRect(x, y, 1, 1);
-  }
-  // deltoid: a rounded cap seats the near arm in its socket on the torso edge
-  if (front) {
-    X.fillStyle = P.dark;
-    X.fillRect(sx, sy + 1, 3, 1);
-    X.fillStyle = P.skin;
-    X.fillRect(sx, sy - 1, 3, 2);
-    X.fillStyle = P.lit;
-    X.fillRect(sx, sy - 1, 2, 1);
-  }
-  // forearm: skin into the gauntlet
-  lo.forEach(([x, y], i) => {
-    const glove = i >= lo.length * 0.55;
-    X.fillStyle = glove ? P.glove : P.dark;
-    X.fillRect(x, y, 3, 3);
-    X.fillStyle = glove ? P.gloveLit : P.skin;
-    X.fillRect(x, y, glove ? 1 : 2, glove ? 1 : 2);
-  });
-  // fist with lit knuckles
-  X.fillStyle = P.glove;
-  X.fillRect(hx, hy, 3, 3);
-  X.fillStyle = P.gloveLit;
-  X.fillRect(hx, hy, 2, 1);
+        continue;
+      }
+      const glove = n.kind === 'glove';
+      X.fillStyle = n.lit > 0.6 ? (glove ? P.gloveLit : P.lit) : n.lit < -0.5 ? (glove ? C.ink : P.dark) : glove ? P.glove : P.skin;
+      X.fillRect(x, y, 1, 1);
+    }
 }
 
 // pose grid (17 wide, shoulders y = 16, feet y = 24) -> arcade sprite pixels
