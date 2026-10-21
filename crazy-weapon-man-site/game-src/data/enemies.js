@@ -46,6 +46,18 @@ export const ENEMIES = {
   ninja: { name: 'Pocket Ninja', kind: 'ranged', hp: 0.78, dmg: 1.05, speed: 44, range: 118, wind: 0.5, bolt: 'violet', alert: { do: 'stars', every: 4.5, dmg: 0.6 } }
 };
 
+// How each resident goes down (game/enemy.js draws it, then the body bursts into shards):
+//   topple  tips over onto its back, away from the hit     flip  hops and lands belly-up
+//   spin    tumbles end over end                            squash  flattens into a pancake
+//   rise    floats up and fades, the way spirits do
+export const DEATHS = {
+  stalker: 'topple', crawler: 'flip', goose: 'spin', bombchicken: 'squash', brute: 'topple', wraith: 'rise', maw: 'flip',
+  flyer: 'spin', wizard: 'topple', taxman: 'topple', mimic: 'flip', eyeball: 'rise', shieldbro: 'topple', blinker: 'rise',
+  summoner: 'rise', sniper: 'topple', roller: 'spin', squirrel: 'flip', turtle: 'flip', raccoon: 'spin', samurai: 'topple',
+  kitsune: 'rise', monk: 'squash', anvil: 'squash', ninja: 'spin'
+};
+export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
+
 export const ELITE_TITLES = ['Grand', 'Royal', 'Elder', 'Mighty', 'Slightly Cursed', 'Ill-Tempered', 'Very Large', 'Knighted', 'Haunted', 'Ancient'];
 
 // speech bubbles

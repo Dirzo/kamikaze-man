@@ -28,8 +28,10 @@ test('names run longer at higher rarity, and rare weapons often carry an ability
   const commons=Array.from({length:500},()=>makeWeapon(0,{q:0,standout:false}));
   assert.ok(commons.every(w=>!w.ability));
 });
-test('opening loot has three fundamentals and no elemental/mutation overload',()=>{
-  assert.deepEqual(availableTypes(0),['sword','dagger','bow']);
+test('opening loot has every weapon type at equal odds and no elemental/mutation overload',()=>{
+  assert.equal(availableTypes(0).length,13);
+  const seen={};for(let i=0;i<26000;i++){const t=makeWeapon(0).type;seen[t]=(seen[t]||0)+1;}
+  for(const t of Object.keys(TYPES)) assert.ok(Math.abs(seen[t]-2000)<260,`${t} dropped ${seen[t]}/2000`);
   assert.deepEqual(availableElements(0),[]); assert.deepEqual(availableMutations(0,10),[]);
   assert.deepEqual(enemyPool(0,1,ZONES[0].pool),['stalker','crawler']);
   assert.ok(!enemyPool(0,3,ZONES[0].pool).includes('bombchicken'));
@@ -42,10 +44,10 @@ test('all powers eventually unlock; late-run pressure increases without unbounde
   assert.ok(waveBudget(9,4).interval<waveBudget(0,1).interval);
   assert.ok(waveBudget(9,4).alive<=10); assert.equal(waveBudget(0,1).elites,0);
 });
-test('a normal blade needs 3-6 hits at home; standout strength decays across zones',()=>{
+test('a normal blade needs 2-6 hits at home; standout strength decays across zones',()=>{
   for(let z=0;z<10;z++) {
     const w=makeWeapon(z,{q:Math.min(10,z+1),type:'sword',standout:false});
-    const hits=refHP(z)*ENEMY_HP/hitDamage(w); assert.ok(hits>=2.7 && hits<=6);
+    const hits=refHP(z)*ENEMY_HP/hitDamage(w); assert.ok(hits>=2.3 && hits<=6);
   }
   const w=makeWeapon(0,{type:'sword',q:1,standout:true});
   assert.ok(hitDamage(w)>=refHP(0)*ENEMY_HP);

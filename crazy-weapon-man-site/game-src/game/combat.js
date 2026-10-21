@@ -51,6 +51,7 @@ export function hitEnemy(e, dmg, o = {}) {
   if (!o.chip) {
     const sy = Math.max(e.y + 4, Math.min(e.y + e.h - 4, hero.y + hero.h * 0.45));
     spark(cx(e) - dir * e.w * 0.35, sy, { crit: o.crit, col: o.sparkCol || C.cream });
+    if (o.crit) burst(cx(e) - dir * e.w * 0.35, sy, 7, 'twinkle', ['gold', 'pink', 'orange', 'paper']);
     e.faceUntil = world.t + 0.42;
     e.funnyFace = ((e.funnyFace || 0) + 1) % 3;
     sfx.hit(o.crit, o.chain ? null : hero.weapon?.type); // the weapon's signature sound
@@ -199,13 +200,18 @@ function reveal(e) {
   sfx.enemyMelee();
 }
 
+// a defeated resident falls over (its DEATHS style, drawn in enemy.js) for DEATH_T seconds, and
+// with SHATTER_T left its body bursts into the shards it was carrying
+export const DEATH_T = 0.8, SHATTER_T = 0.22;
 export function kill(e, o = {}) {
   if (e.dead || e.boss) return; // bosses handle their own defeat (bosses.js)
   e.dead = true;
-  e.deathT = 0.35;
-  e.vx = (o.dir || 1) * 60;
+  e.deathT = DEATH_T;
+  e.fallDir = o.dir || Math.sign(cx(e) - cx(world.hero)) || 1;
+  e.vx = e.fallDir * 70;
+  if (!e.air) (e.vy = -120), (e.onGround = false);
   world.kills++;
-  sfx.kill(e.elite);
+  sfx.die(e.type, e.elite);
   burst(cx(e), cy(e), e.elite ? 14 : 8, 'chip', ['paper', 'mist', 'fog']);
   if (e.elite) {
     hitstop(0.08);
@@ -215,13 +221,29 @@ export function kill(e, o = {}) {
   gainXp(e.xp);
   gainProficiency(e.elite ? 'elite' : 'normal');
   abilityKill();
-  // loot
+  // loot: the shards come out of the body when it shatters (shatter below)
   const zone = world.zone;
-  dropShards(cx(e), cy(e), e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0));
+  e.shardLoot = e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0);
   world.killsSinceDrop = (world.killsSinceDrop || 0) + 1;
-  if (world.killsSinceDrop >= 7 || Math.random() < (e.elite ? 0.65 : 0.10)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
-  if (Math.random() < (e.elite ? 0.4 : 0.05) + stats().hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
+  // (10 kills / 7%: was 7 / 10% before maps held 40+ residents, so weapons keep the same pace)
+  if (world.killsSinceDrop >= 10 || Math.random() < (e.elite ? 0.65 : 0.07)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
+  if (Math.random() < (e.elite ? 0.4 : 0.035) + stats().hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
+}
+
+// the fallen body bursts into crystal: a flash, flying shard chips and sparkles, then the shards
+// themselves pop out for the magnet to pull in
+export function shatter(e) {
+  if (e.shattered) return;
+  e.shattered = true;
+  const x = cx(e), y = cy(e), big = e.elite || !!e.scale;
+  spark(x, y, { big, col: C.ice });
+  burst(x, y, big ? 22 : 12, 'chip', ['ice', 'sky', 'paper', 'violet']);
+  burst(x, y, big ? 10 : 6, 'twinkle', ['ice', 'paper', 'sky']);
+  burst(x, y, 4, 'mote', ['sky', 'ice']);
+  sfx.shatter(big);
+  if (e.shardLoot) dropShards(x, y, e.shardLoot);
+  e.shardLoot = 0;
 }
 
 export function dropWeapon(x, y, w) {

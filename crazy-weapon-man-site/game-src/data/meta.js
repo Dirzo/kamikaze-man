@@ -191,7 +191,7 @@ function load() {
       out.shards = Math.max(0, Math.floor(+raw.shards || 0));
       out.earned = Math.max(out.shards, Math.floor(+raw.earned || 0));
       for (const [id, r] of Object.entries(raw.tree || {})) if (TREE_BY_ID[id]) out.tree[id] = Math.max(0, Math.min(TREE_BY_ID[id].max, Math.floor(+r || 0)));
-      if (Array.isArray(raw.hist)) out.hist = raw.hist.filter(id => out.tree[id]).slice(-HIST_MAX);
+      if (Array.isArray(raw.hist)) out.hist = raw.hist.filter(id => out.tree[id] || isLockStep(id)).slice(-HIST_MAX);
       if (CLASSES[raw.lock]) out.lock = raw.lock;
       if (raw.tv !== TREE_V || !reachable(out.tree)) {
         // a save from an older tree: only the tree spends shards, so every shard earned comes back
@@ -256,7 +256,7 @@ export function cantBuy(id) {
   const n = TREE_BY_ID[id];
   if (!n) return 'NO SUCH NODE';
   if (rank(id) >= n.max) return 'MAXED';
-  if (n.branch && meta().lock !== n.branch) return `SPECIALIZE IN ${CLASSES[n.branch].name} TO INVEST HERE`;
+  if (n.branch && meta().lock !== n.branch) return `SPECIALIZE IN ${CLASSES[n.branch].name} (G) TO INVEST HERE`;
   if (!linked(id)) return 'INVEST IN A LINKED NODE FIRST';
   if (meta().shards < rankCost(n, rank(id) + 1)) return 'NOT ENOUGH SHARDS';
   return null;
@@ -272,34 +272,80 @@ export function buyRank(id) {
   save();
   return true;
 }
-// take back the last rank bought (newest first, so the web always stays linked)
+// take back the last step: a rank bought (newest first, so the web always stays linked) or a
+// change of specialization, which goes back to the class you had before. Once every recorded step
+// is undone, one more undo drops the lock itself, so you can always get back to choosing a class.
 export function undoRank() {
   const m = meta(), id = m.hist.pop();
+  if (id && isLockStep(id)) {
+    m.lock = CLASSES[id.slice(1)] ? id.slice(1) : null;
+    save();
+    return id;
+  }
+  if (!id && m.lock) {
+    m.lock = null;
+    save();
+    return '@';
+  }
   if (!id || !rank(id)) return save(), null;
   m.shards += rankCost(TREE_BY_ID[id], rank(id));
   if (--m.tree[id] === 0) delete m.tree[id];
   save();
   return id;
 }
-export const canUndo = () => meta().hist.length > 0;
-// every rank refunded in full
+export const canUndo = () => meta().hist.length > 0 || !!meta().lock;
+// every rank refunded in full, and the specialization dropped: a clean slate to pick any class
 export function respec() {
   const m = meta();
   m.shards += treeSpent();
   m.tree = {};
   m.hist = [];
+  m.lock = null;
   save();
 }
 export const treeSpent = () => TREE.reduce((s, n) => s + n.cost * (rank(n.id) * (rank(n.id) + 1)) / 2, 0);
 
 // ---- the weapon lock
+// a specialization change in the undo history: '@' + the class it replaced ('@' alone: no lock)
+const isLockStep = id => typeof id === 'string' && id[0] === '@';
 export const weaponLock = () => meta().lock;
-// null drops the lock (every class drops again)
+// null drops the lock (every class drops again). Leaving a class refunds the ranks in its cluster,
+// since they only work while you are that class, and the change can be undone like a rank.
 export function setLock(cls) {
   if (cls !== null && !CLASSES[cls]) return false;
-  meta().lock = cls;
+  const m = meta(), prev = m.lock;
+  if (cls === prev) return true;
+  if (prev) {
+    for (const n of TREE) if (n.branch === prev && rank(n.id)) refundNode(n);
+    // anything that only hung off the old cluster comes back too, so the web stays linked
+    for (let loose = true; loose; ) {
+      loose = false;
+      for (const n of TREE) if (rank(n.id) && !reachableNode(n.id)) (refundNode(n), (loose = true));
+    }
+    m.hist = m.hist.filter(id => isLockStep(id) || m.tree[id]);
+  }
+  m.lock = cls;
+  m.hist.push('@' + (prev || ''));
+  if (m.hist.length > HIST_MAX) m.hist.shift();
   save();
   return true;
+}
+function refundNode(n) {
+  const m = meta();
+  m.shards += n.cost * (rank(n.id) * (rank(n.id) + 1)) / 2;
+  delete m.tree[n.id];
+}
+// can this invested node be walked to from CORE through invested nodes?
+function reachableNode(id) {
+  const tree = meta().tree, seen = new Set(), todo = tree.core ? ['core'] : [];
+  while (todo.length) {
+    const at = todo.pop();
+    if (at === id) return true;
+    if (seen.has(at)) continue;
+    seen.add(at);
+    for (const l of TREE_BY_ID[at].links) if (tree[l]) todo.push(l);
+  }
+  return false;
 }
 // does a weapon type drop as itself under the current lock?
 export const allowedType = type => !meta().lock || CLASS_OF[type] === meta().lock;

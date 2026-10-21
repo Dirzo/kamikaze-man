@@ -129,7 +129,7 @@ test('camera tracks the route and never reveals space outside the map',()=>{
   }
 });
 
-test('field residents come in packs of 3-5 that stand a body apart', () => {
+test('field residents come in packs that stand a body apart', () => {
   for (let z = 0; z < 10; z++) {
     if (LAYOUTS[z].style !== 'field') continue;
     const m = makeMap(z), packs = new Map();

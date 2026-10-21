@@ -1,7 +1,7 @@
 // The POWERS window on the overworld (E / B / Tab, or the Bag button): three tabs over the map.
 //   SHARD TREE  a web of linked nodes: invest banked shards in a rank (ENTER), take back the last
-//               rank (U), refund everything (Q), change specialization (G, twice). The right panel
-//               shows the picked node.
+//               step (U: a rank, or a change of class), refund everything and clear the class (Q),
+//               change specialization (G, twice). The right panel shows the picked node.
 //   MASTERY     a night sky of weapon constellations. Open one (ENTER) to pick its perk stars, one of
 //               two at each step of the road to mastery level 100. Q goes back to the sky.
 //   TROPHIES    the ten family heads' trophies and the perks they gave you
@@ -58,6 +58,13 @@ function buy(n) {
 function undo() {
   const id = undoRank();
   if (!id) return say('NOTHING TO UNDO');
+  P.lockPend = undefined;
+  if (id[0] === '@') {
+    // a specialization change taken back: show the class choice again
+    P.tree.sel = 'core';
+    const c = weaponLock();
+    return say(c ? `BACK TO ${CLASSES[c].name}` : 'CLASS LOCK OFF. PICK ANY CLASS (G)', true);
+  }
   P.tree.sel = id;
   say(`${TREE_BY_ID[id].name} BACK TO RANK ${rank(id)}`, true);
 }
@@ -72,18 +79,21 @@ function chooseLock(c) {
   if (P.lockPend !== c) return pendLock(c);
   P.lockPend = undefined;
   if (c === weaponLock()) return;
+  const was = weaponLock(), before = meta().shards;
   setLock(c);
-  say(c ? `${CLASSES[c].name} SPECIALIST! ITS CLUSTER IS OPEN` : 'LOCK OFF. EVERY WEAPON DROPS AGAIN', true);
+  const back = meta().shards - before, refunded = back ? ` +${fmt(back)} SHARDS FROM ${CLASSES[was].name}` : '';
+  say((c ? `${CLASSES[c].name} SPECIALIST! ITS CLUSTER IS OPEN` : 'LOCK OFF. EVERY WEAPON DROPS AGAIN') + refunded, true);
 }
 function refundAll() {
   if (!P.confirm) {
     P.confirm = true;
-    return say('PRESS Q AGAIN TO REFUND EVERY RANK');
+    return say('PRESS Q AGAIN: REFUND EVERY RANK AND CLEAR YOUR CLASS');
   }
   respec();
   P.confirm = false;
+  P.lockPend = undefined;
   P.tree.sel = 'core';
-  say('ALL SHARDS REFUNDED. SPEC AGAIN!', true);
+  say('ALL SHARDS REFUNDED, CLASS CLEARED. PICK ANY CLASS!', true);
 }
 // the nearest thing in the pressed direction (within a 60 degree cone each side), for arrow keys
 // on the web and the sky
@@ -296,7 +306,7 @@ function drawNodePanel(t) {
   if (why && why !== 'MAXED') para(why, S.x + 6, by - 30, S.w - 12, C.coral);
   button(k >= n.max ? 'MAXED' : 'INVEST', S.x + 6, by, S.w - 12, !why, C.lime, () => buy(n));
   button('UNDO', S.x + 6, by + 17, (S.w - 16) / 2, canUndo(), C.sky, undo);
-  button(P.confirm ? 'SURE?' : 'REFUND', S.x + 10 + (S.w - 16) / 2, by + 17, (S.w - 16) / 2, TREE.some(m => rank(m.id)), C.coral, refundAll);
+  button(P.confirm ? 'SURE?' : 'REFUND', S.x + 10 + (S.w - 16) / 2, by + 17, (S.w - 16) / 2, TREE.some(m => rank(m.id)) || !!weaponLock(), C.coral, refundAll);
   text(`${TREE.reduce((s, m) => s + rank(m.id), 0)} RANKS SPENT`, S.x + S.w / 2, by + 37, C.stone, { align: 'center' });
 }
 

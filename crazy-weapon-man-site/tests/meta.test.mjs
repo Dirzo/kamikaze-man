@@ -101,6 +101,40 @@ test('specializing: only your class drops, and only your class cluster opens and
   for (const t of Object.keys(CLASS_OF)) assert.ok(CLASSES[CLASS_OF[t]]);
   resetMeta();
 });
+test('respec: undo and refund take the class lock back too, so a Blades player can become Ranged', () => {
+  resetMeta();
+  bankShards(100000);
+  buyRank('core');
+  buyRank('sharp');
+  setLock('blades');
+  buyRank('edge');
+  assert.equal(weaponLock(), 'blades');
+  assert.equal(undoRank(), 'edge', 'the newest rank comes back first');
+  assert.equal(undoRank(), '@', 'then the specialization itself');
+  assert.equal(weaponLock(), null);
+  assert.ok(setLock('ranged'));
+  assert.equal(weaponLock(), 'ranged');
+  assert.equal(rank('sharp'), 1, 'shared ranks stay put');
+  // switching straight from one class to another refunds the old cluster
+  setLock('blades');
+  assert.ok(buyRank('edge'));
+  const before = meta().shards;
+  setLock('ranged');
+  assert.equal(rank('edge'), 0, 'blade ranks refunded');
+  assert.equal(meta().shards, before + rankCost(TREE_BY_ID.edge, 1));
+  assert.equal(undoRank(), '@blades', 'and that switch can be undone');
+  assert.equal(weaponLock(), 'blades');
+  // a lock with no recorded history (an older save) still undoes
+  meta().hist = [];
+  assert.equal(undoRank(), '@');
+  assert.equal(weaponLock(), null);
+  // refund clears everything, the class included
+  setLock('blunt');
+  respec();
+  assert.equal(weaponLock(), null);
+  assert.equal(meta().shards, 100000);
+  resetMeta();
+});
 test('a trophy is won once and its perk is always on', () => {
   resetMeta();
   assert.ok(winTrophy(7));

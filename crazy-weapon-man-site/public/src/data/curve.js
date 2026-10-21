@@ -8,7 +8,7 @@
 export const refHP = z => Math.round(30 * Math.pow(1.9, Math.max(0, z)));
 export const refDmg = z => Math.round(9 * Math.pow(1.25, Math.max(0, z))); // enemy hit on the hero
 export const share = q => 0.26 + 0.02 * q;
-export const ENEMY_HP = 1.6;
+export const ENEMY_HP = 1.4; // 1.6 before maps got MapleStory-dense (40+ residents): each one goes down a hit sooner
 export const STANDOUT_SHARE = 2.0;
 // standouts get more common as you go: 1 in 16 at the start, 1 in 5 from zone 4
 export const standoutChance = z => Math.min(0.2, 0.06 + 0.035 * z);

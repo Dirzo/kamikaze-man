@@ -10,7 +10,6 @@ import { profMult } from '../data/proficiency.js';
 import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
-import { ZONES } from '../data/zones.js';
 import { stats, weaponLock, allowedType, CLASSES } from '../data/meta.js';
 let uid = 1;
 // what the hero has grown into with a type: its mastery level and every damage perk
@@ -23,9 +22,8 @@ export const maxQ = maxRarity;
 export function makeWeapon(zone, { elite = false, boss = false, standout = null, q = null, type = null } = {}) {
   const r = Math.random;
   const types = availableTypes(zone);
-  // a zone's own weapon (bows in the Ranger's Forest, katanas at the shrine...) drops most often
-  const home = ZONES[zone] && ZONES[zone].weapon;
-  type = type || (home && types.includes(home) && r() < 0.4 ? home : types[Math.floor(r() * types.length)]);
+  // every type is equally likely (a zone's own weapon still arrives as its map-clear gift)
+  type = type || types[Math.floor(r() * types.length)];
   if ((boss || standout === true) && weaponLock()) type = classType(type); // a guaranteed prize is always one you can use
   if (q == null) {
     const top = maxQ(zone);

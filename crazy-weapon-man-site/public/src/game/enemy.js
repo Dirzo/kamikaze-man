@@ -6,9 +6,9 @@ import { frame, rect, text, X, px } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
-import { ENEMIES, ELITE_TITLES, LINES } from '../data/enemies.js';
+import { ENEMIES, ELITE_TITLES, LINES, deathOf } from '../data/enemies.js';
 import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
-import { hurtHero, tickStatus, explode, kill } from './combat.js';
+import { hurtHero, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T } from './combat.js';
 import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { drawItem } from './drops.js';
@@ -55,7 +55,7 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     flash: 0,
     spawnT: asleep || d.kind === 'mimic' ? 0 : 0.45,
     onGround: false,
-    xp: Math.round((2 + z) * (elite ? 3 : 1)),
+    xp: Math.max(1, Math.round((2 + z) * (elite ? 3 : 0.85))), // 0.85 (was 1): maps are MapleStory-dense now
     cool: 0.6 + Math.random() * 0.8,
     honkT: 1 + Math.random() * 3,
     grumbleT: 8 + Math.random() * 6,
@@ -82,7 +82,14 @@ export function updateEnemy(e, dt) {
   if (e.dead) {
     e.deathT -= dt;
     e.vx *= 0.9;
-    move(e, dt, world.platforms, { air: false });
+    const air = deathOf(e.type) === 'rise';
+    if (air) (e.vy = -26), (e.y += e.vy * dt);
+    else {
+      const was = e.onGround;
+      move(e, dt, world.platforms, { air: false });
+      if (e.onGround && !was && !e.landed) (e.landed = true), burst(cx(e), e.y + e.h, 5, 'dust', ['mist', 'fog']);
+    }
+    if (e.deathT <= SHATTER_T) shatter(e);
     return;
   }
   if (e.hp <= 0) { kill(e); return; }
@@ -467,15 +474,18 @@ export function drawEnemy(e, t) {
   const sx = Math.round(cx(e) - art.w / 2),
     sy = Math.round(e.y + e.h - (art.h - 1));
   if (e.spawnT > 0 && Math.floor(t * 30) % 2) return;
-  if (e.dead && Math.floor(e.deathT * 30) % 2) return;
+  if (e.dead && (e.shattered || e.deathT <= SHATTER_T)) return; // it has burst into shards
   if (e.state === 'disguised') return drawDisguise(e, t);
-  if (e.scale) {
-    // swarm bosses: the same resident drawn big, scaled about its feet
-    const fx = cx(e),
+  if (e.scale || e.dead) {
+    // swarm bosses: the same resident drawn big, scaled about its feet. A fallen one also takes
+    // its death pose (DEATHS in data/enemies.js) about its feet or its middle.
+    const k = e.scale || 1,
+      fx = cx(e),
       fy = e.y + e.h;
     X.save();
+    if (e.dead && !deathPose(e, fx, fy, k, t)) return X.restore();
     X.translate(fx, fy);
-    X.scale(e.scale, e.scale);
+    X.scale(k, k);
     X.translate(-fx, -fy);
     drawBody(e, t, Math.round(fx - art.w / 2), Math.round(fy - (art.h - 1)), art);
     X.restore();
@@ -483,6 +493,36 @@ export function drawEnemy(e, t) {
     return;
   }
   drawBody(e, t, sx, sy, art);
+}
+// the fall-over: p runs 0..1 over the fall, then the body holds still (blinking) until it shatters.
+// Returns false on a blink frame.
+function deathPose(e, fx, fy, k, t) {
+  const fall = DEATH_T - SHATTER_T - 0.18,
+    p = Math.min(1, (DEATH_T - e.deathT) / fall),
+    ease = 1 - (1 - p) * (1 - p),
+    dir = e.fallDir || 1,
+    h = e.h * k;
+  if (p >= 1 && Math.floor(t * 24) % 2) return false; // about to burst
+  const about = (px0, py0, fn) => (X.translate(px0, py0), fn(), X.translate(-px0, -py0));
+  switch (deathOf(e.type)) {
+    case 'topple': // tip over the far foot, onto its back
+      about(fx + (dir * e.w * k) / 2, fy, () => X.rotate(dir * ease * Math.PI * 0.5));
+      break;
+    case 'flip': // hop, turn belly-up and land that way
+      about(fx, fy - h / 2, () => X.scale(1, Math.cos(ease * Math.PI) || 0.01));
+      break;
+    case 'spin': // tumble end over end
+      about(fx, fy - h / 2, () => X.rotate(dir * ease * Math.PI * 3));
+      break;
+    case 'squash': // flatten into a pancake
+      about(fx, fy, () => X.scale(1 + ease * 0.6, Math.max(0.25, 1 - ease * 0.75)));
+      break;
+    case 'rise': // float up and thin out
+      if (p > 0.4 && Math.floor(t * 30) % 2) return false;
+      about(fx, fy - h / 2, () => X.scale(1 - ease * 0.3, 1 + ease * 0.2));
+      break;
+  }
+  return true;
 }
 function drawBody(e, t, sx, sy, art) {
   let f = 0;

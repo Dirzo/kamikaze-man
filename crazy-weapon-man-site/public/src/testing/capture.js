@@ -1,4 +1,4 @@
-// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late,
+// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late|kills,
 // ?capture=secret1..secret10 for where each map hides its easter egg,
 // ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
 // ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise, ?capture=lv1-3 (any
@@ -22,6 +22,8 @@ import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overwo
 import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
 import { openPowers, P as powers } from '../game/powers.js';
+import { hitEnemy, DEATH_T } from '../game/combat.js';
+import { updateFx } from '../game/fx.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
 function mapScene(game, all) {
   const s = all ? revealAll(newSave()) : newSave();
@@ -90,6 +92,19 @@ export function captureScene(game, mode) {
       for(let i=0;i<90;i++){world.t+=1/60;h.inv=1;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
       world.swarmCombo.n=37;world.swarmCombo.best=37;world.swarmCombo.t=1.4;
       h.inv=1;
+    }
+    if(mode==='kills') {
+      // MapleStory-style feedback: stacked big numbers, a colour-cycling crit, and residents at each
+      // stage of falling over (topple, flip, spin, squash, rise) before they burst into shards
+      world.enemies=[];h.attack=null;h.inv=99;h.x=offset+16;
+      const row=[['stalker',1,false],['crawler',1,true],['goose',1,false],['bombchicken',1,false],['wraith',1,false],['turtle',0,false],['raccoon',0,true],['monk',0,false]];
+      const es=row.map(([type],i)=>{const x=offset+70+i*54,e=spawnEnemy(type,x,ENEMIES[type].air?floor-50:floorAt(x,floor),{wave:3});e.spawnT=0;e.calm=false;e.face=-1;e.hp=e.max=1e6;return e;});
+      es.forEach((e,i)=>{const [,dies,crit]=row[i];
+        for(const d of dies?[1840]:[1840,crit?9650:2470]) hitEnemy(e,d,{crit:crit&&d>9e3,dir:1});
+        if(dies) {hitEnemy(e,e.hp,{crit:i===1,dir:1});e.deathT=DEATH_T-0.12-0.06*i;}
+      });
+      for(let i=0;i<8;i++){updateFx(1/60);}
+      for(const e of world.enemies) if(e.dead) {const n=Math.round((DEATH_T-e.deathT)*60);e.deathT=DEATH_T;for(let k=0;k<n;k++){world.t+=1/60;updateEnemy(e,1/60);}}
     }
     if(mode==='ladder') {
       const l=world.map.ladders[0];h.attack=null;h.ladder=l;h.x=l.x-h.w/2;h.y=Math.round((l.top+l.bottom)/2)-h.h;h.climbT=0.1;h.face=1;

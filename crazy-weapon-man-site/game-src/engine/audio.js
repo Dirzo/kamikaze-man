@@ -179,6 +179,35 @@ const QUIRK_SFX = {
   giant: () => (arp([48, 55, 60, 67], 3, { wave: 'p50', vol: 0.04, decay: 0.001 }), chip([[N(36), 8]], { wave: 'tri', vol: 0.07, decay: 0.006 }))
 };
 
+// each resident's own last little sound as it goes down (sfx.die). Cute, short, never sad.
+const DIE = {
+  stalker: () => arp([72, 67, 60], 2, { wave: 'p25', vol: 0.04, decay: 0.003 }), // "oh no"
+  crawler: () => chip([[N(96), 1], [N(91), 1], [N(98), 1], [N(86), 2]], { wave: 'p12', vol: 0.035, decay: 0.004 }), // squeak
+  goose: () => chip([[700, 2], [560, 2], [420, 3], [300, 4]], { wave: 'p25', vol: 0.05, decay: 0.006 }), // deflating honk
+  bombchicken: () => (chip([[N(84), 1], [N(79), 1], [N(84), 1]], { wave: 'p50', vol: 0.035 }), hiss(6, { vol: 0.04, rate: 0.6, drop: 0.08, delay: 0.05 })),
+  brute: () => chip([[N(48), 3], [N(45), 3], [N(40), 6]], { wave: 'tri', vol: 0.09, decay: 0.008 }), // big "oof"
+  wraith: () => arp([79, 83, 86, 91, 95], 2, { wave: 'p12', vol: 0.025, decay: 0.002 }), // floats off
+  maw: () => (chip([[N(52), 2], [0, 1], [N(52), 2]], { wave: 'p50', vol: 0.04, decay: 0.006 }), arp([88, 91], 2, { wave: 'p12', vol: 0.025, delay: 0.1 })), // clack, coins
+  flyer: () => chip([[N(93), 1], [N(89), 1], [N(84), 1], [N(77), 1], [N(70), 2]], { wave: 'p12', vol: 0.035 }), // falling squeak
+  wizard: () => (arp([84, 80, 76, 72, 68], 1, { wave: 'p25', vol: 0.035, decay: 0.002 }), hiss(4, { vol: 0.025, rate: 1.4, short: true })), // fizzle
+  taxman: () => (hiss(5, { vol: 0.035, rate: 1.1, drop: 0.1 }), chip([[N(76), 2], [N(71), 3]], { wave: 'p50', vol: 0.025 })), // papers everywhere
+  mimic: () => chip([[N(60), 1], [N(64), 1], [N(55), 1], [N(48), 3]], { wave: 'p50', vol: 0.04, decay: 0.006 }), // lid slam
+  eyeball: () => (chip([[N(91), 4]], { wave: 'p12', vol: 0.03, decay: 0.004 }), arp([96, 100], 2, { wave: 'p12', vol: 0.02, delay: 0.06 })), // blink, pop
+  shieldbro: () => (chip([[N(91), 1], [N(86), 2]], { wave: 'p12', vol: 0.04, decay: 0.008 }), chip([[N(43), 4]], { wave: 'tri', vol: 0.07, decay: 0.01, delay: 0.08 })), // clang, thump
+  blinker: () => arp([88, 100, 76, 96], 1, { wave: 'p12', vol: 0.03, decay: 0.003 }), // blinks out
+  summoner: () => arp([67, 63, 60, 55, 51], 2, { wave: 'p25', vol: 0.035, decay: 0.002 }),
+  sniper: () => chip([[N(69), 2], [N(68), 2], [N(67), 2], [N(55), 4]], { wave: 'p50', vol: 0.035, decay: 0.004 }), // "I missed?"
+  roller: () => (chip([[N(50), 1], [N(55), 1], [N(50), 1], [N(55), 1], [N(43), 3]], { wave: 'tri', vol: 0.07, decay: 0.008 })),
+  squirrel: () => chip([[N(100), 1], [N(103), 1], [N(98), 1], [N(93), 2]], { wave: 'p12', vol: 0.035, decay: 0.004 }), // chitter
+  turtle: () => (chip([[N(57), 1], [N(52), 2]], { wave: 'p50', vol: 0.04, decay: 0.008 }), chip([[N(45), 3]], { wave: 'tri', vol: 0.06, decay: 0.01, delay: 0.09 })), // shell clonk
+  raccoon: () => arp([86, 91, 86, 81], 1, { wave: 'p25', vol: 0.035, decay: 0.003 }), // trash-panda trill
+  samurai: () => (chip([[N(79), 2], [N(84), 3], [N(72), 4]], { wave: 'p25', vol: 0.04, decay: 0.003 }), hiss(3, { vol: 0.03, rate: 1.2, short: true })), // "hyaa..."
+  kitsune: () => arp([84, 88, 91, 96, 100, 103], 1, { wave: 'p12', vol: 0.025, decay: 0.002 }), // foxfire wisp
+  monk: () => chip([[N(81), 8]], { wave: 'p50', vol: 0.03, decay: 0.002 }), // a bell
+  anvil: () => (chip([[N(96), 1], [N(91), 6]], { wave: 'p12', vol: 0.04, decay: 0.004 }), chip([[N(36), 4]], { wave: 'tri', vol: 0.08, decay: 0.01 })), // ting + thud
+  ninja: () => (hiss(4, { vol: 0.04, rate: 1.5, drop: -0.1, short: true }), arp([91, 96], 1, { wave: 'p12', vol: 0.025, delay: 0.05 })) // poof
+};
+
 export const sfx = {
   thud(heavy = false, honk = false) {
     if (!gate('thud', 65)) return;
@@ -243,6 +272,19 @@ export const sfx = {
     if (elite) arp([79, 74, 67, 62, 55], 2, { wave: 'p25', vol: 0.05, decay: 0.002 });
     else arp([76, 71, 64], 1, { wave: 'p25', vol: 0.04, decay: 0.004 });
     hiss(5, { vol: 0.04, rate: 0.45, drop: 0.1 });
+  },
+  // a resident's own death cry (DIE above); a pack dying at once still only cries a few times
+  die(type, elite) {
+    if (!gate('die:' + type, 90) || !gate('die', 45)) return;
+    (DIE[type] || DIE.stalker)();
+    hiss(4, { vol: 0.03, rate: 0.45, drop: 0.1 });
+    if (elite) arp([79, 74, 67, 62, 55], 2, { wave: 'p25', vol: 0.045, decay: 0.002, delay: 0.08 });
+  },
+  // the body bursting into shards: a bright crystal chime that climbs
+  shatter(big = false) {
+    if (!gate('shatter', 55)) return;
+    arp(big ? [88, 95, 100, 107] : [91, 98, 103], 1, { wave: 'p12', vol: 0.028, decay: 0.002 });
+    hiss(3, { vol: 0.025, rate: 2.2, short: true });
   },
   loot(q = 0) {
     if (!gate('loot', 80)) return;
