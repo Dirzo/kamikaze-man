@@ -38,6 +38,7 @@ import weapon_zones
 import hd_bosses
 import mounts
 from weapons import WEAPONS, VARIANTS, weapon_image
+from arcade_weapons import ARCADE, ARCADE_VARIANTS
 from awakening import AWAKENED
 
 
@@ -96,9 +97,10 @@ def main():
     # the War Goose mount and its egg (mounts.py)
     mounts.build(OUT, man)
 
-    # held weapons: outlined, magenta markers recoloured in game; grip offset +1 for the outline
+    # held weapons: outlined, magenta markers recoloured in game; grip offset +1 for the outline.
+    # The arcade-cut sprites (arcade_weapons.py) replace the old 16-bit ones; loot drops keep theirs.
     man['weapons'] = {}
-    for wtype, ((gx, gy), rows) in {**WEAPONS, **VARIANTS, **AWAKENED}.items():
+    for wtype, ((gx, gy), rows) in {**WEAPONS, **VARIANTS, **ARCADE, **ARCADE_VARIANTS, **AWAKENED}.items():
         im = outlined(weapon_image(rows))
         im.save(os.path.join(OUT, f'weapon-{wtype}.png'))
         man['weapons'][wtype] = {'w': im.width, 'h': im.height, 'gx': gx + 1, 'gy': gy + 1}
@@ -139,8 +141,7 @@ def main():
     weapon_zones.build(OUT, man, Image.open(os.path.join(OUT, 'bg-mushroom-hollow.png')).convert('RGBA'))
 
     with open(os.path.join(OUT, 'manifest.json'), 'w') as f:
-        json.dump(man, f, indent=1)
-        f.write('\n')
+        json.dump(man, f, separators=(',', ':'))  # compact, like the committed manifest
     print('wrote', os.path.abspath(OUT))
 
 

@@ -15,6 +15,7 @@ import { GIMMICKS, gimmickOf, EGG_LEVELS } from '../data/gimmicks.js';
 import { relicCount, allRelics, relicTotal, RELIC_COUNT } from '../data/relics.js';
 import { temperOf, setTemper, modsOf, rewardText } from '../data/temper.js';
 import { NODES, REGIONS, SLOT_W, SLOT_H, MAP_W, MAP_H, isLevel, isOpen, edges, step, visit, warp, progress, writeSave } from '../data/overworld.js';
+import { drawHeroPlain } from './anim.js';
 
 const WALK = 110; // px/s along a road
 const DRAW = 0.7; // seconds for a new road to draw in
@@ -182,7 +183,7 @@ export function drawOverworld(t) {
   const p = ow.walk ? walkPos() : here(), Hh = A.hero;
   if (Hh) {
     const f = ow.walk ? ['run1', 'run2', 'run3'][Math.floor(t * 10) % 3] : Math.floor(t * 2) % 2 ? 'idle' : 'idle2';
-    frame(Hh.im, Hh.frames[f], Hh.w, Hh.h, p.x - Hh.w / 2, p.y - Hh.h + (ow.walk ? 4 : -2), ow.face < 0);
+    drawHeroPlain(f, Math.round(p.x - Hh.w / 2), Math.round(p.y - Hh.h + (ow.walk ? 4 : -2)), ow.face < 0 ? -1 : 1);
   } else rect(p.x - 4, p.y - 14, 8, 12, C.gold);
   screenLayer();
   drawOverworldHud(t);
