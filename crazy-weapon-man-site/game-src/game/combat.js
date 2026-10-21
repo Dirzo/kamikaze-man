@@ -61,20 +61,20 @@ export function hitEnemy(e, dmg, o = {}) {
       callout(['BONK!', 'OOF!', 'PLOP!'][e.funnyFace], 0, 0, C.cream, {follow:e, life:22});
       e.nextBonk = world.t + 0.65;
     }
-    const now = feel.frame / 60;
+    const now = feel.frame / 60, heavy = 1 + heroStats().impact; // HEAVY IMPACT: longer freeze, bigger shake
     if (o.crit || e.boss) {
-      hitstop(o.crit ? 0.06 : 0.035);
+      hitstop((o.crit ? 0.06 : 0.035) * heavy);
       lastStopAt = now;
     } else if (now - lastStopAt > 0.13) {
-      hitstop(o.special ? 0.04 : 0.03);
+      hitstop((o.special ? 0.04 : 0.03) * heavy);
       lastStopAt = now;
     }
-    shake(o.crit ? 0.32 : o.hop ? 0.3 : 0.1);
+    shake((o.crit ? 0.32 : o.hop ? 0.3 : 0.1) * heavy);
   }
   if (!o.chip) comboHit();
   // knockback + stagger (not bosses)
   if (!e.boss && !e.swarmBoss) {
-    let push = o.knock || 0;
+    let push = (o.knock || 0) * (1 + heroStats().impact * 0.5 + heroStats().knock); // HEAVY IMPACT / KNOCKOUT
     if (o.crit) push *= 1.35;
     if (e.elite) push *= 0.75;
     if (world.t - (e.lastHitAt || -9) < 0.3 && !o.crit) push *= 0.75;
@@ -97,6 +97,12 @@ export function hitEnemy(e, dmg, o = {}) {
     if (!o.chain) for (const [el, p] of Object.entries(heroStats().infuse)) if (el !== o.element && Math.random() < p) applyElement(e, dmg, { ...o, element: el });
   }
   if (!o.chip && !o.chain && !o.aoe) areaHits(e, dmg, o);
+  // ECHO SLASH: a ghostly second strike
+  if (!o.chip && !o.chain && !o.aoe && !o.echo && e.hp > 0 && Math.random() < heroStats().echo) {
+    burst(cx(e), cy(e), 4, 'ghost', ['violet', 'mist']);
+    spark(cx(e) + dir * 3, cy(e) - 3, { col: C.violet });
+    hitEnemy(e, dmg * 0.6, { ...o, echo: true, chain: true, crit: false, col: C.violet, sparkCol: C.violet });
+  }
   if (e.hp <= 0) kill(e, o);
   return dmg;
 }
@@ -104,6 +110,7 @@ export function hitEnemy(e, dmg, o = {}) {
 // ---------------------------------------------------------------- area augments (shard tree)
 // the living foes around a point, nearest first
 function around(x, y, r, not = null) {
+  r *= 1 + heroStats().aoeSize; // BIG BOOMS
   return world.enemies
     .filter(n => n !== not && !n.dead && n.spawnT <= 0 && Math.abs(cx(n) - x) < r + n.w / 2 && Math.abs(cy(n) - y) < 30 + n.h / 2)
     .sort((a, b) => Math.abs(cx(a) - x) - Math.abs(cx(b) - x));
@@ -121,9 +128,10 @@ function areaHits(e, dmg, o) {
   if (S.wave > 0 && h && (o.big || o.special) && world.t - (world.lastWave ?? -9) > 0.3) {
     world.lastWave = world.t;
     const x = cx(h), y = h.y + h.h;
-    for (let i = -6; i <= 6; i++) emit(x + i * 9, y - 2, 'dust', i % 2 ? C.mist : C.paper);
-    spark(x - 52, y - 6, { big: true, col: C.orange });
-    spark(x + 52, y - 6, { big: true, col: C.orange });
+    const wr = 52 * (1 + S.aoeSize);
+    for (let i = -6; i <= 6; i++) emit(x + (i * wr) / 6, y - 2, 'dust', i % 2 ? C.mist : C.paper);
+    spark(x - wr, y - 6, { big: true, col: C.orange });
+    spark(x + wr, y - 6, { big: true, col: C.orange });
     shake(0.25);
     sfx.thud(true);
     for (const n of around(x, cy(h), 56, e).slice(0, AREA_MAX)) hitEnemy(n, dmg * S.wave, { aoe: true, dir: Math.sign(cx(n) - x) || 1, knock: 22, hop: true, sparkCol: C.orange, col: C.gold });

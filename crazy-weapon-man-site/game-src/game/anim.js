@@ -17,6 +17,7 @@ import { lookOf, frameOfLook, overlays, runEmitters, motion } from './looks.js';
 import { world } from './world.js';
 import { view } from '../engine/gfx.js';
 import { STYLE_OF } from '../data/weapons.js';
+import { heroStats } from './perks.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = {
@@ -434,6 +435,7 @@ export function drawHeroAnimated(h, t) {
     X.translate(Math.round(wx), Math.round(wy));
     if (face < 0) X.scale(-1, 1);
     if (h.giantT > 0) X.scale(2.4, 2.4);
+    else if (h === world.hero && heroStats().reach) X.scale(1 + heroStats().reach, 1 + heroStats().reach); // the tree's reach upgrades
     motion(w.look, t, k);
     if (w.look.adj === 'Sneaky' && Math.floor(t * 3) % 3 === 0) X.globalAlpha = 0.5;
     X.drawImage(R, -rr.c, -rr.c);

@@ -36,7 +36,7 @@ function mapScene(game, all) {
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
   bankShards(9000); setLock('blades');
-  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'edge', 'edge', 'swarm', 'brutal', 'brutal', 'fire', 'whirl', 'whirl', 'bounty', 'nova']) buyRank(id);
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'slice', 'slice', 'longb', 'cleave', 'cleave', 'whirl', 'whirl', 'fleet', 'blink', 'bounty', 'nova']) buyRank(id);
   winTrophy(1); winTrophy(2);
   addProficiency('sword', 2200); addProficiency('bow', 300); addProficiency('katana', 60000); addProficiency('hammer', 9000); addProficiency('wand', 900);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
@@ -44,7 +44,7 @@ function powersScene(game, tab) {
   openPowers(tab === 3 ? 1 : tab);
   powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3 || tab === 5; powers.mast.tier = 2; powers.mast.opt = 1;
   // 4: shards mid-flight into a node being bought; 5: a mastery perk charging up
-  if (tab === 4) { powers.tab = 0; powers.tree.sel = 'cleave'; investNode(TREE_BY_ID.cleave); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
+  if (tab === 4) { powers.tab = 0; powers.tree.sel = 'echo'; investNode(TREE_BY_ID.echo); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
   if (tab === 5) { powers.tab = 1; pickPerk('sword', 3, 0); for (let i = 0; i < 40; i++) updatePowers(1 / 60); }
 }
 // the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty

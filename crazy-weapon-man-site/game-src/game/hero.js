@@ -182,6 +182,7 @@ function updateAttack(h, dt, T) {
     if (!a.fired && a.t / a.dur >= a.fireAt) {
       a.fired = true;
       shoot(h, T, 0);
+      if (Math.random() < heroStats().multishot) shoot(h, T, -0.1, 0.85); // TWIN SHOT
     }
     if (a.t >= a.dur) h.attack = null;
     return;
@@ -189,7 +190,9 @@ function updateAttack(h, dt, T) {
   const p = a.t / a.dur;
   const [activeStart, activeEnd] = activeWindow(h.weapon.type, a.move.big);
   if (p >= activeStart && p <= activeEnd) {
-    const box = attackBox(h, T, a.move);
+    const box = attackBox(h, T, a.move, heroStats().reach);
+    // AWAKENING: the swing leaves a trail of shard-light
+    if (heroStats().trail && Math.random() < 0.6) emit(box.x + Math.random() * box.w, box.y + Math.random() * box.h, 'twinkle', Math.random() < 0.5 ? C.ice : C.sky);
     for (const e of world.enemies) {
       if (e.dead || e.spawnT > 0 || a.hit.has(e) || !overlap(box, e)) continue;
       a.hit.add(e);
@@ -224,13 +227,14 @@ function shoot(h, T, ang, mult = 1, extra = {}) {
     y: h.y + 12,
     w: 6,
     h: 4,
-    vx: Math.cos(ang) * T.speed * h.face,
-    vy: Math.sin(ang) * T.speed,
+    vx: Math.cos(ang) * T.speed * (1 + heroStats().shotSpeed) * h.face,
+    vy: Math.sin(ang) * T.speed * (1 + heroStats().shotSpeed),
     dmg: hitDamage(w) * mult * (crit ? CRIT.mult + heroStats().critDmg : 1),
     crit,
     knock: T.knock,
-    pierce: T.pierce + (w.family === 'plasma' ? 2 : 0) + (extra.pierce || 0),
-    homing: T.homing || 0,
+    pierce: T.pierce + (w.family === 'plasma' ? 2 : 0) + (extra.pierce || 0) + Math.round(heroStats().pierce * 100),
+    homing: T.homing || (heroStats().homing ? 3 : 0),
+    trail: !!heroStats().trail,
     life: 1.6,
     hit: new Set(),
     element: w.family,

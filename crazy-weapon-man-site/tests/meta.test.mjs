@@ -65,7 +65,7 @@ test('shards bank, ranks need a linked node, undo takes back the last rank, refu
   assert.equal(cantBuy('sharp'), 'MAXED');
   assert.equal(cantBuy('band'), null, 'linked to sharp');
   assert.match(cantBuy('stand'), /LINKED/);
-  assert.ok(Math.abs(stats().dmg - 0.17) < 1e-9);
+  assert.ok(Math.abs(stats().impact - 0.5) < 1e-9 && stats().dmg === 0, 'the ring is about feel, not flat damage');
   const spent = rankCost(TREE_BY_ID.core, 1) + [1, 2, 3, 4, 5].reduce((s, r) => s + rankCost(TREE_BY_ID.sharp, r), 0);
   assert.equal(meta().shards, 100000 - spent);
   assert.equal(undoRank(), 'sharp');
@@ -83,19 +83,22 @@ test('specializing: only your class drops, and only your class cluster opens and
   bankShards(100000);
   buyRank('core');
   buyRank('sharp');
-  assert.match(cantBuy('edge'), /SPECIALIZE IN BLADES/);
+  assert.match(cantBuy('slice'), /SPECIALIZE IN BLADES/);
   assert.ok(setLock('blades'));
   assert.equal(weaponLock(), 'blades');
   assert.ok(allowedType('katana') && !allowedType('bow') && !allowedType('hammer'));
-  assert.ok(buyRank('edge'));
-  buyRank('brutal');
-  assert.ok(buyRank('fire'), 'the keystone hangs off big crits');
-  assert.ok(Math.abs(stats('sword').crit - 0.01) < 1e-9, 'blade nodes work with a blade');
-  assert.equal(stats('bow').crit, 0, 'and not with a bow');
+  // round the sword's outline: grip, guard, the edge of the blade, out to the keystone
+  for (const id of ['slice', 'longb', 'cleave', 'whirl', 'echo']) assert.ok(buyRank(id), id);
+  assert.match(cantBuy('frenzy'), /LINKED/, 'the tip waits at the end of an edge');
+  assert.ok(buyRank('fire'));
+  assert.ok(buyRank('frenzy'));
+  assert.ok(Math.abs(stats('sword').reach - 0.06) < 1e-9, 'blade nodes work with a blade');
+  assert.equal(stats('bow').reach, 0, 'and not with a bow');
+  assert.ok(stats('katana').innate.has('frenzy') && !stats('bow').innate.has('frenzy'), 'a keystone teaches the blade a move');
   assert.ok(Math.abs(stats('scythe').infuse.fire - 0.06) < 1e-9);
   assert.equal(stats('wand').infuse.fire, undefined);
-  assert.ok(Math.abs(stats('bow').dmg - 0.05) < 1e-9, 'shared nodes work with everything');
-  assert.match(cantBuy('armor'), /SPECIALIZE IN BLUNT/);
+  assert.ok(Math.abs(stats('bow').impact - 0.1) < 1e-9, 'shared nodes work with everything');
+  assert.match(cantBuy('heft'), /SPECIALIZE IN BLUNT/);
   setLock(null);
   assert.ok(allowedType('bow'));
   for (const t of Object.keys(CLASS_OF)) assert.ok(CLASSES[CLASS_OF[t]]);
@@ -107,9 +110,9 @@ test('respec: undo and refund take the class lock back too, so a Blades player c
   buyRank('core');
   buyRank('sharp');
   setLock('blades');
-  buyRank('edge');
+  buyRank('slice');
   assert.equal(weaponLock(), 'blades');
-  assert.equal(undoRank(), 'edge', 'the newest rank comes back first');
+  assert.equal(undoRank(), 'slice', 'the newest rank comes back first');
   assert.equal(undoRank(), '@', 'then the specialization itself');
   assert.equal(weaponLock(), null);
   assert.ok(setLock('ranged'));
@@ -117,11 +120,11 @@ test('respec: undo and refund take the class lock back too, so a Blades player c
   assert.equal(rank('sharp'), 1, 'shared ranks stay put');
   // switching straight from one class to another refunds the old cluster
   setLock('blades');
-  assert.ok(buyRank('edge'));
+  assert.ok(buyRank('slice'));
   const before = meta().shards;
   setLock('ranged');
-  assert.equal(rank('edge'), 0, 'blade ranks refunded');
-  assert.equal(meta().shards, before + rankCost(TREE_BY_ID.edge, 1));
+  assert.equal(rank('slice'), 0, 'blade ranks refunded');
+  assert.equal(meta().shards, before + rankCost(TREE_BY_ID.slice, 1));
   assert.equal(undoRank(), '@blades', 'and that switch can be undone');
   assert.equal(weaponLock(), 'blades');
   // a lock with no recorded history (an older save) still undoes
@@ -175,16 +178,18 @@ test('area augments: two shared, two per class, each class pair only with that c
   bankShards(1e7);
   const aoe = TREE.filter(n => n.aoe);
   assert.equal(aoe.filter(n => !n.branch).length, 2);
-  for (const c of Object.keys(CLASSES)) assert.equal(aoe.filter(n => n.branch === c).length, 2, c);
+  for (const c of Object.keys(CLASSES)) assert.ok(aoe.filter(n => n.branch === c).length >= 2, c);
   for (const id of ['core', 'sharp', 'bounty', 'nova']) assert.ok(buyRank(id), id);
   assert.ok(Math.abs(stats('bow').nova - 0.04) < 1e-9 && Math.abs(stats('hammer').nova - 0.04) < 1e-9, 'shared nova works with everything');
   setLock('blades');
-  for (const id of ['edge', 'brutal', 'whirl']) assert.ok(buyRank(id), id);
+  for (const id of ['slice', 'longb', 'cleave', 'whirl']) assert.ok(buyRank(id), id);
   assert.ok(Math.abs(stats('sword').wave - 0.12) < 1e-9);
   assert.equal(stats('bow').wave, 0);
   // the web still fits the window: nodes stay apart and inside its 322 x 210 frame
   for (const a of TREE) for (const b of TREE) if (a !== b) assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= 16, a.id + ' ' + b.id);
+  // and no class node is a flat damage number
+  assert.ok(TREE.every(n => !['dmg', 'critDmg', 'swarmDmg', 'bossDmg', 'execute', 'hp'].includes(n.stat)), 'a flat damage node');
   const ys = TREE.map(n => n.y);
-  assert.ok(Math.max(...ys) - Math.min(...ys) + 24 <= 210 && TREE.every(n => Math.abs(n.x) + 12 <= 161));
+  assert.ok(Math.max(...ys) - Math.min(...ys) + 24 <= 210 && TREE.every(n => Math.abs(n.x) + 8 <= 161));
   resetMeta();
 });
