@@ -14,6 +14,7 @@ export function updateShots(dt) {
   for (let i = world.shots.length - 1; i >= 0; i--) {
     const s = world.shots[i];
     s.life -= dt;
+    if (s.trail && Math.random() < 0.5) emit(s.x, s.y, 'twinkle', Math.random() < 0.5 ? C.ice : C.sky);
     if (s.homing) {
       let best = null,
         bd = 1e9;

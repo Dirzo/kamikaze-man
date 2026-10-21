@@ -2,7 +2,7 @@
 // short callouts, screenshake (trauma) and hit-stop. All in screen pixels, palette colours only.
 import { world } from './world.js';
 import { C } from '../config.js';
-import { X, rect, px, text, view } from '../engine/gfx.js';
+import { X, rect, px, text, textWidth, view } from '../engine/gfx.js';
 import { fmt } from '../data/curve.js';
 
 const parts = [];
@@ -64,34 +64,45 @@ export function spark(x, y, { crit = false, big = false, col = C.cream, diag = M
 }
 
 // ---------------------------------------------------------------- numbers
-// Hits on one target within 0.6 s stack upward in a column; tiny chip damage folds into the top one.
+// MapleStory style: every hit throws up a big number that pops in oversized and settles, and hits
+// on one target within 0.6 s stack upward in a column (tiny chip damage folds into the top one).
+// The numbers themselves climb from tens to millions as the hero grows. Crits are a size bigger,
+// flash through hot colours and burst a little star behind them.
+const CRIT_COLS = ['gold', 'orange', 'coral', 'pink', 'red', 'pink', 'coral', 'orange'];
+export const numberSize = (n, crit) => (crit ? 3 : 2);
 export function damageNumber(target, n, { crit = false, col = null, chip = false } = {}) {
   const now = feel.frame;
   const stack = numbers.filter(d => d.tid === target.id && now - d.born < 36);
-  if ((chip && stack.length) || stack.length >= 5) {
+  if ((chip && stack.length) || stack.length >= 6) {
     const top = stack[stack.length - 1];
     top.total += n;
     top.s = fmt(top.total);
     top.life = Math.max(top.life, 40);
+    top.pop = Math.max(top.pop, 3); // the folded-in number gives a little bump
     return;
   }
-  const prev = stack[stack.length - 1];
+  const prev = stack[stack.length - 1],
+    k = chip ? 1 : numberSize(n, crit);
   numbers.push({
     tid: target.id,
     born: now,
     total: n,
     s: fmt(n),
+    k,
+    pop: chip ? 0 : crit ? 6 : 3, // frames drawn one size up
     x: prev ? prev.x : target.x + target.w / 2,
-    y: prev ? prev.y - 10 : target.y - 6,
-    life: crit ? 62 : 48,
-    max: crit ? 62 : 48,
-    col: col || (crit ? C.gold : C.paper),
+    y: prev ? prev.y - (prev.k * 7 + 3) : target.y - 6 - k * 7,
+    vx: prev ? 0 : (Math.random() - 0.5) * 0.3,
+    life: crit ? 70 : 54,
+    max: crit ? 70 : 54,
+    col: col || (crit ? null : C.orange),
+    hi: col ? null : crit ? null : C.cream, // the first frames flash bright before the colour settles
     crit
   });
-  if (numbers.length > 40) numbers.shift();
+  if (numbers.length > 60) numbers.shift();
 }
 export function heroDamageNumber(hero, n) {
-  numbers.push({ tid: -1, born: feel.frame, total: n, s: fmt(n), x: hero.x + hero.w / 2, y: hero.y - 6, life: 50, max: 50, col: C.red, crit: false });
+  numbers.push({ tid: -1, born: feel.frame, total: n, s: fmt(n), k: 2, pop: 4, vx: 0, x: hero.x + hero.w / 2, y: hero.y - 18, life: 50, max: 50, col: C.red, hi: C.coral, crit: false });
 }
 
 // short centred or floating callouts ("WAVE CLEAR", "CLANG"), max 3 alive, no duplicates
@@ -123,6 +134,8 @@ export function updateFx(dt) {
   for (let i = numbers.length - 1; i >= 0; i--) {
     const d = numbers[i];
     d.y -= d.life > d.max - 10 ? 0.9 : 0.25;
+    d.x += d.vx || 0;
+    if (d.pop > 0) d.pop--;
     if (--d.life <= 0) numbers.splice(i, 1);
   }
   for (let i = callouts.length - 1; i >= 0; i--) {
@@ -184,13 +197,35 @@ export function drawSparks() {
 export function drawNumbers() {
   for (const d of numbers) {
     if (d.life < 10 && d.life & 1) continue;
-    text(d.s, d.x, Math.round(d.y), d.col, { align: 'center' });
+    const k = (d.k || 1) + (d.pop > 0 ? 1 : 0),
+      age = d.max - d.life,
+      y = Math.round(d.y - (d.pop > 0 ? 3 : 0));
+    let col = d.col;
+    if (d.crit) {
+      // the crit's star: eight pixel rays that shrink away, then hot colours cycling on the digits
+      if (age < 14) critStar(d.x, y + (k * 7) / 2, textWidth(d.s, k) / 2 + 4 + (14 - age) * 0.6, age);
+      col = d.col || C[CRIT_COLS[Math.floor(age / 3) % CRIT_COLS.length]];
+    } else if (age < 4 && d.hi) col = d.hi;
+    text(d.s, d.x, y, col, { align: 'center', k });
+    if (d.crit && age < 40 && k >= 2) text('CRITICAL', d.x, y - 9, Math.floor(age / 4) % 2 ? C.gold : C.paper, { align: 'center' });
   }
   for (const c of callouts) {
     if (c.life < 12 && c.life & 1) continue;
     const x = c.follow ? c.follow.x + c.follow.w / 2 : c.x + Math.round(world.cameraX || 0),
       y = c.follow ? c.follow.y - 18 - (c.max - c.life) * 0.3 : c.y + Math.round(world.cameraY || 0);
     text(c.s, x, Math.round(y), c.col, { align: 'center', k: c.big ? 2 : 1 });
+  }
+}
+
+function critStar(x, y, r, age) {
+  x = Math.round(x);
+  y = Math.round(y);
+  const col = age < 4 ? C.paper : age % 4 < 2 ? C.gold : C.orange;
+  for (let a = 0; a < 8; a++) {
+    const dx = Math.cos((a * Math.PI) / 4 + age * 0.08),
+      dy = Math.sin((a * Math.PI) / 4 + age * 0.08),
+      L = a % 2 ? r * 0.6 : r;
+    for (let s = Math.max(2, L * 0.45); s < L; s += 1) px(Math.round(x + dx * s), Math.round(y + dy * s * 0.6), col);
   }
 }
 

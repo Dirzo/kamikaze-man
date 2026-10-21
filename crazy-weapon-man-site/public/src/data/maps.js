@@ -12,6 +12,9 @@ import { W, GROUND, HERO } from '../config.js';
 import { ZONES } from './zones.js';
 import { NODES, REGIONS, isLevel } from './overworld.js';
 
+// residents per map, MapleStory dense: big packs of cute things to clear, made for area augments
+export const FOES = zone => 50 + zone * 4;
+
 export const LAYOUTS = [
   { style: 'chambers', title: 'ANT TUNNEL', label: 'CHAMBER' },
   { style: 'field', title: 'ARCHERY GLADE', label: 'GLADE', screens: 8, tiers: 2, hills: true },
@@ -201,7 +204,7 @@ function chambers(zone, lay, D = null) {
       }
     }
   }
-  const count=27+zone*2+(V.foes||0),spawns=[];
+  const count=FOES(zone)+(V.foes||0),spawns=[];
   const hunt=platforms.filter(p=>p.ground||p.hunt);
   for(let i=0;i<count;i++) {
     const p=hunt[i%hunt.length],slot=Math.floor(i/hunt.length);
@@ -319,17 +322,21 @@ function finish(m, zone, lay) {
     if (right - left >= GAP * 3) spans.push({ p, left, right });
   }
   spans.sort((a, b) => a.p.room - b.p.room || a.p.y - b.p.y || a.left - b.left);
-  const total = spans.reduce((s, q) => s + q.right - q.left, 0), count = 27 + zone * 2 + (lay.foes || 0), spawns = [];
+  const total = spans.reduce((s, q) => s + q.right - q.left, 0), count = FOES(zone) + (lay.foes || 0), spawns = [];
   const packs = [];
   for (let left = count; left > 0; ) {
-    const n = Math.min(left, m.int(3, zone >= 5 ? 5 : 4));
+    const n = Math.min(left, m.int(5, zone >= 5 ? 10 : 8));
     packs.push(n);
     left -= n;
   }
-  for (const [k, n] of packs.entries()) {
+  for (let [k, n] of packs.entries()) {
     let pos = (k + 0.5) / packs.length * total, q = spans[0];
     for (q of spans) { if (pos <= q.right - q.left) break; pos -= q.right - q.left; }
     if (lay.seed && k === packs.length - 1) (q = spans.at(-1)), (pos = (q.right - q.left) / 2); // a level's own map: the last pack waits in the arena
+    // a ledge too short for the whole pack hands the rest on to the next pack
+    const fit = Math.min(n, 1 + Math.floor((q.right - q.left) / 20));
+    if (fit < n && k + 1 < packs.length) packs[k + 1] += n - fit;
+    n = fit;
     const gap = Math.min(GAP, (q.right - q.left) / Math.max(1, n - 1)), half = (n - 1) * gap / 2;
     const mid = Math.max(q.left + half, Math.min(q.right - half, q.left + pos));
     for (let j = 0; j < n; j++) {

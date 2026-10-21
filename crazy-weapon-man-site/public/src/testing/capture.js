@@ -1,4 +1,4 @@
-// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late,
+// Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late|kills,
 // ?capture=secret1..secret10 for where each map hides its easter egg,
 // ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
 // ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise, ?capture=lv1-3 (any
@@ -21,7 +21,10 @@ import { updateCamera } from '../game/camera.js';
 import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
 import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
-import { openPowers, P as powers } from '../game/powers.js';
+import { openPowers, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
+import { TREE_BY_ID } from '../data/meta.js';
+import { hitEnemy, DEATH_T } from '../game/combat.js';
+import { updateFx } from '../game/fx.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
 function mapScene(game, all) {
   const s = all ? revealAll(newSave()) : newSave();
@@ -32,14 +35,17 @@ function mapScene(game, all) {
 }
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
-  bankShards(4200); setLock('blades');
-  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'edge', 'edge', 'swarm', 'brutal', 'brutal', 'fire']) buyRank(id);
+  bankShards(9000); setLock('blades');
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'slice', 'slice', 'longb', 'cleave', 'cleave', 'whirl', 'whirl', 'fleet', 'blink', 'bounty', 'nova']) buyRank(id);
   winTrophy(1); winTrophy(2);
-  addProficiency('sword', 2200); addProficiency('bow', 300);
+  addProficiency('sword', 2200); addProficiency('bow', 300); addProficiency('katana', 60000); addProficiency('hammer', 9000); addProficiency('wand', 900);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
   openPowers(tab === 3 ? 1 : tab);
-  powers.tree.sel = tab === 0 ? 'core' : 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
+  powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3 || tab === 5; powers.mast.tier = 2; powers.mast.opt = 1;
+  // 4: shards mid-flight into a node being bought; 5: a mastery perk charging up
+  if (tab === 4) { powers.tab = 0; powers.tree.sel = 'echo'; investNode(TREE_BY_ID.echo); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
+  if (tab === 5) { powers.tab = 1; pickPerk('sword', 3, 0); for (let i = 0; i < 40; i++) updatePowers(1 / 60); }
 }
 // the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
 function filesScene(game) {
@@ -90,6 +96,19 @@ export function captureScene(game, mode) {
       for(let i=0;i<90;i++){world.t+=1/60;h.inv=1;updateWaves(1/60);for(const e of world.enemies) if(!e.dead) updateEnemy(e,1/60);}
       world.swarmCombo.n=37;world.swarmCombo.best=37;world.swarmCombo.t=1.4;
       h.inv=1;
+    }
+    if(mode==='kills') {
+      // MapleStory-style feedback: stacked big numbers, a colour-cycling crit, and residents at each
+      // stage of falling over (topple, flip, spin, squash, rise) before they burst into shards
+      world.enemies=[];h.attack=null;h.inv=99;h.x=offset+16;
+      const row=[['stalker',1,false],['crawler',1,true],['goose',1,false],['bombchicken',1,false],['wraith',1,false],['turtle',0,false],['raccoon',0,true],['monk',0,false]];
+      const es=row.map(([type],i)=>{const x=offset+70+i*54,e=spawnEnemy(type,x,ENEMIES[type].air?floor-50:floorAt(x,floor),{wave:3});e.spawnT=0;e.calm=false;e.face=-1;e.hp=e.max=1e6;return e;});
+      es.forEach((e,i)=>{const [,dies,crit]=row[i];
+        for(const d of dies?[1840]:[1840,crit?9650:2470]) hitEnemy(e,d,{crit:crit&&d>9e3,dir:1});
+        if(dies) {hitEnemy(e,e.hp,{crit:i===1,dir:1});e.deathT=DEATH_T-0.12-0.06*i;}
+      });
+      for(let i=0;i<8;i++){updateFx(1/60);}
+      for(const e of world.enemies) if(e.dead) {const n=Math.round((DEATH_T-e.deathT)*60);e.deathT=DEATH_T;for(let k=0;k<n;k++){world.t+=1/60;updateEnemy(e,1/60);}}
     }
     if(mode==='ladder') {
       const l=world.map.ladders[0];h.attack=null;h.ladder=l;h.x=l.x-h.w/2;h.y=Math.round((l.top+l.bottom)/2)-h.h;h.climbT=0.1;h.face=1;

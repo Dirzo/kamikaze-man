@@ -1,9 +1,12 @@
 // The run's introduction schedule. All random loot and the director use these gates.
-// One new idea at a time: basic weapons -> finishers -> elements -> build-defining mutations.
+// One new idea at a time: finishers -> elements -> build-defining mutations. Weapon types are all
+// open from the start.
+// Every weapon type drops from the very first map, all at the same odds, so no class is ahead
+// before you specialize (Blades has five types to the others' four, but each type is equal).
 export const TYPE_UNLOCKS = {
-  sword: 0, dagger: 0, bow: 0, hammer: 1, staff: 1, katana: 2,
-  nunchucks: 2, shuriken: 3, wand: 4,
-  spear: 1, axe: 2, boomerang: 3, scythe: 5
+  sword: 0, dagger: 0, bow: 0, hammer: 0, staff: 0, katana: 0,
+  nunchucks: 0, shuriken: 0, wand: 0,
+  spear: 0, axe: 0, boomerang: 0, scythe: 0
 };
 export const ELEMENT_UNLOCKS = {
   fire: 1, ice: 1, poison: 2, water: 2, lightning: 3, earth: 3,

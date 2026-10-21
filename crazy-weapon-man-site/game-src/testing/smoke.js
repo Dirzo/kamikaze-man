@@ -30,6 +30,8 @@ import { tickRun, splitZone } from '../game/speedrun.js';
 import { resetRecords } from '../data/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { ENEMIES } from '../data/enemies.js';
+import { attackBox } from '../game/attack-rules.js';
+import { resetMeta, bankShards, buyRank, setLock } from '../data/meta.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
@@ -265,6 +267,31 @@ export function runSmoke(game) {
       key('KeyC',true);poll();for(let i=0;i<60;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);poll();}key('KeyC',false);poll();
       ok(e.hp<e.max,type+' never hit');ok(!h.special,type+' special never ended');heroPose(h,world.t);
     }
+  });
+  check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
+    const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});
+      const es=[0,18,40].map(dx=>{const e=spawnEnemy('brute',h.x+30+dx,GROUND);e.spawnT=0;e.hp=e.max=1e6;return e;});return [h,es];};
+    let [h,es]=fresh('sword',['core','skin','ripple']);hitEnemy(es[0],1000,{dir:1});
+    ok(es[1].hp<es[1].max && es[1].hp>es[1].max-1000*0.1,'ripple did not splash a little onto the neighbour');
+    [h,es]=fresh('hammer',['core','skin','heft','heavy','crush','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
+    ok(es[1].hp===es[1].max,'a shockwave without a finisher');hitEnemy(es[0],1000,{dir:1,big:true});ok(es[1].hp<es[1].max,'the finisher sent no shockwave');
+    [h,es]=fresh('bow',['core','learn','fast','quick','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    ok(es[0].dead && es[1].hp<es[1].max,'the kill did not scatter onto the next foe');
+    [h,es]=fresh('sword',['core','learn','aim','kite','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    ok(es[1].hp===es[1].max,'a ranged augment worked with a sword');
+    resetMeta();
+  });
+  check('shard tree feel upgrades: reach grows the weapon, echoes strike twice, shots fly faster and pierce',()=>{
+    const T=game.types.sword,mv={big:false,from:0,to:90},h0={x:100,y:80,w:11,face:1};
+    ok(attackBox(h0,T,mv,0.3).w>attackBox(h0,T,mv,0).w*1.25,'reach did not grow the swing');
+    resetMeta();bankShards(1e7);setLock('blades');for(const id of ['core','sharp','slice','longb','cleave','whirl','echo','echo','echo','echo','echo'])buyRank(id);
+    reset();let h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});let e=spawnEnemy('brute',h.x+30,GROUND);e.spawnT=0;e.hp=e.max=1e7;
+    let twice=0;for(let i=0;i<60;i++){const hp=e.hp;hitEnemy(e,100,{dir:1});if(hp-e.hp>100)twice++;}
+    ok(twice>3,'no echo slashes ('+twice+'/60)');
+    resetMeta();bankShards(1e7);setLock('ranged');for(const id of ['core','learn','fast','fast','fast','quick','scatter','pierce','pierce'])buyRank(id);
+    reset();h=world.hero;h.weapon=makeWeapon(3,{type:'bow',q:3});world.shots.length=0;h.cd=0;key('KeyZ',true);poll();for(let i=0;i<40&&!world.shots.length;i++){world.t+=STEP;updateHero(h,STEP);poll();}key('KeyZ',false);poll();
+    const s=world.shots[0];ok(s && Math.abs(s.vx)>game.types.bow.speed*1.25 && s.pierce>=game.types.bow.pierce+2,'shots did not speed up or pierce');
+    resetMeta();
   });
   check('every weapon ability does its thing',()=>{
     const fresh=ab=>{reset();const h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});h.weapon.ability=ab;const e=spawnEnemy('brute',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e7;return [h,e];};
