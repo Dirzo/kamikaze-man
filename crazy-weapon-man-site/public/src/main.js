@@ -29,13 +29,14 @@ import { newRun, tickRun, endRun, drawResults, RESULTS_TIME } from './game/speed
 import { ow, openOverworld, updateOverworld, drawOverworld } from './game/overworld.js';
 import { loadSave, writeSave, clearLevel, FINAL } from './data/overworld.js';
 import { freshUid } from './game/loot.js';
-import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
+import { bankShards, winTrophy, TROPHIES, trophyCount, chosenMount } from './data/meta.js';
+import { STABLE_TROPHIES } from './data/mounts.js';
 import { P as powers, openPowers, closePowers } from './game/powers.js';
 import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
-import { applyLock } from './game/classlock.js';
+import { applyLock, keepInClass } from './game/classlock.js';
 import { updateRelics, drawRelics, relicsTaken } from './game/relics.js';
 import { updateHidden, drawHidden } from './game/hidden.js';
-import { updateMount, drawMountWorld } from './game/mount.js';
+import { updateMount, drawMountWorld, saddle } from './game/mount.js';
 import { updateGimmick, drawGimmickWorld, drawGimmickScreen } from './game/gimmicks.js';
 import { flushBook } from './data/book.js';
 import { temperOf, temperClear, MODS } from './data/temper.js';
@@ -93,7 +94,7 @@ function enterLevel(node) {
     const copy = JSON.parse(JSON.stringify(snap));
     Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMax(copy.lv), weapon: freshUid(copy.weapon) });
     world.bag = copy.bag.map(w => w && freshUid(w));
-    if (copy.mount) h.mount = { chompT: 1, flapT: 0 }; // the War Goose rides along
+    if (copy.mount && chosenMount()) h.mount = saddle(chosenMount()); // your mount rides along (the stable's pick: swap it there)
   }
   world.level = node;
   world.temper = temperOf(ow.save).on; // the post-game tier picked on the map (T)
@@ -130,7 +131,8 @@ function endLevel(result) {
     writeSave(ow.save);
   }
   if (result === 'quit') return openMap();
-  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length };
+  const stable = !!trophy && trophyCount() === STABLE_TROPHIES; // the third family head just fell
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable };
   scene = 'levelEnd';
   sceneT = 0;
 }
@@ -200,6 +202,7 @@ function update(dt) {
     return; // hit-stop: the world holds its breath
   }
   world.t += dt;
+  keepInClass(); // specialized: never an off-class weapon in hand
   updateHero(world.hero, dt);
   updateMount(dt);
   updateHidden(dt);
@@ -333,6 +336,7 @@ function drawLevelEnd() {
   if (E.relics) extra.push([E.relics.set ? `ALL ${RELIC_COUNT} RELICS! A STAR FOR ${E.node.id}` : `RELICS ${E.relics.taken}/${RELIC_COUNT} THIS RUN` + (E.relics.fresh ? `  (${E.relics.fresh} NEW)` : ''), E.relics.set ? C.gold : C.cream]);
   if (E.temperUp) extra.push([`TEMPER ${E.temperUp} UNLOCKED: ${MODS[E.temperUp - 1].name}  (T ON THE MAP)`, C.coral]);
   if (E.cards) extra.push([`MONSTER BOOK: ${E.cards} CARD${E.cards > 1 ? 'S' : ''} WENT UP A TIER`, C.sky]);
+  if (E.stable) extra.push(['THE STABLE IS OPEN! PICK A MOUNT: E (POWERS) > STABLE', C.lime]);
   panel('panel', W / 2 - 172, 74, 344, 108 + extra.length * 10);
   extra.forEach(([s, col], i) => text(s, W / 2, 160 + i * 10, col, { align: 'center' }));
   text(final ? 'THE ARMORY IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });

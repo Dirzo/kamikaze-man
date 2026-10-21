@@ -19,9 +19,8 @@ import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
 import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abilities.js';
 import { heroPhysics } from './gimmicks.js';
-import { charge, drawMount, RIDE } from './mount.js';
+import { charge, drawMount, RIDE, flap, mountDef } from './mount.js';
 import { X } from '../engine/gfx.js';
-import { MOUNT } from '../data/gimmicks.js';
 
 
 export function createHero() {
@@ -73,8 +72,8 @@ export function updateHero(h, dt) {
     return;
   }
   const ax = input.axis();
-  // the level's gimmick (water, ice) and the War Goose change how the hero moves
-  const G = heroPhysics() || {}, ride = h.mount ? MOUNT : null;
+  // the level's gimmick (water, ice) and the mount you ride change how the hero moves
+  const G = heroPhysics() || {}, ride = h.mount ? mountDef(h.mount) : null;
   // dash (riding: a longer WAR CHARGE that bowls foes over)
   if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
     h.dashT = HERO.dashTime * (ride ? ride.chargeTime : 1);
@@ -133,6 +132,8 @@ export function updateHero(h, dt) {
       h.onGround = false;
       h.jumpHeld = true;
       sfx.jump();
+    } else if (ride && flap(h)) {
+      input.consume('jump'); // SKY FLAP: the griffin beats its wings for one more jump
     } else if (hasAbility('hops') && !h.hopped && !h.ladder) {
       // DOUBLE JUMP: one more hop off thin air
       input.consume('jump');

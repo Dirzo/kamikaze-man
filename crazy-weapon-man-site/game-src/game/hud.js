@@ -17,6 +17,7 @@ import { clock as clockOf } from '../data/speedrun.js';
 import { drawRelicPips } from './relics.js';
 import { gimmickName } from './gimmicks.js';
 import { GIMMICKS } from '../data/gimmicks.js';
+import { mountDef } from './mount.js';
 
 const BAR_Y = H - 28;
 
@@ -136,7 +137,7 @@ export function drawHud(t) {
     const tags = [];
     if (world.gimmick) tags.push([gimmickName(), C[GIMMICKS[world.gimmick].col]]);
     if (world.temper) tags.push(['TEMPER ' + world.temper, C.coral]);
-    if (h.mount) tags.push(['WAR GOOSE', C.gold]);
+    if (h.mount) tags.push([mountDef(h.mount).name + (h.mount.barding ? ' (BARDED)' : ''), C[mountDef(h.mount).col]]);
     let tx = world.level ? 46 : 6;
     for (const [s, col] of tags) (text(s, tx, 56, col), (tx += textWidth(s) + 8));
   }

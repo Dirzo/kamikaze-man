@@ -23,6 +23,7 @@ import { proficiency, profToNext, profRank, PROF_MAX, PROF_DMG } from '../data/p
 import { fmt } from '../data/curve.js';
 import { RARITY } from '../data/weapons.js';
 import { drawSheet } from './statsheet.js';
+import { allowedType } from '../data/meta.js';
 
 export const BAG_SIZE = 24;
 const COLS = 8,
@@ -122,7 +123,7 @@ export function autoLoot(w) {
 // equip a bag weapon (the old one takes its slot); a weapon you have never held feeds Weapon Lust
 export function equipFromBag(i) {
   const w = world.bag[i];
-  if (!w) return false;
+  if (!w || !allowedType(w.type)) return false; // specialized: another class can't be wielded
   const fresh = !w.used,
     old = equip(w);
   world.bag[i] = old && old.name !== 'Training Sword' ? old : null;
@@ -155,8 +156,7 @@ function act(id) {
     return;
   }
   if (id === 'equip') {
-    equipFromBag(I.sel);
-    I.msg = 'EQUIPPED';
+    I.msg = equipFromBag(I.sel) ? 'EQUIPPED' : 'NOT YOUR CLASS: SALVAGE IT FOR SHARDS';
     I.confirm = false;
   } else if (id === 'lock') {
     w.locked = !w.locked;

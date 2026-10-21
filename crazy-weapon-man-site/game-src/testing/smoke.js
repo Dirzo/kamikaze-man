@@ -11,7 +11,7 @@ import { startBoss, updateBoss, updateHazards, drawHazards, bossDone, clearBoss,
 import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
 import { startZone, updateWaves, enemiesLeft } from '../game/waves.js';
-import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE } from '../game/inventory.js';
+import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE, equipFromBag } from '../game/inventory.js';
 import { BOSS_OF, HEAD_KINDS, SIBLING_KINDS, SIBLING_DEFS, headOfZone } from '../data/families.js';
 import { LEVELS } from '../data/overworld.js';
 import { bossName } from '../game/bosses.js';
@@ -31,7 +31,8 @@ import { resetRecords } from '../data/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { ENEMIES } from '../data/enemies.js';
 import { attackBox } from '../game/attack-rules.js';
-import { resetMeta, bankShards, buyRank, setLock } from '../data/meta.js';
+import { resetMeta, bankShards, buyRank, setLock, winTrophy, chooseMount, CLASSES } from '../data/meta.js';
+import { keepInClass, applyLock } from '../game/classlock.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
@@ -41,7 +42,7 @@ import { updateAbilities, abilityHit } from '../game/abilities.js';
 import { NODES, OVERWORLD_KEY, isOpen } from '../data/overworld.js';
 import { updateHidden } from '../game/hidden.js';
 import { updateRelics } from '../game/relics.js';
-import { mount, updateMount } from '../game/mount.js';
+import { mount, updateMount, flap } from '../game/mount.js';
 import { heroPhysics, updateGimmick } from '../game/gimmicks.js';
 import { setLootFilter, lootFilter } from '../game/inventory.js';
 import { cardKills, resetBook } from '../data/book.js';
@@ -278,24 +279,24 @@ export function runSmoke(game) {
   check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
     const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});
       const es=[0,18,40].map(dx=>{const e=spawnEnemy('brute',h.x+30+dx,GROUND);e.spawnT=0;e.hp=e.max=1e6;return e;});return [h,es];};
-    let [h,es]=fresh('sword',['core','skin','ripple']);hitEnemy(es[0],1000,{dir:1});
+    let [h,es]=fresh('sword',['core','skin','skin','skin','ripple']);hitEnemy(es[0],1000,{dir:1});
     ok(es[1].hp<es[1].max && es[1].hp>es[1].max-1000*0.1,'ripple did not splash a little onto the neighbour');
-    [h,es]=fresh('hammer',['core','skin','heft','heavy','crush','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
+    [h,es]=fresh('hammer',['core','skin','skin','skin','heft','heft','heft','heavy','heavy','heavy','crush','crush','crush','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
     ok(es[1].hp===es[1].max,'a shockwave without a finisher');hitEnemy(es[0],1000,{dir:1,big:true});ok(es[1].hp<es[1].max,'the finisher sent no shockwave');
-    [h,es]=fresh('bow',['core','learn','fast','quick','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    [h,es]=fresh('bow',['core','learn','learn','learn','fast','fast','fast','quick','quick','quick','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
     ok(es[0].dead && es[1].hp<es[1].max,'the kill did not scatter onto the next foe');
-    [h,es]=fresh('sword',['core','learn','aim','kite','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    [h,es]=fresh('sword',['core','learn','learn','learn','fast','fast','fast','quick','quick','quick','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
     ok(es[1].hp===es[1].max,'a ranged augment worked with a sword');
     resetMeta();
   });
   check('shard tree feel upgrades: reach grows the weapon, echoes strike twice, shots fly faster and pierce',()=>{
     const T=game.types.sword,mv={big:false,from:0,to:90},h0={x:100,y:80,w:11,face:1};
     ok(attackBox(h0,T,mv,0.3).w>attackBox(h0,T,mv,0).w*1.25,'reach did not grow the swing');
-    resetMeta();bankShards(1e7);setLock('blades');for(const id of ['core','sharp','slice','longb','cleave','whirl','echo','echo','echo','echo','echo'])buyRank(id);
+    resetMeta();bankShards(1e7);setLock('blades');for(const id of ['core','sharp','sharp','sharp','slice','slice','slice','longb','longb','longb','cleave','cleave','cleave','whirl','whirl','whirl','echo','echo','echo','echo','echo'])buyRank(id);
     reset();let h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});let e=spawnEnemy('brute',h.x+30,GROUND);e.spawnT=0;e.hp=e.max=1e7;
     let twice=0;for(let i=0;i<60;i++){const hp=e.hp;hitEnemy(e,100,{dir:1});if(hp-e.hp>100)twice++;}
     ok(twice>3,'no echo slashes ('+twice+'/60)');
-    resetMeta();bankShards(1e7);setLock('ranged');for(const id of ['core','learn','fast','fast','fast','quick','scatter','pierce','pierce'])buyRank(id);
+    resetMeta();bankShards(1e7);setLock('ranged');for(const id of ['core','learn','learn','learn','fast','fast','fast','quick','quick','quick','scatter','scatter','scatter','pierce','pierce'])buyRank(id);
     reset();h=world.hero;h.weapon=makeWeapon(3,{type:'bow',q:3});world.shots.length=0;h.cd=0;key('KeyZ',true);poll();for(let i=0;i<40&&!world.shots.length;i++){world.t+=STEP;updateHero(h,STEP);poll();}key('KeyZ',false);poll();
     const s=world.shots[0];ok(s && Math.abs(s.vx)>game.types.bow.speed*1.25 && s.pierce>=game.types.bow.pierce+2,'shots did not speed up or pierce');
     resetMeta();
@@ -478,11 +479,33 @@ export function runSmoke(game) {
     ok(!H.inRoom && world.map===map && world.enemies.length===foes,'the map changed while away');
     ok(Math.abs(h.x+h.w/2-H.x)<2,'not set back on the portal');
   });
-  check('the War Goose hatches from its egg, and a hit throws you from the saddle instead of hurting you',()=>{
-    const h=level('1-2');ok(world.egg,'no egg on 1-2');
-    mount(h);ok(h.mount && !world.loose,'did not mount');const hp=h.hp;hurtHero(30,1);
-    ok(!h.mount && world.loose && h.hp===hp,'the hit was not soaked by the goose');
+  check('mounts wait for the stable (three family heads), then your pick hatches and a hit throws you from the saddle',()=>{
+    resetMeta();let h=level('1-2');ok(!world.egg,'an egg before the stable opened');
+    winTrophy(1);winTrophy(2);winTrophy(3);h=level('1-2');ok(!world.egg,'an egg before a mount was picked');
+    chooseMount('wargoose');h=level('1-2');ok(world.egg,'no egg on 1-2');
+    mount(h);ok(h.mount && h.mount.kind==='wargoose' && !world.loose,'did not mount');let hp=h.hp;hurtHero(30,1);
+    ok(!h.mount && world.loose && world.loose.kind==='wargoose' && h.hp===hp,'the hit was not soaked by the goose');
     for(let i=0;i<60*6;i++){world.t+=STEP;updateMount(STEP);}ok(!world.loose,'the goose never flew off');
+    // the Iron Boar's barding soaks the first hit, the second throws you
+    chooseMount('ironboar');h=level('1-2');mount(h);ok(h.mount.kind==='ironboar','the egg hatched the wrong mount');hp=h.hp;
+    hurtHero(30,1);ok(h.mount && h.hp===hp,'the barding did not take the first hit');h.inv=0;
+    hurtHero(30,1);ok(!h.mount && h.hp===hp,'the second hit did not throw you');
+    // the War Griffin flaps once in mid-air
+    chooseMount('griffin');h=level('1-2');mount(h);h.onGround=false;h.coyote=0;h.vy=50;
+    ok(flap(h) && h.vy<0,'no sky flap');ok(!flap(h),'flapped twice');
+    resetMeta();
+  });
+  check('specialized: an off-class weapon in hand is swapped or reforged, and the bag can never equip one',()=>{
+    resetMeta();setLock('ranged');reset();const h=world.hero;
+    h.weapon=makeWeapon(3,{type:'sword',q:5,standout:false});const pow=powerScore(h.weapon);world.bag.fill(null);
+    keepInClass();ok(CLASSES.ranged.types.includes(h.weapon.type),'still swinging a '+h.weapon.type);
+    ok(powerScore(h.weapon)>=pow*0.99,'the reforged weapon came out weaker');
+    const bow=makeWeapon(3,{type:'bow',q:4,standout:false});world.bag[0]=bow;h.weapon=makeWeapon(3,{type:'katana',q:4,standout:false});
+    keepInClass();ok(h.weapon===bow && world.bag[0]===null,'the bow in the bag did not take the katana\'s place');
+    const axe=makeWeapon(3,{type:'axe',q:4,standout:false});axe.locked=true;world.bag[2]=axe;
+    ok(!equipFromBag(2) && h.weapon===bow,'equipped an axe while a ranged specialist');
+    applyLock();ok(!world.bag.includes(axe),'a locked off-class weapon survived the melt');
+    resetMeta();
   });
   check('ghost houses, auto-scrollers, water and ice change how the level plays',()=>{
     level('9-2');ok(world.gimmick==='ghost' && world.haunts.length>0,'no haunted blades');

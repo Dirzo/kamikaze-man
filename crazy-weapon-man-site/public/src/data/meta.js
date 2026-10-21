@@ -4,6 +4,7 @@
 //                of shared nodes round CORE, and a cluster for each specialization. Respec is free.
 //   TROPHIES     beating a world's family head (its castle) gives that world's trophy and a
 //                permanent perk.
+//   STABLE       three trophies open the stable: pick one of three mounts (data/mounts.js).
 //   MONSTER BOOK GOLD cards and completed boss pages (book.js) add their bonuses in here too.
 //   MASTERY      every weapon type's mastery (proficiency.js) opens a choice of two perks at each
 //                MASTERY_TIERS level; the perk only works while you hold that type. Swap any time.
@@ -11,6 +12,7 @@
 import { TYPE_LIST } from './weapons.js';
 import { proficiency } from './proficiency.js';
 import { bookStats, bookVersion } from './book.js';
+import { MOUNTS, STABLE_TROPHIES } from './mounts.js';
 
 export const META_KEY = 'crazyWeaponMan.meta.v1';
 
@@ -28,8 +30,11 @@ export const CLASS_OF = Object.fromEntries(Object.entries(CLASSES).flatMap(([c, 
 // ---------------------------------------------------------------- the shard tree
 // A web of nodes (Slormancer's Ancestral Legacy). CORE sits in the middle of a ring of shared
 // nodes that work with every weapon; a cluster for each specialization grows out of the ring, and
-// each ends in two element keystones that infuse your hits with that element. You can invest in a
-// node once a node linked to it has a rank. Respec is free, and UNDO takes back the last rank.
+// each ends in two element keystones that infuse your hits with that element. A node opens once a
+// node linked to it is GATED: 3 of 5 ranks (2 of 3, 1 of 1, see gate()). So the road onward costs
+// a real stake in the node before it, but you can still stop short of maxing it and dip a single
+// rank into the next one (one point in an area augment, say). Respec is free, UNDO takes back the
+// last rank.
 export const BRANCHES = [
   { id: 'blades', name: 'BLADES', col: 'coral', dir: [-1.2, -0.3], side: [0, 1], anchors: ['sharp', 'band'] },
   { id: 'blunt', name: 'BLUNT', col: 'sand', dir: [1.2, -0.3], side: [0, 1], anchors: ['skin', 'hearts'] },
@@ -145,6 +150,10 @@ for (const B of BRANCHES) {
 }
 export const TREE_LINKS = TREE.flatMap(n => n.links.filter(id => id > n.id).map(id => [n.id, id]));
 export const rankCost = (n, rank) => n.cost * rank; // rank = the rank being bought, from 1
+// ranks a node needs before the nodes linked to it open: 3/5 is the standard, 2/3, and 1/1
+export const GATE_SHARE = 0.6;
+export const gate = n => n.gate ?? Math.max(1, Math.ceil(n.max * GATE_SHARE));
+const gated = (tree, id) => (tree[id] || 0) >= gate(TREE_BY_ID[id]);
 // bumped whenever the web changes shape: an older save gets every shard it spent back
 const TREE_V = 3; // 3: the clusters trace their weapons, and upgrades are about feel
 
@@ -207,7 +216,7 @@ try {
 } catch (_) {
   storage = null;
 }
-const blank = () => ({ v: 1, tv: TREE_V, shards: 0, earned: 0, lock: null, tree: {}, hist: [], perks: {}, trophies: {} });
+const blank = () => ({ v: 1, tv: TREE_V, shards: 0, earned: 0, lock: null, tree: {}, hist: [], perks: {}, trophies: {}, mount: null });
 let store = null;
 function load() {
   const out = blank();
@@ -227,6 +236,7 @@ function load() {
       }
       for (const t of TYPE_LIST) if (Array.isArray(raw.perks?.[t])) out.perks[t] = raw.perks[t].slice(0, MASTERY_TIERS.length).map(c => (c === 0 || c === 1 ? c : null));
       for (const r of Object.keys(TROPHIES)) if (raw.trophies?.[r]) out.trophies[r] = 1;
+      if (MOUNTS[raw.mount]) out.mount = raw.mount;
     }
   } catch (_) {
     /* a broken save starts fresh */
@@ -264,26 +274,44 @@ export function bankShards(n) {
   return n;
 }
 export const rank = id => meta().tree[id] || 0;
-// every invested node can be walked to from CORE through invested nodes
-function reachable(tree) {
+// the invested nodes that can be walked to from CORE, only ever stepping on out of a gated node
+function walk(tree) {
   const seen = new Set(), todo = tree.core ? ['core'] : [];
   while (todo.length) {
     const id = todo.pop();
     if (seen.has(id)) continue;
     seen.add(id);
-    for (const l of TREE_BY_ID[id].links) if (tree[l]) todo.push(l);
+    if (gated(tree, id)) for (const l of TREE_BY_ID[id].links) if (tree[l]) todo.push(l);
   }
+  return seen;
+}
+// every invested node is opened by the walk from CORE
+function reachable(tree) {
+  const seen = walk(tree);
   return Object.keys(tree).every(id => !tree[id] || seen.has(id));
 }
-// CORE is always open; any other node opens once a node linked to it has a rank
-export const linked = id => id === 'core' || TREE_BY_ID[id].links.some(l => rank(l));
+// CORE is always open; any other node opens once a node linked to it holds its gate's ranks
+export const linked = id => id === 'core' || TREE_BY_ID[id].links.some(l => gated(meta().tree, l));
+// the linked node closest to opening this one: { node, need } (need = ranks still to go), or null
+export function nearestGate(id) {
+  let best = null;
+  for (const l of TREE_BY_ID[id].links) {
+    const n = TREE_BY_ID[l], need = gate(n) - rank(l);
+    if (!rank(l) || (n.branch && meta().lock !== n.branch)) continue;
+    if (!best || need < best.need) best = { node: n, need };
+  }
+  return best;
+}
 // why a rank can't be bought, or null if it can
 export function cantBuy(id) {
   const n = TREE_BY_ID[id];
   if (!n) return 'NO SUCH NODE';
   if (rank(id) >= n.max) return 'MAXED';
   if (n.branch && meta().lock !== n.branch) return `SPECIALIZE IN ${CLASSES[n.branch].name} (G) TO INVEST HERE`;
-  if (!linked(id)) return 'INVEST IN A LINKED NODE FIRST';
+  if (!linked(id)) {
+    const g = nearestGate(id);
+    return g ? `NEEDS ${gate(g.node)}/${g.node.max} IN ${g.node.name} (${g.need} MORE)` : 'PUT RANKS IN A LINKED NODE FIRST';
+  }
   if (meta().shards < rankCost(n, rank(id) + 1)) return 'NOT ENOUGH SHARDS';
   return null;
 }
@@ -346,7 +374,8 @@ export function setLock(cls) {
     // anything that only hung off the old cluster comes back too, so the web stays linked
     for (let loose = true; loose; ) {
       loose = false;
-      for (const n of TREE) if (rank(n.id) && !reachableNode(n.id)) (refundNode(n), (loose = true));
+      const seen = walk(m.tree);
+      for (const n of TREE) if (rank(n.id) && !seen.has(n.id)) (refundNode(n), (loose = true));
     }
     m.hist = m.hist.filter(id => isLockStep(id) || m.tree[id]);
   }
@@ -361,18 +390,6 @@ function refundNode(n) {
   m.shards += n.cost * (rank(n.id) * (rank(n.id) + 1)) / 2;
   delete m.tree[n.id];
 }
-// can this invested node be walked to from CORE through invested nodes?
-function reachableNode(id) {
-  const tree = meta().tree, seen = new Set(), todo = tree.core ? ['core'] : [];
-  while (todo.length) {
-    const at = todo.pop();
-    if (at === id) return true;
-    if (seen.has(at)) continue;
-    seen.add(at);
-    for (const l of TREE_BY_ID[at].links) if (tree[l]) todo.push(l);
-  }
-  return false;
-}
 // does a weapon type drop as itself under the current lock?
 export const allowedType = type => !meta().lock || CLASS_OF[type] === meta().lock;
 
@@ -382,6 +399,18 @@ export function winTrophy(region) {
   const m = meta();
   if (!TROPHIES[region] || m.trophies[region]) return false;
   m.trophies[region] = 1;
+  save();
+  return true;
+}
+
+// ---- the stable: shut until STABLE_TROPHIES family heads have fallen
+export const trophyCount = () => Object.keys(meta().trophies).length;
+export const stableOpen = () => trophyCount() >= STABLE_TROPHIES;
+// the mount you ride, or null while the stable is shut or nothing is picked yet
+export const chosenMount = () => (stableOpen() && MOUNTS[meta().mount] ? meta().mount : null);
+export function chooseMount(id) {
+  if (!stableOpen() || !MOUNTS[id]) return false;
+  meta().mount = id;
   save();
   return true;
 }

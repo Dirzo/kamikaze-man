@@ -410,6 +410,16 @@ export const sfx = {
     if (!gate('stomp', 80)) return;
     chip([[N(84), 1], [N(91), 1], [N(96), 2]], { wave: 'p25', vol: 0.045, decay: 0.004 });
   },
+  // the Iron Boar's snort and the War Griffin's screech (the goose has honk)
+  grunt() {
+    if (!gate('grunt', 140)) return;
+    hiss(5, { vol: 0.04, rate: 0.3, drop: 0.1 });
+    chip([[N(38), 2], [N(36), 3], [N(33), 3]], { wave: 'p50', vol: 0.05, decay: 0.01 });
+  },
+  screech() {
+    if (!gate('screech', 140)) return;
+    chip([[1180, 1], [1320, 2], [1240, 2], [990, 3]], { wave: 'p12', vol: 0.04, decay: 0.008 });
+  },
   // swimming: a stroke through the water
   swim() {
     if (!gate('swim', 120)) return;
