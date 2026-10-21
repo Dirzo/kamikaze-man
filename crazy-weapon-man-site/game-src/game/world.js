@@ -64,6 +64,15 @@ export function resetWorld() {
     shards: 0,
     secret: null, // this map's easter egg (secrets.js)
     secretsFound: 0,
+    relics: [], // this level's five weapon relics (relics.js)
+    relicMask: 0, // relics taken on this attempt (bits)
+    relicsOwned: 0, // relics this level had before the attempt (bits, from the overworld save)
+    hidden: null, // the map's hidden portal and its secret room (hidden.js)
+    gimmick: null, // ghost / scroll / water / ice (gimmicks.js)
+    egg: null, // a War Goose egg waiting on this map (mount.js)
+    loose: null, // a War Goose without a rider
+    temper: 0, // the post-game difficulty tier being played (data/temper.js)
+    cardUps: [], // Monster Book cards that went up a tier this level
     best: null,
     toasts: [],
     phase: 'play'

@@ -1,5 +1,5 @@
-// Three save files. Each one is a whole game: the overworld map, the shard tree, trophies and
-// mastery perks, weapon mastery and the easter eggs found. The live localStorage keys always hold
+// Three save files. Each one is a whole game: the overworld map (with its relics and temper), the
+// shard tree, trophies and mastery perks, weapon mastery, the Monster Book and the easter eggs found. The live localStorage keys always hold
 // the file being played (so file 1 is any save from before files existed); the other two wait in
 // FILES_KEY. Choosing a file stashes the live keys and puts that file's back. Everything saves on
 // its own as you play, so the menu is for picking, starting and erasing files. Pure data, safe to
@@ -7,11 +7,12 @@
 import { OVERWORLD_KEY, NODES, newSave, progress } from './overworld.js';
 import { META_KEY, reloadMeta } from './meta.js';
 import { PROF_KEY, reloadProficiency } from './proficiency.js';
+import { BOOK_KEY, reloadBook } from './book.js';
 
 export const FILES_KEY = 'crazyWeaponMan.files.v1';
 export const FILE_COUNT = 3;
 // (the secrets key is game/secrets.js's SECRET_KEY, which can't be imported here: it draws)
-export const FILE_KEYS = [OVERWORLD_KEY, META_KEY, PROF_KEY, 'crazyWeaponMan.secrets.v1'];
+export const FILE_KEYS = [OVERWORLD_KEY, META_KEY, PROF_KEY, 'crazyWeaponMan.secrets.v1', BOOK_KEY];
 
 let storage = null;
 try {
@@ -52,7 +53,7 @@ function index() {
 }
 const writeIndex = ix => put(FILES_KEY, JSON.stringify(ix));
 const live = () => Object.fromEntries(FILE_KEYS.map(k => [k, get(k)]));
-const reload = () => (reloadMeta(), reloadProficiency());
+const reload = () => (reloadMeta(), reloadProficiency(), reloadBook());
 
 export const activeFile = () => index().active;
 const blobs = (ix, i) => (i === ix.active ? live() : ix.stash[i] || {});

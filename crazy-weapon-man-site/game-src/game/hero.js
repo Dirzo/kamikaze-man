@@ -18,6 +18,10 @@ import { attackMutation, impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
 import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abilities.js';
+import { heroPhysics } from './gimmicks.js';
+import { charge, drawMount, RIDE } from './mount.js';
+import { X } from '../engine/gfx.js';
+import { MOUNT } from '../data/gimmicks.js';
 
 
 export function createHero() {
@@ -69,9 +73,12 @@ export function updateHero(h, dt) {
     return;
   }
   const ax = input.axis();
-  // dash
+  // the level's gimmick (water, ice) and the War Goose change how the hero moves
+  const G = heroPhysics() || {}, ride = h.mount ? MOUNT : null;
+  // dash (riding: a longer WAR CHARGE that bowls foes over)
   if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
-    h.dashT = HERO.dashTime;
+    h.dashT = HERO.dashTime * (ride ? ride.chargeTime : 1);
+    h.chargeHit = null;
     h.dashCd = HERO.dashCooldown * (1 - S.dashCd);
     if (ax) h.face = ax;
     h.attack = null;
@@ -88,12 +95,14 @@ export function updateHero(h, dt) {
     if (Math.random() < 0.6) emit(cx(h) - h.face * 6, h.y + 6 + Math.random() * 14, 'streak', C.mist);
     move(h, dt, world.platforms, { gravity: 0 });
     dashCut(h);
+    if (ride) charge(h);
     return;
   }
   // run
   if (h.hurtT <= 0) {
-    const target = ax * HERO.speed * (1 + S.speed);
-    const a = ax ? HERO.accel : HERO.friction;
+    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1);
+    // on ice you slide: turning round (pushing against your own slide) grips a little better
+    const a = ax ? HERO.accel * (G.accel || 1) * (G.accel && Math.sign(h.vx) === -ax ? 1.6 : 1) : HERO.friction * (G.friction || 1);
     h.vx += Math.sign(target - h.vx) * Math.min(Math.abs(target - h.vx), a * dt);
     if (ax) {
       if (h.face !== ax) h.trail = null; // a turn starts a fresh blade trail
@@ -108,9 +117,18 @@ export function updateHero(h, dt) {
       input.consume('jump');
       h.dropT = 0.25;
       h.y += 2;
+    } else if (G.swim && !h.ladder) {
+      // underwater: every press is another stroke, from the floor or in mid-water
+      input.consume('jump');
+      h.vy = -G.swim * (ride ? ride.jump : 1);
+      h.coyote = 0;
+      h.onGround = false;
+      h.jumpHeld = false;
+      sfx.swim();
+      burst(cx(h), h.y + h.h, 3, 'bubble', ['ice', 'sky']);
     } else if (h.coyote > 0) {
       input.consume('jump');
-      h.vy = -HERO.jump;
+      h.vy = -HERO.jump * (ride ? ride.jump : 1);
       h.coyote = 0;
       h.onGround = false;
       h.jumpHeld = true;
@@ -138,7 +156,7 @@ export function updateHero(h, dt) {
   if (h.attack) updateAttack(h, dt, T);
 
   const fallSpeed = h.vy;
-  const landed = move(h, dt, world.platforms, { gravity: HERO.gravity, maxFall: HERO.maxFall, dropThrough: h.dropT > 0 });
+  const landed = move(h, dt, world.platforms, { gravity: HERO.gravity * (G.gravity || 1), maxFall: HERO.maxFall * (G.maxFall || 1), dropThrough: h.dropT > 0 });
   if (landed) {
     h.landT = 0.08;
     if (fallSpeed > 200) {
@@ -467,5 +485,11 @@ function updateSpecial(h, dt) {
 
 // ---------------------------------------------------------------- draw
 export function drawHero(h, t) {
+  if (!h.mount || h.ladder) return drawMount(h, t), drawHeroAnimated(h, t);
+  // in the saddle: the goose underneath, the rider sitting a little higher
+  drawMount(h, t);
+  X.save();
+  X.translate(0, -RIDE);
   drawHeroAnimated(h, t);
+  X.restore();
 }

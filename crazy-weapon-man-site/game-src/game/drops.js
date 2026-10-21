@@ -2,6 +2,7 @@
 // and pickups (shards fly to you, hearts heal).
 import { C } from '../config.js';
 import { stats } from '../data/meta.js';
+import { temper } from '../data/temper.js';
 import { X, rect } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
@@ -96,7 +97,7 @@ export function updateDrops(dt) {
     if (dist < 10 && !h.dead) {
       if (p.kind === 'shard') {
         // SHARD MAGNET / STICKY FINGERS: the fractions add up across pickups
-        world.shardAcc = (world.shardAcc || 0) + p.value * (1 + stats().shards);
+        world.shardAcc = (world.shardAcc || 0) + p.value * (1 + stats().shards) * temper(world.temper).shards; // (TEMPER pays more)
         const n = Math.floor(world.shardAcc);
         world.shardAcc -= n;
         world.shards += n;

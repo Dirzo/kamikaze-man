@@ -15,6 +15,7 @@ import { drawItem } from './drops.js';
 import { makeWeapon } from './loot.js';
 import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
+import { temper, modOn } from '../data/temper.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
@@ -25,7 +26,8 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     h = art.h - 2;
   const z = world.zone;
   const F = world.foeScale || { hp: 1, dmg: 1 }; // later levels of a world are tougher (waves.js)
-  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)) * F.hp);
+  const T = temper(world.temper); // and so is every level at a post-game TEMPER (data/temper.js)
+  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)) * F.hp * T.hp);
   const e = {
     id: newId(),
     type,
@@ -41,8 +43,9 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     face: world.hero && cx(world.hero) < x ? -1 : 1,
     hp,
     max: hp,
-    dmg: refDmg(z) * d.dmg * (elite ? ELITE_DMG : 1) * F.dmg,
-    speed: d.speed * (elite ? 1.1 : 1),
+    dmg: refDmg(z) * d.dmg * (elite ? ELITE_DMG : 1) * F.dmg * T.dmg,
+    speed: d.speed * (elite ? 1.1 : 1) * T.speed,
+    ward: modOn(T.n, 'warded') && Math.random() < 0.25 ? 1 : 0,
     elite,
     air: !!d.air,
     state: asleep ? 'sleep' : d.kind === 'mimic' ? 'disguised' : 'idle',
@@ -94,6 +97,8 @@ export function updateEnemy(e, dt) {
   }
   if (e.hp <= 0) { kill(e); return; }
   tickStatus(e, dt);
+  // TEMPER: REGENERATION: a resident left alone for a few seconds knits itself back together
+  if (e.hp < e.max && !e.swarm && world.t - (e.lastHitAt ?? -9) > 3 && modOn(world.temper, 'regen')) e.hp = Math.min(e.max, e.hp + e.max * 0.04 * dt);
   if (e.dead) return;
   if (e.spawnT > 0) {
     e.spawnT -= dt;
@@ -532,6 +537,9 @@ function drawBody(e, t, sx, sy, art) {
   frame(art.im, f, art.w, art.h, sx, sy + bob - (e.state === 'wind' && e.kind === 'bomb' && Math.floor(t * 16) % 2 ? 1 : 0), e.face < 0);
   // faces, eyes and blush are part of each sprite (art-src/cute_enemies.py); hits squeeze them shut
   if (e.dead) return;
+  // a secret room's golden pack glitters; a TEMPER ward is a violet ring
+  if (e.golden && Math.floor(t * 8 + e.id) % 3 === 0) px(Math.round(e.x + ((e.anim * 37) % e.w)), Math.round(e.y + ((e.anim * 53) % e.h)), C.gold);
+  if (e.ward) for (let a = 0; a < 12; a++) if ((a + Math.floor(t * 8)) % 3) px(Math.round(cx(e) + Math.cos((a * Math.PI) / 6) * (e.w / 2 + 4)), Math.round(cy(e) + Math.sin((a * Math.PI) / 6) * (e.h / 2 + 3)), C.violet);
   // elite marker: small gold chevron
   if (e.elite) {
     const mx = Math.round(cx(e)),

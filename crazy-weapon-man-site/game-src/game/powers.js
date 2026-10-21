@@ -5,10 +5,13 @@
 //   MASTERY     a night sky of weapon constellations. Open one (ENTER) to pick its perk stars, one of
 //               two at each step of the road to mastery level 100. Q goes back to the sky.
 //   TROPHIES    the ten family heads' trophies and the perks they gave you
+//   BOOK        the Monster Book (data/book.js): a card per resident, filled in by beating them, and
+//               a page per boss family. Q flips between the cards and the boss pages.
+//   STATS       the stat sheet (statsheet.js) for the weapon you carry on the map
 // Arrows move, SHIFT / V (or clicking a tab) changes tab. Mouse and touch click anything. Rules and
 // numbers live in data/meta.js.
 import { C, W, H } from '../config.js';
-import { canvas, rect, px, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
+import { X, canvas, rect, px, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { TYPE_LIST, ELEMENTS } from '../data/weapons.js';
@@ -16,13 +19,17 @@ import { proficiency, profRank } from '../data/proficiency.js';
 import { fmt } from '../data/curve.js';
 import { FAMILIES } from '../data/families.js';
 import { bossName } from './bosses.js';
+import { A } from '../engine/assets.js';
+import { ENEMIES } from '../data/enemies.js';
+import { CARDS, CARD_LIST, CARD_GOALS, CARD_TIERS, TIER_COL, PAGES, PAGE_BONUS, cardKills, cardTier, toNext, bossBeaten, pageDone, bookProgress } from '../data/book.js';
+import { drawSheet } from './statsheet.js';
 import {
   meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, CLASSES, weaponLock, setLock,
   MASTERY_TIERS, masteryPerk, perkChoice, choosePerk, tiersOpen, unpicked
 } from '../data/meta.js';
 
-const TABS = ['SHARD TREE', 'MASTERY', 'TROPHIES'];
-export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, msg: '', msgT: 0, boxes: [], confirm: false };
+const TABS = ['SHARD TREE', 'MASTERY', 'TROPHIES', 'BOOK', 'STATS'];
+export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, book: { sel: 0, pages: false, page: 0 }, sheetWeapon: null, msg: '', msgT: 0, boxes: [], confirm: false };
 
 export function openPowers(tab = null) {
   P.open = true;
@@ -203,8 +210,13 @@ export function updatePowers(dt) {
       if (dx) M.opt = dx > 0 ? 1 : 0;
       if (ok) pick(TYPE_LIST[M.type], M.tier, M.opt);
     }
-  } else {
+  } else if (P.tab === 2) {
     P.troph = Math.max(0, Math.min(9, P.troph + dy + dx * 5));
+  } else if (P.tab === 3) {
+    const B = P.book;
+    if (input.take('leave')) (B.pages = !B.pages), sfx.ui(true);
+    if (B.pages) B.page = Math.max(0, Math.min(9, B.page + dy + dx * 5));
+    else B.sel = Math.max(0, Math.min(CARD_LIST.length - 1, B.sel + dx + dy * BOOK_COLS));
   }
 }
 
@@ -225,11 +237,11 @@ export function drawPowers(t) {
   dither(0, 0, W, H, C.ink, 12);
   panel('panel', 4, 4, W - 8, H - 8);
   TABS.forEach((name, i) => {
-    const x = 12 + i * 84, on = P.tab === i;
-    rect(x, 10, 80, 13, on ? C.gold : C.slate);
-    rect(x + 1, 11, 78, 11, on ? C.night : C.ink);
-    text(name, x + 40, 13, on ? C.gold : C.fog, { align: 'center' });
-    box(x, 10, 80, 13, () => { P.tab = i; P.confirm = false; sfx.ui(); });
+    const x = 10 + i * 70, on = P.tab === i;
+    rect(x, 10, 67, 13, on ? C.gold : C.slate);
+    rect(x + 1, 11, 65, 11, on ? C.night : C.ink);
+    text(name, x + 33, 13, on ? C.gold : C.fog, { align: 'center' });
+    box(x, 10, 67, 13, () => { P.tab = i; P.confirm = false; sfx.ui(); });
   });
   rect(W - 21, 10, 13, 13, C.ink);
   text('X', W - 15, 13, C.coral, { align: 'center' });
@@ -237,11 +249,15 @@ export function drawPowers(t) {
   text(`${fmt(meta().shards)} SHARDS`, W - 28, 13, P.drain > 0 && Math.floor(t * 20) % 2 ? C.paper : C.ice, { align: 'right' });
   if (P.tab === 0) drawTree(t), drawConsolidate();
   else if (P.tab === 1) drawMastery(t);
-  else drawTrophies(t);
+  else if (P.tab === 2) drawTrophies(t);
+  else if (P.tab === 3) drawBook(t);
+  else drawSheet(12, 30, W - 24, H - 66, P.sheetWeapon);
   if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
   const hint = P.tab === 0 ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
     : P.tab === 1 ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
-    : 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE';
+    : P.tab === 2 ? 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE'
+    : P.tab === 3 ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`
+    : 'EVERYTHING YOUR POWERS ADD UP TO   SHIFT: NEXT TAB   E: CLOSE';
   text(hint, W / 2, H - 18, C.fog, { align: 'center' });
 }
 
@@ -637,4 +653,98 @@ function drawTrophies(t) {
     box(x, y, 228, 28, () => { P.troph = i; sfx.ui(); });
   }
   text(won ? 'TROPHY PERKS ARE ALWAYS ON, FOR EVERY WEAPON.' : 'EVERY CASTLE HOLDS A FAMILY HEAD. BEAT ONE TO WIN ITS TROPHY.', 12, 200, C.mist);
+}
+
+// ---------------------------------------------------------------- the Monster Book
+const BOOK_COLS = 5, CW = 62, CH = 36;
+// an unseen resident is a black silhouette; the cut-outs are made once per type
+const sil = new Map();
+function silhouette(art) {
+  if (sil.has(art)) return sil.get(art);
+  const cv = document.createElement('canvas');
+  cv.width = art.w;
+  cv.height = art.h;
+  const g = cv.getContext('2d');
+  g.drawImage(art.im, 0, 0, art.w, art.h, 0, 0, art.w, art.h);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = C.slate;
+  g.fillRect(0, 0, art.w, art.h);
+  sil.set(art, cv);
+  return cv;
+}
+function sprite(art, x, y, seen, maxW, maxH, t, up = 1) {
+  if (!art) return;
+  const k = Math.min(up, maxW / art.w, maxH / art.h), w = Math.round(art.w * k), h = Math.round(art.h * k);
+  const f = seen ? Math.floor(t * 3) % 2 : 0;
+  if (seen) X.drawImage(art.im, f * art.w, 0, art.w, art.h, Math.round(x - w / 2), y - h, w, h);
+  else X.drawImage(silhouette(art), 0, 0, art.w, art.h, Math.round(x - w / 2), y - h, w, h);
+}
+function drawBook(t) {
+  const B = P.book, G = bookProgress();
+  text(`MONSTER BOOK   CARDS ${G.found}/${G.cards}   GOLD ${G.gold}   BOSSES ${G.bosses}/${G.all}   PAGES ${G.pages}/10`, 12, 28, C.gold);
+  const flip = { x: W - 104, y: 26, w: 92, h: 11 };
+  rect(flip.x, flip.y, flip.w, flip.h, C.slate);
+  text(B.pages ? 'Q: RESIDENT CARDS' : 'Q: BOSS PAGES', flip.x + flip.w / 2, flip.y + 2, C.cream, { align: 'center' });
+  box(flip.x, flip.y, flip.w, flip.h, () => { B.pages = !B.pages; sfx.ui(true); });
+  if (B.pages) return drawPages(t);
+  CARD_LIST.forEach((type, i) => {
+    const x = MAP.x + 4 + (i % BOOK_COLS) * (CW + 2), y = 40 + Math.floor(i / BOOK_COLS) * (CH + 2), tier = cardTier(type), sel = B.sel === i;
+    const col = tier >= 0 ? C[TIER_COL[tier]] : C.slate;
+    rect(x, y, CW, CH, sel ? C.cream : col);
+    rect(x + 1, y + 1, CW - 2, CH - 2, tier >= 0 ? C.night : C.ink);
+    if (tier === 3) dither(x + 1, y + 1, CW - 2, CH - 2, C.gold, 2);
+    sprite(A.enemies[type], x + CW / 2, y + CH - 7, tier >= 0, CW - 8, CH - 10, t);
+    for (let k = 0; k < 4; k++) rect(x + 4 + k * 5, y + CH - 5, 4, 2, k <= tier ? C[TIER_COL[k]] : C.slate);
+    if (tier === 3 && Math.floor(t * 3 + i) % 7 === 0) px(x + CW - 5, y + 4, C.paper);
+    box(x, y, CW, CH, () => { B.sel = i; sfx.ui(); });
+  });
+  // the picked card
+  const type = CARD_LIST[B.sel], card = CARDS[type], tier = cardTier(type), n = cardKills(type), S = SIDE;
+  rect(S.x, S.y + 12, S.w, S.h - 12, C.ink);
+  rect(S.x + 1, S.y + 13, S.w - 2, S.h - 14, C.night);
+  const seen = tier >= 0;
+  text(fitText(seen ? ENEMIES[type].name.toUpperCase() : '???', S.w - 10), S.x + 5, S.y + 17, seen ? C.cream : C.fog);
+  rect(S.x + 5, S.y + 28, S.w - 10, 50, C.ink);
+  sprite(A.enemies[type], S.x + S.w / 2, S.y + 75, seen, S.w - 20, 44, t, 2);
+  text(seen ? CARD_TIERS[tier] + ' CARD' : 'NOT FOUND YET', S.x + 5, S.y + 83, seen ? C[TIER_COL[tier]] : C.fog);
+  text(`${fmt(n)} BEATEN`, S.x + S.w - 5, S.y + 83, C.paper, { align: 'right' });
+  const next = toNext(type);
+  if (next) {
+    const lo = tier >= 0 ? CARD_GOALS[tier] : 0, hi = CARD_GOALS[tier + 1];
+    rect(S.x + 5, S.y + 94, S.w - 10, 3, C.ink);
+    rect(S.x + 5, S.y + 94, Math.round((S.w - 10) * Math.max(0, (n - lo) / (hi - lo))), 3, C[TIER_COL[tier + 1]]);
+    text(`${next} MORE FOR ${CARD_TIERS[tier + 1]}`, S.x + 5, S.y + 100, C.mist);
+  } else text('COMPLETE!', S.x + 5, S.y + 98, C.gold);
+  text('GOLD CARD BONUS', S.x + 5, S.y + 114, C.gold);
+  text(fitText(card.bonus.toUpperCase(), S.w - 10), S.x + 5, S.y + 124, tier === 3 ? C.lime : C.stone);
+  text(tier === 3 ? 'ALWAYS ON' : 'AT ' + CARD_GOALS[3] + ' BEATEN', S.x + 5, S.y + 134, tier === 3 ? C.lime : C.fog);
+  if (seen) wrapLines(card.lore.toUpperCase(), S.w - 10).slice(0, 6).forEach((l, i) => text(l, S.x + 5, S.y + 150 + i * 9, C.mist));
+}
+function wrapLines(s, maxW) {
+  const out = [''];
+  for (const word of s.split(' ')) {
+    const n = out.length - 1, next = out[n] ? out[n] + ' ' + word : word;
+    if (textWidth(next) > maxW && out[n]) out.push(word);
+    else out[n] = next;
+  }
+  return out;
+}
+function drawPages(t) {
+  PAGES.forEach((Pg, i) => {
+    const x = 10 + Math.floor(i / 5) * 232, y = 42 + (i % 5) * 31, done = pageDone(Pg), sel = P.book.page === i;
+    const beat = Pg.kinds.filter(bossBeaten).length;
+    rect(x, y, 228, 28, sel ? C.gold : done ? C.lime : C.slate);
+    rect(x + 1, y + 1, 226, 26, C.ink);
+    text(`${Pg.region}  ${Pg.name.toUpperCase()}`, x + 6, y + 4, done ? C.gold : C.cream);
+    text(`${beat}/${Pg.kinds.length}`, x + 222, y + 4, done ? C.lime : C.fog, { align: 'right' });
+    Pg.kinds.forEach((k, j) => {
+      const on = bossBeaten(k), bx = x + 6 + j * 12;
+      rect(bx, y + 15, 10, 9, C.ink);
+      rect(bx + 1, y + 16, 8, 7, on ? (k === Pg.head ? C.coral : C.gold) : C.night);
+    });
+    box(x, y, 228, 28, () => { P.book.page = i; sfx.ui(); });
+  });
+  const Pg = PAGES[P.book.page], names = Pg.kinds.map(k => (bossBeaten(k) ? bossName(k) : '???'));
+  text(fitText(names.join(', ').toUpperCase(), W - 24), 12, 200, C.mist);
+  text(`A COMPLETE PAGE: ${PAGE_BONUS.bonus.toUpperCase()}, ALWAYS ON`, 12, 210, pageDone(Pg) ? C.lime : C.fog);
 }

@@ -14,7 +14,9 @@ import { stats } from '../data/meta.js';
 import { spawnEnemy } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
-import { gainXp, gainProficiency } from './progress.js';
+import { gainXp, gainProficiency, toast } from './progress.js';
+import { recordBoss, PAGES, PAGE_BONUS } from '../data/book.js';
+import { temper } from '../data/temper.js';
 
 // Each boss lives in its weapon zone and fights with that zone's theme. They all crash into the
 // survival swarm partway through (waves.js); `warn` is shouted just before they arrive and
@@ -110,7 +112,8 @@ export function startBoss(kind, tier = 1) {
     R = ROLES[D.role || (world.level ? 'castle' : 'classic')];
   // tough enough to need real damage, measured against the gear (not the hero's long-term growth)
   const ramp = k => (world.level ? 1 + WORLD_RAMP[k] * z : 1);
-  const hp = Math.round(Math.max(refHP(z) * R.hp * (1 + TIER_HP * tier), baseDps() * R.secs * ramp('bossSecs')));
+  const T = temper(world.temper); // TEMPER: tougher across the board, and THE ARMORY AWAKES on top
+  const hp = Math.round(Math.max(refHP(z) * R.hp * (1 + TIER_HP * tier), baseDps() * R.secs * ramp('bossSecs')) * T.hp * T.bossHp);
   done = false;
   outroT = 0;
   hazards.length = 0;
@@ -131,10 +134,11 @@ export function startBoss(kind, tier = 1) {
     face: -1,
     hp,
     max: hp,
-    dmg: refDmg(z) * R.dmg * (1 + TIER_DMG * tier) * ramp('bossDmg') * (world.level ? HEAD_DMG[kind] || 1 : 1),
+    dmg: refDmg(z) * R.dmg * (1 + TIER_DMG * tier) * ramp('bossDmg') * (world.level ? HEAD_DMG[kind] || 1 : 1) * T.dmg,
     role: D.role || 'castle',
     phases: R.phases,
-    speed: D.speed * R.speed,
+    speed: D.speed * R.speed * T.bossSpeed,
+    haste: T.bossSpeed,
     state: 'enter',
     st: 1.2,
     stun: 0,
@@ -200,7 +204,7 @@ export function updateBoss(e, dt) {
     e.state = 'idle';
     e.st = 1.1;
   }
-  const rate = (e.phase === 1 ? 1 : e.phase === 2 ? 1.25 : 1.5) * (e.rage ? 1.15 : 1);
+  const rate = (e.phase === 1 ? 1 : e.phase === 2 ? 1.25 : 1.5) * (e.rage ? 1.15 : 1) * (e.haste || 1);
   e.st -= dt * rate;
   const toward = Math.sign(cx(hero) - cx(e)) || 1;
   switch (e.state) {
@@ -499,6 +503,12 @@ function defeat(e) {
   for (let i = 0; i < n; i++) dropWeapon(cx(e) + (i - (n - 1) / 2) * 24, e.y + 10, makeWeapon(world.zone, { boss: true, standout: e.role === 'castle' && i === 1 ? true : null }));
   dropShards(cx(e), cy(e), Math.round({ castle: 40, fort: 20, secret: 20, level: 10 }[e.role] * (1 + stats().bossShards)));
   world.bossBeaten = e.type;
+  // the Monster Book's boss pages
+  const page = recordBoss(e.type);
+  if (page === 'page') {
+    const P = PAGES.find(p => p.kinds.includes(e.type));
+    toast('card', { name: P.name, tier: 'PAGE COMPLETE', gold: true, bonus: PAGE_BONUS.bonus });
+  } else if (page === 'new') toast('card', { name: e.D.name, tier: 'NEW BOSS PAGE ENTRY', gold: false });
   hazards.length = 0;
   world.bolts.length = 0;
   for (const o of [...world.enemies]) if (o !== e && !o.dead) kill(o,{dir:1});

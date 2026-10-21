@@ -11,11 +11,14 @@ import { P as powers, openPowers, updatePowers, drawPowers, powersWaiting } from
 import { hasTrophy } from '../data/meta.js';
 import { BOSS_OF } from '../data/families.js';
 import { bossName } from './bosses.js';
+import { GIMMICKS, gimmickOf, EGG_LEVELS } from '../data/gimmicks.js';
+import { relicCount, allRelics, relicTotal, RELIC_COUNT } from '../data/relics.js';
+import { temperOf, setTemper, modsOf, rewardText } from '../data/temper.js';
 import { NODES, REGIONS, SLOT_W, SLOT_H, MAP_W, MAP_H, isLevel, isOpen, edges, step, visit, warp, progress, writeSave } from '../data/overworld.js';
 
 const WALK = 110; // px/s along a road
 const DRAW = 0.7; // seconds for a new road to draw in
-const HUD_H = 42; // the info panel along the bottom of the screen
+const HUD_H = 52; // the info panel along the bottom of the screen
 export const ow = { save: null, walk: null, cam: { x: 0, y: 0 }, fresh: [], t: 0, face: 1 };
 
 export function openOverworld(save, fresh = []) {
@@ -59,6 +62,7 @@ export function updateOverworld(dt) {
     return null;
   }
   if (input.take('inv')) return openPowers(), null;
+  if (input.take('temper')) return cycleTemper(), null;
   const dx = (input.held('right') ? 1 : 0) - (input.held('left') ? 1 : 0), dy = (input.held('down') ? 1 : 0) - (input.held('up') ? 1 : 0);
   if (dx || dy) {
     const to = step(s, s.at, dx, dy);
@@ -81,6 +85,17 @@ export function updateOverworld(dt) {
     if (isLevel(n)) { sfx.ui(true); return n; }
   }
   return null;
+}
+
+// TEMPER (data/temper.js): T steps up through the tiers you have opened, then back to none
+function cycleTemper() {
+  const s = ow.save, T = temperOf(s);
+  if (!T.max) return (ow.temperMsg = 1.6), sfx.ui();
+  setTemper(s, (T.on + 1) % (T.max + 1));
+  writeSave(s);
+  ow.temperMsg = 0;
+  ow.temperFlash = 3;
+  sfx.ui(temperOf(s).on > 0);
 }
 
 // ---------------------------------------------------------------- drawing
@@ -127,7 +142,29 @@ function drawNode(n, t) {
     rect(x - 3, y - 3, 3, 2, C.paper);
     if (s.cleared[n.id]?.includes('secret')) rect(x + 4, y - 7, 3, 3, C.pink);
   }
+  if (open && isLevel(n)) decorate(n, x, y, t);
   if (open && isLevel(n)) text(n.id.replace('-F', ' FORT').replace('-C', ' CASTLE').replace('-S', ' SECRET'), x, y + 9, done ? C.cream : C.mist, { align: 'center' });
+}
+
+// a level's extras on the map: a gold star once all five relics are home (a count before that),
+// a badge for its gimmick, and an egg where a War Goose waits
+function star(x, y, col) {
+  rect(x - 1, y - 3, 3, 7, C.ink); rect(x - 3, y - 1, 7, 3, C.ink);
+  rect(x, y - 2, 1, 5, col); rect(x - 2, y, 5, 1, col); rect(x - 1, y - 1, 3, 3, col);
+}
+function decorate(n, x, y, t) {
+  const s = ow.save, k = relicCount(s, n.id);
+  if (allRelics(s, n.id)) star(x - 10, y - 8, Math.floor(t * 2 + x) % 5 ? C.gold : C.paper);
+  else if (k) for (let i = 0; i < RELIC_COUNT; i++) rect(x - 9 + i * 2, y - 10, 1, 2, i < k ? C.gold : C.stone);
+  const g = gimmickOf(n.id);
+  if (g) {
+    rect(x + 6, y + 1, 5, 5, C.ink);
+    rect(x + 7, y + 2, 3, 3, C[GIMMICKS[g].col]);
+  }
+  if (EGG_LEVELS.includes(n.id)) {
+    rect(x - 12, y + 1, 4, 5, C.ink);
+    rect(x - 11, y + 2, 2, 3, C.cream);
+  }
 }
 
 export function drawOverworld(t) {
@@ -149,13 +186,14 @@ export function drawOverworld(t) {
   } else rect(p.x - 4, p.y - 14, 8, 12, C.gold);
   screenLayer();
   drawOverworldHud(t);
+  powers.sheetWeapon = s.hero?.weapon || null; // the STATS tab reads the weapon you carry
   drawPowers(t);
 }
 function drawOverworldHud(t) {
   const s = ow.save, n = here(), R = REGIONS[n.region - 1], P = progress(s);
   // along the bottom, so the region names along the top of each painting stay readable
   const y = H - HUD_H;
-  panel('panel', 4, y, W - 8, 38);
+  panel('panel', 4, y, W - 8, 48);
   text(R.id + ' ' + R.name, 12, y + 6, C.gold);
   text('LEVELS CLEARED ' + P.cleared + '/' + P.total, W - 12, y + 6, C.lime, { align: 'right' });
   const kind = { level: '', fort: ' (FORT)', castle: ' (CASTLE)', secret: ' (SECRET)', warp: ' (CANNON)', start: '' }[n.kind];
@@ -165,6 +203,28 @@ function drawOverworldHud(t) {
     const done = s.cleared[n.id] ? (s.cleared[n.id].includes('secret') ? 'CLEARED + SECRET   ' : 'CLEARED   ') : '';
     text(done + (n.kind === 'castle' ? 'HEAD: ' : 'BOSS: ') + bossName(BOSS_OF[n.id]), W - 12, y + 16, n.kind === 'castle' ? C.coral : C.cream, { align: 'right' });
   }
+  // the fourth line: this level's extras, and the TEMPER tier you are playing at
+  if (isLevel(n)) {
+    const g = gimmickOf(n.id), bits = [];
+    bits.push(`RELICS ${relicCount(s, n.id)}/${RELIC_COUNT}`);
+    if (g) bits.push(GIMMICKS[g].name);
+    if (EGG_LEVELS.includes(n.id)) bits.push('WAR GOOSE EGG');
+    text(bits.join('   '), 12, y + 36, g ? C[GIMMICKS[g].col] : C.cream);
+  }
+  const RT = relicTotal(s), T = temperOf(s);
+  text(`RELICS ${RT.got}/${RT.all}  STARS ${RT.sets}`, W / 2 + 10, y + 6, C.gold, { align: 'center' });
+  ow.temperMsg = Math.max(0, (ow.temperMsg || 0) - 1 / 60);
+  ow.temperFlash = Math.max(0, (ow.temperFlash || 0) - 1 / 60);
+  const tCol = ow.temperFlash > 2.5 && Math.floor(t * 20) % 2 ? C.paper : T.on ? C.coral : C.fog;
+  if (ow.temperFlash > 0 && T.on) {
+    // the modifiers this tier switches on, over the map for a moment
+    const mods = modsOf(T.on), ph = 18 + mods.length * 9, py = y - ph - 4;
+    panel('panel', W - 214, py, 210, ph);
+    text(`TEMPER ${T.on}: THE ENEMIES GET`, W - 206, py + 5, C.coral);
+    mods.forEach((m, i) => text(m.name, W - 206, py + 15 + i * 9, i === mods.length - 1 ? C.cream : C.mist));
+  }
+  if (ow.temperMsg > 0) text('BEAT THE SENTIENT ARMORY TO OPEN TEMPER', W - 12, y + 36, C.coral, { align: 'right' });
+  else if (T.max) text(`T: TEMPER ${T.on}/${T.max}` + (T.on ? '  ' + rewardText(T.on) : '  OFF'), W - 12, y + 36, tCol, { align: 'right' });
   const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK    JUMP / ENTER: FIRE THE CANNON' : isLevel(n) ? 'ARROWS: WALK    JUMP / ENTER: PLAY LEVEL' : 'ARROWS: WALK';
   if (hint) text(hint, 12, y + 26, C.mist);
   // the POWERS window: blinks when there is a mastery perk to pick or a rank you can afford

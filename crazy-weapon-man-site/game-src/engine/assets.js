@@ -7,6 +7,7 @@ export const A = {
   hero: null, // { im, w, h, frames: {name: index}, grip }
   enemies: {}, // type -> { im, w, h }  (3 frames: walk1, walk2, hit)
   bosses: {}, // kind -> { im, w, h, frames }
+  mounts: {}, // name -> { im, w, h, n }  (wargoose: walk1, walk2, flap, hit; egg: whole, cracked, hatching)
   weapons: {}, // key -> { im, w, h, gx, gy }   (key 'sword' or 'sword-longsword')
   bg: {}, // zone id -> image
   slabs: {}, // zone id -> { im, w, h, cap }
@@ -42,6 +43,7 @@ export async function loadAssets(onProgress = () => {}) {
   );
   for (const [type, info] of Object.entries(man.enemies)) add(img(PX_ASSETS + `enemy-${type}.png`).then(im => (A.enemies[type] = { im, ...info })));
   for (const [kind, info] of Object.entries(man.bosses)) add(img(PX_ASSETS + `boss-${kind}.png`).then(im => (A.bosses[kind] = { im, ...info })));
+  for (const [name, info] of Object.entries(man.mounts || {})) add(img(PX_ASSETS + `mount-${name}.png`).then(im => (A.mounts[name] = { im, ...info })));
   for (const [key, info] of Object.entries(man.weapons)) add(img(PX_ASSETS + `weapon-${key}.png`).then(im => (A.weapons[key] = { im, ...info })));
   for (const [zone, file] of Object.entries(man.backgrounds)) add(img(PX_ASSETS + file).then(im => (A.bg[zone] = im)));
   for (const [zone, info] of Object.entries(man.slabs)) add(img(PX_ASSETS + info.file).then(im => (A.slabs[zone] = { im, ...info })));

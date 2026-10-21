@@ -21,6 +21,8 @@ import { ELEMENTS } from '../data/weapons.js';
 import { QUIRKS } from '../data/quirks.js';
 import { proficiency, profToNext, profRank, PROF_MAX, PROF_DMG } from '../data/proficiency.js';
 import { fmt } from '../data/curve.js';
+import { RARITY } from '../data/weapons.js';
+import { drawSheet } from './statsheet.js';
 
 export const BAG_SIZE = 24;
 const COLS = 8,
@@ -35,11 +37,41 @@ const BTNS = [
 ];
 const BTN_Y = INV.y + 208;
 const CLOSE = { x: INV.x + INV.w - 18, y: INV.y + 5, w: 12, h: 11 };
+const FILTER_BTN = { x: INV.x + 74, y: INV.y + 5, w: 98, h: 11 };
+const SHEET_BTN = { x: EQ.x + EQ.w - 58, y: EQ.y + 5, w: 52, h: 11 };
 
 export const newBag = () => new Array(BAG_SIZE).fill(null);
 export const bagCount = () => world.bag.filter(Boolean).length;
 const typeName = t => t.toUpperCase();
 export const salvageValue = w => 2 + w.q * 2 + (w.standout ? 5 : 0);
+
+// the loot filter (MapleStory's pet filter, Slormancer's auto-salvage): drops below the chosen rarity
+// melt into shards the moment they are looted. Standouts are always kept. F (or the label) cycles it;
+// the choice is kept in this browser for every save file.
+export const FILTER_KEY = 'crazyWeaponMan.filter.v1';
+export const FILTER_STEPS = [0, 1, 2, 3, 4, 5]; // salvage everything below this rarity (0 = off)
+let filterQ = null;
+export function lootFilter() {
+  if (filterQ == null) {
+    try {
+      filterQ = Math.max(0, Math.min(5, +(globalThis.localStorage?.getItem(FILTER_KEY) || 0) || 0));
+    } catch (_) {
+      filterQ = 0;
+    }
+  }
+  return filterQ;
+}
+export function setLootFilter(q) {
+  filterQ = FILTER_STEPS.includes(q) ? q : 0;
+  try {
+    globalThis.localStorage?.setItem(FILTER_KEY, String(filterQ));
+  } catch (_) {
+    /* private mode: the filter lasts for this tab */
+  }
+  return filterQ;
+}
+export const filterText = () => (lootFilter() ? `FILTER: SALVAGE BELOW ${RARITY[lootFilter()].name.toUpperCase()}` : 'FILTER: OFF, KEEP EVERYTHING');
+export const filtered = w => !!w && !w.standout && w.q < lootFilter();
 
 // put a weapon in the first free slot; false when the bag is full
 export function stash(w) {
@@ -57,6 +89,11 @@ export function stash(w) {
 export function autoLoot(w) {
   if (!w || w.name === 'Training Sword') return 'skip';
   const col = w.standout ? C.gold : rarityColour(w.q);
+  if (filtered(w)) {
+    world.shards += salvageValue(w);
+    toast('bag', { head: `FILTERED  SALVAGED +${salvageValue(w)}`, name: w.name, col: C.fog });
+    return 'filtered';
+  }
   const better = dps(w) > dps(world.hero.weapon);
   let res;
   if (stash(w)) res = 'bagged';
@@ -97,7 +134,7 @@ export function equipFromBag(i) {
 export function openInventory() {
   if (world.inv || !world.hero || world.hero.dead) return false;
   const first = world.bag.findIndex(Boolean);
-  world.inv = { sel: Math.max(0, first), t: 0, msg: '', confirm: false, lastClick: -9 };
+  world.inv = { sel: Math.max(0, first), t: 0, msg: '', confirm: false, lastClick: -9, sheet: false };
   world.bagNew = 0;
   sfx.ui(true);
   return true;
@@ -147,6 +184,13 @@ function act(id) {
   }
 }
 
+function cycleFilter() {
+  const I = world.inv;
+  setLootFilter(FILTER_STEPS[(FILTER_STEPS.indexOf(lootFilter()) + 1) % FILTER_STEPS.length]);
+  I.msg = filterText();
+  I.confirm = false;
+  sfx.ui(lootFilter() > 0);
+}
 function moveSel(d) {
   const I = world.inv;
   I.sel = (I.sel + d + BAG_SIZE) % BAG_SIZE;
@@ -159,7 +203,13 @@ export function updateInventory(dt) {
   const I = world.inv;
   if (!I) return;
   I.t += dt;
+  if (input.take('sheet')) return (I.sheet = !I.sheet), sfx.ui(I.sheet);
+  if (I.sheet) {
+    if (input.take('inv') || input.take('pause') || input.take('leave')) (I.sheet = false), sfx.ui();
+    return;
+  }
   if (input.take('inv') || input.take('pause')) return closeInventory();
+  if (input.take('filter')) cycleFilter();
   if (input.take('left')) moveSel(-1);
   if (input.take('right')) moveSel(1);
   if (input.take('up')) moveSel(-COLS);
@@ -187,7 +237,10 @@ canvas.addEventListener('pointerdown', e => {
   if (!I) return;
   e.preventDefault();
   const p = toCanvas(e);
+  if (I.sheet) return (I.sheet = false), sfx.ui();
   if (inside(p, CLOSE)) return closeInventory();
+  if (inside(p, FILTER_BTN)) return cycleFilter();
+  if (inside(p, SHEET_BTN)) return (I.sheet = true), sfx.ui(true);
   for (const b of BTNS) if (inside(p, { x: b.x, y: BTN_Y, w: b.w, h: 16 })) return act(b.id);
   const i = cellAt(p);
   if (i < 0) return;
@@ -280,8 +333,12 @@ export function drawInventory(t) {
   const ab = ABILITIES[w.ability];
   if (ab) text('ABILITY: ' + ab.label, EQ.x + 10, ty, C[ab.col] || C.paper);
 
+  rect(SHEET_BTN.x, SHEET_BTN.y, SHEET_BTN.w, SHEET_BTN.h, C.slate);
+  text('R: STATS', SHEET_BTN.x + SHEET_BTN.w / 2, SHEET_BTN.y + 2, C.cream, { align: 'center' });
+  const my = EQ.y + 138, sel = world.bag[I.sel];
+  if (sel) drawCompare(w, sel, my);
+  else {
   // weapon mastery (persists between runs), two columns so every type fits
-  const my = EQ.y + 138;
   rect(EQ.x + 6, my - 3, EQ.w - 12, 1, C.slate);
   text('WEAPON MASTERY', EQ.x + 10, my, C.gold);
   text('KEPT EVERY RUN', EQ.x + EQ.w - 10, my, C.fog, { align: 'right' });
@@ -298,11 +355,14 @@ export function drawInventory(t) {
     rect(x + 2, y + 8, colW - 8, 1, C.night);
     rect(x + 2, y + 8, Math.round((colW - 8) * Math.max(0, Math.min(1, frac))), 1, p.lv >= PROF_MAX ? C.gold : C.sky);
   });
+  }
 
   // ---- INVENTORY ----
   titleBar(INV, 'INVENTORY');
   rect(CLOSE.x, CLOSE.y, CLOSE.w, CLOSE.h, C.wine);
   text('X', CLOSE.x + 4, CLOSE.y + 2, C.paper);
+  rect(FILTER_BTN.x, FILTER_BTN.y, FILTER_BTN.w, FILTER_BTN.h, lootFilter() ? C.wine : C.slate);
+  text(fitText(lootFilter() ? 'F: BELOW ' + RARITY[lootFilter()].name.toUpperCase() : 'F: FILTER OFF', FILTER_BTN.w - 4), FILTER_BTN.x + FILTER_BTN.w / 2, FILTER_BTN.y + 2, lootFilter() ? C.cream : C.fog, { align: 'center' });
   text(`EQUIP  ${bagCount()}/${BAG_SIZE}`, INV.x + INV.w - 24, INV.y + 7, C.ice, { align: 'right' });
   for (let i = 0; i < BAG_SIZE; i++) {
     const x = GRID.x + (i % COLS) * CELL,
@@ -349,9 +409,47 @@ export function drawInventory(t) {
     text(label, b.x + b.w / 2, BTN_Y + 5, it ? C.paper : C.fog, { align: 'center' });
   }
   if (I.msg) text(I.msg, INV.x + INV.w / 2, BTN_Y - 9, C.lime, { align: 'center' });
-  rect(INV.x + 10, INV.y + INV.h + 4, 4, 2, C.sky);
-  text(`${fmt(world.shards)} SHARDS`, INV.x + 18, INV.y + INV.h + 2, C.ice);
-  text('Z EQUIP  X LOCK  C SALVAGE  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
+  rect(EQ.x + 6, EQ.y + EQ.h + 4, 4, 2, C.sky);
+  text(`${fmt(world.shards)} SHARDS`, EQ.x + 14, EQ.y + EQ.h + 2, C.ice);
+  text('Z EQUIP  X LOCK  C SALVAGE  F FILTER  R STATS  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
+  if (I.sheet) drawSheetWindow(w);
+}
+
+// the full stat sheet over both windows
+function drawSheetWindow(w) {
+  dither(0, 0, W, H, C.ink, 10);
+  titleBar({ x: 6, y: 6, w: W - 12, h: H - 12 }, 'STATS: EVERYTHING BEHIND THE BLADE');
+  drawSheet(14, 28, W - 26, H - 50, w);
+  text('R / E / CLICK: BACK', W - 14, H - 17, C.fog, { align: 'right' });
+}
+
+// the compare table (MapleStory's compare tooltip): the weapon in hand against the one picked
+function drawCompare(a, b, my) {
+  rect(EQ.x + 6, my - 3, EQ.w - 12, 1, C.slate);
+  text('COMPARE', EQ.x + 10, my, C.gold);
+  const c1 = EQ.x + 118, c2 = EQ.x + EQ.w - 8;
+  text('IN HAND', c1, my, C.fog, { align: 'right' });
+  text('PICKED', c2, my, C.fog, { align: 'right' });
+  const el = x => (x.family ? ELEMENTS[x.family].word.toUpperCase() : '-');
+  const num = (label, va, vb, f = fmt) => [label, f(va), f(vb), Math.sign(vb - va)];
+  const rows = [
+    num('DPS', dps(a), dps(b)),
+    num('POWER', powerScore(a), powerScore(b)),
+    num('RARITY', a.standout ? 11 : a.q, b.standout ? 11 : b.q, q => (q > 10 ? 'STANDOUT' : RARITY[q].name.toUpperCase())),
+    ['ELEMENT', el(a), el(b), (b.family ? 1 : 0) - (a.family ? 1 : 0)],
+    ['QUIRK', QUIRKS[a.quirk]?.label || '-', QUIRKS[b.quirk]?.label || '-', 0],
+    ['ABILITY', ABILITIES[a.ability]?.label || '-', ABILITIES[b.ability]?.label || '-', (b.ability ? 1 : 0) - (a.ability ? 1 : 0)],
+    ['MUTATION', a.mutation ? MUTATIONS[a.mutation].label : '-', b.mutation ? MUTATIONS[b.mutation].label : '-', (b.mutation ? 1 : 0) - (a.mutation ? 1 : 0)],
+    num('MASTERY', proficiency(a.type).lv, proficiency(b.type).lv, v => 'LV ' + v)
+  ];
+  rows.forEach(([label, va, vb, d], i) => {
+    const y = my + 11 + i * 9;
+    if (i % 2) rect(EQ.x + 7, y - 1, EQ.w - 14, 9, C.night);
+    text(label, EQ.x + 10, y, C.mist);
+    text(fitText(va, 58), c1, y, C.paper, { align: 'right' });
+    text(fitText(vb, 60), c2 - 8, y, d > 0 ? C.lime : d < 0 ? C.coral : C.paper, { align: 'right' });
+    if (d) text(d > 0 ? '+' : '-', c2, y, d > 0 ? C.lime : C.coral, { align: 'right' });
+  });
 }
 
 function wrap(name, maxW) {

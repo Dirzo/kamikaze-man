@@ -36,6 +36,7 @@ from enemies import ENEMIES, ENEMY_KEY
 from cute_enemies import DESIGNS as CUTE, frames as cute_frames, strip as cute_strip
 import weapon_zones
 import hd_bosses
+import mounts
 from weapons import WEAPONS, VARIANTS, weapon_image
 from awakening import AWAKENED
 
@@ -92,6 +93,8 @@ def main():
 
     # bosses: full-size 32-bit style art (hd_bosses.py): the story bosses and the swarm giants
     hd_bosses.build(OUT, man)
+    # the War Goose mount and its egg (mounts.py)
+    mounts.build(OUT, man)
 
     # held weapons: outlined, magenta markers recoloured in game; grip offset +1 for the outline
     man['weapons'] = {}

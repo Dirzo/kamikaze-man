@@ -14,6 +14,9 @@ import { COMBO, comboMult } from '../data/swarm.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
 import { clock as clockOf } from '../data/speedrun.js';
+import { drawRelicPips } from './relics.js';
+import { gimmickName } from './gimmicks.js';
+import { GIMMICKS } from '../data/gimmicks.js';
 
 const BAR_Y = H - 28;
 
@@ -98,7 +101,8 @@ export function drawHud(t) {
   text(Z.name, 6, 5, C.paper);
   const D = world.director;
   let sub = '';
-  if (D) {
+  if (world.hidden?.inRoom) sub = 'SECRET ROOM   STAND ON THE PORTAL AND PRESS UP TO GO BACK';
+  else if (D) {
     if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
     else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
     else if (D.phase === 'arena') sub = 'MAP CLEAR - THE ARENA IS AT THE END >';
@@ -126,6 +130,16 @@ export function drawHud(t) {
   text('LUST', 6, 46, lust > 0 ? C.pink : C.fog);
   bar(32, 48, 60, 3, lust / 100, C.pink);
   if (h.newToyT > 0) text('NEW TOY!', 98, 46, Math.floor(t * 6) % 2 ? C.pink : C.paper);
+  // ---- this level's relics, its gimmick, its temper ----
+  if (!(D && D.phase === 'survive')) {
+    drawRelicPips(6, 56);
+    const tags = [];
+    if (world.gimmick) tags.push([gimmickName(), C[GIMMICKS[world.gimmick].col]]);
+    if (world.temper) tags.push(['TEMPER ' + world.temper, C.coral]);
+    if (h.mount) tags.push(['WAR GOOSE', C.gold]);
+    let tx = world.level ? 46 : 6;
+    for (const [s, col] of tags) (text(s, tx, 56, col), (tx += textWidth(s) + 8));
+  }
   // ---- survival countdown ----
   // no countdown: the boss's arrival is meant to be a surprise
   if (D && D.phase === 'survive' && !swarmBossUp()) text('SURVIVE!', W / 2, 50, Math.floor(t * 3) % 2 ? C.coral : C.cream, { align: 'center', k: 2 });
@@ -205,6 +219,14 @@ export function drawHud(t) {
       text(l1, W / 2, ty + 5, C.gold, { align: 'center', k: 2 });
       text(l2, W / 2, ty + 21, to.ahead ? C.lime : C.coral, { align: 'center' });
       ty += 36;
+    } else if (to.kind === 'card') {
+      // the Monster Book: a card went up a tier (or a boss page filled in)
+      const l1 = `MONSTER BOOK  ${to.tier}`, l2 = fitText(to.gold && to.bonus ? `${to.name}: ${to.bonus.toUpperCase()}` : to.name, 300);
+      const tw = Math.max(textWidth(l1), textWidth(l2)) + 14;
+      panel('card', W / 2 - tw / 2, ty, tw, 24);
+      text(l1, W / 2, ty + 4, to.gold ? (Math.floor(t * 6) % 2 ? C.gold : C.cream) : C.sky, { align: 'center' });
+      text(l2, W / 2, ty + 13, to.gold ? C.lime : C.paper, { align: 'center' });
+      ty += 28;
     } else if (to.kind === 'level') {
       panel('card', W / 2 - 60, ty, 120, 32);
       text('LEVEL UP!', W / 2, ty + 5, C.gold, { align: 'center', k: 2 });
