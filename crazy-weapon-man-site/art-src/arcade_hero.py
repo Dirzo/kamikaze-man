@@ -74,32 +74,32 @@ TORSO = strap(_TORSO)  # square-on chest: kept for the title-card pose
 # draw the torso in profile or three-quarter and layer the near arm over it): only the near pec
 # shows, so the near arm can cross the body without a second chest showing through.
 _SIDE = [
-    '.......2344432......',
-    '.....2334444443.....',
-    '....23344455554.....',
-    '....233444555543....',
-    '....23344455543.....',
-    '....2333422223......',
-    '.....234434432......',
-    '.....23434343.......',
-    '....SSSSgyGSS.......',
-    '....rrrRqqrRr.......',
+    '.......23443........',
+    '.....233444443......',
+    '.....2344445543.....',
+    '.....2344445543.....',
+    '.....234444443......',
+    '.....23322223.......',
+    '......234434........',
+    '......234343........',
+    '.....SSSSgyGS.......',
+    '.....rrrRqqrR.......',
 ]
-SIDE = strap(_SIDE, col=12)
+SIDE = strap(_SIDE, col=11)
 # wound up for a big swing the shoulders turn away and we see his back and the strap across it
 _TWIST = [
-    '.......2344432......',
-    '....233444444432....',
-    '...23443444434432...',
-    '...23443444434432...',
-    '...2344344443432....',
+    '.......23443........',
+    '.....23344444432....',
+    '....2344344443432...',
+    '....2344344443432...',
     '....234434443432....',
-    '....23443443432.....',
+    '.....2344344432.....',
     '.....234434432......',
-    '....SSSSSSSSSS......',
-    '....rrrRrrrRrr......',
+    '......2344432.......',
+    '.....SSSSSSSSS......',
+    '.....rrrRrrrRr......',
 ]
-TWIST = strap(_TWIST, col=14)
+TWIST = strap(_TWIST, col=13)
 LEGS = {
     'stand': [
         '....PppuuPpppu......',
@@ -211,16 +211,16 @@ BACK_UP = [
     '....abbbRrRbbba.....',
     '.....abbRrRbba......',
     '......2rR3rR2.......',
-    '....233344433332....',
-    '..23344444444443y...',
-    '..234444444444Sy3...',
-    '..23443444443Sy43...',
-    '..2344344443Sy343...',
-    '...2344444Sy4432....',
-    '...234344Sy43432....',
-    '....2343Sy43432.....',
-    '....SSSSSSSSSSS.....',
-    '....rrrRrrrRrrrR....',
+    '.....23344443332....',
+    '....2344444444443...',
+    '....23444444444Sy...',
+    '....2344444443Sy4...',
+    '....234434443Sy43...',
+    '.....23444444Sy32...',
+    '.....2343444Sy432...',
+    '......2343Sy4432....',
+    '.....SSSSSSSSSS.....',
+    '.....rrrRrrrRrrr....',
 ]
 BACK_LEGS = [
     ['....PppuuPpppu......', '....Ppuu..Ppuu......', '....Ppu....Ppu......', '...Kkkj....Ppu......', '...Kkkj....Kkkj.....', '...KKKK....Kkkj.....', '...........KKKK.....'],
@@ -231,8 +231,8 @@ for i, legs in enumerate(BACK_LEGS):
 
 # shoulder pixels (back, front) in the 20x28 art, before the outline
 SH = {'idle': ((6, 12), (13, 12)), 'idle2': ((6, 13), (13, 13)), 'run1': ((7, 12), (14, 12)), 'run2': ((7, 12), (14, 12)),
-      'run3': ((7, 12), (14, 12)), 'lean': ((8, 12), (15, 12)), 'back': ((3, 12), (13, 12)), 'hurt': ((3, 12), (13, 12)),
-      'crouch': ((6, 14), (13, 14)), 'climb0': ((3, 12), (15, 12)), 'climb1': ((3, 12), (15, 12))}
+      'run3': ((7, 12), (14, 12)), 'lean': ((8, 12), (15, 12)), 'back': ((5, 12), (13, 12)), 'hurt': ((5, 12), (13, 12)),
+      'crouch': ((6, 14), (13, 14)), 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
 # (the near shoulder sits on the front of the turned chest and the far one behind it, so the far
 # arm passes behind the body and the near arm is never outlined across the chest)
 
