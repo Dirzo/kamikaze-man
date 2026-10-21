@@ -12,8 +12,8 @@ import { W, GROUND, HERO } from '../config.js';
 import { ZONES } from './zones.js';
 import { NODES, REGIONS, isLevel } from './overworld.js';
 
-// residents per map, MapleStory dense: a lot of cute things to clear, each going down fast
-export const FOES = zone => 40 + zone * 3;
+// residents per map, MapleStory dense: big packs of cute things to clear, made for area augments
+export const FOES = zone => 50 + zone * 4;
 
 export const LAYOUTS = [
   { style: 'chambers', title: 'ANT TUNNEL', label: 'CHAMBER' },
@@ -325,7 +325,7 @@ function finish(m, zone, lay) {
   const total = spans.reduce((s, q) => s + q.right - q.left, 0), count = FOES(zone) + (lay.foes || 0), spawns = [];
   const packs = [];
   for (let left = count; left > 0; ) {
-    const n = Math.min(left, m.int(4, zone >= 5 ? 7 : 6));
+    const n = Math.min(left, m.int(5, zone >= 5 ? 10 : 8));
     packs.push(n);
     left -= n;
   }

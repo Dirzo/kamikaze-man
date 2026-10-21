@@ -21,7 +21,8 @@ import { updateCamera } from '../game/camera.js';
 import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
 import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
-import { openPowers, P as powers } from '../game/powers.js';
+import { openPowers, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
+import { TREE_BY_ID } from '../data/meta.js';
 import { hitEnemy, DEATH_T } from '../game/combat.js';
 import { updateFx } from '../game/fx.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
@@ -37,11 +38,14 @@ function powersScene(game, tab) {
   bankShards(9000); setLock('blades');
   for (const id of ['core', 'sharp', 'sharp', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'edge', 'edge', 'swarm', 'brutal', 'brutal', 'fire', 'whirl', 'whirl', 'bounty', 'nova']) buyRank(id);
   winTrophy(1); winTrophy(2);
-  addProficiency('sword', 2200); addProficiency('bow', 300);
+  addProficiency('sword', 2200); addProficiency('bow', 300); addProficiency('katana', 60000); addProficiency('hammer', 9000); addProficiency('wand', 900);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
   openPowers(tab === 3 ? 1 : tab);
-  powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3; powers.mast.tier = 2; powers.mast.opt = 1;
+  powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3 || tab === 5; powers.mast.tier = 2; powers.mast.opt = 1;
+  // 4: shards mid-flight into a node being bought; 5: a mastery perk charging up
+  if (tab === 4) { powers.tab = 0; powers.tree.sel = 'cleave'; investNode(TREE_BY_ID.cleave); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
+  if (tab === 5) { powers.tab = 1; pickPerk('sword', 3, 0); for (let i = 0; i < 40; i++) updatePowers(1 / 60); }
 }
 // the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
 function filesScene(game) {

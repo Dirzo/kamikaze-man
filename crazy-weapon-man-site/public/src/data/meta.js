@@ -47,20 +47,20 @@ const SHARED = [
   ['stand', 0, -72, 3, 'LUCKY LOOT', 3, 'standout', 0.02, '+{v}% standout weapon drops'],
   ['combo', -46, 40, 1, 'MOMENTUM', 5, 'combo', 0.08, 'Swarm combos last {v}% longer'],
   ['grace', 46, 40, 1, 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit'],
-  // area-of-effect augments that work with every weapon
-  ['nova', -48, -66, 3, 'SHARD NOVA', 5, 'nova', 0.04, 'Kills burst into shards that hit foes nearby for {v}% of the fallen foe\'s health'],
-  ['ripple', 48, -66, 3, 'RIPPLE', 5, 'splash', 0.03, 'Every hit splashes {v}% of its damage onto foes nearby']
+  // area-of-effect augments that work with every weapon, one step off the inner ring
+  ['nova', -48, -66, 1, 'SHARD NOVA', 5, 'nova', 0.04, 'Kills burst into shards that hit foes nearby for {v}% of the fallen foe\'s health'],
+  ['ripple', 48, -66, 1, 'RIPPLE', 5, 'splash', 0.03, 'Every hit splashes {v}% of its damage onto foes nearby']
 ];
 const SHARED_LINKS = [['core', 'sharp'], ['core', 'skin'], ['core', 'magnet'], ['core', 'learn'], ['core', 'tutor'], ['sharp', 'band'], ['band', 'magnet'],
   ['skin', 'hearts'], ['hearts', 'learn'], ['magnet', 'learn'], ['tutor', 'bounty'], ['tutor', 'lust'], ['bounty', 'stand'], ['lust', 'stand'],
-  ['band', 'combo'], ['hearts', 'grace'], ['sharp', 'bounty'], ['skin', 'lust'], ['bounty', 'nova'], ['stand', 'nova'], ['lust', 'ripple'], ['stand', 'ripple']];
+  ['band', 'combo'], ['hearts', 'grace'], ['sharp', 'bounty'], ['skin', 'lust'], ['sharp', 'nova'], ['bounty', 'nova'], ['skin', 'ripple'], ['lust', 'ripple']];
 // every class cluster has the same shape: [along, across, size, depth] for each slot, then the links
 // (-1 and -2 are the cluster's two anchors on the ring)
 const SLOTS = [[56, -10, 'small', 1], [56, 10, 'small', 1], [78, -22, 'small', 2], [78, 0, 'small', 2], [78, 22, 'small', 2],
   [100, -12, 'small', 3], [100, 12, 'small', 3], [124, 0, 'medium', 4], [118, -34, 'key', 5], [118, 34, 'key', 5],
-  [94, -42, 'aoe', 4], [94, 42, 'aoe', 4]]; // the cluster's two area-of-effect augments, beside its keystones
+  [70, -44, 'aoe', 2], [70, 44, 'aoe', 2]]; // the cluster's two area-of-effect augments: an early pick, a step off the ring
 const SLOT_LINKS = [[-1, 0], [-2, 1], [0, 1], [0, 2], [0, 3], [1, 3], [1, 4], [2, 5], [3, 5], [3, 6], [4, 6], [5, 7], [6, 7], [2, 8], [5, 8], [4, 9], [6, 9],
-  [2, 10], [8, 10], [4, 11], [9, 11]];
+  [0, 10], [2, 10], [1, 11], [4, 11]];
 // shards per rank by depth (a rank costs this times the rank being bought)
 const DEPTH_COST = [45, 90, 135, 180, 240, 320];
 // per class, in slot order: [id, name, max ranks, stat, per rank, description, keystone element]

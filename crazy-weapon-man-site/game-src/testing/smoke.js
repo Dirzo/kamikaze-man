@@ -270,7 +270,7 @@ export function runSmoke(game) {
   check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
     const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});
       const es=[0,18,40].map(dx=>{const e=spawnEnemy('brute',h.x+30+dx,GROUND);e.spawnT=0;e.hp=e.max=1e6;return e;});return [h,es];};
-    let [h,es]=fresh('sword',['core','sharp','bounty','stand','ripple']);hitEnemy(es[0],1000,{dir:1});
+    let [h,es]=fresh('sword',['core','skin','ripple']);hitEnemy(es[0],1000,{dir:1});
     ok(es[1].hp<es[1].max && es[1].hp>es[1].max-1000*0.1,'ripple did not splash a little onto the neighbour');
     [h,es]=fresh('hammer',['core','skin','armor','stone','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
     ok(es[1].hp===es[1].max,'a shockwave without a finisher');hitEnemy(es[0],1000,{dir:1,big:true});ok(es[1].hp<es[1].max,'the finisher sent no shockwave');

@@ -49,11 +49,62 @@ const fmtPct = v => {
 };
 const nodeText = (n, r) => n.desc.replace('{v}', fmtPct(n.per * Math.max(1, r)));
 
-function buy(n) {
+export function buy(n) {
   const why = cantBuy(n.id);
   if (why) return say(why);
   buyRank(n.id);
   say(`${n.name} RANK ${rank(n.id)}`, true);
+  consolidate(n);
+}
+// ---- the shard consolidation: buying a rank pulls a stream of shards out of the shard counter,
+// each curving into the node with a rising tick, and once they have all landed the node locks in
+// with a flash ring, eight rays and a chord
+const FLOW = [], LOCKIN = [];
+const FLY = 0.42; // seconds a shard spends in the air
+function consolidate(n) {
+  const [x1, y1] = at(n), x0 = W - 60, y0 = 16, k = rank(n.id), count = Math.min(16, 6 + k * 2);
+  for (let i = 0; i < count; i++) {
+    const side = (i % 2 ? 1 : -1) * (20 + Math.random() * 50);
+    FLOW.push({ x0, y0, x1, y1, cx: (x0 + x1) / 2 + side, cy: Math.min(y0, y1) - 10 + Math.random() * 40, t: -i * 0.035, i, last: i === count - 1, n });
+  }
+  P.drain = 0.5; // the counter flashes as it pays out
+}
+function updateConsolidate(dt) {
+  P.drain = Math.max(0, (P.drain || 0) - dt);
+  for (let j = FLOW.length - 1; j >= 0; j--) {
+    const f = FLOW[j];
+    f.t += dt;
+    if (f.t < FLY) continue;
+    FLOW.splice(j, 1);
+    sfx.shardTick(f.i);
+    if (f.last) {
+      LOCKIN.push({ x: f.x1, y: f.y1, r: R[f.n.size], col: colOf(f.n), t: 0 });
+      sfx.invest(rank(f.n.id) >= f.n.max);
+    }
+  }
+  for (let j = LOCKIN.length - 1; j >= 0; j--) if ((LOCKIN[j].t += dt) > 0.45) LOCKIN.splice(j, 1);
+}
+function drawConsolidate() {
+  for (const f of FLOW) {
+    if (f.t < 0) continue;
+    const p = f.t / FLY, e = p * p * (3 - 2 * p), q = 1 - e; // ease in-out along a curve
+    const x = Math.round(q * q * f.x0 + 2 * q * e * f.cx + e * e * f.x1), y = Math.round(q * q * f.y0 + 2 * q * e * f.cy + e * e * f.y1);
+    // a little diamond shard with a short trail
+    rect(x - 2, y - 1, 5, 3, C.ink);
+    rect(x - 1, y - 2, 3, 5, C.ink);
+    px(x - 1, y, C.sky); px(x + 1, y, C.sky); px(x, y - 1, C.ice); px(x, y + 1, C.sky); px(x, y, C.paper);
+    const tp = Math.max(0, p - 0.08), te = tp * tp * (3 - 2 * tp), tq = 1 - te;
+    px(Math.round(tq * tq * f.x0 + 2 * tq * te * f.cx + te * te * f.x1), Math.round(tq * tq * f.y0 + 2 * tq * te * f.cy + te * te * f.y1), C.blue);
+  }
+  for (const L of LOCKIN) {
+    const p = L.t / 0.45, r = L.r + 2 + p * 14, col = p < 0.25 ? C.paper : L.col;
+    for (let a = 0; a < 32; a++) if (a % 2 || p < 0.5) px(Math.round(L.x + Math.cos((a * Math.PI) / 16) * r), Math.round(L.y + Math.sin((a * Math.PI) / 16) * r), col);
+    for (let a = 0; a < 8; a++) {
+      const dx = Math.cos((a * Math.PI) / 4), dy = Math.sin((a * Math.PI) / 4);
+      for (let s = L.r + 3 + p * 6; s < L.r + 6 + p * 12; s++) px(Math.round(L.x + dx * s), Math.round(L.y + dy * s), p < 0.3 ? C.cream : C.gold);
+    }
+    if (p < 0.2) disc(L.x, L.y, L.r, C.paper);
+  }
 }
 function undo() {
   const id = undoRank();
@@ -107,15 +158,24 @@ function step(from, list, dx, dy) {
   }
   return best;
 }
-function pick(type, tier, opt) {
+export function pick(type, tier, opt) {
   if (tier >= tiersOpen(type)) return say(`REACH ${type.toUpperCase()} MASTERY ${MASTERY_TIERS[tier]} FIRST`);
+  if (perkChoice(type, tier) === opt) return;
   choosePerk(type, tier, opt);
   say(`${type.toUpperCase()}: ${masteryPerk(type, tier, opt).name}`, true);
+  // the weapon charges with the new power: it glows brighter and hums, then flares (drawConstellation)
+  P.charge = { type, tier, opt, t: 0, done: false };
+  sfx.hum();
 }
+const CHARGE = 1.05; // seconds the constellation spends powering up
 
 // called by the overworld while the window is open
 export function updatePowers(dt) {
   P.msgT = Math.max(0, P.msgT - dt);
+  updateConsolidate(dt);
+  const ch = P.charge;
+  if (ch && (ch.t += dt) >= CHARGE * 0.85 && !ch.done) (ch.done = true), sfx.empower();
+  if (ch && ch.t > CHARGE + 0.5) P.charge = null;
   const M = P.mast;
   if (P.tab === 1 && M.open && (input.take('pause') | input.take('leave'))) return (M.open = false), sfx.ui();
   if (input.take('inv') | input.take('pause')) return closePowers();
@@ -174,8 +234,8 @@ export function drawPowers(t) {
   rect(W - 21, 10, 13, 13, C.ink);
   text('X', W - 15, 13, C.coral, { align: 'center' });
   box(W - 22, 9, 15, 15, closePowers);
-  text(`${fmt(meta().shards)} SHARDS`, W - 28, 13, C.ice, { align: 'right' });
-  if (P.tab === 0) drawTree(t);
+  text(`${fmt(meta().shards)} SHARDS`, W - 28, 13, P.drain > 0 && Math.floor(t * 20) % 2 ? C.paper : C.ice, { align: 'right' });
+  if (P.tab === 0) drawTree(t), drawConsolidate();
   else if (P.tab === 1) drawMastery(t);
   else drawTrophies(t);
   if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
@@ -242,9 +302,61 @@ const minY = Math.min(...TREE.map(n => n.y)) - 12, maxY = Math.max(...TREE.map(n
 const ORIGIN = { x: MAP.x + MAP.w / 2, y: Math.round(MAP.y + (MAP.h - (maxY - minY)) / 2 - minY) };
 const at = n => [ORIGIN.x + n.x, ORIGIN.y + n.y];
 
+// ---- each class cluster sits on a dithered silhouette of its weapon: a sword for blades, a hammer
+// for blunt, a bow for ranged. Shapes are in the cluster's own frame (u: out from CORE along the
+// branch, v: across it), the same frame the nodes are placed in, so the weapon covers its cluster.
+const WEAPON_SHAPES = {
+  blades: (u, v) => {
+    const a = Math.abs(v);
+    if (u >= 60 && u <= 130) return a < Math.min(11, (132 - u) * 0.7); // blade, tapering to a point
+    if (u >= 50 && u < 60) return a < 32; // crossguard
+    if (u >= 32 && u < 50) return a < 5; // grip
+    return Math.hypot(u - 27, v) < 8; // pommel
+  },
+  blunt: (u, v) => {
+    const a = Math.abs(v);
+    if (u >= 92 && u <= 126) return a < 30 - Math.max(0, Math.abs(u - 109) - 12) * 1.6; // head, bevelled corners
+    return u >= 26 && u < 90 && a < 5; // handle
+  },
+  ranged: (u, v) => {
+    const d = Math.hypot(u - 22, v), ang = Math.abs(Math.atan2(v, u - 22)), a = Math.abs(v);
+    if (d > 76 && d < 88 && ang < 0.95) return true; // the bent limbs
+    if (Math.abs(u - (22 + 82 * Math.cos(0.95))) < 1.2 && a < 82 * Math.sin(0.95)) return true; // the string
+    if (u >= 40 && u <= 116 && a < 2) return true; // a nocked arrow
+    return u > 114 && u < 130 && a < (130 - u) * 0.6; // its head
+  }
+};
+const shapeRuns = {};
+// rasterize a class's weapon once into horizontal runs: [x, y, width, edge]
+function weaponRuns(B) {
+  if (shapeRuns[B.id]) return shapeRuns[B.id];
+  const [a, b] = B.dir, [c, d] = B.side, det = a * d - b * c, inside = WEAPON_SHAPES[B.id];
+  const hit = (x, y) => {
+    const dx = x - ORIGIN.x, dy = y - ORIGIN.y;
+    return inside((dx * d - dy * c) / det, (a * dy - b * dx) / det);
+  };
+  const runs = [];
+  for (let y = MAP.y; y < MAP.y + MAP.h; y++)
+    for (let x = MAP.x, start = -1, edge = false; x <= MAP.x + MAP.w; x++) {
+      const on = x < MAP.x + MAP.w && hit(x, y);
+      if (on && start < 0) start = x;
+      if (on) edge ||= !hit(x - 1, y) || !hit(x + 1, y) || !hit(x, y - 1) || !hit(x, y + 1);
+      if (!on && start >= 0) runs.push([start, y, x - start]), (start = -1);
+    }
+  // the outline, one pixel wide, drawn a little denser
+  const outline = [];
+  for (const [x0, y, w] of runs) for (let x = x0; x < x0 + w; x++) if (!hit(x - 1, y) || !hit(x + 1, y) || !hit(x, y - 1) || !hit(x, y + 1)) outline.push([x, y]);
+  return (shapeRuns[B.id] = { runs, outline });
+}
+function drawWeaponShape(B, col, level) {
+  const { runs, outline } = weaponRuns(B);
+  for (const [x, y, w] of runs) dither(x, y, w, 1, col, level);
+  for (const [x, y] of outline) dither(x, y, 1, 1, col, level + 6);
+}
+
 function drawTree(t) {
   starfield(t);
-  for (const [B, c] of [[BRANCHES[0], C.wine], [BRANCHES[1], C.woodD], [BRANCHES[2], C.navy]]) cloud(ORIGIN.x + B.dir[0] * 90, ORIGIN.y + B.dir[1] * 90, 32, c, weaponLock() === B.id ? 5 : 3);
+  for (const [B, c] of [[BRANCHES[0], C.wine], [BRANCHES[1], C.woodD], [BRANCHES[2], C.navy]]) drawWeaponShape(B, c, weaponLock() === B.id ? 5 : 3);
   for (const B of BRANCHES) {
     const lx = ORIGIN.x + B.dir[0] * 90 + B.side[0] * (B.label || 52), ly = ORIGIN.y + B.dir[1] * 90 + B.side[1] * 50;
     text(B.name, Math.max(MAP.x + 20, Math.min(MAP.x + MAP.w - 20, lx)), Math.min(MAP.y + MAP.h - 10, ly), weaponLock() === B.id ? C[B.col] : C.stone, { align: 'center' });
@@ -366,6 +478,30 @@ function strokes(type, x, y, k, col, starCol) {
     }
   }
 }
+// A weapon's permanent glow evolves with its mastery level (0-100): nothing at first, then a faint
+// blue haze, icy, warm cream, gold, and at 100 a radiant gold that breathes. Chosen perks deepen it.
+const GLOW_STAGES = [
+  { lv: 0, line: C.fog, star: C.paper, halo: C.slate, base: 0 },
+  { lv: 10, line: C.sky, star: C.ice, halo: C.navy, base: 2 },
+  { lv: 25, line: C.ice, star: C.paper, halo: C.blue, base: 3 },
+  { lv: 50, line: C.cream, star: C.paper, halo: C.violet, base: 3.5 },
+  { lv: 75, line: C.gold, star: C.cream, halo: C.orange, base: 4 },
+  { lv: 100, line: C.gold, star: C.paper, halo: C.gold, base: 5 }
+];
+export function masteryGlow(type, t) {
+  const lv = proficiency(type).lv, stage = GLOW_STAGES.reduce((s, g, i) => (lv >= g.lv ? i : s), 0), g = GLOW_STAGES[stage];
+  const perks = MASTERY_TIERS.filter((_, i) => perkChoice(type, i) != null).length;
+  const breathe = stage ? Math.sin(t * (1.5 + stage * 0.4)) * (stage >= 5 ? 1.5 : 0.6) : 0;
+  return { stage, line: g.line, star: g.star, halo: g.halo, level: stage ? Math.max(1, g.base + perks * 0.2 + breathe) : 0 };
+}
+// a mote of light at a random point along one of the constellation's strokes
+function emitSpark(x, y, k, type, t, i) {
+  const S = SHAPES[type], s = S[Math.floor(Math.random() * S.length)], j = 1 + Math.floor(Math.random() * (s.length - 1)), f = Math.random();
+  const sx = x + (s[j - 1][0] + (s[j][0] - s[j - 1][0]) * f) * k, sy = y + (s[j - 1][1] + (s[j][1] - s[j - 1][1]) * f) * k;
+  px(Math.round(sx), Math.round(sy), i ? C.cream : C.paper);
+  px(Math.round(sx) + 1, Math.round(sy), C.gold);
+  px(Math.round(sx), Math.round(sy) - 1, C.gold);
+}
 // the two option stars at a tier, left one first
 function optionStars(type, tier, x, y, k) {
   const [ux, uy, dx, dy] = TIER_PTS[type][tier], cx0 = x + ux * k, cy0 = y + uy * k;
@@ -388,8 +524,10 @@ function drawSky(t) {
   disc(POLE.x, POLE.y, 2, C.cream);
   SKY.forEach((s, i) => {
     const sel = M.type === i, open = tiersOpen(s.type), wait = unpicked(s.type).length;
+    const G = masteryGlow(s.type, t);
+    if (G.level) cloud(s.x, s.y, 14 + G.stage * 2, G.halo, G.level);
     if (sel) cloud(s.x, s.y, 18, C.slate, 5);
-    strokes(s.type, s.x, s.y, SK, sel ? C.ice : open ? C.fog : C.stone, sel || open ? C.paper : C.mist);
+    strokes(s.type, s.x, s.y, SK, sel ? C.ice : G.stage ? G.line : open ? C.fog : C.stone, sel || open || G.stage ? G.star : C.mist);
     TIER_PTS[s.type].forEach(([ux, uy], tier) => {
       const x = s.x + ux * SK, y = s.y + uy * SK, chosen = perkChoice(s.type, tier) != null;
       if (chosen) (disc(x, y, 1, C.gold), px(x, y, C.cream));
@@ -405,8 +543,22 @@ function drawSky(t) {
   });
 }
 function drawConstellation(t) {
-  const M = P.mast, type = TYPE_LIST[M.type], open = tiersOpen(type), k = 88, x = POLE.x, y = POLE.y;
-  strokes(type, x, y, k, C.fog, C.paper);
+  const M = P.mast, type = TYPE_LIST[M.type], open = tiersOpen(type), k = 88, ch = P.charge && P.charge.type === type ? P.charge : null;
+  // charging: the weapon hums (a one-pixel shiver that quickens) and its glow swells, then flares
+  const p = ch ? Math.min(1, ch.t / CHARGE) : 0, flare = ch && ch.t > CHARGE * 0.85 ? Math.max(0, 1 - (ch.t - CHARGE * 0.85) / 0.6) : 0;
+  const shiver = ch && p < 1 ? (Math.floor(t * (20 + p * 40)) % 2 ? 1 : -1) * (p > 0.3 ? 1 : 0) : 0;
+  const x = POLE.x + shiver, y = POLE.y;
+  // the weapon's permanent glow, grown from its mastery (masteryGlow), swelling further while it charges
+  const G = masteryGlow(type, t);
+  if (G.level || ch) cloud(x, y, 44 + G.stage * 6, G.halo, Math.min(8, G.level + p * 4 + flare * 6));
+  const glow = ch ? [C.sky, C.ice, C.cream, C.gold, C.paper][Math.min(4, Math.floor(p * 4 + flare * 2))] : G.line;
+  strokes(type, x, y, k, glow, ch && Math.floor(t * 16) % 2 ? C.gold : G.star);
+  if (!ch && G.stage >= 3) for (let i = 0; i < G.stage - 2; i++) if (Math.random() < 0.5) emitSpark(x, y, k, type, t, i);
+  if (ch && p < 1) for (let i = 0; i < 3; i++) emitSpark(x, y, k, type, t, i); // power crawling along the lines
+  if (flare) {
+    const r = 10 + (1 - flare) * 90;
+    for (let a = 0; a < 48; a++) if (a % 2 || flare > 0.5) px(Math.round(x + Math.cos((a * Math.PI) / 24) * r), Math.round(y + Math.sin((a * Math.PI) / 24) * r * 0.8), flare > 0.6 ? C.paper : C.gold);
+  }
   text(type.toUpperCase(), MAP.x + 6, MAP.y + 5, C.gold);
   text(`MASTERY ${proficiency(type).lv}/100`, MAP.x + 6, MAP.y + 15, C.sky);
   MASTERY_TIERS.forEach((lv, tier) => {
