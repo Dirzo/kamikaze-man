@@ -116,7 +116,15 @@ python3 crazy-weapon-man-site/art-src/build_assets.py
 python3 crazy-weapon-man-site/art-src/build_next.py
 ```
 
-480×270 canvas, nearest-neighbour sprites, fixed palette. The original nine awakened silhouettes
+480×270 canvas, nearest-neighbour sprites, fixed palette. The hero is the 32-bit "arcade cut"
+(`art-src/arcade_hero.py`, 22×30 frames with their own deeper colour ramps): goggles, red headband,
+bare chest and bandolier, with hand-drawn gloved arms (`art-src/arcade_arms.py`: eight directions, bent and straight) that
+`game/anim.js` picks per pose, locking the weapon to the drawn fist. Held weapons come
+from `art-src/arcade_weapons.py`, built from small helpers so every variant has its own cut-outs,
+notches, hooks or teeth. Each weapon class fights in its own way in `anim.js` STYLES: hammers swing
+a full-body windmill, staves are held two-handed and twirl, spears lunge, axes chop and spin, scythes
+reap. Hitboxes and timing (`attack-rules.js`) are unchanged. `CWM.animSheet()` (with `?debug`)
+renders a contact sheet of every style's poses. The original nine awakened silhouettes
 live in `art-src/awakening.py`. Slash frames share attack geometry instead of drawing on a second
 legacy canvas. Larger screens use integer scaling; narrow phones fit their viewport.
 

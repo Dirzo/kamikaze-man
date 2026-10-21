@@ -294,7 +294,7 @@ function drawTitle(t) {
   text('WEAPON MAN', W / 2, 78 + bob, C.gold, { align: 'center', k: 4 });
   // hero standing on the ground
   const Hh = A.hero;
-  frame(Hh.im, Hh.frames[Math.floor(t * 2) % 2 ? 'idle' : 'idle2'], Hh.w, Hh.h, W / 2 - 8, GROUND - 24, false);
+  frame(Hh.im, Hh.frames[Math.floor(t * 2) % 2 ? 'idle' : 'idle2'], Hh.w, Hh.h, W / 2 - Hh.w / 2, GROUND - Hh.feet, false);
   text('CLEAR THE MAP. CLAIM THE NEXT.', W / 2, 123, C.mist, { align: 'center' });
   const lines = [
     'MOVE  ARROWS / A D        JUMP  ALT / X        ATTACK  CTRL / Z',
@@ -472,22 +472,21 @@ import { heroMax } from './game/perks.js';
 import { drawHeroAnimated } from './game/anim.js';
 import { TYPES as WTYPES, MOVES } from './data/weapons.js';
 // debug: contact sheet of every weapon style's poses -> data URL
-function animSheet(zoom = 3) {
-  const types = Object.keys(WTYPES);
-  const cols = ['idle', 'run', 'jump', 'fall', 'dash', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'b2', 'c2'];
-  const cw = 60,
-    ch = 60;
+// cols: idle run jump fall dash, aN = first combo move at phase N (0..5), bN / cN = second / third
+// move at phase N, or a raw phase like 'c:0.42' (third move at p = 0.42)
+function animSheet(zoom = 3, types = Object.keys(WTYPES), cols = ['idle', 'run', 'jump', 'fall', 'dash', 'a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'b2', 'c2'], cw = 60, ch = 60, bg = C.slate) {
   const sheet = document.createElement('canvas');
   sheet.width = cw * cols.length * zoom;
   sheet.height = ch * types.length * zoom;
   const g = sheet.getContext('2d');
   g.imageSmoothingEnabled = false;
   types.forEach((type, r) => {
+    const weapon = makeWeapon(3, { type, q: 3, standout: false }); // one weapon per row
     cols.forEach((c, i) => {
       const h = createHero();
-      h.weapon = makeWeapon(3, { type, q: 3, standout: false });
-      h.x = 192;
-      h.y = 140;
+      h.weapon = weapon;
+      h.x = 170 + Math.round(cw / 2 - h.w / 2);
+      h.y = 120 + Math.round(ch * 0.66) - h.h;
       h.onGround = true;
       h.inv = 0;
       const T = WTYPES[type];
@@ -503,14 +502,14 @@ function animSheet(zoom = 3) {
       } else if (c === 'dash') h.dashT = 0.1;
       else if (c[0] === 'a' || c[0] === 'b' || c[0] === 'c') {
         const step = c[0] === 'a' ? 0 : c[0] === 'b' ? 1 : 2;
-        const p = c[0] === 'a' ? [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] : 0.5;
+        const p = c[1] === ':' ? +c.slice(2) : c[0] === 'a' ? [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] : [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] ?? 0.5;
         if (T.melee) {
           const mn = T.combo[step];
           h.attack = { move: MOVES[mn], moveName: mn, t: p, dur: 1, hit: new Set() };
         } else h.attack = { ranged: true, t: p, dur: 1, fired: true };
       }
       X.setTransform(1, 0, 0, 1, 0, 0);
-      X.fillStyle = C.slate;
+      X.fillStyle = bg;
       X.fillRect(170, 120, cw, ch);
       drawHeroAnimated(h, 1.0);
       g.drawImage(X.canvas, 170, 120, cw, ch, i * cw * zoom, r * ch * zoom, cw * zoom, ch * zoom);
