@@ -230,9 +230,9 @@ for i, legs in enumerate(BACK_LEGS):
     FRAMES['climb%d' % i] = [r.ljust(W, '.')[:W] for r in BACK_UP + legs]
 
 # shoulder pixels (back, front) in the 20x28 art, before the outline
-SH = {'idle': ((6, 12), (8, 12)), 'idle2': ((6, 13), (8, 13)), 'run1': ((7, 12), (9, 12)), 'run2': ((7, 12), (9, 12)),
-      'run3': ((7, 12), (9, 12)), 'lean': ((8, 12), (10, 12)), 'back': ((6, 12), (9, 12)), 'hurt': ((6, 12), (9, 12)),
-      'crouch': ((6, 14), (8, 14)), 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
+SH = {'idle': ((5, 13), (7, 13)), 'idle2': ((5, 14), (7, 14)), 'run1': ((6, 13), (8, 13)), 'run2': ((6, 13), (8, 13)),
+      'run3': ((6, 13), (8, 13)), 'lean': ((7, 13), (9, 13)), 'back': ((5, 13), (8, 13)), 'hurt': ((5, 13), (8, 13)),
+      'crouch': ((5, 15), (7, 15)), 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
 # (both sockets sit under the ear, the near one a step forward of the far one)
 
 

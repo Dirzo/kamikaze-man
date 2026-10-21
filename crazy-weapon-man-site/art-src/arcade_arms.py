@@ -199,33 +199,37 @@ def _image(rows, dark=False):
             c = DARKER.get(ch, ch) if dark else ch
             hx = ARM_HEX[c]
             px[x + 1, y + 1] = tuple(int(hx[i:i + 2], 16) for i in (1, 3, 5)) + (255,)
-    out = im.copy()
-    o = out.load()
+    line = Image.new('RGBA', im.size, (0, 0, 0, 0))
+    o = line.load()
     for y in range(im.height):
         for x in range(im.width):
             if px[x, y][3]:
                 continue
             if any(0 <= x + dx < im.width and 0 <= y + dy < im.height and px[x + dx, y + dy][3] for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1))):
                 o[x, y] = INK
-    return out, pts['O'], pts['F']
+    return im, line, pts['O'], pts['F']
 
 
 def build():
-    """-> (strip image, manifest list). Each entry: name, dir (deg), reach (px), x, w, h, shoulder, fist."""
-    cells, meta = [], []
+    """-> (strip image, manifest list). Each entry: dir, reach, x, w, h, shoulder, fist; the outline row
+    starts at y = rowH, so the game can tuck the outline under the body and draw the colours on top."""
+    cells, lines, meta = [], [], []
     for dark in (False, True):
         for (d, r), rows in ARMS.items():
-            im, o, f = _image(rows, dark)
+            im, line, o, f = _image(rows, dark)
             cells.append(im)
+            lines.append(line)
             meta.append({'dir': d, 'reach': r, 'back': dark, 'w': im.width, 'h': im.height, 'o': list(o), 'f': list(f),
                          'ang': round(math.degrees(math.atan2(f[1] - o[1], f[0] - o[0]))), 'len': round(math.hypot(f[0] - o[0], f[1] - o[1]), 1)})
     W = sum(c.width for c in cells)
     H = max(c.height for c in cells)
-    strip = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    strip = Image.new('RGBA', (W, H * 2), (0, 0, 0, 0))  # top row: colours, bottom row: ink outline
     x = 0
-    for c, m in zip(cells, meta):
+    for c, ln, m in zip(cells, lines, meta):
         strip.alpha_composite(c, (x, 0))
+        strip.alpha_composite(ln, (x, H))
         m['x'] = x
+        m['lineY'] = H
         x += c.width
     return strip, meta
 

@@ -392,16 +392,21 @@ function armFor(sx, sy, tx, ty, far, face) {
   const m = pickArm((tx - sx) * face, ty - sy, far);
   return { m, sx, sy, face, fist: [sx + (m.f[0] - m.o[0]) * face, sy + m.f[1] - m.o[1]] };
 }
-function drawArm(arm) {
+// layer 'line' is the ink outline only, 'fill' the colours only, 'both' everything: the near arm's
+// outline goes under the body so no black line is drawn across the chest
+function drawArm(arm, layer = 'both') {
   const { m, sx, sy, face } = arm,
     im = A.hero.arms.im;
-  if (face > 0) X.drawImage(im, m.x, 0, m.w, m.h, Math.round(sx - m.o[0]), Math.round(sy - m.o[1]), m.w, m.h);
-  else {
-    X.save();
-    X.translate(Math.round(sx + m.o[0]) + 1, Math.round(sy - m.o[1]));
-    X.scale(-1, 1);
-    X.drawImage(im, m.x, 0, m.w, m.h, 0, 0, m.w, m.h);
-    X.restore();
+  const rows = layer === 'both' ? [m.lineY, 0] : [layer === 'line' ? m.lineY : 0];
+  for (const ry of rows) {
+    if (face > 0) X.drawImage(im, m.x, ry, m.w, m.h, Math.round(sx - m.o[0]), Math.round(sy - m.o[1]), m.w, m.h);
+    else {
+      X.save();
+      X.translate(Math.round(sx + m.o[0]) + 1, Math.round(sy - m.o[1]));
+      X.scale(-1, 1);
+      X.drawImage(im, m.x, ry, m.w, m.h, 0, 0, m.w, m.h);
+      X.restore();
+    }
   }
 }
 
@@ -515,11 +520,12 @@ export function drawHeroAnimated(h, t) {
   if (!flashing && !backView) drawArm(armB);
   if (pose.wb) tip = drawWeapon();
   if (pose.ab && !flashing) drawArm(armF);
+  if (!pose.ab && !flashing && !backView) drawArm(armF, 'line'); // outline tucked under the body
   if (!flashing) frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0);
   if (backView && !flashing) drawArm(armB);
   if (!pose.wb) tip = drawWeapon();
   drawString();
-  if (!pose.ab && !flashing) drawArm(armF);
+  if (!pose.ab && !flashing) drawArm(armF, backView ? 'both' : 'fill');
   // swing smear: connect recent blade-tip positions while attacking
   const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry'].includes(h.special.kind));
   if (swinging && tip) {
@@ -550,7 +556,9 @@ export function drawHeroPlain(f, x, y, face) {
     swing = f.startsWith('run') ? (f === 'run2' ? 0 : f === 'run1' ? 2 : -2) : 0;
   const hand = (gx, gy) => W2(...toSprite(Hh, gx, gy));
   const arm = (shp, gx, gy, far) => armFor(...W2(shp[0], shp[1]), ...hand(gx, gy).map(v => v + 1), far, face);
+  const near = arm(sh[1], 12 + swing, 21, false);
   drawArm(arm(sh[0], 5 - swing, 21, true));
+  drawArm(near, 'line');
   frame(Hh.im, Hh.frames[f] ?? 0, Hh.w, Hh.h, x, y, face < 0);
-  drawArm(arm(sh[1], 12 + swing, 21, false));
+  drawArm(near, 'fill');
 }
