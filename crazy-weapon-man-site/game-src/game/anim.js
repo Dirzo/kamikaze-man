@@ -255,12 +255,12 @@ export function heroPose(h, t) {
 // under the cape (hilt over the right shoulder, tip out past the left hip), both hands go hand-over-hand up the
 // rungs, and the legs and cape only move while you actually climb.
 export const SHEATH = { at: [7, 6], ang: 112 };
-const BACK_SHEATH = { at: [12, 14], ang: 128 };
+const BACK_SHEATH = { at: [14, 7], ang: 128 };
 export const DRAW_TIME = 0.18;
 function climbPose(h) {
   const ph = Math.floor((h.climbT || 0) * 6) % 2,
     lift = ph ? 0 : 3; // short reach: hands grip the rungs beside the head
-  return { back: ph, f: 'climb' + ph, fh: [15, 7 + lift], bh: [1, 10 - lift], ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: true, ab: false, sheath: true };
+  return { back: ph, f: 'climb' + ph, fh: [15, 7 + lift], bh: [1, 10 - lift], ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: false, ab: false, sheath: true };
 }
 
 function specialPose(h, st) {
@@ -425,8 +425,11 @@ function drawArm(x0, y0, x1, y1, front, face = 1, pass = 'both', onBody = null) 
     lo = segment(ex, ey, x1, y1);
   const hx = Math.round(x1),
     hy = Math.round(y1);
+  const sx = Math.round(x0),
+    sy = Math.round(y0);
   if (pass !== 'fill') {
     X.fillStyle = C.ink;
+    if (front) X.fillRect(sx - 1, sy - 2, 5, 5); // deltoid cap
     for (const [x, y] of up) X.fillRect(x - 1, y - 1, 5, 5);
     for (const [x, y] of lo) X.fillRect(x - 1, y - 1, 5, 5);
     X.fillRect(hx - 1, hy - 1, 5, 5);
@@ -455,6 +458,15 @@ function drawArm(x0, y0, x1, y1, front, face = 1, pass = 'both', onBody = null) 
     X.fillRect(x, y, 3, 2);
     X.fillStyle = P.lit;
     X.fillRect(x, y, 1, 1);
+  }
+  // deltoid: a rounded cap seats the near arm in its socket on the torso edge
+  if (front) {
+    X.fillStyle = P.dark;
+    X.fillRect(sx, sy + 1, 3, 1);
+    X.fillStyle = P.skin;
+    X.fillRect(sx, sy - 1, 3, 2);
+    X.fillStyle = P.lit;
+    X.fillRect(sx, sy - 1, 2, 1);
   }
   // forearm: skin into the gauntlet
   lo.forEach(([x, y], i) => {

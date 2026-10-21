@@ -38,7 +38,7 @@ import weapon_zones
 import hd_bosses
 import mounts
 from weapons import WEAPONS, VARIANTS, weapon_image
-from arcade_weapons import ARCADE, ARCADE_VARIANTS
+from arcade_weapons import ARCADE, ARCADE_VARIANTS, ARCADE_AWAKENED
 from awakening import AWAKENED
 
 
@@ -100,7 +100,7 @@ def main():
     # held weapons: outlined, magenta markers recoloured in game; grip offset +1 for the outline.
     # The arcade-cut sprites (arcade_weapons.py) replace the old 16-bit ones; loot drops keep theirs.
     man['weapons'] = {}
-    for wtype, ((gx, gy), rows) in {**WEAPONS, **VARIANTS, **ARCADE, **ARCADE_VARIANTS, **AWAKENED}.items():
+    for wtype, ((gx, gy), rows) in {**WEAPONS, **VARIANTS, **ARCADE, **ARCADE_VARIANTS, **AWAKENED, **ARCADE_AWAKENED}.items():
         im = outlined(weapon_image(rows))
         im.save(os.path.join(OUT, f'weapon-{wtype}.png'))
         man['weapons'][wtype] = {'w': im.width, 'h': im.height, 'gx': gx + 1, 'gy': gy + 1}

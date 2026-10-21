@@ -653,3 +653,28 @@ ARCADE_VARIANTS = {
     'scythe-sickle': scythe(9, 8, sickle=True),
     'boomerang-wingblade': boomerang(8, wing=True),
 }
+
+
+# ------------------------------------------------------------------------------- awakened
+# A mutated weapon keeps its class silhouette (the biggest variant of its type) so it still reads as a hammer,
+# a sword and so on, and gains a line of white runes cut into the metal.
+def awaken(spr, every=3):
+    grip, rows = spr
+    g = [list(r) for r in rows]
+    metal = set('AMZ')
+    for y in range(1, len(g) - 1):
+        for x in range(1, len(g[y]) - 1):
+            if g[y][x] != 'M':
+                continue
+            around = [g[yy][xx] if 0 <= xx < len(g[yy]) else '.' for yy, xx in ((y - 1, x), (y + 1, x), (y, x - 1), (y, x + 1))]
+            if all(c in metal for c in around) and (x + 2 * y) % every == 0:
+                g[y][x] = 'w'
+    return (grip, [''.join(r) for r in g])
+
+
+ARCADE_AWAKENED = {t + '-awakened': awaken(s) for t, s in {
+    'sword': ARCADE_VARIANTS['sword-claymore'], 'dagger': ARCADE_VARIANTS['dagger-dirk'], 'katana': ARCADE_VARIANTS['katana-odachi'],
+    'hammer': ARCADE_VARIANTS['hammer-maul'], 'staff': ARCADE_VARIANTS['staff-scepter'], 'nunchucks': ARCADE_VARIANTS['nunchucks-flails'],
+    'bow': ARCADE_VARIANTS['bow-warbow'], 'wand': ARCADE_VARIANTS['wand-rod'], 'shuriken': ARCADE_VARIANTS['shuriken-star'],
+    'spear': ARCADE_VARIANTS['spear-trident'], 'axe': ARCADE_VARIANTS['axe-battleaxe'], 'scythe': ARCADE['scythe'],
+}.items()}

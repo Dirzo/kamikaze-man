@@ -230,9 +230,9 @@ for i, legs in enumerate(BACK_LEGS):
     FRAMES['climb%d' % i] = [r.ljust(W, '.')[:W] for r in BACK_UP + legs]
 
 # shoulder pixels (back, front) in the 20x28 art, before the outline
-SH = {'idle': ((6, 13), (12, 13)), 'idle2': ((6, 14), (12, 14)), 'run1': ((7, 13), (13, 13)), 'run2': ((7, 13), (13, 13)),
-      'run3': ((7, 13), (13, 13)), 'lean': ((8, 13), (14, 13)), 'back': ((3, 13), (13, 13)), 'hurt': ((3, 13), (13, 13)),
-      'crouch': ((6, 15), (12, 15)), 'climb0': ((3, 12), (15, 12)), 'climb1': ((3, 12), (15, 12))}
+SH = {'idle': ((6, 12), (13, 12)), 'idle2': ((6, 13), (13, 13)), 'run1': ((7, 12), (14, 12)), 'run2': ((7, 12), (14, 12)),
+      'run3': ((7, 12), (14, 12)), 'lean': ((8, 12), (15, 12)), 'back': ((3, 12), (13, 12)), 'hurt': ((3, 12), (13, 12)),
+      'crouch': ((6, 14), (13, 14)), 'climb0': ((3, 12), (15, 12)), 'climb1': ((3, 12), (15, 12))}
 # (the near shoulder sits on the front of the turned chest and the far one behind it, so the far
 # arm passes behind the body and the near arm is never outlined across the chest)
 
