@@ -143,7 +143,7 @@ const STYLES = {
   spear: {
     slide: 12,
     grip2: -9,
-    idle: (t, b) => ({ f: b ? 'idle2' : 'idle', fh: [13, 19 + b], ang: -32 + sin(t * 1.4) * 3 }),
+    idle: (t, b) => ({ f: b ? 'idle2' : 'idle', fh: [14, 18 + b], ang: -82 + sin(t * 1.4) * 2 }),
     run: s => ({ fh: [13, 19], ang: -10 + s * 4 }),
     air: up => (up ? { f: 'jump', fh: [14, 14], ang: -45 } : { f: 'fall', fh: [14, 17], ang: 15 }),
     dash: { f: 'lean', fh: [16, 18], ang: 0 },
@@ -262,7 +262,7 @@ export const DRAW_TIME = 0.18;
 function climbPose(h) {
   const ph = Math.floor((h.climbT || 0) * 6) % 2,
     lift = ph ? 0 : 3; // short reach: hands grip the rungs beside the head
-  return { back: ph, f: 'climb' + ph, fh: [15, 7 + lift], bh: [1, 10 - lift], ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: false, ab: false, sheath: true };
+  return { back: ph, f: 'climb' + ph, fh: [13, 1 + lift], bh: [3, 4 - lift], ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: false, ab: false, sheath: true };
 }
 
 function specialPose(h, st) {
@@ -372,98 +372,37 @@ function rotated(L, idx) {
 const angIndex = deg => (((Math.round((deg / 360) * ROT_STEPS) % ROT_STEPS) + ROT_STEPS) % ROT_STEPS);
 
 // ---------------------------------------------------------------- drawing
-// Thick muscled arms, two segments with an elbow: a bulging shoulder, bare skin to the elbow with
-// a lit edge, then a black fingerless glove and gauntlet. The back arm is a shade darker.
-// pass 'line' draws the ink silhouette only and 'fill' the colours only, so the near arm's outline
-// can go under the body (no ink lines across the chest) while its colours go on top.
-const ARM = {
-  front: { lit: '#ffd2a0', skin: '#eea070', dark: '#c86c48', rim: '#3a1810', glove: '#2a2a3a', gloveLit: '#5a5a74' },
-  back: { lit: '#eea070', skin: '#c86c48', dark: '#94442e', rim: '#2a100a', glove: '#1c1c28', gloveLit: '#3a3a4e' }
-};
-const UPPER = 6,
-  FORE = 6;
-// elbow: two-bone IK, the elbow bends down (away from the face) and toward the back
-function elbowOf(x0, y0, x1, y1, face) {
-  const dx = x1 - x0,
-    dy = y1 - y0,
-    d = Math.hypot(dx, dy) || 1;
-  if (d >= UPPER + FORE - 0.5) return [x0 + (dx * UPPER) / d, y0 + (dy * UPPER) / d];
-  const a = (UPPER * UPPER - FORE * FORE + d * d) / (2 * d),
-    h = Math.sqrt(Math.max(0, UPPER * UPPER - a * a));
-  const mx = x0 + (dx * a) / d,
-    my = y0 + (dy * a) / d;
-  let nx = -dy / d,
-    ny = dx / d;
-  if (ny + nx * -face * 0.3 < 0) (nx = -nx), (ny = -ny); // prefer down and behind
-  return [mx + nx * h, my + ny * h];
+// Hand-drawn arms (art-src/arcade_arms.py): eight directions, each bent and straight, front arms
+// plus a darker copy for the far arm. A pose asks for a hand position; we draw the arm whose fist
+// offset from the shoulder is closest and report where its fist really is, so the weapon sits in it.
+function pickArm(dx, dy, far) {
+  let best = null,
+    bd = 1e9;
+  for (const m of A.hero.arms.list) {
+    if (m.back !== far) continue;
+    const ex = m.f[0] - m.o[0] - dx,
+      ey = m.f[1] - m.o[1] - dy,
+      d = ex * ex + ey * ey;
+    if (d < bd) (bd = d), (best = m);
+  }
+  return best;
 }
-// opaque pixels of each body frame, so the near arm can be rimmed in dark skin where it lies on the
-// body (32-bit style coloured inner outline) and in ink where it meets the background
-const masks = new Map();
-function bodyMask(Hh, fi) {
-  let m = masks.get(fi);
-  if (m) return m;
-  const cv = document.createElement('canvas');
-  cv.width = Hh.w;
-  cv.height = Hh.h;
-  const g = cv.getContext('2d');
-  g.drawImage(Hh.im, fi * Hh.w, 0, Hh.w, Hh.h, 0, 0, Hh.w, Hh.h);
-  const d = g.getImageData(0, 0, Hh.w, Hh.h).data;
-  m = new Uint8Array(Hh.w * Hh.h);
-  for (let i = 0; i < m.length; i++) m[i] = d[i * 4 + 3] > 0 ? 1 : 0;
-  masks.set(fi, m);
-  return m;
+// shoulder (sx, sy) in world px, target fist (tx, ty); returns the arm and its fist in world px
+function armFor(sx, sy, tx, ty, far, face) {
+  const m = pickArm((tx - sx) * face, ty - sy, far);
+  return { m, sx, sy, face, fist: [sx + (m.f[0] - m.o[0]) * face, sy + m.f[1] - m.o[1]] };
 }
-function drawArm(x0, y0, x1, y1, front, face = 1, pass = 'both', onBody = null) {
-  const P = front ? ARM.front : ARM.back;
-  const [ex, ey] = elbowOf(x0, y0, x1, y1, face);
-  // the limb is a chain of capsules around pixel centres (+1: points name the top-left of the old 3px stroke):
-  // shoulder cap, bicep, forearm, gauntlet. Each pixel is shaded by which side of the bone it sits on, so
-  // the arm reads as one rounded form with a single clean contour instead of stamped squares.
-  const sx = x0 + 1, sy = y0 + 1, mx = ex + 1, my = ey + 1, hx = x1 + 1, hy = y1 + 1;
-  const gx = mx + (hx - mx) * 0.55, gy = my + (hy - my) * 0.55;
-  const bones = [
-    [sx, sy, sx, sy, front ? 2.4 : 2, 'skin'],
-    [sx, sy, mx, my, 2, 'skin'],
-    [mx, my, gx, gy, 1.7, 'skin'],
-    [gx, gy, hx, hy, 1.8, 'glove'],
-    [hx, hy, hx, hy, 2, 'glove']
-  ];
-  const near = (px, py) => {
-    let best = null;
-    for (const [ax, ay, bx, by, r, kind] of bones) {
-      const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
-      const t = L2 ? Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / L2)) : 0;
-      const dx = px - (ax + vx * t), dy = py - (ay + vy * t);
-      const d = Math.hypot(dx, dy) - r;
-      // light comes from above and slightly in front of the face
-      if (!best || d < best.d) best = { d, kind, lit: dx * face * 0.45 - dy * 0.9 };
-    }
-    return best;
-  };
-  const x_0 = Math.floor(Math.min(sx, mx, hx) - 4), x_1 = Math.ceil(Math.max(sx, mx, hx) + 4);
-  const y_0 = Math.floor(Math.min(sy, my, hy) - 4), y_1 = Math.ceil(Math.max(sy, my, hy) + 4);
-  for (let y = y_0; y <= y_1; y++)
-    for (let x = x_0; x <= x_1; x++) {
-      const n = near(x + 0.5, y + 0.5);
-      if (n.d > 1) continue;
-      if (pass === 'line' || pass === 'both') {
-        X.fillStyle = C.ink;
-        X.fillRect(x, y, 1, 1);
-        if (pass === 'line') continue;
-      }
-      if (n.d > 0) {
-        // contour: ink against the background (line pass), deep skin where the arm lies over the body
-        if (onBody && onBody(x, y)) {
-          X.fillStyle = P.rim;
-          X.fillRect(x, y, 1, 1);
-        }
-        continue;
-      }
-      const glove = n.kind === 'glove';
-      X.fillStyle = n.lit > 0.6 ? (glove ? P.gloveLit : P.lit) : n.lit < -0.5 ? (glove ? C.ink : P.dark) : glove ? P.glove : P.skin;
-      X.fillRect(x, y, 1, 1);
-    }
+function drawArm(arm) {
+  const { m, sx, sy, face } = arm,
+    im = A.hero.arms.im;
+  if (face > 0) X.drawImage(im, m.x, 0, m.w, m.h, Math.round(sx - m.o[0]), Math.round(sy - m.o[1]), m.w, m.h);
+  else {
+    X.save();
+    X.translate(Math.round(sx + m.o[0]) + 1, Math.round(sy - m.o[1]));
+    X.scale(-1, 1);
+    X.drawImage(im, m.x, 0, m.w, m.h, 0, 0, m.w, m.h);
+    X.restore();
+  }
 }
 
 // pose grid (17 wide, shoulders y = 16, feet y = 24) -> arcade sprite pixels
@@ -486,16 +425,19 @@ export function drawHeroAnimated(h, t) {
   const w = h.weapon,
     L = lookOf(w, frameOfLook(w.look, t)),
     st = styleOf(w.type);
-  // front hand; two-handed styles put the back hand on the handle
-  const fh = G2(pose.fh[0], pose.fh[1]);
+  const shB = W2(sh[0][0], sh[0][1]),
+    shF = W2(sh[1][0], sh[1][1]);
+  // front hand: the drawn arm closest to the pose's hand, and the weapon goes in its fist
+  const want = G2(pose.fh[0], pose.fh[1]);
+  const armF = armFor(shF[0], shF[1], want[0] + 1, want[1] + 1, false, face);
+  const fh = [armF.fist[0] - 1, armF.fist[1] - 1];
   const angW = face > 0 ? pose.ang : 180 - pose.ang; // world-space angle
   const rad = (angW * Math.PI) / 180;
   // two-handed: the back hand rides the handle grip2 px from the front hand along the weapon
   let bh;
   if (st.grip2 && !pose.sheath && !pose.one) bh = [fh[0] + Math.cos(rad) * st.grip2, fh[1] + Math.sin(rad) * st.grip2];
   else bh = G2(pose.bh ? pose.bh[0] : 5, pose.bh ? pose.bh[1] : 20);
-  const shB = W2(sh[0][0], sh[0][1]),
-    shF = W2(sh[1][0], sh[1][1]);
+  const armB = armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, true, face);
   // weapon origin: the sprite's grip sits `slide` px behind the front hand along the weapon
   const slide = pose.sheath ? 0 : pose.slide ?? st.slide ?? 0;
   const back = pose.sheath ? G2(...(pose.at || SHEATH.at)) : null;
@@ -570,24 +512,14 @@ export function drawHeroAnimated(h, t) {
   // draw order: back arm, (weapon behind), body, (weapon), front arm
   let tip = null;
   const backView = pose.back != null; // seen from behind: both arms reach up in front of the back
-  if (!flashing && !backView) drawArm(shB[0], shB[1], bh[0], bh[1], false, face);
+  if (!flashing && !backView) drawArm(armB);
   if (pose.wb) tip = drawWeapon();
-  if (pose.ab && !flashing) drawArm(shF[0], shF[1], fh[0], fh[1], true, face);
-  if (!pose.ab && !flashing && !backView) drawArm(shF[0], shF[1], fh[0], fh[1], true, face, 'line'); // silhouette under the body
+  if (pose.ab && !flashing) drawArm(armF);
   if (!flashing) frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0);
-  if (backView && !flashing) drawArm(shB[0], shB[1], bh[0], bh[1], false, face);
+  if (backView && !flashing) drawArm(armB);
   if (!pose.wb) tip = drawWeapon();
   drawString();
-  if (!pose.ab && !flashing) {
-    const fi = Hh.frames[pose.f] ?? 0,
-      mask = bodyMask(Hh, fi);
-    const onBody = (x, y) => {
-      const lx = face > 0 ? x - sx0 : sx0 + Hh.w - 1 - x,
-        ly = y - sy0;
-      return lx >= 0 && ly >= 0 && lx < Hh.w && ly < Hh.h && mask[ly * Hh.w + lx] === 1;
-    };
-    drawArm(shF[0], shF[1], fh[0], fh[1], true, face, backView ? 'both' : 'fill', backView ? null : onBody);
-  }
+  if (!pose.ab && !flashing) drawArm(armF);
   // swing smear: connect recent blade-tip positions while attacking
   const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry'].includes(h.special.kind));
   if (swinging && tip) {
@@ -617,14 +549,8 @@ export function drawHeroPlain(f, x, y, face) {
   const sh = Hh.shoulders[f] || Hh.shoulders.idle,
     swing = f.startsWith('run') ? (f === 'run2' ? 0 : f === 'run1' ? 2 : -2) : 0;
   const hand = (gx, gy) => W2(...toSprite(Hh, gx, gy));
-  drawArm(...W2(sh[0][0], sh[0][1]), ...hand(5 - swing, 21), false, face);
-  drawArm(...W2(sh[1][0], sh[1][1]), ...hand(12 + swing, 21), true, face, 'line');
+  const arm = (shp, gx, gy, far) => armFor(...W2(shp[0], shp[1]), ...hand(gx, gy).map(v => v + 1), far, face);
+  drawArm(arm(sh[0], 5 - swing, 21, true));
   frame(Hh.im, Hh.frames[f] ?? 0, Hh.w, Hh.h, x, y, face < 0);
-  const mask = bodyMask(Hh, Hh.frames[f] ?? 0);
-  const onBody = (px, py) => {
-    const lx = face > 0 ? px - x : x + Hh.w - 1 - px,
-      ly = py - y;
-    return lx >= 0 && ly >= 0 && lx < Hh.w && ly < Hh.h && mask[ly * Hh.w + lx] === 1;
-  };
-  drawArm(...W2(sh[1][0], sh[1][1]), ...hand(12 + swing, 21), true, face, 'fill', onBody);
+  drawArm(arm(sh[1], 12 + swing, 21, false));
 }

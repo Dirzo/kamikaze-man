@@ -2,8 +2,8 @@
 
 The teaser art is the reference: wild brown hair swept back, red headband with long tails,
 goggles pushed up on the head, a big grin, a bare muscular chest crossed by a bandolier, a gold
-buckle over a red sash, dark combat trousers and steel-toed boots. The body is armless (the game
-draws thick gloved arms so every weapon class can have its own grip, see game-src/game/anim.js).
+buckle over a red sash, dark combat trousers and steel-toed boots. The body is armless: the arms are
+separate hand-drawn sprites (arcade_arms.py) that the game picks per pose, see game-src/game/anim.js.
 
 Frames are 22x30 after the 1px outline, facing right, feet on the bottom row (y = 29).
 """
