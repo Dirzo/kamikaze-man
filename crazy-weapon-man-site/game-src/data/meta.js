@@ -4,11 +4,13 @@
 //                of shared nodes round CORE, and a cluster for each specialization. Respec is free.
 //   TROPHIES     beating a world's family head (its castle) gives that world's trophy and a
 //                permanent perk.
+//   MONSTER BOOK GOLD cards and completed boss pages (book.js) add their bonuses in here too.
 //   MASTERY      every weapon type's mastery (proficiency.js) opens a choice of two perks at each
 //                MASTERY_TIERS level; the perk only works while you hold that type. Swap any time.
 // stats(type) adds every bonus up into one flat object of fractions that the game code reads.
 import { TYPE_LIST } from './weapons.js';
 import { proficiency } from './proficiency.js';
+import { bookStats, bookVersion } from './book.js';
 
 export const META_KEY = 'crazyWeaponMan.meta.v1';
 
@@ -407,7 +409,8 @@ function add(out, s) {
 }
 // the account-wide part (tree + trophies), and the held weapon type's mastery perks on top
 export function stats(type = null) {
-  cache ||= {};
+  if (cache && cache.book !== bookVersion()) cache = null; // a Monster Book card went GOLD
+  cache ||= { book: bookVersion() };
   const key = type ? type + tiersOpen(type) : '-'; // a mastery level-up opens a tier: new key
   if (cache[key]) return cache[key];
   const out = { ...ZERO, innate: new Set(), infuse: {} };
@@ -418,6 +421,7 @@ export function stats(type = null) {
     else if (n.innate) out.innate.add(n.innate);
     else out[n.stat] += n.per * rank(n.id);
   }
+  add(out, bookStats()); // GOLD Monster Book cards and completed boss pages
   for (const r of Object.keys(meta().trophies)) {
     add(out, TROPHIES[r].stats);
     if (TROPHIES[r].innate) out.innate.add(TROPHIES[r].innate);

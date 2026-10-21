@@ -6,16 +6,17 @@ import { stats, MASTERY_TIERS } from '../data/meta.js';
 import { sfx } from '../engine/audio.js';
 import { burst } from './fx.js';
 import { addProficiency, PROF_KILL_XP, PROF_WORLD, profRank } from '../data/proficiency.js';
+import { temper } from '../data/temper.js';
 
 export function toast(kind, data) {
   world.toasts = world.toasts.filter(t => t.kind !== kind);
-  world.toasts.push({ kind, ...data, t: kind === 'power' || kind === 'mastery' || kind === 'split' ? 4.5 : kind === 'level' ? 2.2 : 2.8 });
+  world.toasts.push({ kind, ...data, t: kind === 'power' || kind === 'mastery' || kind === 'split' || (kind === 'card' && data.gold) ? 4.5 : kind === 'level' ? 2.2 : 2.8 });
 }
 
 export function gainXp(n) {
   const h = world.hero;
   if (!h) return;
-  h.xp += n * (1 + stats().xp) * (world.level ? LEVEL_XP : 1);
+  h.xp += n * (1 + stats().xp) * (world.level ? LEVEL_XP : 1) * temper(world.temper).xp;
   while (h.xp >= xpToLevel(h.lv)) {
     h.xp -= xpToLevel(h.lv);
     h.lv++;

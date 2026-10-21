@@ -3,6 +3,9 @@
 // ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
 // ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise, ?capture=lv1-3 (any
 // level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
+// The polish pass: ?capture=book (the Monster Book), sheet (the stat sheet), maptemper (relic stars,
+// gimmick badges and a TEMPER tier on the map), ghost, scroll, water, ice (the level gimmicks),
+// room (a golden secret room) and goose (riding the War Goose).
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
@@ -25,6 +28,11 @@ import { openPowers, P as powers, buy as investNode, pick as pickPerk, updatePow
 import { TREE_BY_ID } from '../data/meta.js';
 import { hitEnemy, DEATH_T } from '../game/combat.js';
 import { updateFx } from '../game/fx.js';
+import { recordKill, recordBoss, PAGES } from '../data/book.js';
+import { keepRelics } from '../data/relics.js';
+import { enterRoom } from '../game/hidden.js';
+import { mount } from '../game/mount.js';
+import { updateGimmick } from '../game/gimmicks.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
 function mapScene(game, all) {
   const s = all ? revealAll(newSave()) : newSave();
@@ -59,7 +67,47 @@ function filesScene(game) {
   s0.at = '3-C'; s0.hero = { lv: 14 }; writeSave(s0);
   game.showFiles();
 }
+// the polish pass scenes
+function polishScene(game, mode) {
+  if (mode === 'book') {
+    for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31], ['bombchicken', 12], ['brute', 4], ['wraith', 1], ['maw', 22], ['wizard', 81], ['eyeball', 3]]) recordKill(t, n);
+    PAGES[0].kinds.forEach(recordBoss); PAGES[1].kinds.slice(0, 3).forEach(recordBoss);
+    mapScene(game, false);
+    openPowers(3);
+    powers.book.sel = 1;
+    return;
+  }
+  if (mode === 'maptemper') {
+    const s = revealAll(newSave());
+    for (const [id, m] of [['1-1', 31], ['1-2', 31], ['1-3', 7], ['1-4', 31], ['1-S', 3], ['2-1', 31]]) keepRelics(s, id, m);
+    s.temper = { on: 4, max: 6 }; s.at = '1-4';
+    game.ow.save = s; game.openMap();
+    game.ow.temperFlash = 2.4;
+    return;
+  }
+  const lv = { ghost: '9-2', scroll: '2-5', water: '3-3', ice: '6-2', room: '1-2', goose: '1-2', sheet: '4-2' }[mode];
+  game.snapshot(() => {
+    game.ow.save = revealAll(newSave());
+    game.enterLevel(NODES[lv]);
+    const h = world.hero, m = world.map;
+    h.lv = 1 + NODES[lv].zone * 3; h.weapon = makeWeapon(NODES[lv].zone, { type: 'katana', q: 4, standout: false }); h.inv = 0;
+    world.director.phase = 'fight';
+    for (const e of world.enemies) e.spawnT = 0;
+    if (mode === 'room') { world.hidden.kind = 'golden'; world.hidden.room.map.title = 'SECRET ROOM'; enterRoom(); }
+    else if (mode === 'goose') { mount(h); h.x = m.startX + 140; h.vx = 90; }
+    else if (mode === 'sheet') { addProficiency('katana', 9000); openInventory(); world.inv.sheet = true; }
+    else {
+      const sp = m.spawns[Math.floor(m.spawns.length * 0.3)];
+      h.x = sp.x - 40; h.y = sp.y - h.h; h.face = 1;
+      if (mode === 'ghost') for (const g of world.haunts.slice(0, 3)) (g.x = h.x - 40 - Math.random() * 60), (g.y = h.y - 10);
+      for (let i = 0; i < 90; i++) { world.t += 1 / 60; updateGimmick(1 / 60); }
+    }
+    updateCamera(0, true);
+  });
+  document.documentElement.dataset.capture = 'ready';
+}
 export function captureScene(game, mode) {
+  if(['book','maptemper','ghost','scroll','water','ice','room','goose','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);

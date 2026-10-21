@@ -50,5 +50,8 @@ export const KEYS = {
   leave: ['KeyQ'],
   undo: ['KeyU', 'Backspace'],
   lock: ['KeyG'],
+  sheet: ['KeyR'],
+  filter: ['KeyF'],
+  temper: ['KeyT'],
   confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ', 'ControlLeft']
 };

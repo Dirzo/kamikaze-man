@@ -11,6 +11,7 @@ import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
 import { stats, weaponLock, allowedType, CLASSES } from '../data/meta.js';
+import { temper } from '../data/temper.js';
 let uid = 1;
 // what the hero has grown into with a type: its mastery level and every damage perk
 const growth = type => profMult(type) * (1 + stats(type).dmg);
@@ -30,16 +31,18 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
     q = Math.min(10, Math.floor((top + 0.99) * Math.pow(r(), elite || boss ? 1.3 : 1.9)));
     if (boss) q = Math.max(q, Math.min(10, zone + 1));
   }
+  // TEMPER: rarer weapons, past the zone's usual ceiling
+  if (world.temper) q += temper(world.temper).rarity;
   // elements start appearing in zone 2, more often on rarer weapons
   q = Math.max(0, Math.min(10, q));
   const elements = availableElements(zone);
   const family = elements.length && r() < (boss ? 0.7 : 0.12 + 0.055 * q) ? elements[Math.floor(r() * elements.length)] : null;
   const mutations = availableMutations(zone, q);
   const mutation = mutations.length && (boss || r() < 0.18 + q * 0.025) ? mutations[Math.floor(r() * mutations.length)] : null;
-  if (standout == null) standout = r() < standoutChance(zone) + stats().standout;
+  if (standout == null) standout = r() < standoutChance(zone) + stats().standout + temper(world.temper).standout;
   // standouts are named one tier grander, but never beyond what the zone allows
   const ability = rollAbility(q, { standout, boss }, r);
-  const { name, look } = nameWeapon(type, q, family, standout, r, Math.min(10, maxQ(zone) + 1), ability);
+  const { name, look } = nameWeapon(type, q, family, standout, r, Math.min(10, Math.max(q, maxQ(zone)) + 1), ability);
   return { uid: uid++, type, q, family, mutation, standout, home: zone, name, look, quirk: quirkFor(look, r), ability };
 }
 

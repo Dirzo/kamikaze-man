@@ -358,3 +358,40 @@ function finish(m, zone, lay) {
     bossFloor: m.arena, bossLeft: width - W + 8, bossRight: width - 8
   };
 }
+
+// ---------------------------------------------------------------- hidden portals (MapleStory)
+// Every map hides one portal you can't see: a spot on a wide surface, well away from the start, the
+// arena, ladders and the spots in `avoid`. Stand on it and press UP to step into the secret room.
+// The pick is seeded by the map, so a portal is always in the same place.
+export function hiddenSpot(map, avoid = []) {
+  const clear = (x, y) => avoid.every(a => Math.abs(a.x - x) > 40 || Math.abs(a.y - y) > 30) && map.ladders.every(l => Math.abs(l.x - x) > 36 || y < l.top - 4 || y > l.bottom + 4);
+  const spots = [];
+  for (const p of map.platforms) {
+    if (p.w < 56 || p.ceiling) continue;
+    for (const x of [p.x + 20, p.x + p.w - 20]) if (x > map.startX + 320 && x < map.bossLeft - 100 && clear(x, p.y)) spots.push({ x: Math.round(x), y: p.y });
+  }
+  if (!spots.length) return null;
+  spots.sort((a, b) => a.x - b.x || a.y - b.y);
+  const seed = Math.round(map.width * 7 + map.height * 13 + spots.length * 31);
+  return spots[Math.floor(spots.length * 0.35 + (seed % 7) / 7 * spots.length * 0.5) % spots.length];
+}
+// The secret room behind it: one screen with a floor, a ledge up a ladder and a return portal where
+// you arrive. `kind` decides what waits there (game/hidden.js fills it in): a vault of chests, a
+// golden pack of residents, or a shrine with a weapon on it.
+export const ROOM_KINDS = ['vault', 'golden', 'shrine'];
+export function secretRoom(zone, kind) {
+  const floor = GROUND, width = W;
+  const platforms = [], solids = [];
+  const base = { x: 0, y: floor, w: width, h: 64, solid: true, ground: true, room: 0 };
+  platforms.push(base); solids.push(base);
+  const ledge = { x: 270, y: floor - 76, w: 150, room: 0, hunt: true };
+  platforms.push(ledge);
+  solids.push({ x: 0, y: 0, w: width, h: 24, solid: true, ceiling: true });
+  const ladders = [{ x: 290, top: ledge.y, bottom: floor, exitX: 290 - HERO.w / 2, exitY: ledge.y, section: 0 }];
+  return {
+    name: ZONES[zone].name, style: 'room', title: 'SECRET ROOM', own: true, secretRoom: true, kind, dark: 2,
+    width, height: floor + 64, floorY: floor, rooms: [{ index: 0, label: kind === 'vault' ? 'VAULT' : kind === 'golden' ? 'GOLDEN DEN' : 'SHRINE', x: 0, end: width, w: width, y0: 0, y1: Infinity, floor }],
+    sections: 1, platforms, solids, ladders, spawns: [], ledge,
+    startX: 40, startY: floor, exitX: -999, exitY: floor, bossFloor: floor, bossLeft: width * 9, bossRight: width * 9
+  };
+}

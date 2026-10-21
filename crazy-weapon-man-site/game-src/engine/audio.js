@@ -380,6 +380,41 @@ export const sfx = {
     if (!gate('clang', 80)) return;
     chip([[N(96), 1], [N(91), 2]], { wave: 'p12', vol: 0.045, decay: 0.006 });
     hiss(2, { vol: 0.04, rate: 2, short: true });
+  },
+  // a relic: the same bright chime, one step higher for each one taken (n = 1..5)
+  relic(n = 1) {
+    const r = 72 + [0, 2, 4, 7, 12][Math.max(0, Math.min(4, n - 1))];
+    arp([r, r + 7, r + 12], 3, { wave: 'p25', vol: 0.05, decay: 0.001 });
+    arp([r - 12, r - 5], 4, { wave: 'tri', vol: 0.05, decay: 0.001 });
+  },
+  // stepping through a hidden portal: a falling whoosh and a shimmer
+  portal() {
+    hiss(10, { vol: 0.04, rate: 0.5, drop: -0.08 });
+    arp([96, 91, 88, 84, 79, 76], 2, { wave: 'p12', vol: 0.03, decay: 0.002 });
+  },
+  // a Monster Book card goes up a tier
+  card(tier = 0) {
+    arp([79, 84, 88 + tier * 2], 3, { wave: 'p25', vol: 0.04, decay: 0.002 });
+  },
+  // the War Goose: hatching, swallowing a foe whole, stomping one
+  hatch() {
+    chip([[N(88), 1], [0, 1], [N(91), 1], [0, 1], [N(96), 2]], { wave: 'p50', vol: 0.04, decay: 0.004 });
+    chip([[740, 2], [622, 3], [831, 4]], { wave: 'p25', vol: 0.05, decay: 0.008, delay: 0.12 });
+  },
+  chomp() {
+    if (!gate('chomp', 120)) return;
+    chip([[N(55), 1], [N(48), 2]], { wave: 'p50', vol: 0.05, decay: 0.008 });
+    chip([[N(72), 1], [N(67), 1], [N(60), 2]], { wave: 'p25', vol: 0.03, decay: 0.004, delay: 0.06 });
+  },
+  stomp() {
+    if (!gate('stomp', 80)) return;
+    chip([[N(84), 1], [N(91), 1], [N(96), 2]], { wave: 'p25', vol: 0.045, decay: 0.004 });
+  },
+  // swimming: a stroke through the water
+  swim() {
+    if (!gate('swim', 120)) return;
+    hiss(5, { vol: 0.025, rate: 0.35, drop: 0.05 });
+    chip([[N(76), 1], [N(81), 1]], { wave: 'p12', vol: 0.02, decay: 0.004 });
   }
 };
 

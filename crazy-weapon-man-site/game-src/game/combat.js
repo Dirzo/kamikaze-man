@@ -17,6 +17,11 @@ import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.
 import { heroStats, foeMult } from './perks.js';
 import { stats } from '../data/meta.js';
 import { convertDrop } from './classlock.js';
+import { buck } from './mount.js';
+import { recordKill, CARD_TIERS, CARDS } from '../data/book.js';
+import { toast } from './progress.js';
+import { ENEMIES } from '../data/enemies.js';
+import { modOn, temper } from '../data/temper.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -40,6 +45,15 @@ export function hitEnemy(e, dmg, o = {}) {
       spark(cx(e) - dir * e.w * 0.4, cy(e), { col: C.ice });
     }
     o = { ...o, knock: (o.knock || 0) * 0.3 };
+  }
+  // TEMPER: WARDED: the ward takes the first real hit whole
+  if (e.ward && !o.chip) {
+    e.ward = 0;
+    callout('WARD BROKEN', 0, 0, C.violet, { follow: e, life: 40 });
+    sfx.clang();
+    burst(cx(e), cy(e), 10, 'twinkle', ['violet', 'ice']);
+    e.calm = false;
+    return 0;
   }
   dmg *= bigFoeMult(e) * foeMult(e);
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
@@ -102,6 +116,13 @@ export function hitEnemy(e, dmg, o = {}) {
     burst(cx(e), cy(e), 4, 'ghost', ['violet', 'mist']);
     spark(cx(e) + dir * 3, cy(e) - 3, { col: C.violet });
     hitEnemy(e, dmg * 0.6, { ...o, echo: true, chain: true, crit: false, col: C.violet, sparkCol: C.violet });
+  }
+  // TEMPER: ENRAGED: wounded foes see red
+  if (e.hp > 0 && e.hp < e.max / 2 && !e.enraged && !e.boss && modOn(world.temper, 'enraged')) {
+    e.enraged = true;
+    e.dmg *= 1.3;
+    e.speed *= 1.15;
+    callout('ENRAGED!', 0, 0, C.red, { follow: e, life: 40 });
   }
   if (e.hp <= 0) kill(e, o);
   return dmg;
@@ -273,14 +294,31 @@ export function kill(e, o = {}) {
   gainProficiency(e.elite ? 'elite' : 'normal');
   abilityKill();
   nova(e, o);
+  bookKill(e);
   // loot: the shards come out of the body when it shatters (shatter below)
   const zone = world.zone;
-  e.shardLoot = e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0);
+  e.shardLoot = (e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0)) * (e.golden ? 4 : 1); // a secret room's golden pack pays four times
   world.killsSinceDrop = (world.killsSinceDrop || 0) + 1;
   // (10 kills / 7%: was 7 / 10% before maps held 40+ residents, so weapons keep the same pace)
   if (world.killsSinceDrop >= 10 || Math.random() < (e.elite ? 0.65 : 0.07)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
-  if (Math.random() < (e.elite ? 0.4 : 0.035) + stats().hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
+  if (Math.random() < ((e.elite ? 0.4 : 0.035) + stats().hearts) * temper(world.temper).hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
+  // TEMPER: VENGEFUL: a ring of slow bolts from the fallen
+  if (modOn(world.temper, 'vengeful') && !e.swarm && !e.eaten) {
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + 0.3;
+      world.bolts.push({ x: cx(e) - 2, y: cy(e) - 2, w: 4, h: 4, vx: Math.cos(a) * 70, vy: Math.sin(a) * 70, dmg: e.dmg * 0.4, col: C.violet, life: 1.6 });
+    }
+  }
+}
+// the Monster Book: every resident's kill fills in its card; a new tier gets a toast
+function bookKill(e) {
+  if (!CARDS[e.type] || e.escaped) return;
+  const tier = recordKill(e.type, e.golden ? 3 : 1);
+  if (tier < 0) return;
+  sfx.card(tier);
+  world.cardUps.push({ type: e.type, tier });
+  toast('card', { name: ENEMIES[e.type].name.toUpperCase(), tier: CARD_TIERS[tier], gold: tier === CARD_TIERS.length - 1, bonus: CARDS[e.type].bonus });
 }
 
 // the fallen body bursts into crystal: a flash, flying shard chips and sparkles, then the shards
@@ -331,6 +369,7 @@ export function hurtHero(dmg, dir = 1) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
+  if (h.mount) return buck(h, dir), 0; // the War Goose takes the hit: you are thrown off instead
   const S = heroStats();
   dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
   h.hp -= dmg;

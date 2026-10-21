@@ -39,6 +39,13 @@ import { updateBolts } from '../game/enemy.js';
 import { updateSecret, SECRETS, SECRET_KEY } from '../game/secrets.js';
 import { updateAbilities, abilityHit } from '../game/abilities.js';
 import { NODES, OVERWORLD_KEY, isOpen } from '../data/overworld.js';
+import { updateHidden } from '../game/hidden.js';
+import { updateRelics } from '../game/relics.js';
+import { mount, updateMount } from '../game/mount.js';
+import { heroPhysics, updateGimmick } from '../game/gimmicks.js';
+import { setLootFilter, lootFilter } from '../game/inventory.js';
+import { cardKills, resetBook } from '../data/book.js';
+import { RELIC_COUNT } from '../data/relics.js';
 
 export function runSmoke(game) {
   const results=[];
@@ -457,6 +464,48 @@ export function runSmoke(game) {
   reset();
   const failed=results.filter(s=>s.startsWith('FAIL'));
   document.documentElement.dataset.smoke=failed.length?'fail':'pass';
+
+  // ---- the polish pass: hidden portals, relics, the War Goose, gimmicks, the loot filter, the book, TEMPER
+  const level=id=>{reset();game.openMap();game.enterLevel(NODES[id]);world.hero.inv=0;world.lock=null;return world.hero;};
+  const stand=(h,x,y)=>Object.assign(h,{x:x-h.w/2,y:y-h.h,vx:0,vy:0,onGround:true,ladder:null});
+  check('a hidden portal opens a secret room with the fifth relic, and the map waits as you left it',()=>{
+    const h=level('1-2'),H=world.hidden;ok(H,'no hidden portal');const map=world.map,foes=world.enemies.length;
+    ok(world.relics.length===RELIC_COUNT && world.relics.filter(r=>r.room).length===1,'relics not placed');
+    stand(h,H.x,H.y);key('ArrowUp',true);poll();updateHidden(STEP);key('ArrowUp',false);poll();
+    ok(H.inRoom && world.map.secretRoom && world.map!==map,'did not enter the room');
+    const r=world.relics.find(r=>r.room);stand(h,r.x,r.y+8);updateRelics(STEP);ok(r.got && world.relicMask===1<<4,'room relic not taken');
+    H.t=1;stand(h,world.map.startX,world.map.floorY);key('ArrowUp',true);poll();updateHidden(STEP);key('ArrowUp',false);poll();
+    ok(!H.inRoom && world.map===map && world.enemies.length===foes,'the map changed while away');
+    ok(Math.abs(h.x+h.w/2-H.x)<2,'not set back on the portal');
+  });
+  check('the War Goose hatches from its egg, and a hit throws you from the saddle instead of hurting you',()=>{
+    const h=level('1-2');ok(world.egg,'no egg on 1-2');
+    mount(h);ok(h.mount && !world.loose,'did not mount');const hp=h.hp;hurtHero(30,1);
+    ok(!h.mount && world.loose && h.hp===hp,'the hit was not soaked by the goose');
+    for(let i=0;i<60*6;i++){world.t+=STEP;updateMount(STEP);}ok(!world.loose,'the goose never flew off');
+  });
+  check('ghost houses, auto-scrollers, water and ice change how the level plays',()=>{
+    level('9-2');ok(world.gimmick==='ghost' && world.haunts.length>0,'no haunted blades');
+    const h=level('2-5');ok(world.scroll,'no auto-scroll');world.director.phase='fight';const x0=world.scroll.x;
+    for(let i=0;i<60;i++){world.t+=STEP;updateGimmick(STEP);}ok(world.scroll.x>x0,'the screen did not move');
+    stand(h,world.scroll.x-50,h.y+h.h);updateGimmick(STEP);ok(h.x>=world.scroll.x,'left behind the screen');
+    level('3-3');ok(heroPhysics()?.swim>0,'no swimming underwater');
+    level('6-2');ok(heroPhysics()?.friction<1,'ice is not slippery');
+    level('1-1');ok(!world.gimmick,'1-1 must stay as it is');
+  });
+  check('the loot filter salvages drops below its rarity and always keeps standouts',()=>{
+    reset();const was=lootFilter();setLootFilter(3);world.bag=new Array(BAG_SIZE).fill(null);const s0=world.shards;
+    ok(autoLoot(makeWeapon(2,{q:1,standout:false}))==='filtered' && world.shards>s0,'a common weapon got through');
+    ok(autoLoot(makeWeapon(2,{q:1,standout:true}))!=='filtered','a standout was filtered');
+    ok(autoLoot(makeWeapon(2,{q:4,standout:false}))!=='filtered','a heroic weapon was filtered');
+    setLootFilter(was);
+  });
+  check('the Monster Book counts kills, and TEMPER makes residents tougher',()=>{
+    resetBook();reset();const h=world.hero,e=spawnEnemy('stalker',h.x+20,GROUND);e.spawnT=0;hitEnemy(e,e.hp*10,{dir:1});
+    ok(cardKills('stalker')===1,'kill not in the book');resetBook();
+    reset();const a=spawnEnemy('brute',h.x+40,GROUND);world.temper=5;const b=spawnEnemy('brute',h.x+40,GROUND);world.temper=0;
+    ok(b.hp>a.hp*2 && b.dmg>a.dmg,'TEMPER 5 did not toughen them');
+  });
   const report=document.createElement('pre');report.id='smoke-results';report.textContent=results.join('\n');document.body.append(report);
   console.log(results.join('\n'));
 }

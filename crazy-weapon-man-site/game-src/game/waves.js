@@ -24,6 +24,11 @@ import { COMBO, SWARM_BOSS, BOSS_ARRIVES } from '../data/swarm.js';
 import { BOSS_OF, headOfZone, levelTier, FOE_TIER, WORLD_RAMP } from '../data/families.js';
 import { dropShards } from './combat.js';
 import { stats } from '../data/meta.js';
+import { placeRelics } from './relics.js';
+import { placeHidden } from './hidden.js';
+import { placeEgg } from './mount.js';
+import { startGimmick } from './gimmicks.js';
+import { modOn } from '../data/temper.js';
 
 export function startZone(z) {
   clearBoss();
@@ -39,6 +44,9 @@ export function startZone(z) {
   const tier=world.level?levelTier(world.level.id):0; // the road to the castle gets harder
   world.foeScale={hp:1+FOE_TIER.hp*tier,dmg:(1+FOE_TIER.dmg*tier)*(world.level?1+WORLD_RAMP.foeDmg*z:1)};
   placeSecret(z);
+  placeEgg(z);
+  placeHidden(z);
+  placeRelics();
   world.lastRoom=null;
   world.platforms=world.map.platforms;
   world.cameraX=world.cameraY=0;
@@ -49,11 +57,13 @@ export function startZone(z) {
     if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.6)); // a breather between maps
   }
   world.director={phase:'intro',t:2.6,toSpawn:0,initialCount:world.map.spawns.length,bossStarted:false};
-  for(const spot of world.map.spawns) {
+  const elites=modOn(world.temper,'elites'); // TEMPER: ELITE PACKS
+  world.map.spawns.forEach((spot,i)=>{
     const pool=enemyPool(z,spot.wave,ZONES[z].pool);
     const type=pool[Math.floor(Math.random()*pool.length)], d=ENEMIES[type];
-    spawnEnemy(type,spot.x,d.air?spot.airY:spot.y,{elite:spot.elite,wave:spot.wave});
-  }
+    spawnEnemy(type,spot.x,d.air?spot.airY:spot.y,{elite:spot.elite||(elites&&i%9===4),wave:spot.wave});
+  });
+  startGimmick();
   const song=zoneSong(z,world.level?.kind,world.map.dark); // the level's arrangement of the zone theme
   music.play(song.id,song.spec);
   sfx.zone();
@@ -64,7 +74,7 @@ const aliveResidents=()=>world.enemies.filter(e=>!e.dead && !e.boss).length;
 export function updateWaves(dt) {
   const D=world.director,c=world.swarmCombo;
   music.layer(D && D.phase==='survive' && c && c.n>=10 && world.phase!=='dead'); // combo bongos
-  if(!D || world.phase==='dead') return;
+  if(!D || world.phase==='dead' || world.hidden?.inRoom) return; // a secret room is outside the map's count
   D.t-=dt;
   switch(D.phase) {
     case 'intro':

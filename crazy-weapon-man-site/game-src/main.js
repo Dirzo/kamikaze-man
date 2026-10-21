@@ -33,6 +33,13 @@ import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
 import { P as powers, openPowers, closePowers } from './game/powers.js';
 import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
 import { applyLock } from './game/classlock.js';
+import { updateRelics, drawRelics, relicsTaken } from './game/relics.js';
+import { updateHidden, drawHidden } from './game/hidden.js';
+import { updateMount, drawMountWorld } from './game/mount.js';
+import { updateGimmick, drawGimmickWorld, drawGimmickScreen } from './game/gimmicks.js';
+import { flushBook } from './data/book.js';
+import { temperOf, temperClear, MODS } from './data/temper.js';
+import { relicMask, keepRelics, allRelics, RELIC_COUNT } from './data/relics.js';
 
 let capture = false;
 let scene = 'loading',
@@ -74,7 +81,7 @@ function openMap(fresh = []) {
   scene = 'map';
   sceneT = 0;
 }
-const heroSnapshot = () => JSON.parse(JSON.stringify({ lv: world.hero.lv, xp: world.hero.xp, weapon: world.hero.weapon, bag: world.bag }));
+const heroSnapshot = () => JSON.parse(JSON.stringify({ lv: world.hero.lv, xp: world.hero.xp, weapon: world.hero.weapon, bag: world.bag, mount: !!world.hero.mount }));
 function enterLevel(node) {
   closeInventory();
   resetWorld();
@@ -86,8 +93,11 @@ function enterLevel(node) {
     const copy = JSON.parse(JSON.stringify(snap));
     Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMax(copy.lv), weapon: freshUid(copy.weapon) });
     world.bag = copy.bag.map(w => w && freshUid(w));
+    if (copy.mount) h.mount = { chompT: 1, flapT: 0 }; // the War Goose rides along
   }
   world.level = node;
+  world.temper = temperOf(ow.save).on; // the post-game tier picked on the map (T)
+  world.relicsOwned = relicMask(ow.save, node.id);
   newRun();
   // specialized: off-class weapons in the kit melt into banked shards, for good (a failed
   // attempt restores the kit from the save, so the save is cleaned too)
@@ -108,14 +118,19 @@ function endLevel(result) {
   // shards are banked for the shard tree win or lose: a failed attempt still made you stronger
   const shards = bankShards(world.shards);
   world.shards = 0;
+  flushBook();
+  let relics = null, temperUp = 0;
   if (result === 'clear') {
     if (node.kind === 'castle' && winTrophy(node.region)) trophy = TROPHIES[node.region];
     fresh = clearLevel(ow.save, node.id, world.levelExit === 'secret' && node.secret.length ? 'secret' : 'next');
+    const had = allRelics(ow.save, node.id);
+    relics = { taken: relicsTaken(), fresh: keepRelics(ow.save, node.id, world.relicMask), set: !had && allRelics(ow.save, node.id) };
+    temperUp = temperClear(ow.save, node.id);
     ow.save.hero = heroSnapshot();
     writeSave(ow.save);
   }
   if (result === 'quit') return openMap();
-  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy };
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length };
   scene = 'levelEnd';
   sceneT = 0;
 }
@@ -186,6 +201,9 @@ function update(dt) {
   }
   world.t += dt;
   updateHero(world.hero, dt);
+  updateMount(dt);
+  updateHidden(dt);
+  updateRelics(dt);
   updateLust(world.hero, dt);
   for (const e of world.enemies) e.boss ? updateBoss(e, dt) : updateEnemy(e, dt);
   world.enemies = world.enemies.filter(e => !e.dead || e.deathT > 0);
@@ -200,6 +218,7 @@ function update(dt) {
   updateWaves(dt);
   updateFx(dt);
   tickToasts(dt);
+  updateGimmick(dt);
   updateCamera(dt);
   if (world.phase === 'dead') {
     world.deadT = (world.deadT || 0) + dt;
@@ -209,6 +228,7 @@ function update(dt) {
     } else if (world.deadT > 1.6) {
       scene = 'over';
       sceneT = 0;
+      flushBook();
       endRun(false);
       bankShards(world.shards); // a classic run's shards feed the shard tree too
       music.stop();
@@ -244,6 +264,9 @@ function drawWorld(t) {
   for (const p of world.platforms) if(p.x+p.w>=world.cameraX && p.x<=world.cameraX+W && p.y>=world.cameraY-32 && p.y<=world.cameraY+H) drawSlab(Z.id, p);
   drawMapExit(t);
   drawSecret(t);
+  drawHidden(t);
+  drawRelics(t);
+  drawMountWorld(t);
   drawDrops(t);
   drawHazards(t);
   for (const e of world.enemies) if (e.dead) e.boss ? drawBoss(e, t) : drawEnemy(e, t);
@@ -254,6 +277,9 @@ function drawWorld(t) {
   drawHero(world.hero, t);
   drawShots(t);
   drawAbilities(t);
+  drawGimmickWorld(t);
+  drawGimmickScreen(t); // the flood, the frost and the dark of a ghost house
+  worldLayer();
   drawParticles();
   drawSparks();
   drawNumbers();
@@ -303,7 +329,12 @@ function drawPause() {
 function drawLevelEnd() {
   const E = world.levelEnd, clear = E.result === 'clear', final = clear && E.node.id === FINAL;
   dither(0, 0, W, H, C.ink, 9);
-  panel('panel', W / 2 - 172, 74, 344, 108);
+  const extra = [];
+  if (E.relics) extra.push([E.relics.set ? `ALL ${RELIC_COUNT} RELICS! A STAR FOR ${E.node.id}` : `RELICS ${E.relics.taken}/${RELIC_COUNT} THIS RUN` + (E.relics.fresh ? `  (${E.relics.fresh} NEW)` : ''), E.relics.set ? C.gold : C.cream]);
+  if (E.temperUp) extra.push([`TEMPER ${E.temperUp} UNLOCKED: ${MODS[E.temperUp - 1].name}  (T ON THE MAP)`, C.coral]);
+  if (E.cards) extra.push([`MONSTER BOOK: ${E.cards} CARD${E.cards > 1 ? 'S' : ''} WENT UP A TIER`, C.sky]);
+  panel('panel', W / 2 - 172, 74, 344, 108 + extra.length * 10);
+  extra.forEach(([s, col], i) => text(s, W / 2, 160 + i * 10, col, { align: 'center' }));
   text(final ? 'THE ARMORY IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
   text(E.node.id + '  ' + E.node.name.toUpperCase(), W / 2, 112, C.paper, { align: 'center' });
   const line = final ? 'YOU BEAT CRAZY WEAPON MAN. THE CLOSETS STILL HAVE SECRETS.'
@@ -315,7 +346,7 @@ function drawLevelEnd() {
     text('TROPHY: ' + E.trophy.name, W / 2, 140, C.gold, { align: 'center' });
     text(fitText('NEW PERK  ' + E.trophy.perk + ': ' + E.trophy.desc.toUpperCase(), 330), W / 2, 150, C.cream, { align: 'center' });
   } else text(`+${E.shards} SHARDS BANKED FOR THE SHARD TREE`, W / 2, 144, C.ice, { align: 'center' });
-  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164, C.fog, { align: 'center' });
+  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164 + extra.length * 10, C.fog, { align: 'center' });
 }
 
 function render() {
@@ -506,6 +537,9 @@ const debug = {
   showFiles,
   enterLevel,
   ow,
+  powers,
+  openPowers,
+  toggleInventory,
   A,
   animSheet,
   // debug: start at zone z with a matching hero (and optionally go straight to its boss)

@@ -60,7 +60,7 @@ export function placeSecret(z) {
 
 export function updateSecret(dt) {
   const s = world.secret, h = world.hero;
-  if (!s || s.found || !h || h.dead) return;
+  if (!s || s.found || !h || h.dead || world.hidden?.inRoom) return;
   s.t += dt;
   if (!overlap(s, h)) return;
   s.found = true;
@@ -121,7 +121,7 @@ const SPR = {
 };
 export function drawSecret(t) {
   const s = world.secret, h = world.hero;
-  if (!s || s.found) return;
+  if (!s || s.found || world.hidden?.inRoom) return;
   const x = Math.round(s.x), y = Math.round(s.y);
   SPR[s.look]?.(x, y, t);
   // a faint twinkle, only when you are near enough to wonder about it
