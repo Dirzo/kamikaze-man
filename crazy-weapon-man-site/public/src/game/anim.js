@@ -54,7 +54,7 @@ function mix(a, b, t) {
   else o.slide = t < 0.5 ? a.slide : b.slide;
   if (a.ang == null || b.ang == null) o.ang = t < 0.5 ? a.ang : b.ang;
   for (const k of ['fh', 'bh']) if (a[k] && b[k]) o[k] = [lerp(a[k][0], b[k][0], t), lerp(a[k][1], b[k][1], t)];
-  for (const k of ['f', 'wb', 'hide', 'nock', 'ab', 'flip', 'one']) o[k] = t < 0.5 ? a[k] : b[k];
+  for (const k of ['f', 'wb', 'hide', 'nock', 'ab', 'flip', 'one', 'bf']) o[k] = t < 0.5 ? a[k] : b[k];
   return o;
 }
 
@@ -188,7 +188,7 @@ const STYLES = {
     run: s => ({ fh: [14 + s * 2, 19], bh: [5 - s * 2, 19], ang: 50 }),
     air: up => (up ? { f: 'jump', fh: [15, 14], bh: [3, 14], ang: 0 } : { f: 'fall', fh: [15, 16], bh: [3, 15], ang: 20 }),
     dash: { f: 'lean', fh: [10, 19], bh: [14, 17], ang: 90, wb: true },
-    ranged: [[0, { f: 'idle', fh: [17, 15], bh: [14, 15], ang: 0, nock: true }], [0.42, { f: 'wide', fh: [18, 15], bh: [8, 15], ang: 0, nock: true }, 'out'], [0.46, { f: 'wide', fh: [18, 15], bh: [11, 14], ang: 0 }, 'lin'], [0.7, { f: 'wide', fh: [17, 15], bh: [10, 15], ang: 0 }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 35 }, 'io']],
+    ranged: [[0, { f: 'idle', fh: [17, 15], bh: [13, 15], ang: 0, nock: true, bf: true }], [0.42, { f: 'wide', fh: [19, 15], bh: [3, 13], ang: 0, nock: true, bf: true }, 'out'], [0.46, { f: 'wide', fh: [19, 15], bh: [4, 12], ang: 0, bf: true }, 'lin'], [0.7, { f: 'wide', fh: [18, 15], bh: [6, 14], ang: 0, bf: true }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 35 }, 'io']],
     fireAt: 0.44,
     string: true
   },
@@ -198,7 +198,7 @@ const STYLES = {
     run: s => ({ fh: [14 + s * 2, 19], bh: [5 - s * 2, 19], ang: 0 }),
     air: up => (up ? { f: 'jump', fh: [14, 13], bh: [3, 14], ang: 0 } : { f: 'fall', fh: [15, 16], bh: [2, 15], ang: 0 }),
     dash: { f: 'lean', fh: [10, 18], bh: [15, 16], ang: 0, wb: true },
-    ranged: [[0, { f: 'idle', fh: [13, 17], bh: [6, 18], ang: 0 }], [0.3, { f: 'back', fh: [5, 11], bh: [10, 18], ang: -45, wb: true, ab: true }, 'io'], [0.45, { f: 'lean', fh: [19, 14], bh: [6, 19], ang: 0, hide: true }, 'out'], [0.8, { f: 'idle', fh: [16, 17], bh: [5, 19], ang: 0, hide: true }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 0 }, 'io']],
+    ranged: [[0, { f: 'idle', fh: [13, 17], bh: [6, 18], ang: 0 }], [0.15, { f: 'idle', fh: [5, 17], bh: [12, 17], ang: -90, wb: true }], [0.3, { f: 'idle', fh: [3, 8], bh: [14, 16], ang: -45, wb: true }, 'io'], [0.45, { f: 'lean', fh: [19, 14], bh: [6, 19], ang: 0, hide: true }, 'out'], [0.8, { f: 'idle', fh: [16, 17], bh: [5, 19], ang: 0, hide: true }], [1, { f: 'idle', fh: [14, 19], bh: [5, 20], ang: 0 }, 'io']],
     fireAt: 0.42
   },
   // wand: a flick up, then point and cast
@@ -506,18 +506,20 @@ export function drawHeroAnimated(h, t) {
     };
     const [ax, ay] = toW(tipTop),
       [bx, by] = toW(tipBot);
-    line(ax, ay, bh[0] + 1, bh[1] + 1, C.paper);
-    line(bx, by, bh[0] + 1, bh[1] + 1, C.paper);
+    // the string runs to the drawing hand's fist, wherever the drawn arm put it
+    const [nx, ny] = armB.fist;
+    line(ax, ay, nx, ny, C.paper);
+    line(bx, by, nx, ny, C.paper);
     // nocked arrow
     const dir = face;
-    rect(bh[0] + 1, bh[1] + 1, 1, 1, C.paper);
-    for (let i = 0; i < 10; i++) rect(bh[0] + 1 + dir * i, bh[1] + 1, 1, 1, i > 7 ? C.mist : C.wood);
+    rect(nx, ny, 1, 1, C.paper);
+    for (let i = 0; i < 10; i++) rect(nx + dir * i, ny, 1, 1, i > 7 ? C.mist : C.wood);
   };
 
   // draw order: back arm, (weapon behind), body, (weapon), front arm
   let tip = null;
   const backView = pose.back != null; // seen from behind: both arms reach up in front of the back
-  if (!flashing && !backView) drawArm(armB);
+  if (!flashing && !backView && !pose.bf) drawArm(armB);
   if (pose.wb) tip = drawWeapon();
   if (pose.ab && !flashing) drawArm(armF);
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'line'); // outline tucked under the body
@@ -525,6 +527,7 @@ export function drawHeroAnimated(h, t) {
   if (backView && !flashing) drawArm(armB);
   if (!pose.wb) tip = drawWeapon();
   drawString();
+  if (pose.bf && !flashing && !backView) drawArm(armB); // drawing the bow: the string hand comes back past the face
   if (!pose.ab && !flashing) drawArm(armF, backView ? 'both' : 'fill');
   // swing smear: connect recent blade-tip positions while attacking
   const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry'].includes(h.special.kind));
