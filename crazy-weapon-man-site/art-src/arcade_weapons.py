@@ -264,54 +264,61 @@ def hammer(shaft_len=17, head_w=8, head_h=12, kind='war'):
     return out(g, (3, yc))
 
 
+def bit(g, xc, yc, length, back, front, d=1, bulge=2, eye=1):
+    """axe bit hanging off the side of the haft (d = +1 below it, -1 above it), the way a real axe
+    head sits: narrow at the eye, flaring to a long honed edge parallel to the haft. back / front
+    are how far the edge reaches toward the hand / past the head; the edge bows out by `bulge`."""
+    for k in range(1, length + 1):
+        t = k / length
+        l = xc - round(eye + (back - eye) * t ** 1.5)
+        r = xc + round(eye + (front - eye) * t ** 1.5)
+        for x in range(l, r + 1):
+            g.put(x, yc + d * k, 'Z' if x == l else 'A' if x == r else 'M')
+    # the edge row(s): bowed out in the middle, bright, glinting
+    l, r = xc - back, xc + front
+    for x in range(l, r + 1):
+        m = 1 - abs((x - (l + r) / 2) / ((r - l) / 2 + 0.01))
+        e = length + round(bulge * m)
+        for k in range(length, e + 1):
+            g.put(x, yc + d * k, 'M')
+        g.put(x, yc + d * e, 'A')
+        if (x - l) % 4 == 2:
+            g.put(x, yc + d * (e - 1), 'w')
+
+
 def axe(shaft_len=17, kind='crescent'):
-    W = shaft_len + 12
-    H = 15
-    yc = 6
+    W = shaft_len + 9
+    H = 21
+    yc = 9
     g = Grid(W, H)
-    shaft(g, 1, shaft_len + 2, yc, bands=(shaft_len - 1,))
+    shaft(g, 1, shaft_len + 2, yc)
     g.put(0, yc, 'y')
     g.put(0, yc + 1, 'Y')
     wrap(g, 1, 4, yc, h=1)
-    hx = shaft_len - 1
-    if kind == 'crescent':  # bearded crescent bit with a round cut-out and a back spike
-        for y in range(H):
-            dy = y - yc
-            reach = round(math.sqrt(max(0, 36 - (dy * 0.85) ** 2)))
-            if dy < -6 or dy > 7:
-                continue
-            for x in range(hx + 2, hx + 3 + reach + (1 if dy > 0 else 0)):
-                edge = x == hx + 2 + reach + (1 if dy > 0 else 0)
-                g.put(x, y, 'A' if edge else 'Z' if x == hx + 2 else 'M')
-        hole(g, hx + 5, yc + 1, 'round', 1)
-        g.put(hx, yc - 1, 'f')  # back spike
-        g.put(hx - 1, yc - 1, 'f')
-        g.put(hx - 2, yc - 2, 'f')
-    elif kind == 'cleaver':
-        g.rect(hx + 2, yc - 3, hx + 10, yc + 5, 'M')
-        for x in range(hx + 2, hx + 11):
-            g.put(x, yc - 3, 'A')
-            g.put(x, yc + 5, 'A')  # honed edge
-        for y in range(yc - 3, yc + 6):
-            g.put(hx + 10, y, 'Z')
-        hole(g, hx + 8, yc - 1, 'round', 1)  # hanging hole
-        for x in range(hx + 3, hx + 10, 2):
-            g.put(x, yc + 4, 'w')
-    elif kind == 'double':  # double bit: two crescents with diamond cut-outs
-        for side in (-1, 1):
-            for y in range(H):
-                dy = y - yc
-                if abs(dy) > 6:
-                    continue
-                reach = 2 + round(4 * (abs(dy) / 6) ** 0.6)
-                for k in range(1, reach + 1):
-                    x = hx + 3 + side * k
-                    edge = k == reach
-                    g.put(x, y, 'A' if edge else 'M' if dy < 2 else 'Z')
-            hole(g, hx + 3 + side * 3, yc - 3, 'dot')
-            hole(g, hx + 3 + side * 3, yc + 3, 'dot')
-        for y in range(yc - 6, yc + 8):
-            g.put(hx + 3, y, 'y' if y < yc else 'Y')
+    xc = shaft_len - 1
+    # the eye: a steel collar round the haft
+    for x in range(xc - 1, xc + 2):
+        g.put(x, yc - 1, 'f')
+        g.put(x, yc + 2, 'f')
+    if kind == 'crescent':  # bearded bit below the haft, a round cut-out and a top spike
+        bit(g, xc, yc + 1, 9, back=7, front=3, d=1, bulge=2)
+        hole(g, xc - 1, yc + 6, 'round', 1)
+        for k in range(1, 4):
+            g.put(xc, yc - k, 'f' if k < 3 else 'm')  # spike above the haft
+    elif kind == 'cleaver':  # butcher's cleaver: a broad square blade with a hanging hole
+        for y in range(yc + 2, yc + 10):
+            for x in range(xc - 7, xc + 3):
+                g.put(x, y, 'Z' if x == xc - 7 else 'A' if x == xc + 2 else 'M')
+        for x in range(xc - 7, xc + 3):
+            g.put(x, yc + 10, 'A')
+            if x % 3 == 0:
+                g.put(x, yc + 9, 'w')
+        hole(g, xc, yc + 4, 'round', 1)
+    elif kind == 'double':  # labrys: matching bits above and below, pierced
+        bit(g, xc, yc + 1, 7, back=4, front=4, d=1, bulge=1)
+        bit(g, xc, yc, 7, back=4, front=4, d=-1, bulge=1)
+        hole(g, xc, yc + 5, 'dot')
+        hole(g, xc, yc - 4, 'dot')
     return out(g, (3, yc))
 
 
@@ -602,7 +609,7 @@ ARCADE = {
     'bow': bow(25, 4),
     'wand': wand(13, 'star'),
     'staff': staff(32, 'orb'),
-    'hammer': hammer(17, 8, 12, 'war'),
+    'hammer': hammer(17, 10, 15, 'war'),
     'shuriken': star(4, 5, 1),
     'spear': spear(30, 'leaf'),
     'axe': axe(17, 'crescent'),
@@ -636,9 +643,9 @@ ARCADE_VARIANTS = {
     'staff-stave': staff(34, 'bands'),
     'staff-scepter': staff(30, 'wings'),
     'staff-walking-stick': staff(32, 'crook'),
-    'hammer-maul': hammer(18, 10, 12, 'maul'),
-    'hammer-mallet': hammer(16, 8, 9, 'mallet'),
-    'hammer-bonker': hammer(17, 8, 11, 'bonker'),
+    'hammer-maul': hammer(18, 12, 16, 'maul'),
+    'hammer-mallet': hammer(16, 10, 12, 'mallet'),
+    'hammer-bonker': hammer(17, 10, 13, 'bonker'),
     'spear-trident': spear(29, 'trident'),
     'spear-lance': spear(28, 'lance'),
     'axe-cleaver': axe(17, 'cleaver'),

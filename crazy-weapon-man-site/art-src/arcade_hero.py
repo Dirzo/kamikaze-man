@@ -69,7 +69,37 @@ def strap(rows, top=1, col=14):
     return [''.join(r) for r in out]
 
 
-TORSO = strap(_TORSO)
+TORSO = strap(_TORSO)  # square-on chest: kept for the title-card pose
+# In fights he turns side-on like every side-scroller hero (MapleStory, Metal Slug, Street Fighter
+# draw the torso in profile or three-quarter and layer the near arm over it): only the near pec
+# shows, so the near arm can cross the body without a second chest showing through.
+_SIDE = [
+    '.......2344432......',
+    '.....2334444443.....',
+    '....23344455554.....',
+    '....233444555543....',
+    '....23344455543.....',
+    '....2333422223......',
+    '.....234434432......',
+    '.....23434343.......',
+    '....SSSSgyGSS.......',
+    '....rrrRqqrRr.......',
+]
+SIDE = strap(_SIDE, col=12)
+# wound up for a big swing the shoulders turn away and we see his back and the strap across it
+_TWIST = [
+    '.......2344432......',
+    '....233444444432....',
+    '...23443444434432...',
+    '...23443444434432...',
+    '...2344344443432....',
+    '....234434443432....',
+    '....23443443432.....',
+    '.....234434432......',
+    '....SSSSSSSSSS......',
+    '....rrrRrrrRrr......',
+]
+TWIST = strap(_TWIST, col=14)
 LEGS = {
     'stand': [
         '....PppuuPpppu......',
@@ -136,8 +166,8 @@ def shift(rows, dx):
     return list(rows)
 
 
-def body(legs='stand', lean=0, dip=0, head=None):
-    up = shift((head or HEAD) + TORSO, lean)
+def body(legs='stand', lean=0, dip=0, head=None, torso=None):
+    up = shift((head or HEAD) + (torso or SIDE), lean)
     rows = up + LEGS[legs]
     if dip:  # upper body sinks into the hips (breathing, crouch)
         rows = ['.' * W] * dip + up[:len(up) - dip] + LEGS[legs]
@@ -156,9 +186,9 @@ FRAMES = {
     'run3': None,  # mirrored legs of run1 (filled in below)
     'jump': body('jump'),
     'fall': body('fall'),
-    'hurt': body('fall', lean=-1, head=HURT_HEAD),
+    'hurt': body('fall', lean=-1, head=HURT_HEAD, torso=TWIST),
     'lean': body('run1', lean=2),
-    'back': body('run2', lean=-1),
+    'back': body('run2', lean=-1, torso=TWIST),
     'crouch': None,  # filled in below
     'wide': body('wide'),
 }
@@ -166,7 +196,7 @@ r1 = body('run1', lean=1)
 FRAMES['run3'] = r1[:21] + [r[::-1] for r in LEGS['run1']]
 FRAMES['run3'] = [r.ljust(W, '.')[:W] for r in FRAMES['run3']]
 # crouch: head and torso drop 2px, knees bent wide
-FRAMES['crouch'] = ['.' * W] * 2 + [r.ljust(W, '.') for r in HEAD + TORSO + CROUCH_LEGS]
+FRAMES['crouch'] = ['.' * W] * 2 + [r.ljust(W, '.') for r in HEAD + SIDE + CROUCH_LEGS]
 
 # Back view for ladders: hair and the band's knot, broad back with the bandolier, both boots.
 BACK_UP = [
@@ -200,9 +230,11 @@ for i, legs in enumerate(BACK_LEGS):
     FRAMES['climb%d' % i] = [r.ljust(W, '.')[:W] for r in BACK_UP + legs]
 
 # shoulder pixels (back, front) in the 20x28 art, before the outline
-SH = {'idle': ((5, 12), (14, 12)), 'idle2': ((5, 13), (14, 13)), 'run1': ((6, 12), (15, 12)), 'run2': ((6, 12), (15, 12)),
-      'run3': ((6, 12), (15, 12)), 'lean': ((7, 12), (16, 12)), 'back': ((4, 12), (13, 12)), 'hurt': ((4, 12), (13, 12)),
-      'crouch': ((5, 15), (14, 15)), 'climb0': ((4, 13), (14, 13)), 'climb1': ((4, 13), (14, 13))}
+SH = {'idle': ((6, 13), (12, 13)), 'idle2': ((6, 14), (12, 14)), 'run1': ((7, 13), (13, 13)), 'run2': ((7, 13), (13, 13)),
+      'run3': ((7, 13), (13, 13)), 'lean': ((8, 13), (14, 13)), 'back': ((3, 13), (13, 13)), 'hurt': ((3, 13), (13, 13)),
+      'crouch': ((6, 15), (12, 15)), 'climb0': ((3, 12), (15, 12)), 'climb1': ((3, 12), (15, 12))}
+# (the near shoulder sits on the front of the turned chest and the far one behind it, so the far
+# arm passes behind the body and the near arm is never outlined across the chest)
 
 
 def frame_image(rows):
