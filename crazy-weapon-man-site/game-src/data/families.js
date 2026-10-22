@@ -11,7 +11,9 @@ export const ROLES = {
   level: { hp: 6, secs: 5, dmg: 0.55, phases: 2, speed: 1 },
   secret: { hp: 8, secs: 6, dmg: 0.7, phases: 2, speed: 1.1 },
   fort: { hp: 9, secs: 9, dmg: 0.9, phases: 3, speed: 1 },
-  castle: { hp: 15, secs: 18, dmg: 2, phases: 3, speed: 1.1 },
+  // halved for Cam (2026-10-22, "about 2x too hard"): health x0.7 and body/move damage x0.65, so
+  // the damage a head deals over a whole fight is roughly halved
+  castle: { hp: 11, secs: 12, dmg: 1.3, phases: 3, speed: 1.1 },
   // a classic ten-map run (no overworld, no full heal between maps) meets each head at the old
   // story-boss strength
   classic: { hp: 14, secs: 10, dmg: 0.5, phases: 3, speed: 1 }

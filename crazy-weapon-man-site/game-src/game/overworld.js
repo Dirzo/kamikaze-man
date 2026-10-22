@@ -229,6 +229,7 @@ function drawOverworldHud(t) {
   const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK    JUMP / ENTER: FIRE THE CANNON' : isLevel(n) ? 'ARROWS: WALK    JUMP / ENTER: PLAY LEVEL' : 'ARROWS: WALK';
   if (hint) text(hint, 12, y + 26, C.mist);
   // the POWERS window: blinks when there is a mastery perk to pick or a rank you can afford
-  text('ESC: SAVE FILES', W - 70, y + 26, C.fog, { align: 'right' });
+  text('B: BAG', W - 70, y + 26, C.gold, { align: 'right' });
+  text('ESC: SAVE FILES', W - 112, y + 26, C.fog, { align: 'right' });
   text('E: POWERS', W - 12, y + 26, powersWaiting() && Math.floor(t * 3) % 2 ? C.lime : C.gold, { align: 'right' });
 }

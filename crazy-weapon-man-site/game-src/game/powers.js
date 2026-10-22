@@ -34,6 +34,9 @@ export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, 
 export function openPowers(tab = null) {
   P.open = true;
   if (tab != null) P.tab = tab;
+  // the mastery sky starts on the weapon you carry
+  const i = TYPE_LIST.indexOf(P.sheetWeapon?.type);
+  if (i >= 0 && !P.mast.open) P.mast.type = i;
   P.msg = '';
   P.confirm = false;
   sfx.ui(true);
@@ -175,6 +178,9 @@ export function pick(type, tier, opt) {
   sfx.hum();
 }
 const CHARGE = 1.05; // seconds the constellation spends powering up
+// the tier a constellation opens on: the first open pick still waiting, else the highest open tier
+// (tiersOpen is a count, so the highest open tier is one below it)
+export const entryTier = type => unpicked(type)[0] ?? Math.max(0, tiersOpen(type) - 1);
 
 // called by the overworld while the window is open
 export function updatePowers(dt) {
@@ -204,7 +210,7 @@ export function updatePowers(dt) {
   } else if (P.tab === 1) {
     if (!M.open) {
       if (dx || dy) M.type = SKY.indexOf(step(SKY[M.type], SKY, dx, dy) || SKY[M.type]);
-      if (ok) (M.open = true), (M.tier = Math.min(tiersOpen(TYPE_LIST[M.type]), MASTERY_TIERS.length - 1)), (M.opt = 0);
+      if (ok) (M.open = true), (M.tier = entryTier(TYPE_LIST[M.type])), (M.opt = 0);
     } else {
       M.tier = Math.max(0, Math.min(MASTERY_TIERS.length - 1, M.tier + dy));
       if (dx) M.opt = dx > 0 ? 1 : 0;
@@ -552,7 +558,7 @@ function drawSky(t) {
     if (sel) text(s.type.toUpperCase(), s.x, s.y + SK + 4, C.gold, { align: 'center' });
     else if (wait && Math.floor(t * 3) % 2) disc(s.x, s.y + SK + 5, 1, C.lime);
     box(s.x - SK - 2, s.y - SK - 2, SK * 2 + 4, SK * 2 + 4, () => {
-      if (M.type === i) (M.open = true), (M.tier = Math.min(tiersOpen(s.type), MASTERY_TIERS.length - 1)), (M.opt = 0);
+      if (M.type === i) (M.open = true), (M.tier = entryTier(s.type)), (M.opt = 0);
       M.type = i;
       sfx.ui();
     });
@@ -611,7 +617,7 @@ function drawMasteryPanel(t) {
       text(fitText(`${lv}: ${c != null ? masteryPerk(type, tier, c).name : tier < open ? 'CHOOSE!' : '...'}`, S.w - 12), S.x + 6, y, c != null ? C.paper : tier < open ? C.lime : C.stone);
       y += 10;
     });
-    button('OPEN', S.x + 6, S.y + S.h - 19, S.w - 12, true, C.ice, () => ((M.open = true), (M.tier = Math.min(open, MASTERY_TIERS.length - 1)), (M.opt = 0), sfx.ui()));
+    button('OPEN', S.x + 6, S.y + S.h - 19, S.w - 12, true, C.ice, () => ((M.open = true), (M.tier = entryTier(type)), (M.opt = 0), sfx.ui()));
     return;
   }
   const on = M.tier < open, chosen = perkChoice(type, M.tier);
