@@ -47,6 +47,12 @@ export function updateHero(h, dt) {
   h.inv = Math.max(0, h.inv - dt);
   // a Frost Cub's arrow (beastkin.js): slower for a moment, frost flaking off
   if (h.chillT > 0 && (h.chillT -= dt) > 0 && Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
+  // a Fat Cat Fence's poisoned dagger (beastkin.js): a little health ebbs away, never the last of it
+  if (h.poisonT > 0) {
+    h.poisonT -= dt;
+    h.hp = Math.max(1, h.hp - h.poisonDps * dt);
+    if (Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.lime);
+  }
   // a Bubble Newt's bubble (beastkin.js): floated up helplessly for a moment
   if (h.heldT > 0) {
     h.heldT -= dt;

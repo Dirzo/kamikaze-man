@@ -76,6 +76,18 @@ export const ENEMIES = {
   shellback: { name: 'Shellback Brawler', kind: 'beast', beh: 'brawler', fam: 'lagoon', evo: 8, hp: 1.7, dmg: 1.2, speed: 30, range: 30, wind: 0.5 },
   bullfrog: { name: 'Bullfrog Bouncer', kind: 'beast', beh: 'bounce', fam: 'lagoon', evo: 9, heavy: true, hp: 2.5, dmg: 1.35, speed: 24, range: 200, wind: 0.6 },
   grandsnapper: { name: 'Grand Snapper', kind: 'beast', beh: 'master', fam: 'lagoon', evo: 10, heavy: true, hp: 3.0, dmg: 1.5, speed: 24, range: 36, wind: 0.5 },
+  // The cat and raccoon family (zone 4, the dagger): the bazaar's alley cats and masked raccoons,
+  // from Alley Kittens on 4-1 up to the Fat Cat Fence who runs the market.
+  alleykit: { name: 'Alley Kitten', kind: 'beast', beh: 'skitter', fam: 'bazaar', evo: 1, hp: 0.5, dmg: 0.6, speed: 52, range: 20, wind: 0.34 },
+  pickpocket: { name: 'Pickpocket Kit', kind: 'beast', beh: 'steal', fam: 'bazaar', evo: 2, hp: 0.75, dmg: 0.6, speed: 58, range: 22, wind: 0.36 },
+  cutpurse: { name: 'Tabby Cutpurse', kind: 'beast', beh: 'dashthru', fam: 'bazaar', evo: 3, hp: 0.9, dmg: 1.0, speed: 40, range: 110, wind: 0.55 },
+  lanterncat: { name: 'Lantern Cat', kind: 'beast', beh: 'dark', fam: 'bazaar', evo: 4, hp: 0.85, dmg: 1.15, speed: 40, range: 90, wind: 0.32 },
+  juggler: { name: 'Knife Juggler', kind: 'beast', beh: 'juggle', fam: 'bazaar', evo: 5, hp: 0.9, dmg: 0.9, speed: 34, range: 170, wind: 0.6 },
+  shadowtom: { name: 'Shadow Tom', kind: 'beast', beh: 'blink', fam: 'bazaar', evo: 6, hp: 1.1, dmg: 1.1, speed: 40, range: 24, wind: 0.4 },
+  siamese: { name: 'Twin Fang Siamese', kind: 'beast', beh: 'twinfang', fam: 'bazaar', evo: 7, hp: 1.1, dmg: 0.75, speed: 54, range: 24, wind: 0.38 },
+  prowler: { name: 'Rooftop Prowler', kind: 'beast', beh: 'pounce', fam: 'bazaar', evo: 8, hp: 1.2, dmg: 1.1, speed: 46, range: 24, wind: 0.4 },
+  bandit: { name: 'Masked Bandit', kind: 'beast', beh: 'smoke', fam: 'bazaar', evo: 9, hp: 1.4, dmg: 1.0, speed: 40, range: 26, wind: 0.42 },
+  fatcat: { name: 'Fat Cat Fence', kind: 'beast', beh: 'fence', fam: 'bazaar', evo: 10, heavy: true, hp: 2.8, dmg: 1.3, speed: 22, range: 170, wind: 0.6 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
   acornking: { name: 'The Acorn Archer King', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 30, range: 140, wind: 0.6, bolt: 'orange' },
@@ -98,7 +110,9 @@ export const DEATHS = {
   gosling: 'squash', honker: 'spin', gsquire: 'topple', fencer: 'topple', gtoss: 'spin', whirl: 'spin', ggrave: 'rise',
   berserker: 'topple', swan: 'topple', gander: 'topple',
   tadpole: 'squash', pondfrog: 'flip', snapper: 'flip', spinturtle: 'spin', toadmonk: 'flip', lilylurker: 'flip',
-  bubblenewt: 'spin', shellback: 'topple', bullfrog: 'flip', grandsnapper: 'topple'
+  bubblenewt: 'spin', shellback: 'topple', bullfrog: 'flip', grandsnapper: 'topple',
+  alleykit: 'squash', pickpocket: 'spin', cutpurse: 'topple', lanterncat: 'rise', juggler: 'spin', shadowtom: 'rise',
+  siamese: 'topple', prowler: 'flip', bandit: 'spin', fatcat: 'topple'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

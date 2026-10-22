@@ -53,8 +53,8 @@ export const ZONES = [
     id: 'thieves-bazaar',
     weapon: 'dagger',
     name: "The Thieves' Night Bazaar",
-    sub: 'Daggers half price. Your wallet, full price. Watch the raccoons.',
-    pool: ['raccoon', 'taxman', 'raccoon', 'mimic', 'blinker', 'goose'],
+    sub: 'Daggers half price. Your wallet, full price. Watch the cats, and the raccoons.',
+    pool: ['alleykit', 'pickpocket', 'cutpurse', 'lanterncat', 'juggler', 'shadowtom', 'siamese', 'prowler', 'bandit', 'fatcat'],
     platforms: L4,
     boss: null,
     music: { key: 55, scale: 'harmonic', bpm: 118, prog: [0, 3, 4, 0], drums: 'swing', theme: '0 1 2 . 1 0 -1 0 | 4 - 3 2 1 - . . | 2 3 4 . 5 4 3 2 | 1 2 1 0 0 - - .' }

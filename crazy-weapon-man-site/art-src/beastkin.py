@@ -1116,6 +1116,7 @@ def cli():
 
 # the other zones' families live in their own files and add themselves to R and DESIGNS
 import beastkin_lagoon  # noqa: E402,F401  zone 3, turtles and frogs (nunchucks)
+import beastkin_bazaar  # noqa: E402,F401  zone 4, cats and raccoons (daggers)
 
 if __name__ == '__main__':
     import beastkin  # run as the module itself, so the families above register into one DESIGNS

@@ -87,6 +87,12 @@ test('the lagoon family grows up along zone 3: tadpoles on 3-1, the Grand Snappe
   assert.ok(at(1).includes('grandsnapper') && !at(1).includes('tadpole'));
   assert.ok(pool.every(t => ENEMIES[t].fam === 'lagoon'));
 });
+test('the bazaar family grows up along zone 4: alley kittens on 4-1, the Fat Cat Fence at the castle', () => {
+  const pool = ZONES[3].pool, at = t => enemyPool(3, 1, pool, t);
+  assert.deepEqual(at(0), ['alleykit', 'pickpocket', 'cutpurse']);
+  assert.ok(at(1).includes('fatcat') && !at(1).includes('alleykit'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'bazaar'));
+});
 test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
   const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);
   assert.deepEqual(at(0), ['fuzzlet', 'burrball', 'puffshot']);

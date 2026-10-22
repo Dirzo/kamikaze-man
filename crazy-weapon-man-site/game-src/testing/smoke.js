@@ -267,13 +267,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose, fuzzball and lagoon families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1,2]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[...ZONES[0].pool,...ZONES[1].pool,...ZONES[2].pool];
+  check('the goose, fuzzball, lagoon and bazaar families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -307,6 +307,19 @@ export function runSmoke(game) {
     reset();h=world.hero;const bn=spawnEnemy('bubblenewt',h.x+70,FLOOR());bn.spawnT=0;bn.calm=false;
     for(let i=0;i<60*6&&!h.bubbled;i++){world.t+=STEP;h.inv=0;updateEnemy(bn,STEP);updateBolts(STEP);updateHero(h,STEP);}
     ok(h.bubbled,'a Bubble Newt\'s bubble never caught the hero');
+    // the bazaar: a Pickpocket lifts shards and gives them back when caught, a Shadow Tom you turn to face is caught out,
+    // a Masked Bandit in its smoke dodges, a Lantern Cat far off is all but invisible
+    reset();h=world.hero;world.shards=200;const pk=spawnEnemy('pickpocket',h.x+24,FLOOR());pk.spawnT=0;pk.calm=false;pk.hp=pk.max=1e6;
+    for(let i=0;i<60*4&&!pk.stolen;i++){world.t+=STEP;h.inv=0;updateEnemy(pk,STEP);}
+    ok(pk.stolen>0 && world.shards===200-pk.stolen && pk.fleeT>0,'the Pickpocket stole nothing');
+    const n0=world.pickups.length;pk.hp=1;hitEnemy(pk,50,{dir:1});updateEnemy(pk,STEP);ok(world.pickups.length>n0,'the Pickpocket did not drop the shards');
+    reset();h=world.hero;h.face=1;const tom=spawnEnemy('shadowtom',h.x-30,FLOOR());tom.spawnT=0;tom.calm=false;tom.face=1;tom.state='wind';tom.st=0;tom.move='backstab';tom.d.wind;
+    h.face=-1;for(let i=0;i<3;i++){world.t+=STEP;updateEnemy(tom,STEP);}ok(tom.stun>0.5,'turning to face the Shadow Tom did not catch it out');
+    reset();h=world.hero;const bd=spawnEnemy('bandit',h.x+40,FLOOR());bd.spawnT=0;bd.calm=false;bd.state='wind';bd.st=0;bd.move='smoke';bd.hp=bd.max=1e6;
+    for(let i=0;i<3;i++){world.t+=STEP;updateEnemy(bd,STEP);}let miss=0;for(let i=0;i<40;i++) if(hitEnemy(bd,10,{dir:1})===0) miss++;
+    ok(bd.cloud && miss>5 && miss<35,'the Masked Bandit\'s smoke did not make swings miss ('+miss+'/40)');
+    reset();h=world.hero;const lc=spawnEnemy('lanterncat',h.x+150,FLOOR());lc.spawnT=0;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(lc,STEP);}
+    ok(lc.alpha<0.3,'the Lantern Cat showed itself in the dark');
   });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {

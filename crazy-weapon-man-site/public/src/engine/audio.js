@@ -224,6 +224,17 @@ const DIE = {
   berserker: () => chip([[720, 1], [760, 1], [600, 2], [420, 2], [300, 4]], { wave: 'p25', vol: 0.05, decay: 0.006 }),
   swan: () => arp([88, 84, 79, 72], 2, { wave: 'p50', vol: 0.035, decay: 0.003 }),
   gander: () => (chip([[300, 3], [250, 3], [180, 8]], { wave: 'p25', vol: 0.06, decay: 0.006 }), chip([[N(36), 6]], { wave: 'tri', vol: 0.08, decay: 0.01 })),
+  // the cat and raccoon family: mews, hisses and chitters
+  alleykit: () => chip([[N(93), 1], [N(98), 2], [N(91), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }), // mew
+  pickpocket: () => arp([88, 93, 88, 84], 1, { wave: 'p25', vol: 0.035, decay: 0.003 }), // chitter
+  cutpurse: () => (chip([[N(86), 2], [N(79), 4]], { wave: 'p25', vol: 0.035, decay: 0.004 }), hiss(3, { vol: 0.03, rate: 1.2, short: true })),
+  lanterncat: () => chip([[N(81), 3], [N(76), 6]], { wave: 'p12', vol: 0.03, decay: 0.003 }),
+  juggler: () => (arp([84, 88, 91, 86], 1, { wave: 'p25', vol: 0.03 }), chip([[N(96), 2]], { wave: 'p12', vol: 0.03, delay: 0.08 })),
+  shadowtom: () => (chip([[N(72), 3], [N(64), 8]], { wave: 'p25', vol: 0.04, decay: 0.004 }), hiss(4, { vol: 0.03, rate: 0.8, short: true })), // a low yowl
+  siamese: () => chip([[N(88), 2], [N(84), 2], [N(91), 4]], { wave: 'p50', vol: 0.035, decay: 0.003 }),
+  prowler: () => chip([[N(76), 2], [N(83), 2], [N(71), 5]], { wave: 'p25', vol: 0.04, decay: 0.004 }), // mrrow
+  bandit: () => (arp([86, 81, 86, 79], 1, { wave: 'p25', vol: 0.03 }), hiss(4, { vol: 0.04, rate: 0.9, short: true })), // chitter and a puff
+  fatcat: () => (chip([[N(64), 4], [N(57), 8]], { wave: 'p50', vol: 0.05, decay: 0.006 }), chip([[N(96), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })), // a purr and a coin
   // the turtle and frog family: ribbits and shell clonks
   tadpole: () => chip([[N(100), 1], [N(96), 1], [N(103), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }), // blip
   pondfrog: () => chip([[N(67), 1], [N(72), 1], [N(64), 3]], { wave: 'p25', vol: 0.045, decay: 0.006 }), // ribbit

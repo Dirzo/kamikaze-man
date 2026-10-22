@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the cat and raccoon family (zone 4)
+  alleykit: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Found its knife in a fish crate. It has not let go of either since.' },
+  pickpocket: { stats: { shards: 0.02 }, bonus: '+2% shards', lore: 'Never steals more than it can carry. Carries a very large sack.' },
+  cutpurse: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Walks straight through a crowd and out the other side with everyone\'s purse.' },
+  lanterncat: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'Carries a lantern and never lights it. The eyes are enough.' },
+  juggler: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Juggles six daggers for the tourists. Throws three at everyone else.' },
+  shadowtom: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Lost the eye in a fair fight. Has not had one of those since.' },
+  siamese: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Two daggers, four cuts, and not one hair out of place.' },
+  prowler: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Sleeps on the awnings all day. Wakes up for exactly one thing.' },
+  bandit: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Fights inside a cloud of its own making. Nobody has seen its face, or its paws.' },
+  fatcat: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Owns the bazaar, the stalls, the thieves, and probably that dagger you just bought.' },
   // the turtle and frog family (zone 3)
   tadpole: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Its legs came in last week. Its nunchucks came in first.' },
   pondfrog: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Its tongue has a longer reach than its chucks, and it knows it.' },
