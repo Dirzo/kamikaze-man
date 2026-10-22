@@ -54,5 +54,6 @@ export const KEYS = {
   sheet: ['KeyR'],
   filter: ['KeyF'],
   temper: ['KeyT'],
+  anvil: ['KeyG'], // the Legendary Anvil, in the bag on the map
   confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ', 'ControlLeft']
 };

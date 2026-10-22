@@ -22,7 +22,7 @@ PY
 "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1460,950 \
   --virtual-time-budget=3000 --screenshot="$OUT/title.png" "http://127.0.0.1:$PORT/" 2>>"$OUT/chrome.log"
 
-for scene in map mapall combat canyon depths bag swarm results ladder late kills powers4 powers5 book sheet maptemper ghost scroll water ice room goose; do
+for scene in map mapall combat canyon depths bag swarm results ladder late kills powers4 powers5 book collection anvil sheet maptemper ghost scroll water ice room goose boar griffin stable stableshut; do
   "$CHROME" --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1460,950 \
     --virtual-time-budget=3000 --screenshot="$OUT/$scene.png" "http://127.0.0.1:$PORT/?capture=$scene" 2>>"$OUT/chrome.log"
 done

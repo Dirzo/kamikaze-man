@@ -6,6 +6,7 @@ import { TYPES, MOVES, RECOVERY } from '../game-src/data/weapons.js';
 import { activeWindow, attackBox, canAttack } from '../game-src/game/attack-rules.js';
 import { refHP, ENEMY_HP } from '../game-src/data/curve.js';
 import { ZONES } from '../game-src/data/zones.js';
+import { ENEMIES } from '../game-src/data/enemies.js';
 import { ABILITIES } from '../game-src/data/abilities.js';
 import { move } from '../game-src/game/physics.js';
 
@@ -28,14 +29,21 @@ test('names run longer at higher rarity, and rare weapons often carry an ability
   const commons=Array.from({length:500},()=>makeWeapon(0,{q:0,standout:false}));
   assert.ok(commons.every(w=>!w.ability));
 });
-test('opening loot has every weapon type at equal odds and no elemental/mutation overload',()=>{
+test('opening loot has every weapon type at equal odds and only a taste of elements and powers',()=>{
   assert.equal(availableTypes(0).length,13);
   const seen={};for(let i=0;i<26000;i++){const t=makeWeapon(0).type;seen[t]=(seen[t]||0)+1;}
   for(const t of Object.keys(TYPES)) assert.ok(Math.abs(seen[t]-2000)<260,`${t} dropped ${seen[t]}/2000`);
-  assert.deepEqual(availableElements(0),[]); assert.deepEqual(availableMutations(0,10),[]);
-  assert.deepEqual(enemyPool(0,1,ZONES[0].pool),['stalker','crawler']);
-  assert.ok(!enemyPool(0,3,ZONES[0].pool).includes('bombchicken'));
-  assert.ok(enemyPool(0,4,ZONES[0].pool).includes('bombchicken'));
+  assert.deepEqual(availableElements(0),['fire','ice']); assert.deepEqual(availableMutations(0,10),['echo']);
+  assert.deepEqual(enemyPool(0,1,ZONES[0].pool),['gosling','honker']);
+  assert.ok(!enemyPool(0,3,ZONES[0].pool).includes('gander'));
+  assert.ok(enemyPool(0,4,ZONES[0].pool).includes('gander'));
+});
+test('special weapons show up from the first map: most drops carry a standout, power, element or ability',()=>{
+  const ws=Array.from({length:4000},()=>makeWeapon(0));
+  const special=ws.filter(w=>w.standout||w.ability||w.family||w.mutation).length/ws.length;
+  assert.ok(special>0.5,`only ${Math.round(100*special)}% special in zone 1`);
+  assert.ok(ws.some(w=>w.q===3)&&ws.some(w=>w.standout));
+  assert.equal(maxRarity(9),10); assert.ok(maxRarity(8)<10); // ABSURD still waits for the last zone
 });
 test('all powers eventually unlock; late-run pressure increases without unbounded hordes',()=>{
   assert.equal(availableTypes(9).length,13); assert.equal(availableElements(9).length,10);
@@ -44,10 +52,10 @@ test('all powers eventually unlock; late-run pressure increases without unbounde
   assert.ok(waveBudget(9,4).interval<waveBudget(0,1).interval);
   assert.ok(waveBudget(9,4).alive<=10); assert.equal(waveBudget(0,1).elites,0);
 });
-test('a normal blade needs 2-6 hits at home; standout strength decays across zones',()=>{
+test('a normal blade needs 2-7 hits at home (specials do the crowd work); standout strength decays across zones',()=>{
   for(let z=0;z<10;z++) {
     const w=makeWeapon(z,{q:Math.min(10,z+1),type:'sword',standout:false});
-    const hits=refHP(z)*ENEMY_HP/hitDamage(w); assert.ok(hits>=2.3 && hits<=6);
+    const hits=refHP(z)*ENEMY_HP/hitDamage(w); assert.ok(hits>=2.3 && hits<=7,`zone ${z}: ${hits}`);
   }
   const w=makeWeapon(0,{type:'sword',q:1,standout:true});
   assert.ok(hitDamage(w)>=refHP(0)*ENEMY_HP);
@@ -73,4 +81,65 @@ test('all nine attacks and finisher recovery run exactly 25% faster',()=>{
   const before={sword:0.34,dagger:0.24,katana:0.32,hammer:0.58,nunchucks:0.26,staff:0.4,bow:0.44,shuriken:0.3,wand:0.36};
   for(const [type,cd] of Object.entries(before)) assert.ok(Math.abs(cd/TYPES[type].cd-1.25)<1e-10);
   assert.ok(Math.abs(0.12/RECOVERY-1.25)<1e-10);
+});
+
+test('the goose family grows up along World 1: goslings on 1-1, War Ganders at the castle', () => {
+  const pool = ZONES[0].pool;
+  assert.deepEqual(enemyPool(0, 1, pool, 0), ['gosling', 'honker', 'gsquire']);
+  assert.ok(enemyPool(0, 1, pool, 1).includes('gander'));
+});
+test('the lagoon family grows up along zone 3: tadpoles on 3-1, the Grand Snapper at the castle', () => {
+  const pool = ZONES[2].pool, at = t => enemyPool(2, 1, pool, t);
+  assert.deepEqual(at(0), ['tadpole', 'pondfrog', 'snapper']);
+  assert.ok(at(1).includes('grandsnapper') && !at(1).includes('tadpole'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'lagoon'));
+});
+test('the bazaar family grows up along zone 4: alley kittens on 4-1, the Fat Cat Fence at the castle', () => {
+  const pool = ZONES[3].pool, at = t => enemyPool(3, 1, pool, t);
+  assert.deepEqual(at(0), ['alleykit', 'pickpocket', 'cutpurse']);
+  assert.ok(at(1).includes('fatcat') && !at(1).includes('alleykit'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'bazaar'));
+});
+test('the shrine family grows up along zone 5: Shiba Pups on 5-1, the Nine Tail Sage at the castle', () => {
+  const pool = ZONES[4].pool, at = t => enemyPool(4, 1, pool, t);
+  assert.deepEqual(at(0), ['shibapup', 'corgi', 'akita']);
+  assert.ok(at(1).includes('ninetail') && !at(1).includes('shibapup'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'shrine'));
+});
+test('the temple family grows up along zone 6: Novice Macaques on 6-1, the Cloud Ape Master at the castle', () => {
+  const pool = ZONES[5].pool, at = t => enemyPool(5, 1, pool, t);
+  assert.deepEqual(at(0), ['macaque', 'vaultmonkey', 'goatmonk']);
+  assert.ok(at(1).includes('cloudape') && !at(1).includes('macaque'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'temple'));
+});
+test('the forge family grows up along zone 7: Cub Apprentices on 7-1, the Iron Polar Bear at the castle', () => {
+  const pool = ZONES[6].pool, at = t => enemyPool(6, 1, pool, t);
+  assert.deepEqual(at(0), ['cub', 'badger', 'boarbellows']);
+  assert.ok(at(1).includes('polarbear') && !at(1).includes('cub'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'forge'));
+});
+test('the cottage family grows up along zone 8: Dust Bunnies on 8-1, the Grand Horned Owl at the castle', () => {
+  const pool = ZONES[7].pool, at = t => enemyPool(7, 1, pool, t);
+  assert.deepEqual(at(0), ['dustbunny', 'hedgehog', 'owlet']);
+  assert.ok(at(1).includes('hornedowl') && !at(1).includes('dustbunny'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'cottage'));
+});
+test('the lizard ninja family grows up along zone 9: Gecko Genin on 9-1, the Komodo Jonin at the castle', () => {
+  const pool = ZONES[8].pool, at = t => enemyPool(8, 1, pool, t);
+  assert.deepEqual(at(0), ['gecko', 'draco', 'wallgecko']);
+  assert.ok(at(1).includes('komodo') && !at(1).includes('gecko'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'castle'));
+});
+test('the dragon hoard family grows up along zone 10: Whelp Squires on 10-1, the Elder Hoard Dragon at the castle', () => {
+  const pool = ZONES[9].pool, at = t => enemyPool(9, 1, pool, t);
+  assert.deepEqual(at(0), ['whelp', 'pangolin', 'magpie']);
+  assert.ok(at(1).includes('elder') && !at(1).includes('whelp'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'hoard'));
+});
+test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
+  const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);
+  assert.deepEqual(at(0), ['fuzzlet', 'burrball', 'puffshot']);
+  assert.ok(at(1).includes('werewolf') && at(1).includes('yeti') && !at(1).includes('fuzzlet'));
+  for (let t = 0; t <= 1; t += 0.1) assert.ok(at(t).length >= 3 && at(t).length <= 6, String(t));
+  assert.ok(enemyPool(1, 4, pool).includes('werewolf'), 'a classic run meets the whole family by the deep rooms');
 });

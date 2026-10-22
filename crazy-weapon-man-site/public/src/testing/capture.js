@@ -1,11 +1,14 @@
 // Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late|kills,
 // ?capture=secret1..secret10 for where each map hides its easter egg,
-// ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
+// ?capture=tour1..tour10 for a look at each zone's layout with its residents in place,
+// ?capture=walk1..walk10 for the same zone left running (the hero can't be hurt) to film its weather
+// and animated props, or
 // ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise, ?capture=lv1-3 (any
 // level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
 // The polish pass: ?capture=book (the Monster Book), sheet (the stat sheet), maptemper (relic stars,
 // gimmick badges and a TEMPER tier on the map), ghost, scroll, water, ice (the level gimmicks),
-// room (a golden secret room) and goose (riding the War Goose).
+// room (a golden secret room) and goose, boar, griffin (riding each mount). stable / stableshut: the
+// STABLE tab after the third family head falls, and still shut. ?capture=collection: the unlock tracker; anvil: the map's bag (first POWERS tab) at the Legendary Anvil.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
@@ -16,20 +19,23 @@ import { spawnEnemy } from '../game/enemy.js';
 import { openInventory, stash } from '../game/inventory.js';
 import { startBoss, updateBoss, updateHazards, castMove } from '../game/bosses.js';
 import { ZONES } from '../data/zones.js';
+import { updateAmbience } from '../game/ambience.js';
 import { MOVES } from '../data/weapons.js';
 import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
 import { updateCamera } from '../game/camera.js';
 import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
-import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
+import { bankShards, buyRank, winTrophy, choosePerk, setLock, chooseMount } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
-import { openPowers, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
+import { openPowers, TAB, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
 import { TREE_BY_ID } from '../data/meta.js';
 import { hitEnemy, DEATH_T } from '../game/combat.js';
 import { updateFx } from '../game/fx.js';
 import { recordKill, recordBoss, PAGES } from '../data/book.js';
 import { keepRelics } from '../data/relics.js';
+import { LEVELS } from '../data/overworld.js';
+import { anvil as anvilStrike } from '../game/inventory.js';
 import { enterRoom } from '../game/hidden.js';
 import { mount } from '../game/mount.js';
 import { updateGimmick } from '../game/gimmicks.js';
@@ -44,16 +50,17 @@ function mapScene(game, all) {
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
   bankShards(9000); setLock('blades');
-  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'slice', 'slice', 'longb', 'cleave', 'cleave', 'whirl', 'whirl', 'fleet', 'blink', 'bounty', 'nova']) buyRank(id);
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'slice', 'slice', 'slice', 'longb', 'longb', 'longb', 'cleave', 'cleave', 'cleave', 'whirl', 'whirl', 'fleet', 'bounty', 'nova']) buyRank(id);
   winTrophy(1); winTrophy(2);
   addProficiency('sword', 2200); addProficiency('bow', 300); addProficiency('katana', 60000); addProficiency('hammer', 9000); addProficiency('wand', 900);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
-  openPowers(tab === 3 ? 1 : tab);
+  openPowers([TAB.TREE, TAB.MASTERY, TAB.TROPHIES, TAB.MASTERY, TAB.TREE, TAB.MASTERY][tab] ?? TAB.TREE);
+  powers.troph = 1; // the trophies tab shows the Yeti King's broadhead
   powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3 || tab === 5; powers.mast.tier = 2; powers.mast.opt = 1;
   // 4: shards mid-flight into a node being bought; 5: a mastery perk charging up
-  if (tab === 4) { powers.tab = 0; powers.tree.sel = 'echo'; investNode(TREE_BY_ID.echo); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
-  if (tab === 5) { powers.tab = 1; pickPerk('sword', 3, 0); for (let i = 0; i < 40; i++) updatePowers(1 / 60); }
+  if (tab === 4) { powers.tab = TAB.TREE; powers.tree.sel = 'echo'; investNode(TREE_BY_ID.echo); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
+  if (tab === 5) { powers.tab = TAB.MASTERY; pickPerk('sword', 3, 0); for (let i = 0; i < 40; i++) updatePowers(1 / 60); }
 }
 // the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
 function filesScene(game) {
@@ -73,8 +80,39 @@ function polishScene(game, mode) {
     for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31], ['bombchicken', 12], ['brute', 4], ['wraith', 1], ['maw', 22], ['wizard', 81], ['eyeball', 3]]) recordKill(t, n);
     PAGES[0].kinds.forEach(recordBoss); PAGES[1].kinds.slice(0, 3).forEach(recordBoss);
     mapScene(game, false);
-    openPowers(3);
+    openPowers(TAB.BOOK);
     powers.book.sel = 1;
+    return;
+  }
+  if (mode === 'stable' || mode === 'stableshut') {
+    // the stable after the third family head falls (or still shut with two)
+    winTrophy(1); winTrophy(2); if (mode === 'stable') { winTrophy(3); chooseMount('ironboar'); }
+    mapScene(game, false);
+    openPowers(TAB.STABLE);
+    powers.stable = 2;
+    return;
+  }
+  if (mode === 'collection' || mode === 'anvil') {
+    // world 1 finished, world 2 half way, a few relics in world 3
+    const s = newSave();
+    for (const n of LEVELS.filter(n => n.region === 1)) { clearLevel(s, n.id, n.secret.length ? 'secret' : 'next'); keepRelics(s, n.id, 31); }
+    for (const id of ['2-1', '2-2', '2-3', '2-4']) clearLevel(s, id), keepRelics(s, id, id === '2-1' ? 31 : 11);
+    clearLevel(s, '3-1'); keepRelics(s, '3-1', 5);
+    s.at = '3-1';
+    try { localStorage.setItem('crazyWeaponMan.secrets.v1', '[0]'); } catch (_) {}
+    winTrophy(1); PAGES[0].kinds.forEach(recordBoss);
+    for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31]]) recordKill(t, n);
+    game.ow.save = s; game.openMap();
+    openPowers(mode === 'anvil' ? TAB.BAG : TAB.COLL);
+    powers.coll = 1;
+    if (mode === 'anvil') {
+      // a katana struck to +3 in the bag, asking for its fourth strike
+      const w = makeWeapon(1, { type: 'katana', q: 3, standout: false });
+      stash(w); stash(makeWeapon(2, { type: 'bow', q: 2 })); stash(makeWeapon(0, { type: 'hammer', q: 1 }));
+      world.inv.sel = world.bag.indexOf(w);
+      for (let i = 0; i < 3; i++) { world.inv.anvilAsk = true; anvilStrike(); }
+      world.inv.anvilAsk = false; anvilStrike();
+    }
     return;
   }
   if (mode === 'maptemper') {
@@ -85,7 +123,7 @@ function polishScene(game, mode) {
     game.ow.temperFlash = 2.4;
     return;
   }
-  const lv = { ghost: '9-2', scroll: '2-5', water: '3-3', ice: '6-2', room: '1-2', goose: '1-2', sheet: '4-2' }[mode];
+  const lv = { ghost: '9-2', scroll: '2-5', water: '3-3', ice: '6-2', room: '1-2', goose: '1-2', boar: '1-2', griffin: '1-2', sheet: '4-2' }[mode];
   game.snapshot(() => {
     game.ow.save = revealAll(newSave());
     game.enterLevel(NODES[lv]);
@@ -94,7 +132,7 @@ function polishScene(game, mode) {
     world.director.phase = 'fight';
     for (const e of world.enemies) e.spawnT = 0;
     if (mode === 'room') { world.hidden.kind = 'golden'; world.hidden.room.map.title = 'SECRET ROOM'; enterRoom(); }
-    else if (mode === 'goose') { mount(h); h.x = m.startX + 140; h.vx = 90; }
+    else if (mode === 'goose' || mode === 'boar' || mode === 'griffin') { mount(h, { goose: 'wargoose', boar: 'ironboar', griffin: 'griffin' }[mode]); h.x = m.startX + 140; h.vx = 90; }
     else if (mode === 'sheet') { addProficiency('katana', 9000); openInventory(); world.inv.sheet = true; }
     else {
       const sp = m.spawns[Math.floor(m.spawns.length * 0.3)];
@@ -107,13 +145,16 @@ function polishScene(game, mode) {
   document.documentElement.dataset.capture = 'ready';
 }
 export function captureScene(game, mode) {
-  if(['book','maptemper','ghost','scroll','water','ice','room','goose','sheet'].includes(mode)) return polishScene(game, mode);
+  if(['book','collection','anvil','maptemper','ghost','scroll','water','ice','room','goose','boar','griffin','stable','stableshut','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);
+  // the level-clear screen as you take the world 8 trophy (her castle is cleared on the next frame)
+  if(mode==='trophy') { mapScene(game, true); game.enterLevel(NODES['8-C']); world.phase='cleared'; return; }
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));
+  if(/^walk\d+$/.test(mode)) return walk(game,+mode.slice(4));
   if(/^secret\d+$/.test(mode)) return secret(game,+mode.slice(6));
   if(/^boss\d+$/.test(mode)) return bossFight(game,+mode.slice(4));
   if(/^lv[\dSFC-]+$/.test(mode) && NODES[mode.slice(2)]) return bossFight(game,NODES[mode.slice(2)].zone+1,NODES[mode.slice(2)]);
@@ -200,6 +241,19 @@ function tour(game,n) {
     h.x=spot.x-30;h.y=spot.y-h.h;h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type:'katana',q:3,standout:false});
     for(const e of world.enemies) e.spawnT=0;
     updateCamera(0,true);
+    for(let i=0;i<180;i++) updateAmbience(1/60); // let the weather, smoke and critters get going
+  });
+  document.documentElement.dataset.capture='ready';
+}
+// a zone left running: the hero can't be hurt, so a recording can follow them along the route
+function walk(game,n) {
+  game.play(()=>{
+    const z=Math.max(0,Math.min(9,n-1));
+    startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};
+    const m=world.map,spot=m.spawns[Math.floor(m.spawns.length*0.2)],h=world.hero;
+    h.x=spot.x-60;h.y=spot.y-h.h;h.inv=1e9;h.lv=1+z*3;h.weapon=makeWeapon(z,{type:'katana',q:3,standout:false});
+    updateCamera(0,true);
+    for(let i=0;i<180;i++) updateAmbience(1/60);
   });
   document.documentElement.dataset.capture='ready';
 }

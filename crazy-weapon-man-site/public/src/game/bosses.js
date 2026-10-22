@@ -7,7 +7,8 @@ import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { refHP, refDmg } from '../data/curve.js';
-import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
+import { hurtHero, shotSrc, dropWeapon, dropShards, tickStatus, kill } from './combat.js';
+import { innate } from './perks.js';
 import { makeWeapon, baseDps } from './loot.js';
 import { ROLES, TIER_HP, TIER_DMG, WORLD_RAMP, HEAD_DMG, NEW_HEADS, SIBLING_DEFS } from '../data/families.js';
 import { stats } from '../data/meta.js';
@@ -24,19 +25,19 @@ import { temper } from '../data/temper.js';
 // the boss families (data/families.js); every other level's boss is one of their siblings.
 const BOSSES = {
   bossjr: {
-    name: 'CRAZY WEAPON MAN JR.',
+    name: 'THE GRAND SNAPPER',
     patterns: ['charge', 'tide', 'shell', 'toss'],
     surprise: 'surf',
-    warn: 'THE TIDE IS GOING OUT... FAST',
-    intro: ['DAD SAID I COULD USE THE BIG SWORD', 'THIS SWORD IS TALLER THAN ME. GOOD.'],
-    phase: ['WATCH ME SPIN IT!', 'THE BIG SWORD IS WINNING, DAD!'],
-    defeat: 'REMATCH... WITH A BIGGER SWORD',
+    warn: 'THE LAGOON GOES STILL...',
+    intro: ['A HUNDRED YEARS OF NUNCHUCK FORM', 'MY SHELL HAS NEVER BEEN CRACKED'],
+    phase: ['WATCH THE CHUCKS SPIN!', 'THE OLD SHELL STILL SNAPS!'],
+    defeat: 'A WORTHY... STUDENT...',
     bolt: 'pink',
     speed: 46
   },
   bossman: {
-    name: 'OGRE KING GRUMBLEFOOT',
-    patterns: ['stomp', 'avalanche', 'fan', 'summon:monk'],
+    name: 'THE YAK ABBOT',
+    patterns: ['stomp', 'avalanche', 'fan', 'summon:macaque'],
     surprise: 'avalanche',
     warn: 'THE MOUNTAIN GROANS...',
     intro: ['MY STAFF HAS BROKEN A THOUSAND HEROES', 'I MEDITATE ON THE PERFECT SWING'],
@@ -46,30 +47,30 @@ const BOSSES = {
     speed: 30
   },
   bosssr: {
-    name: 'CRAZY WEAPON MAN SR.',
+    name: 'THE BEAR SMITH',
     patterns: ['anvils', 'charge', 'strikes', 'molten'],
     surprise: 'overheat',
     warn: 'SOMEONE LEFT THE FORGE ON HIGH',
-    intro: ['WHO LEFT THE FORGE DOOR OPEN', 'I FORGED YOUR FIRST SWORD, KID'],
-    phase: ['THIS HAMMER MADE EVERY BLADE YOU OWN', 'BACK IN MY DAY WE SHARED ONE ANVIL'],
+    intro: ['WHO LEFT THE FORGE DOOR OPEN', 'I FORGED EVERY HAMMER ON THIS MOUNTAIN'],
+    phase: ['THIS HAMMER MADE EVERY BLADE YOU OWN', 'STOKE THE FIRES!'],
     defeat: 'KEEP... YOUR EDGE... SHARP',
     bolt: 'sky',
     speed: 40
   },
   bossgrandma: {
-    name: 'GRANDMA, ARMED',
-    patterns: ['lob', 'sparkles', 'cookies', 'summon:crawler'],
+    name: 'THE OWL ARCHMAGE',
+    patterns: ['lob', 'sparkles', 'cookies', 'summon:dustbunny'],
     surprise: 'helpings',
-    warn: 'A WAND CRACKLES IN THE KITCHEN...',
+    warn: 'A WAND CRACKLES IN THE STUDY...',
     intro: ['SIT DOWN, DEAR. THIS WAND STINGS', 'I CAST SPELLS BEFORE SWORDS HAD EDGES'],
-    phase: ['SECOND HELPINGS... OF LIGHTNING!', 'NOBODY OUT-WANDS GRANDMA'],
+    phase: ['SECOND HELPINGS... OF LIGHTNING!', 'NOBODY OUT-WANDS THE ARCHMAGE'],
     defeat: 'TAKE MY OLD WAND FOR THE ROAD',
     bolt: 'orange',
     speed: 28
   },
   bossceo: {
-    name: 'THE USURPER NINJA LORD',
-    patterns: ['stars', 'vanish', 'coins', 'summon:ninja'],
+    name: 'THE KOMODO LORD',
+    patterns: ['stars', 'vanish', 'coins', 'summon:gecko'],
     surprise: 'clones',
     warn: 'A SHADOW MOVES ON THE ROOF...',
     intro: ['I TOOK THIS CASTLE ONE STAR AT A TIME', 'TEN THOUSAND SHURIKEN. ALL SHARPENED.'],
@@ -79,13 +80,13 @@ const BOSSES = {
     speed: 44
   },
   bossweapon: {
-    name: 'THE SENTIENT ARMORY',
+    name: 'THE DRAGON',
     patterns: ['swordrain', 'charge', 'graves', 'stars', 'strikes'],
     surprise: 'arsenal',
-    warn: 'EVERY WEAPON YOU DROPPED IS HUMMING...',
-    intro: ['I AM EVERY WEAPON YOU DROPPED', 'YOU SOLD MY COUSIN FOR SHARDS'],
-    phase: ['THE RACKS ARE EMPTY. I AM THE RACKS.', 'I KNOW ALL YOUR MOVES'],
-    defeat: 'EQUIP... ME...',
+    warn: 'THE HOARD IS SHIFTING...',
+    intro: ['I HOARDED EVERY WEAPON EVER MADE', 'YOURS WOULD LOOK NICE ON THE PILE'],
+    phase: ['TO THE HOARD! EVERY BLADE!', 'I KNOW ALL YOUR MOVES'],
+    defeat: 'TAKE... ONE... COIN...',
     bolt: 'violet',
     speed: 50
   }
@@ -100,6 +101,7 @@ export function bossHearts(e) {
   for (let i = 0; i < 2; i++) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: e.y + 6, vx: (i ? 1 : -1) * (50 + Math.random() * 40), vy: -170, life: 14 });
 }
 const hazards = [];
+const MONOCLE = 1.5; // the Fat Cat's Monocle stretches boss tells and floor warnings this much
 let boss = null,
   done = false,
   outroT = 0;
@@ -249,8 +251,7 @@ function nextPattern(e) {
   e.aimX = cx(world.hero);
   e.face = Math.sign(e.aimX - cx(e)) || 1;
   e.state = 'wind';
-  e.st = 0.7;
-  e.tellT = 0.7;
+  e.st = e.tellT = 0.7 * (innate('monocle') ? MONOCLE : 1); // THE FAT CAT'S MONOCLE: a longer look at every tell
   sfx.enemyCast();
 }
 
@@ -342,7 +343,15 @@ function wave(e, dir, look, hgt, speed, delay = 0, bounces = 0) {
 }
 export const MOVES = ['graves', 'arrows', 'tide', 'shell', 'smoke', 'iai', 'petals', 'avalanche', 'molten', 'sparkles', 'cookies', 'stars',
   'vanish', 'surf', 'overheat', 'helpings', 'clones', 'arsenal', 'honk', 'volley', 'decoys', 'storm'];
+// the move being cast, so its bolts know what they are (spells, shuriken) for the trophy perks
+let casting = null;
+const SRC_OF = { sparkles: 'magic', cookies: 'magic', stars: 'star' };
 export function castMove(e, name) {
+  const was = casting;
+  casting = name;
+  try { cast(e, name); } finally { casting = was; }
+}
+function cast(e, name) {
   const hero = world.hero, k = strength(e), col = C[e.D?.bolt] || C.paper;
   const say1 = s => callout(s, 0, 0, C.gold, { follow: e, life: 50 });
   switch (name) {
@@ -365,7 +374,9 @@ export function castMove(e, name) {
     case 'smoke': // poof: reappear behind the hero
     case 'vanish': {
       burst(cx(e), cy(e), 14, 'smoke', ['fog', 'mist', 'slate']);
-      const behind = cx(hero) - (hero.face || 1) * 46;
+      // THE OWL ARCHMAGE'S SPECTACLES: nothing gets behind you; it lands where you are looking
+      const behind = cx(hero) - (hero.face || 1) * 46 * (innate('glasses') ? -1 : 1);
+      if (innate('glasses')) callout('THE OWL SAW THAT!', 0, 0, C.cream, { follow: hero, life: 50 });
       e.x = Math.max(arenaL(), Math.min(arenaR() - e.w, behind - e.w / 2));
       e.face = Math.sign(cx(hero) - cx(e)) || 1;
       burst(cx(e), cy(e), 14, 'smoke', ['fog', 'mist', 'slate']);
@@ -482,7 +493,7 @@ function acting(e, dt) {
 }
 
 function bolt(x, y, vx, vy, dmg, col, g = 0) {
-  world.bolts.push({ x: x - 2, y: y - 2, w: 4, h: 4, vx, vy, g, dmg, col, life: 4 });
+  world.bolts.push({ x: x - 2, y: y - 2, w: 4, h: 4, vx, vy, g, dmg, col, life: 4, src: SRC_OF[casting] || shotSrc() });
 }
 function groundWave(x, dir, dmg) {
   hazards.push({ kind: 'wave', x, dir, t: 0, life: 1.6, dmg, hit: false });
@@ -517,16 +528,16 @@ function defeat(e) {
 
 // ---------------------------------------------------------------- hazards
 export function updateHazards(dt) {
-  const hero = world.hero;
+  const hero = world.hero, tell = innate('monocle') ? 1 / MONOCLE : 1; // a warning counts down slower
   for (let i = hazards.length - 1; i >= 0; i--) {
     const h = hazards[i];
     if (h.kind === 'fall') {
-      h.t -= dt;
+      h.t -= h.t > 0 ? dt * tell : dt;
       if (h.t <= 0) {
         h.vy += 900 * dt;
         h.y += h.vy * dt;
         if (overlap({ x: h.x - 5, y: h.y - 8, w: 10, h: 12 }, hero)) {
-          hurtHero(h.dmg, Math.sign(cx(hero) - h.x) || 1);
+          hurtHero(h.dmg, Math.sign(cx(hero) - h.x) || 1, h.look === 'cookie' ? 'magic' : 'shot');
           h.y = bossFloor() + 1;
         }
         if (h.y >= bossFloor() - 4) {
@@ -536,7 +547,7 @@ export function updateHazards(dt) {
         }
       }
     } else if (h.kind === 'column') {
-      h.t -= dt;
+      h.t -= h.t > 0 ? dt * tell : dt;
       if (h.t <= 0) {
         if (!h.fired) {
           h.fired = true;
@@ -561,19 +572,19 @@ export function updateHazards(dt) {
       if (h.bounces && (h.x < arenaL() || h.x > arenaR())) { h.dir *= -1; h.bounces--; h.hit = false; sfx.clang(); }
       else if (h.t > h.life || h.x < arenaL() - 8 || h.x > arenaR() + 8) hazards.splice(i, 1);
     } else if (h.kind === 'spike') {
-      h.t -= dt;
+      h.t -= h.t > 0 ? dt * tell : dt;
       if (h.t <= 0) {
         if (!h.fired) {
           h.fired = true;
           sfx.land();
           burst(h.x, bossFloor() - 2, 5, 'chip', h.look === 'lava' ? ['orange', 'gold'] : ['mist', 'stone']);
         }
-        if (!h.hit && Math.abs(cx(hero) - h.x) < 8 && hero.y + hero.h > bossFloor() - 24) { h.hit = true; hurtHero(h.dmg, Math.sign(cx(hero) - h.x) || 1); }
+        if (!h.hit && Math.abs(cx(hero) - h.x) < 8 && hero.y + hero.h > bossFloor() - 24) { h.hit = true; hurtHero(h.dmg, Math.sign(cx(hero) - h.x) || 1, h.look === 'lava' ? 'lava' : null); }
         h.life -= dt;
         if (h.life <= 0) hazards.splice(i, 1);
       }
     } else if (h.kind === 'slash') {
-      h.t -= dt;
+      h.t -= h.t > 0 ? dt * tell : dt;
       if (h.t <= 0) {
         if (!h.fired) { h.fired = true; sfx.boom(0.5); shake(0.3); }
         if (!h.hit && hero.y < h.y + 2 && hero.y + hero.h > h.y - 2) { h.hit = true; hurtHero(h.dmg, 1); }

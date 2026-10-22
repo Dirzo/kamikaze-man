@@ -9,6 +9,7 @@ import { cx, cy } from './physics.js';
 import { rect, px } from '../engine/gfx.js';
 import { burst, emit, callout } from './fx.js';
 import { sfx } from '../engine/audio.js';
+import { arrowWait, drawArrow, drawQuake, drawSpinSword, drawGrave, drawBubble, drawCroak, drawWave, drawDagger, drawSmoke, drawKunai, drawPetal, drawDecoy, drawSpike, drawFire, drawAnvil, drawSpell, drawShuriken, drawHoard } from './beastkin.js';
 
 const say1 = (e, s, col = C.cream) => callout(s, 0, 0, col, { follow: e, life: 36 });
 
@@ -130,6 +131,7 @@ export function fireTrait(e) {
 // called from updateBolts for bolts with trait behaviour; returns true when the bolt is used up
 export function traitBolt(b, dt) {
   const h = world.hero;
+  if (arrowWait(b, dt)) return false; // a Moonfang rain arrow, hanging over its mark
   if (b.stop && b.vy > 0 && b.y + b.h >= (b.floorY ?? (b.floorY = (b.owner ? b.owner.y + b.owner.h : b.y + 20)))) {
     // eggs and peels come to rest on the floor they were dropped on
     b.y = b.floorY - b.h; b.vx = 0; b.vy = 0; b.g = 0;
@@ -168,6 +170,33 @@ export function drawTraitBolt(b, t) {
   const x = Math.round(b.x), y = Math.round(b.y), k = Math.floor(t * 12 + b.x * 0.1) % 4, f = Math.sign(b.vx) || 1;
   const o = (w, h) => rect(x - 1, y - 1, w + 2, h + 2, C.ink);
   switch (b.look) {
+    case 'arrow': return drawArrow(b, t);
+    case 'quake': return drawQuake(b, t);
+    case 'gsword': return drawSpinSword(b, t);
+    case 'grave': return drawGrave(b, t);
+    case 'bubble': return drawBubble(b, t);
+    case 'croak': return drawCroak(b, t);
+    case 'wave': return drawWave(b, t);
+    case 'dagger': return drawDagger(b, t);
+    case 'smoke': return drawSmoke(b, t);
+    case 'kunai': return drawKunai(b, t);
+    case 'shuriken': return drawShuriken(b, t);
+    case 'coin':
+    case 'shard': return drawHoard(b, t);
+    case 'petal': return drawPetal(b, t);
+    case 'decoy': return drawDecoy(b, t);
+    case 'spike': return drawSpike(b, t);
+    case 'fire':
+    case 'lava': return drawFire(b, t);
+    case 'anvil': return drawAnvil(b, t);
+    case 'spark':
+    case 'orb':
+    case 'polyspell':
+    case 'dove':
+    case 'bomb':
+    case 'teacup':
+    case 'mothdust':
+    case 'meteor': return drawSpell(b, t);
     case 'sword': o(6, 6);
       if (k % 2) { rect(x, y + 2, 6, 2, b.col === C.gold ? C.gold : C.mist); rect(x + (f > 0 ? 0 : 4), y + 1, 2, 4, C.wood); }
       else { rect(x + 2, y, 2, 6, b.col === C.gold ? C.gold : C.mist); rect(x + 1, y + (k ? 4 : 0), 4, 2, C.wood); }

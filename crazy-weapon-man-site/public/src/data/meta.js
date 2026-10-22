@@ -4,6 +4,7 @@
 //                of shared nodes round CORE, and a cluster for each specialization. Respec is free.
 //   TROPHIES     beating a world's family head (its castle) gives that world's trophy and a
 //                permanent perk.
+//   STABLE       three trophies open the stable: pick one of three mounts (data/mounts.js).
 //   MONSTER BOOK GOLD cards and completed boss pages (book.js) add their bonuses in here too.
 //   MASTERY      every weapon type's mastery (proficiency.js) opens a choice of two perks at each
 //                MASTERY_TIERS level; the perk only works while you hold that type. Swap any time.
@@ -11,13 +12,15 @@
 import { TYPE_LIST } from './weapons.js';
 import { proficiency } from './proficiency.js';
 import { bookStats, bookVersion } from './book.js';
+import { MOUNTS, STABLE_TROPHIES } from './mounts.js';
+import { ZONES } from './zones.js';
 
 export const META_KEY = 'crazyWeaponMan.meta.v1';
 
 // ---------------------------------------------------------------- specializations
-// The weapon lock: specialize in one class and every weapon of another class that drops is turned
-// into shards (game/classlock.js). Each class has its own cluster of the shard tree, which you can
-// only invest in while specialized in it and which only works with that class in hand.
+// Specialize in one class to open its cluster of the shard tree. Every weapon still drops and
+// works; the cluster only powers that class's weapons, so an off-class weapon (a greatsword in a
+// ranged specialist's hands) fights without it.
 export const CLASSES = {
   blades: { name: 'BLADES', col: 'coral', types: ['sword', 'dagger', 'katana', 'axe', 'scythe'], starter: 'sword' },
   blunt: { name: 'BLUNT', col: 'sand', types: ['hammer', 'nunchucks', 'staff', 'spear'], starter: 'hammer' },
@@ -28,8 +31,11 @@ export const CLASS_OF = Object.fromEntries(Object.entries(CLASSES).flatMap(([c, 
 // ---------------------------------------------------------------- the shard tree
 // A web of nodes (Slormancer's Ancestral Legacy). CORE sits in the middle of a ring of shared
 // nodes that work with every weapon; a cluster for each specialization grows out of the ring, and
-// each ends in two element keystones that infuse your hits with that element. You can invest in a
-// node once a node linked to it has a rank. Respec is free, and UNDO takes back the last rank.
+// each ends in two element keystones that infuse your hits with that element. A node opens once a
+// node linked to it is GATED: 3 of 5 ranks (2 of 3, 1 of 1, see gate()). So the road onward costs
+// a real stake in the node before it, but you can still stop short of maxing it and dip a single
+// rank into the next one (one point in an area augment, say). Respec is free, UNDO takes back the
+// last rank.
 export const BRANCHES = [
   { id: 'blades', name: 'BLADES', col: 'coral', dir: [-1.2, -0.3], side: [0, 1], anchors: ['sharp', 'band'] },
   { id: 'blunt', name: 'BLUNT', col: 'sand', dir: [1.2, -0.3], side: [0, 1], anchors: ['skin', 'hearts'] },
@@ -145,23 +151,42 @@ for (const B of BRANCHES) {
 }
 export const TREE_LINKS = TREE.flatMap(n => n.links.filter(id => id > n.id).map(id => [n.id, id]));
 export const rankCost = (n, rank) => n.cost * rank; // rank = the rank being bought, from 1
+// ranks a node needs before the nodes linked to it open: 3/5 is the standard, 2/3, and 1/1
+export const GATE_SHARE = 0.6;
+export const gate = n => n.gate ?? Math.max(1, Math.ceil(n.max * GATE_SHARE));
+const gated = (tree, id) => (tree[id] || 0) >= gate(TREE_BY_ID[id]);
 // bumped whenever the web changes shape: an older save gets every shard it spent back
 const TREE_V = 3; // 3: the clusters trace their weapons, and upgrades are about feel
 
 // ---------------------------------------------------------------- world boss perks and trophies
-// region -> the trophy you take off the family head and the perk it gives
+// region -> the trophy you take off the family head and the perk it gives. The heads are the beastkin
+// families' bosses (a bigger, spicier version of each zone's beasts) and each trophy is that head's
+// own keepsake, and its power is made for the NEXT world: it counters that world's residents, boss
+// moves or terrain (`for` names them). The power works everywhere; on top of it, the next world
+// (zone index = region) is your home turf: HOME_TURF more damage and less damage taken there.
+// The last trophy has no next world: it is for the post-game grind instead.
+export const HOME_TURF = { dmg: 0.2, armor: 0.2 };
 export const TROPHIES = {
-  1: { name: "MOTHER GOOSE'S CROWN", perk: 'HONK OF COURAGE', desc: '+10% max health', stats: { hp: 0.1 } },
-  2: { name: 'THE GOLDEN ACORN', perk: 'EAGLE EYE', desc: '+5% critical chance', stats: { crit: 0.05 } },
-  3: { name: "JR.'S SURFBOARD", perk: "SURF'S UP", desc: 'Double jump with every weapon', stats: {}, innate: 'hops' },
-  4: { name: "THE KINGPIN'S MONOCLE", perk: 'STICKY FINGERS', desc: '+25% shards', stats: { shards: 0.25 } },
-  5: { name: 'THE SHOGUN NODACHI', perk: 'PETAL STEP', desc: 'Dashing through foes slices them', stats: {}, innate: 'dashcut' },
-  6: { name: "THE OGRE KING'S BEADS", perk: 'INNER PEACE', desc: 'Heal 0.25% of max health a second', stats: { regen: 0.0025 } },
-  7: { name: "DAD'S HAMMER", perk: "DAD'S TOUGHNESS", desc: 'Take 12% less damage', stats: { armor: 0.12 } },
-  8: { name: "GRANDMA'S CASSEROLE DISH", perk: 'SECOND HELPINGS', desc: 'Hearts heal 50% more and drop more often', stats: { heal: 0.5, hearts: 0.04 } },
-  9: { name: 'THE STOLEN CROWN', perk: "USURPER'S EDGE", desc: '+15% damage to bosses and elites', stats: { bossDmg: 0.15 } },
-  10: { name: 'THE FIRST WEAPON', perk: 'EVERY WEAPON EVER', desc: '+15% damage with everything', stats: { dmg: 0.15 } }
+  1: { name: "MOTHER GOOSE'S DOWN COAT", perk: 'GOOSE-DOWN', for: 'ARCHERS AND SNOW', desc: 'Shots hit 25% softer and you never slip on ice', stats: { shotArmor: 0.25 }, innate: 'grip' },
+  2: { name: "THE YETI KING'S BROADHEAD", perk: 'SHELL SPLITTER', for: 'SHELLS AND THE LAGOON', desc: 'Your hits crack shields and shells, and you swim 30% faster', stats: {}, innate: 'broadhead' },
+  3: { name: "THE GRAND SNAPPER'S GLOW-LILY", perk: 'LAGOON GLOW', for: 'THE DARK BAZAAR', desc: 'Your light reaches 70% farther in dark levels and haunted blades creep 40% slower', stats: {}, innate: 'torch' },
+  4: { name: "THE FAT CAT'S MONOCLE", perk: 'SEEN EVERY TRICK', for: 'IAI SLASHES AND TRICKS', desc: 'Every boss tell and floor warning lasts 50% longer', stats: {}, innate: 'monocle' },
+  5: { name: "THE TOSA SHOGUN'S GETA", perk: 'ROOTED BLOSSOM', for: 'THE WINDY PEAKS', desc: 'You take 70% less knockback, and dashing through foes slices them', stats: { knockRes: 0.7 }, innate: 'dashcut' },
+  6: { name: "THE YAK ABBOT'S FROST BEADS", perk: 'MOUNTAIN COLD', for: 'THE LAVA FORGE', desc: 'Lava burns 50% less, and 1 hit in 5 chills a foe to half speed', stats: { lavaArmor: 0.5, chillHit: 0.2 } },
+  7: { name: "THE BEAR SMITH'S COLD-IRON ANVIL", perk: 'COLD IRON', for: 'WANDS AND SPELLS', desc: 'Spells, sparkles and cookie rain hit 35% softer', stats: { magicArmor: 0.35 } },
+  8: { name: "THE OWL ARCHMAGE'S SPECTACLES", perk: 'NOTHING GETS PAST AN OWL', for: 'NINJAS AND SHURIKEN', desc: 'Foes that teleport behind you land in front of you, and shuriken hit 30% softer', stats: { starArmor: 0.3 }, innate: 'glasses' },
+  9: { name: "THE KOMODO LORD'S STOLEN CROWN", perk: "USURPER'S CLAIM", for: 'THE HOARD AND ITS GUARDS', desc: '+20% damage to bosses and elites, and your safety after a hit lasts 50% longer', stats: { bossDmg: 0.2, inv: 0.5 } },
+  10: { name: "THE DRAGON'S FIRST WEAPON", perk: 'EVERY WEAPON EVER', for: 'THE POST-GAME', desc: '+15% damage with everything, +25% mastery and +25% shards', stats: { dmg: 0.15, mastery: 0.25, shards: 0.25 } }
 };
+// the world a trophy is made for (a zone index), or null for the last one
+export const trophyZone = r => (+r < 10 ? +r : null);
+const pc = v => Math.round(v * 100) + '%';
+// the home-turf line the trophy screens show (short: without the world's name)
+export function trophyTurf(r, short = false) {
+  const z = trophyZone(r);
+  if (z == null) return 'MADE FOR THE POST-GAME: EVERY WORLD, EVERY REPLAY';
+  return `${short ? 'HOME TURF IN WORLD ' + (z + 1) : `IN WORLD ${z + 1}, ${ZONES[z].name.toUpperCase()}`}: +${pc(HOME_TURF.dmg)} DAMAGE, ${pc(HOME_TURF.armor)} LESS DAMAGE TAKEN`;
+}
 
 // ---------------------------------------------------------------- weapon mastery perks
 // Mastery runs to level 100 (proficiency.js), so the choices are spread all the way along it.
@@ -207,7 +232,7 @@ try {
 } catch (_) {
   storage = null;
 }
-const blank = () => ({ v: 1, tv: TREE_V, shards: 0, earned: 0, lock: null, tree: {}, hist: [], perks: {}, trophies: {} });
+const blank = () => ({ v: 1, tv: TREE_V, shards: 0, earned: 0, lock: null, tree: {}, hist: [], perks: {}, trophies: {}, mount: null });
 let store = null;
 function load() {
   const out = blank();
@@ -227,6 +252,7 @@ function load() {
       }
       for (const t of TYPE_LIST) if (Array.isArray(raw.perks?.[t])) out.perks[t] = raw.perks[t].slice(0, MASTERY_TIERS.length).map(c => (c === 0 || c === 1 ? c : null));
       for (const r of Object.keys(TROPHIES)) if (raw.trophies?.[r]) out.trophies[r] = 1;
+      if (MOUNTS[raw.mount]) out.mount = raw.mount;
     }
   } catch (_) {
     /* a broken save starts fresh */
@@ -264,26 +290,44 @@ export function bankShards(n) {
   return n;
 }
 export const rank = id => meta().tree[id] || 0;
-// every invested node can be walked to from CORE through invested nodes
-function reachable(tree) {
+// the invested nodes that can be walked to from CORE, only ever stepping on out of a gated node
+function walk(tree) {
   const seen = new Set(), todo = tree.core ? ['core'] : [];
   while (todo.length) {
     const id = todo.pop();
     if (seen.has(id)) continue;
     seen.add(id);
-    for (const l of TREE_BY_ID[id].links) if (tree[l]) todo.push(l);
+    if (gated(tree, id)) for (const l of TREE_BY_ID[id].links) if (tree[l]) todo.push(l);
   }
+  return seen;
+}
+// every invested node is opened by the walk from CORE
+function reachable(tree) {
+  const seen = walk(tree);
   return Object.keys(tree).every(id => !tree[id] || seen.has(id));
 }
-// CORE is always open; any other node opens once a node linked to it has a rank
-export const linked = id => id === 'core' || TREE_BY_ID[id].links.some(l => rank(l));
+// CORE is always open; any other node opens once a node linked to it holds its gate's ranks
+export const linked = id => id === 'core' || TREE_BY_ID[id].links.some(l => gated(meta().tree, l));
+// the linked node closest to opening this one: { node, need } (need = ranks still to go), or null
+export function nearestGate(id) {
+  let best = null;
+  for (const l of TREE_BY_ID[id].links) {
+    const n = TREE_BY_ID[l], need = gate(n) - rank(l);
+    if (!rank(l) || (n.branch && meta().lock !== n.branch)) continue;
+    if (!best || need < best.need) best = { node: n, need };
+  }
+  return best;
+}
 // why a rank can't be bought, or null if it can
 export function cantBuy(id) {
   const n = TREE_BY_ID[id];
   if (!n) return 'NO SUCH NODE';
   if (rank(id) >= n.max) return 'MAXED';
   if (n.branch && meta().lock !== n.branch) return `SPECIALIZE IN ${CLASSES[n.branch].name} (G) TO INVEST HERE`;
-  if (!linked(id)) return 'INVEST IN A LINKED NODE FIRST';
+  if (!linked(id)) {
+    const g = nearestGate(id);
+    return g ? `NEEDS ${gate(g.node)}/${g.node.max} IN ${g.node.name} (${g.need} MORE)` : 'PUT RANKS IN A LINKED NODE FIRST';
+  }
   if (meta().shards < rankCost(n, rank(id) + 1)) return 'NOT ENOUGH SHARDS';
   return null;
 }
@@ -346,7 +390,8 @@ export function setLock(cls) {
     // anything that only hung off the old cluster comes back too, so the web stays linked
     for (let loose = true; loose; ) {
       loose = false;
-      for (const n of TREE) if (rank(n.id) && !reachableNode(n.id)) (refundNode(n), (loose = true));
+      const seen = walk(m.tree);
+      for (const n of TREE) if (rank(n.id) && !seen.has(n.id)) (refundNode(n), (loose = true));
     }
     m.hist = m.hist.filter(id => isLockStep(id) || m.tree[id]);
   }
@@ -361,20 +406,8 @@ function refundNode(n) {
   m.shards += n.cost * (rank(n.id) * (rank(n.id) + 1)) / 2;
   delete m.tree[n.id];
 }
-// can this invested node be walked to from CORE through invested nodes?
-function reachableNode(id) {
-  const tree = meta().tree, seen = new Set(), todo = tree.core ? ['core'] : [];
-  while (todo.length) {
-    const at = todo.pop();
-    if (at === id) return true;
-    if (seen.has(at)) continue;
-    seen.add(at);
-    for (const l of TREE_BY_ID[at].links) if (tree[l]) todo.push(l);
-  }
-  return false;
-}
-// does a weapon type drop as itself under the current lock?
-export const allowedType = type => !meta().lock || CLASS_OF[type] === meta().lock;
+// is this weapon type powered by your specialization's cluster? (no specialization: none are)
+export const onClass = type => !!meta().lock && CLASS_OF[type] === meta().lock;
 
 // ---- trophies
 export const hasTrophy = region => !!meta().trophies[region];
@@ -382,6 +415,18 @@ export function winTrophy(region) {
   const m = meta();
   if (!TROPHIES[region] || m.trophies[region]) return false;
   m.trophies[region] = 1;
+  save();
+  return true;
+}
+
+// ---- the stable: shut until STABLE_TROPHIES family heads have fallen
+export const trophyCount = () => Object.keys(meta().trophies).length;
+export const stableOpen = () => trophyCount() >= STABLE_TROPHIES;
+// the mount you ride, or null while the stable is shut or nothing is picked yet
+export const chosenMount = () => (stableOpen() && MOUNTS[meta().mount] ? meta().mount : null);
+export function chooseMount(id) {
+  if (!stableOpen() || !MOUNTS[id]) return false;
+  meta().mount = id;
   save();
   return true;
 }
@@ -402,16 +447,18 @@ export const unpicked = type => Array.from({ length: tiersOpen(type) }, (_, i) =
 // ---------------------------------------------------------------- the sum of it all
 const ZERO = { dmg: 0, crit: 0, critDmg: 0, swarmDmg: 0, bossDmg: 0, execute: 0, specialCd: 0, attackSpeed: 0, hp: 0, heal: 0, armor: 0, speed: 0,
   dashCd: 0, inv: 0, regen: 0, shards: 0, xp: 0, combo: 0, hearts: 0, mastery: 0, bossShards: 0, standout: 0, lust: 0, splash: 0, wave: 0, nova: 0,
-  impact: 0, reach: 0, knock: 0, echo: 0, aoeSize: 0, shotSpeed: 0, multishot: 0, pierce: 0, homing: 0, trail: 0 };
+  impact: 0, reach: 0, knock: 0, echo: 0, aoeSize: 0, shotSpeed: 0, multishot: 0, pierce: 0, homing: 0, trail: 0,
+  shotArmor: 0, magicArmor: 0, starArmor: 0, lavaArmor: 0, knockRes: 0, chillHit: 0 };
 let cache = null;
 function add(out, s) {
   for (const k in s) out[k] += s[k];
 }
-// the account-wide part (tree + trophies), and the held weapon type's mastery perks on top
-export function stats(type = null) {
+// the account-wide part (tree + trophies), and the held weapon type's mastery perks on top. In
+// zone `zone` a trophy made for that world adds HOME_TURF.
+export function stats(type = null, zone = null) {
   if (cache && cache.book !== bookVersion()) cache = null; // a Monster Book card went GOLD
   cache ||= { book: bookVersion() };
-  const key = type ? type + tiersOpen(type) : '-'; // a mastery level-up opens a tier: new key
+  const key = (type ? type + tiersOpen(type) : '-') + '@' + zone; // a mastery level-up opens a tier: new key
   if (cache[key]) return cache[key];
   const out = { ...ZERO, innate: new Set(), infuse: {} };
   const cls = type && CLASS_OF[type];
@@ -425,6 +472,7 @@ export function stats(type = null) {
   for (const r of Object.keys(meta().trophies)) {
     add(out, TROPHIES[r].stats);
     if (TROPHIES[r].innate) out.innate.add(TROPHIES[r].innate);
+    if (zone != null && trophyZone(r) === zone) add(out, HOME_TURF);
   }
   if (type)
     for (let t = 0; t < tiersOpen(type); t++) {

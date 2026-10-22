@@ -10,13 +10,13 @@ import { profMult } from '../data/proficiency.js';
 import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
-import { stats, weaponLock, allowedType, CLASSES } from '../data/meta.js';
+import { stats, weaponLock, CLASSES } from '../data/meta.js';
 import { temper } from '../data/temper.js';
 let uid = 1;
 // what the hero has grown into with a type: its mastery level and every damage perk
 const growth = type => profMult(type) * (1 + stats(type).dmg);
 
-// All sources share the zone ceiling: zone 1 tops out at Uncommon; the
+// All sources share the zone ceiling: zone 1 tops out at Epic; the
 // absurd tier only shows up at the very end
 export const maxQ = maxRarity;
 
@@ -25,18 +25,17 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
   const types = availableTypes(zone);
   // every type is equally likely (a zone's own weapon still arrives as its map-clear gift)
   type = type || types[Math.floor(r() * types.length)];
-  if ((boss || standout === true) && weaponLock()) type = classType(type); // a guaranteed prize is always one you can use
   if (q == null) {
     const top = maxQ(zone);
-    q = Math.min(10, Math.floor((top + 0.99) * Math.pow(r(), elite || boss ? 1.3 : 1.9)));
-    if (boss) q = Math.max(q, Math.min(10, zone + 1));
+    q = Math.min(10, Math.floor((top + 0.99) * Math.pow(r(), elite || boss ? 0.85 : 1.2)));
+    if (boss) q = top; // a boss always pays out the zone's best tier
   }
   // TEMPER: rarer weapons, past the zone's usual ceiling
   if (world.temper) q += temper(world.temper).rarity;
-  // elements start appearing in zone 2, more often on rarer weapons
+  // elements show up from the first map, more often on rarer weapons
   q = Math.max(0, Math.min(10, q));
   const elements = availableElements(zone);
-  const family = elements.length && r() < (boss ? 0.7 : 0.12 + 0.055 * q) ? elements[Math.floor(r() * elements.length)] : null;
+  const family = elements.length && r() < (boss ? 0.7 : 0.2 + 0.06 * q) ? elements[Math.floor(r() * elements.length)] : null;
   const mutations = availableMutations(zone, q);
   const mutation = mutations.length && (boss || r() < 0.18 + q * 0.025) ? mutations[Math.floor(r() * mutations.length)] : null;
   if (standout == null) standout = r() < standoutChance(zone) + stats().standout + temper(world.temper).standout;
@@ -49,12 +48,6 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
 // a weapon loaded from a save gets a new id (looks are cached by id)
 export const freshUid = w => ((w.uid = uid++), w);
 
-// a type of your specialization's class for a drop that must be a weapon you can use
-export function classType(type) {
-  if (allowedType(type)) return type;
-  const T = CLASSES[weaponLock()].types;
-  return T[Math.floor(Math.random() * T.length)];
-}
 // the first weapon: a sword, or your specialization's own starter
 export function trainingSword() {
   const STARTER = weaponLock() ? CLASSES[weaponLock()].starter : 'sword', BASE = STARTER[0].toUpperCase() + STARTER.slice(1);

@@ -8,15 +8,17 @@ import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { ENEMIES, ELITE_TITLES, LINES, deathOf } from '../data/enemies.js';
 import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
-import { hurtHero, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T } from './combat.js';
+import { hurtHero, shotSrc, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T } from './combat.js';
 import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { drawItem } from './drops.js';
 import { makeWeapon } from './loot.js';
+import { innate } from './perks.js';
 import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
 import { temper, modOn } from '../data/temper.js';
 import { MOVE } from '../data/feel.js';
+import { beastTick, beastThink, beastAttack, beastAttacking, beastFrame, arrowHit, drawTell } from './beastkin.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
@@ -115,6 +117,7 @@ export function updateEnemy(e, dt) {
     e.spawnT -= dt;
     return;
   }
+  if (e.kind === 'beast') beastTick(e, dt);
   // Undiscovered packs hold their ground until the hero reaches their part of the map.
   // This keeps the whole route from collapsing into one giant horde at the entrance.
   if (world.map && (Math.abs(cx(hero)-cx(e))>320 || Math.abs(cy(hero)-cy(e))>115)) { e.vx=0; return; }
@@ -201,7 +204,7 @@ export function updateEnemy(e, dt) {
       break;
     case 'wind':
       e.vx *= 0.8;
-      if (e.st > 0.16 && e.kind !== 'roller' && e.kind !== 'sniper') e.face = toward;
+      if (e.st > 0.16 && e.kind !== 'roller' && e.kind !== 'sniper' && e.move !== 'guard') e.face = toward;
       if (e.st <= 0) attack(e, toward);
       break;
     case 'attack':
@@ -315,7 +318,7 @@ function think(e, dt, dxh, dist, toward, slow) {
   const sameLevel = Math.abs(cy(hero) - cy(e)) < 28 || e.air;
   // Residents are peaceful until you get close or hit them, and settle down again once you leave.
   if (!e.swarm && !e.boss) {
-    const ranged = e.kind === 'ranged' || e.kind === 'summon' || e.kind === 'sniper';
+    const ranged = e.kind === 'ranged' || e.kind === 'summon' || e.kind === 'sniper' || e.kind === 'beast';
     if (e.calm && sameLevel && dist < (ranged ? 130 : 70)) provoke(e);
     else if (!e.calm && (dist > 260 || Math.abs(cy(hero) - cy(e)) > 90)) e.calm = true;
     if (e.calm) return wander(e, dt, slow);
@@ -333,6 +336,9 @@ function think(e, dt, dxh, dist, toward, slow) {
     }
   }
   switch (e.kind) {
+    case 'beast':
+      beastThink(e, dt, dist, toward, slow, sameLevel);
+      break;
     case 'melee':
     case 'shield':
     case 'mimic':
@@ -343,7 +349,8 @@ function think(e, dt, dxh, dist, toward, slow) {
     case 'blink':
       if (dist > 90 && e.cool <= 0) {
         burst(cx(e), cy(e), 8, 'smoke', ['violet', 'pink']);
-        const side = Math.random() < 0.5 ? -1 : 1;
+        // THE OWL ARCHMAGE'S SPECTACLES: it never lands behind you
+        const side = innate('glasses') ? world.hero.face || 1 : Math.random() < 0.5 ? -1 : 1;
         e.x = Math.max(4, Math.min(worldWidth() - 4 - e.w, cx(hero) + side * 24 - e.w / 2));
         e.y = Math.min(e.y, hero.y + hero.h - e.h);
         burst(cx(e), cy(e), 8, 'smoke', ['violet', 'pink']);
@@ -404,6 +411,9 @@ function attack(e, toward) {
     return;
   }
   switch (e.kind) {
+    case 'beast':
+      beastAttack(e, toward);
+      break;
     case 'melee':
     case 'shield':
     case 'blink':
@@ -462,6 +472,7 @@ function attack(e, toward) {
 
 function attacking(e, dt, toward) {
   const hero = world.hero;
+  if (e.kind === 'beast') return beastAttacking(e, dt, toward);
   if (e.kind === 'melee' || e.kind === 'shield' || e.kind === 'blink' || e.kind === 'mimic') {
     const reach = e.d.range;
     const box = { x: e.face > 0 ? cx(e) : cx(e) - reach, y: e.y, w: reach, h: e.h };
@@ -491,6 +502,7 @@ export function updateBolts(dt) {
   const hero = world.hero;
   for (let i = world.bolts.length - 1; i >= 0; i--) {
     const b = world.bolts[i];
+    world.hitBy = b.src || shotSrc(); // what this bolt counts as, for the trophy perks (hurtHero)
     b.vy += (b.g || 0) * dt;
     b.x += b.vx * dt;
     b.y += b.vy * dt;
@@ -498,13 +510,14 @@ export function updateBolts(dt) {
     const used = traitBolt(b, dt);
     if (used) { if (used === 'hit') hurtHero(b.dmg, Math.sign(cx(hero) - b.x) || 1); world.bolts.splice(i, 1); continue; }
     if (world.map?.solids.some(p=>overlap(b,p))) {world.bolts.splice(i,1);continue;}
-    if (Math.random() < 0.5) emit(b.x + 2, b.y + 2, 'dot', b.col);
-    if (overlap(b, hero) && hero.inv <= 0 && hero.dashT <= 0) {
-      hurtHero(b.dmg, Math.sign(b.vx) || 1);
+    if (Math.random() < 0.5 && !(b.wait > 0)) emit(b.x + 2, b.y + 2, 'dot', b.col);
+    if (overlap(b, hero) && hero.inv <= 0 && hero.dashT <= 0 && !b.harmless && !(b.wait > 0)) {
+      if (hurtHero(b.dmg, Math.sign(b.vx) || 1)) arrowHit(b);
       b.life = 0;
     }
     if (b.life <= 0 || b.x < -10 || b.x > worldWidth() + 10 || b.y > worldFloor() + 4 || b.y < -20) world.bolts.splice(i, 1);
   }
+  world.hitBy = null;
 }
 export function drawBolts(t = world.t) {
   for (const b of world.bolts) {
@@ -545,10 +558,14 @@ export function drawEnemy(e, t) {
     X.translate(-fx, -fy);
     drawBody(e, t, Math.round(fx - art.w / 2) + jitter(e), Math.round(fy - (art.h - 1)), art);
     X.restore();
-    if (e.state === 'wind' && e.kind === 'sniper' && !e.dead) aimLine(e, t);
+    if (e.state === 'wind' && (e.kind === 'sniper' || e.d.beh === 'snipe') && !e.dead) aimLine(e, t);
     return;
   }
+  // a Moss Stalker in its ghillie is hard to make out (beastkin.js)
+  if (e.alpha != null && e.alpha < 1) X.globalAlpha = e.alpha;
   drawBody(e, t, sx, sy, art);
+  X.globalAlpha = 1;
+  if (e.kind === 'beast') drawTell(e, t);
 }
 // the fall-over: p runs 0..1 over the fall, then the body holds still (blinking) until it shatters.
 // Returns false on a blink frame.
@@ -584,6 +601,7 @@ function drawBody(e, t, sx, sy, art) {
   let f = 0;
   if (e.flash > 0 || e.dead) f = 2;
   else if (Math.abs(e.vx) > 8 || e.air) f = Math.floor(e.anim * 8) % 2;
+  if (art.frames?.length > 3) f = beastFrame(e, t, art); // beastkin have named frames
   const bob = e.d.float ? Math.round(Math.sin(e.anim * 3) * 2) : 0;
   frame(e.white > 0 && !e.dead ? tinted(art.im, C.paper) : art.im, f, art.w, art.h, sx, sy + bob - (e.state === 'wind' && e.kind === 'bomb' && Math.floor(t * 16) % 2 ? 1 : 0), e.face < 0);
   // faces, eyes and blush are part of each sprite (art-src/cute_enemies.py); hits squeeze them shut
@@ -618,7 +636,7 @@ function drawBody(e, t, sx, sy, art) {
       rect(mx - 1, top, 3, 7, p > 0.6 ? C.paper : C.red);
       rect(mx - 1, top + 8, 3, 3, p > 0.6 ? C.paper : C.red);
     }
-    if (e.kind === 'sniper' && !e.scale) aimLine(e, t);
+    if ((e.kind === 'sniper' || (e.d.beh === 'snipe' && e.move === 'shot')) && !e.scale) aimLine(e, t);
   }
   if (e.state === 'sleep') {
     for (let i = 0; i < 3; i++) {

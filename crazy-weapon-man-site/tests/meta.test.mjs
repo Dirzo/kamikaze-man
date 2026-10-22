@@ -4,11 +4,17 @@ import { LEVELS, NODES } from '../game-src/data/overworld.js';
 import { BOSS_OF, SIBLING_DEFS, HEAD_KINDS, FAMILIES, ROLES, levelTier } from '../game-src/data/families.js';
 import { readFileSync } from 'node:fs';
 import {
-  resetMeta, meta, bankShards, buyRank, cantBuy, rank, respec, undoRank, TREE, TREE_BY_ID, TREE_LINKS, rankCost, stats, setLock, weaponLock, allowedType, CLASSES, CLASS_OF, winTrophy, hasTrophy,
-  TROPHIES, MASTERY_TIERS, MASTERY_PERKS, choosePerk, perkChoice, tiersOpen, masteryPerk, SIGNATURE
+  resetMeta, meta, bankShards, buyRank, cantBuy, rank, respec, undoRank, TREE, TREE_BY_ID, TREE_LINKS, rankCost, stats, setLock, weaponLock, onClass, CLASSES, CLASS_OF, winTrophy, hasTrophy,
+  TROPHIES, HOME_TURF, trophyZone, gate, linked, stableOpen, chosenMount, chooseMount, trophyCount, MASTERY_TIERS, MASTERY_PERKS, choosePerk, perkChoice, tiersOpen, masteryPerk, SIGNATURE
 } from '../game-src/data/meta.js';
 import { addProficiency, resetProficiency, PROF_MAX, profToNext } from '../game-src/data/proficiency.js';
 import { TYPE_LIST } from '../game-src/data/weapons.js';
+import { MOUNTS, MOUNT_LIST, STABLE_TROPHIES } from '../game-src/data/mounts.js';
+
+// buy ranks in a node until it holds n (its gate, by default)
+const buyTo = (id, n = gate(TREE_BY_ID[id])) => {
+  while (rank(id) < n) assert.ok(buyRank(id), `${id} rank ${rank(id) + 1}: ${cantBuy(id)}`);
+};
 
 test('every level has its own boss: a sibling of its world, or the family head in the castle', () => {
   const kinds = LEVELS.map(n => BOSS_OF[n.id]);
@@ -76,31 +82,31 @@ test('shards bank, ranks need a linked node, undo takes back the last rank, refu
   assert.equal(rank('sharp'), 0);
   assert.equal(undoRank(), null);
 });
-test('specializing: only your class drops, and only your class cluster opens and works', () => {
+test('specializing opens only your class cluster, and it only powers that class', () => {
   resetMeta();
   assert.equal(Object.values(CLASSES).reduce((n, c) => n + c.types.length, 0), 13, 'every weapon type has a class');
-  assert.ok(allowedType('bow') && allowedType('hammer'), 'no lock: everything drops');
+  assert.ok(!onClass('bow') && !onClass('sword'), 'not specialized: no class is powered');
   bankShards(100000);
   buyRank('core');
-  buyRank('sharp');
+  buyTo('sharp');
   assert.match(cantBuy('slice'), /SPECIALIZE IN BLADES/);
   assert.ok(setLock('blades'));
   assert.equal(weaponLock(), 'blades');
-  assert.ok(allowedType('katana') && !allowedType('bow') && !allowedType('hammer'));
+  assert.ok(onClass('katana') && !onClass('bow') && !onClass('hammer'));
   // round the sword's outline: grip, guard, the edge of the blade, out to the keystone
-  for (const id of ['slice', 'longb', 'cleave', 'whirl', 'echo']) assert.ok(buyRank(id), id);
+  for (const id of ['slice', 'longb', 'cleave', 'whirl', 'echo']) buyTo(id);
   assert.match(cantBuy('frenzy'), /LINKED/, 'the tip waits at the end of an edge');
-  assert.ok(buyRank('fire'));
+  buyTo('fire');
   assert.ok(buyRank('frenzy'));
-  assert.ok(Math.abs(stats('sword').reach - 0.06) < 1e-9, 'blade nodes work with a blade');
+  assert.ok(Math.abs(stats('sword').reach - 0.18) < 1e-9, 'blade nodes work with a blade');
   assert.equal(stats('bow').reach, 0, 'and not with a bow');
   assert.ok(stats('katana').innate.has('frenzy') && !stats('bow').innate.has('frenzy'), 'a keystone teaches the blade a move');
-  assert.ok(Math.abs(stats('scythe').infuse.fire - 0.06) < 1e-9);
+  assert.ok(Math.abs(stats('scythe').infuse.fire - 0.18) < 1e-9);
   assert.equal(stats('wand').infuse.fire, undefined);
-  assert.ok(Math.abs(stats('bow').impact - 0.1) < 1e-9, 'shared nodes work with everything');
+  assert.ok(Math.abs(stats('bow').impact - 0.3) < 1e-9, 'shared nodes work with everything');
   assert.match(cantBuy('heft'), /SPECIALIZE IN BLUNT/);
   setLock(null);
-  assert.ok(allowedType('bow'));
+  assert.ok(!onClass('katana'));
   for (const t of Object.keys(CLASS_OF)) assert.ok(CLASSES[CLASS_OF[t]]);
   resetMeta();
 });
@@ -108,7 +114,7 @@ test('respec: undo and refund take the class lock back too, so a Blades player c
   resetMeta();
   bankShards(100000);
   buyRank('core');
-  buyRank('sharp');
+  buyTo('sharp');
   setLock('blades');
   buyRank('slice');
   assert.equal(weaponLock(), 'blades');
@@ -117,7 +123,7 @@ test('respec: undo and refund take the class lock back too, so a Blades player c
   assert.equal(weaponLock(), null);
   assert.ok(setLock('ranged'));
   assert.equal(weaponLock(), 'ranged');
-  assert.equal(rank('sharp'), 1, 'shared ranks stay put');
+  assert.equal(rank('sharp'), 3, 'shared ranks stay put');
   // switching straight from one class to another refunds the old cluster
   setLock('blades');
   assert.ok(buyRank('slice'));
@@ -143,9 +149,27 @@ test('a trophy is won once and its perk is always on', () => {
   assert.ok(winTrophy(7));
   assert.ok(!winTrophy(7), 'twice');
   assert.ok(hasTrophy(7));
-  assert.equal(stats('sword').armor, TROPHIES[7].stats.armor);
+  assert.equal(stats('sword').magicArmor, TROPHIES[7].stats.magicArmor);
   winTrophy(3);
-  assert.ok(stats(null).innate.has('hops'));
+  assert.ok(stats(null).innate.has('torch'));
+});
+test("each trophy is made for the next world: its home turf works there and nowhere else", () => {
+  resetMeta();
+  winTrophy(2); // the Yeti King's trophy is for world 3, the lagoon (zone index 2)
+  assert.equal(trophyZone(2), 2);
+  assert.equal(stats('sword', 2).dmg - stats('sword', 1).dmg, HOME_TURF.dmg);
+  assert.equal(stats('sword', 2).armor - stats('sword').armor, HOME_TURF.armor);
+  assert.equal(stats('sword', 3).dmg, stats('sword').dmg, 'not in the world after');
+  assert.ok(stats('sword', 5).innate.has('broadhead'), 'the power itself works everywhere');
+  assert.equal(trophyZone(10), null, 'the last trophy is for the post-game');
+  winTrophy(10);
+  assert.equal(stats('sword', 9).dmg, TROPHIES[10].stats.dmg);
+  for (const r in TROPHIES) {
+    const T = TROPHIES[r];
+    assert.ok(T.name && T.perk && T.desc && T.for, 'trophy ' + r + ' is filled in');
+    for (const k in T.stats) assert.ok(k in stats(null), 'trophy ' + r + ' stat ' + k + ' is summed');
+  }
+  resetMeta();
 });
 test('mastery runs to 100 and opens ten perk choices along the way, per weapon type', () => {
   resetMeta();
@@ -179,10 +203,12 @@ test('area augments: two shared, two per class, each class pair only with that c
   const aoe = TREE.filter(n => n.aoe);
   assert.equal(aoe.filter(n => !n.branch).length, 2);
   for (const c of Object.keys(CLASSES)) assert.ok(aoe.filter(n => n.branch === c).length >= 2, c);
-  for (const id of ['core', 'sharp', 'bounty', 'nova']) assert.ok(buyRank(id), id);
+  for (const id of ['core', 'sharp']) buyTo(id);
+  assert.ok(buyRank('nova'), 'one point in an area augment');
   assert.ok(Math.abs(stats('bow').nova - 0.04) < 1e-9 && Math.abs(stats('hammer').nova - 0.04) < 1e-9, 'shared nova works with everything');
   setLock('blades');
-  for (const id of ['slice', 'longb', 'cleave', 'whirl']) assert.ok(buyRank(id), id);
+  for (const id of ['slice', 'longb', 'cleave']) buyTo(id);
+  assert.ok(buyRank('whirl'));
   assert.ok(Math.abs(stats('sword').wave - 0.12) < 1e-9);
   assert.equal(stats('bow').wave, 0);
   // the web still fits the window: nodes stay apart and inside its 322 x 210 frame
@@ -191,5 +217,64 @@ test('area augments: two shared, two per class, each class pair only with that c
   assert.ok(TREE.every(n => !['dmg', 'critDmg', 'swarmDmg', 'bossDmg', 'execute', 'hp'].includes(n.stat)), 'a flat damage node');
   const ys = TREE.map(n => n.y);
   assert.ok(Math.max(...ys) - Math.min(...ys) + 24 <= 210 && TREE.every(n => Math.abs(n.x) + 8 <= 161));
+  resetMeta();
+});
+
+test('gates: 3 of 5 ranks open the nodes beyond (2 of 3, 1 of 1), and you can dip a single rank', () => {
+  resetMeta();
+  bankShards(1e7);
+  assert.equal(gate(TREE_BY_ID.sharp), 3);
+  assert.equal(gate(TREE_BY_ID.lust), 2);
+  assert.equal(gate(TREE_BY_ID.core), 1);
+  assert.equal(gate(TREE_BY_ID.dashcut), 1);
+  buyRank('core');
+  buyRank('sharp');
+  assert.ok(!linked('nova') && !linked('band'), '1/5 opens nothing');
+  assert.match(cantBuy('nova'), /NEEDS 3\/5 IN HEAVY IMPACT \(2 MORE\)/);
+  buyRank('sharp');
+  assert.match(cantBuy('nova'), /1 MORE/);
+  buyRank('sharp');
+  assert.equal(cantBuy('nova'), null, '3/5 opens it');
+  assert.ok(buyRank('nova'), 'one point in an AoE node');
+  assert.match(cantBuy('ripple'), /LINKED|NEEDS/, 'a 1-rank dip opens nothing beyond it');
+  // undo walks back cleanly: the dip comes back before the ranks that opened it
+  assert.equal(undoRank(), 'nova');
+  assert.equal(undoRank(), 'sharp');
+  assert.ok(!linked('nova'));
+  // maxing a node opens the same roads as 3/5: the choice is depth here or a dip further on
+  buyTo('sharp', 5);
+  assert.equal(cantBuy('nova'), null);
+  resetMeta();
+});
+test('gates: an old save that skipped a gate gets every shard back', async () => {
+  const mem = {};
+  globalThis.localStorage = { getItem: k => mem[k] ?? null, setItem: (k, v) => (mem[k] = v) };
+  const fresh = await import('../game-src/data/meta.js?gate-load');
+  const tv = JSON.parse(JSON.stringify(fresh.meta())).tv;
+  mem[fresh.META_KEY] = JSON.stringify({ v: 1, tv, shards: 100, earned: 5000, tree: { core: 1, sharp: 1, band: 1 }, hist: [], trophies: {} });
+  fresh.reloadMeta();
+  assert.equal(fresh.rank('band'), 0, 'band hung off a 1/5 sharp');
+  assert.equal(fresh.meta().shards, 5000);
+  mem[fresh.META_KEY] = JSON.stringify({ v: 1, tv, shards: 100, earned: 5000, tree: { core: 1, sharp: 3, band: 1 }, hist: [], trophies: {} });
+  fresh.reloadMeta();
+  assert.equal(fresh.rank('band'), 1, 'a save that kept to the gates is untouched');
+  delete globalThis.localStorage;
+});
+test('the stable: shut until three family heads fall, then pick one of three mounts', () => {
+  resetMeta();
+  assert.equal(MOUNT_LIST.length, 3);
+  assert.equal(STABLE_TROPHIES, 3);
+  for (const id of MOUNT_LIST) assert.equal(MOUNTS[id].perks.length, 2, id);
+  assert.ok(!stableOpen() && !chooseMount('griffin') && chosenMount() === null);
+  winTrophy(1); winTrophy(2);
+  assert.ok(!stableOpen(), 'two is not enough');
+  winTrophy(5); // any three heads, in any order
+  assert.equal(trophyCount(), 3);
+  assert.ok(stableOpen());
+  assert.equal(chosenMount(), null, 'nothing rides until you pick');
+  assert.ok(chooseMount('ironboar'));
+  assert.equal(chosenMount(), 'ironboar');
+  assert.ok(chooseMount('wargoose'), 'swap any time');
+  assert.ok(!chooseMount('dragon'));
   resetMeta();
 });

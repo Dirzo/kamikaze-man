@@ -1,4 +1,6 @@
 // Real browser regression tests. Opt in with ?smoke; never loaded in a normal run.
+import { SPECIALS } from '../data/specials.js';
+import { updateSpecials, clearSpecials } from '../game/specials.js';
 import { input } from '../engine/input.js';
 import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
@@ -12,7 +14,7 @@ import { startBoss, updateBoss, updateHazards, drawHazards, bossDone, clearBoss,
 import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
 import { startZone, updateWaves, enemiesLeft } from '../game/waves.js';
-import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE } from '../game/inventory.js';
+import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE, equipFromBag } from '../game/inventory.js';
 import { BOSS_OF, HEAD_KINDS, SIBLING_KINDS, SIBLING_DEFS, headOfZone } from '../data/families.js';
 import { LEVELS } from '../data/overworld.js';
 import { bossName } from '../game/bosses.js';
@@ -26,25 +28,28 @@ import { C, STEP, GROUND, HERO, W } from '../config.js';
 const FLOOR = () => world.map?.startY ?? GROUND; // the stage's runway (stages are no longer all at GROUND)
 import { lookOf } from '../game/looks.js';
 import { feel, clearFx } from '../game/fx.js';
-import { cx } from '../game/physics.js';
+import { cx, cy } from '../game/physics.js';
 import { heroPose } from '../game/anim.js';
 import { tickRun, splitZone } from '../game/speedrun.js';
 import { resetRecords } from '../data/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { ENEMIES } from '../data/enemies.js';
-import { attackBox } from '../game/attack-rules.js';
-import { resetMeta, bankShards, buyRank, setLock } from '../data/meta.js';
+import { attackBox, canAttack } from '../game/attack-rules.js';
+import { resetMeta, bankShards, buyRank, setLock, winTrophy, chooseMount, CLASSES, HOME_TURF } from '../data/meta.js';
+import { heroStats } from '../game/perks.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
 import { updateBolts } from '../game/enemy.js';
+import { beastAttack } from '../game/beastkin.js';
 import { updateSecret, SECRETS, SECRET_KEY } from '../game/secrets.js';
 import { updateAbilities, abilityHit } from '../game/abilities.js';
 import { NODES, OVERWORLD_KEY, isOpen } from '../data/overworld.js';
 import { updateHidden } from '../game/hidden.js';
 import { updateRelics } from '../game/relics.js';
-import { mount, updateMount } from '../game/mount.js';
+import { mount, updateMount, flap } from '../game/mount.js';
 import { heroPhysics, updateGimmick } from '../game/gimmicks.js';
+import { ambience, updateAmbience } from '../game/ambience.js';
 import { setLootFilter, lootFilter } from '../game/inventory.js';
 import { cardKills, resetBook } from '../data/book.js';
 import { RELIC_COUNT } from '../data/relics.js';
@@ -267,37 +272,175 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
+  check('the goose, fuzzball, lagoon, bazaar, shrine, temple, forge, cottage, castle and hoard families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3,4,5,6,7,8,9]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3,4,5,6,7,8,9].flatMap(z=>ZONES[z].pool);
+    for(const type of fam) {
+      const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
+      reset();const h=world.hero;h.maxHp=h.hp=1e6;
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):ENEMIES[type].fam==='cottage'?['curl','tea','owlet','broom'].includes(B):ENEMIES[type].fam==='castle'?false:ENEMIES[type].fam==='hoard'?['squire','bowl','dillo','wyrm','coinsmith'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
+      const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
+      let shots=0,seen=new Set();
+      for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
+      ok(h.hp<h.maxHp||shots>0,type+' never attacked');ok(seen.has('wind')&&seen.has('attack'),type+' never wound up and attacked');
+      for(let i=0;i<400;i++){world.t+=STEP;updateBolts(STEP);}
+    }
+    reset();let h=world.hero;const t=spawnEnemy('twintuft',h.x+80,FLOOR());t.spawnT=0;hitEnemy(t,t.hp+5,{dir:1});
+    for(let i=0;i<5;i++){world.t+=STEP;for(const e of [...world.enemies]) updateEnemy(e,STEP);}
+    ok(world.enemies.filter(e=>e.type==='fuzzlet'&&!e.dead).length===2,'a Twin Tuft did not split into two Fuzzlets');
+    reset();h=world.hero;const q=spawnEnemy('quillback',h.x+80,FLOOR());q.spawnT=0;q.hp=q.max=1e6;
+    for(let i=0;i<4;i++) hitEnemy(q,1,{dir:1});
+    for(let i=0;i<30;i++){world.t+=STEP;updateEnemy(q,STEP);}
+    ok(world.bolts.filter(b=>b.quill).length>=10,'a Quillback hit four times did not bristle');
+    // a Grave Goose is a ghost between attacks; a Black Swan on guard parries a hit from the front
+    reset();h=world.hero;const g=spawnEnemy('ggrave',h.x+60,FLOOR());g.spawnT=0;g.calm=false;updateEnemy(g,STEP);
+    ok(hitEnemy(g,50,{dir:1})===0 && g.hp===g.max,'a hit landed on a phasing Grave Goose');
+    reset();h=world.hero;const sw=spawnEnemy('swan',h.x+30,FLOOR());sw.spawnT=0;sw.calm=false;sw.face=-1;sw.state='wind';sw.st=1;sw.move='guard';sw.guarding=true;
+    ok(hitEnemy(sw,50,{dir:1})===0 && sw.move==='riposte','the Black Swan did not parry');
+    // the lagoon: a Snapper hit from the front ducks into its shell, a flipped Spin Turtle takes double, a Shellback's
+    // back is spiked, a Lily Lurker waits under its pad, a Bubble Newt's bubble floats you
+    reset();h=world.hero;const sn=spawnEnemy('snapper',h.x+30,FLOOR());sn.spawnT=0;sn.calm=false;sn.face=-1;
+    ok(hitEnemy(sn,50,{dir:1})===0 && sn.move==='snap' && hitEnemy(sn,50,{dir:1})===0,'the Snapper did not shell up');
+    reset();h=world.hero;const st=spawnEnemy('spinturtle',h.x+60,FLOOR());st.spawnT=0;st.hp=st.max=1e6;const d1=hitEnemy(st,100,{dir:1,chip:true});st.flipT=1;
+    ok(hitEnemy(st,100,{dir:1,chip:true})===d1*2,'a flipped Spin Turtle did not take double');
+    reset();h=world.hero;const sb=spawnEnemy('shellback',h.x+30,FLOOR());sb.spawnT=0;sb.calm=false;sb.face=1;
+    ok(hitEnemy(sb,50,{dir:1})===0 && sb.hp===sb.max,'a hit on the Shellback\'s spiked back landed');
+    reset();h=world.hero;const ll=spawnEnemy('lilylurker',h.x+90,FLOOR());ll.spawnT=0;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(ll,STEP);}
+    ok(ll.hidden && Math.abs(ll.vx)<1,'the Lily Lurker was not hiding');h.x=ll.x-30;let rose=false;
+    for(let i=0;i<90;i++){world.t+=STEP;updateEnemy(ll,STEP);rose=rose||ll.move==='rise';}
+    ok(rose && !ll.hidden,'the Lily Lurker did not spring');
+    reset();h=world.hero;const bn=spawnEnemy('bubblenewt',h.x+70,FLOOR());bn.spawnT=0;bn.calm=false;
+    for(let i=0;i<60*6&&!h.bubbled;i++){world.t+=STEP;h.inv=0;updateEnemy(bn,STEP);updateBolts(STEP);updateHero(h,STEP);}
+    ok(h.bubbled,'a Bubble Newt\'s bubble never caught the hero');
+    // the bazaar: a Pickpocket lifts shards and gives them back when caught, a Shadow Tom you turn to face is caught out,
+    // a Masked Bandit in its smoke dodges, a Lantern Cat far off is all but invisible
+    reset();h=world.hero;world.shards=200;const pk=spawnEnemy('pickpocket',h.x+24,FLOOR());pk.spawnT=0;pk.calm=false;pk.hp=pk.max=1e6;
+    for(let i=0;i<60*4&&!pk.stolen;i++){world.t+=STEP;h.inv=0;updateEnemy(pk,STEP);}
+    ok(pk.stolen>0 && world.shards===200-pk.stolen && pk.fleeT>0,'the Pickpocket stole nothing');
+    const n0=world.pickups.length;pk.hp=1;hitEnemy(pk,50,{dir:1});updateEnemy(pk,STEP);ok(world.pickups.length>n0,'the Pickpocket did not drop the shards');
+    reset();h=world.hero;h.face=1;const tom=spawnEnemy('shadowtom',h.x-30,FLOOR());tom.spawnT=0;tom.calm=false;tom.face=1;tom.state='wind';tom.st=0;tom.move='backstab';tom.d.wind;
+    h.face=-1;for(let i=0;i<3;i++){world.t+=STEP;updateEnemy(tom,STEP);}ok(tom.stun>0.5,'turning to face the Shadow Tom did not catch it out');
+    reset();h=world.hero;const bd=spawnEnemy('bandit',h.x+40,FLOOR());bd.spawnT=0;bd.calm=false;bd.state='wind';bd.st=0;bd.move='smoke';bd.hp=bd.max=1e6;
+    for(let i=0;i<3;i++){world.t+=STEP;updateEnemy(bd,STEP);}let miss=0;for(let i=0;i<40;i++) if(hitEnemy(bd,10,{dir:1})===0) miss++;
+    ok(bd.cloud && miss>5 && miss<35,'the Masked Bandit\'s smoke did not make swings miss ('+miss+'/40)');
+    reset();h=world.hero;const lc=spawnEnemy('lanterncat',h.x+150,FLOOR());lc.spawnT=0;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(lc,STEP);}
+    ok(lc.alpha<0.3,'the Lantern Cat showed itself in the dark');
+    // the shrine: a Corgi's sweep stays low enough to jump, a Petal Kitsune leaves a decoy behind, a Husky on guard parries
+    // and is open after its counter, the Tosa's charge dazes, the Akita's quick-draw carries it across
+    reset();h=world.hero;const cg=spawnEnemy('corgi',h.x+20,FLOOR());cg.spawnT=0;cg.calm=false;cg.face=-1;cg.state='wind';cg.st=0;cg.move='sweep';h.y-=16;h.onGround=false;
+    const hp0=h.hp;for(let i=0;i<20;i++){world.t+=STEP;h.inv=0;h.y=FLOOR()-h.h-16;h.vy=0;updateEnemy(cg,STEP);}ok(h.hp===hp0,'the Corgi\'s sweep hit a hero in the air');
+    reset();h=world.hero;const pf=spawnEnemy('petalfox',h.x+30,FLOOR());pf.spawnT=0;pf.calm=false;const x0=pf.x;
+    ok(hitEnemy(pf,50,{dir:1})===0 && pf.hp===pf.max && world.bolts.some(b=>b.look==='decoy') && Math.abs(pf.x-x0)>20,'the Petal Kitsune left no decoy');
+    reset();h=world.hero;const hk=spawnEnemy('husky',h.x+30,FLOOR());hk.spawnT=0;hk.calm=false;hk.face=-1;updateEnemy(hk,STEP);
+    ok(hitEnemy(hk,50,{dir:1})===0 && hk.move==='slash','the Husky Sentry did not parry');
+    for(let i=0;i<60*2&&!(hk.openT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(hk,STEP);}ok(hk.openT>0 && hitEnemy(hk,50,{dir:1})>0,'the Husky was not open after its counter');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const ts=spawnEnemy('tosa',h.x+100,FLOOR());ts.spawnT=0;ts.calm=false;
+    for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(ts,STEP);updateHero(h,STEP);}ok(h.hp<h.maxHp && h.hurtT>0.2,'the Tosa\'s charge did not daze');
+    // the monastery: a Snow Monkey Sage heals a hurt monk, a Spinning Gibbon sends a shot back, the Yak raises spikes,
+    // the Baboon's staff reaches across the floor, the Cloud Ape's clones come at you
+    reset();h=world.hero;const sg=spawnEnemy('snowsage',h.x+120,FLOOR());sg.spawnT=0;sg.calm=false;const mk=spawnEnemy('macaque',h.x+150,FLOOR());mk.spawnT=0;mk.hp=Math.round(mk.max*0.3);const mh=mk.hp;
+    for(let i=0;i<60*3&&mk.hp===mh;i++){world.t+=STEP;updateEnemy(sg,STEP);}ok(mk.hp>mh,'the Snow Monkey Sage healed nobody');
+    reset();h=world.hero;const gb=spawnEnemy('gibbon',h.x+60,FLOOR());gb.spawnT=0;gb.calm=false;gb.state='attack';gb.move='gibspin';gb.st=1;gb.hp=gb.max=1e6;
+    ok(hitEnemy(gb,50,{dir:1,shot:true})===0 && world.bolts.length>0,'the Spinning Gibbon did not reflect a shot');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const yk=spawnEnemy('yak',h.x+70,FLOOR());yk.spawnT=0;yk.calm=false;yk.face=-1;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='spike');i++){world.t+=STEP;updateEnemy(yk,STEP);}ok(world.bolts.some(b=>b.look==='spike'),'the Temple Yak raised no spikes');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const bb=spawnEnemy('baboon',h.x+110,FLOOR());bb.spawnT=0;bb.calm=false;
+    for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(bb,STEP);}ok(h.hp<h.maxHp && Math.abs(cx(bb)-cx(h))>80,'the Baboon\'s staff did not reach across');
+    reset();h=world.hero;const ca=spawnEnemy('cloudape',h.x+150,FLOOR());ca.spawnT=0;ca.calm=false;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='decoy');i++){world.t+=STEP;updateEnemy(ca,STEP);}ok(world.bolts.filter(b=>b.look==='decoy'&&!b.harmless).length===2,'the Cloud Ape sent no clones');
+    // the forge: a Honey Badger gets faster with every hit, the Iron Polar Bear's plate halves a light hit, a Badger
+    // underground can't be hit, the Molten Boar overheats on its third slam, the Grizzly's pound stuns
+    reset();h=world.hero;const hb=spawnEnemy('honeybadger',h.x+60,FLOOR());hb.spawnT=0;hb.hp=hb.max=1e6;const sp0=hb.speed;for(let i=0;i<3;i++)hitEnemy(hb,1,{dir:1});
+    ok(hb.anger===3 && hb.speed>sp0*1.3,'the Honey Badger did not get angrier');
+    reset();h=world.hero;const pb=spawnEnemy('polarbear',h.x+60,FLOOR());pb.spawnT=0;pb.hp=pb.max=1e6;const bdg=spawnEnemy('bearsmith',h.x-60,FLOOR());bdg.spawnT=0;bdg.hp=bdg.max=1e6;
+    ok(hitEnemy(pb,100,{dir:1,chip:true})<hitEnemy(bdg,100,{dir:-1,chip:true})*0.7,'the Iron Polar Bear\'s plate did nothing');
+    reset();h=world.hero;const bg=spawnEnemy('badger',h.x+120,FLOOR());bg.spawnT=0;bg.calm=false;bg.hp=bg.max=1e6;
+    for(let i=0;i<30&&!bg.hidden;i++){world.t+=STEP;updateEnemy(bg,STEP);}ok(bg.hidden && hitEnemy(bg,50,{dir:1})===0,'the Badger did not dig in');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const mb=spawnEnemy('moltenboar',h.x+30,FLOOR());mb.spawnT=0;mb.calm=false;
+    for(let i=0;i<60*12&&!(mb.coolT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(mb,STEP);}ok(mb.coolT>0 && world.bolts.some(b=>b.look==='lava'),'the Molten Boar never overheated');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const gz=spawnEnemy('grizzly',h.x+80,FLOOR());gz.spawnT=0;gz.calm=false;gz.rallyCool=99;
+    let stunned=false;for(let i=0;i<60*4&&!stunned;i++){world.t+=STEP;h.inv=0;updateEnemy(gz,STEP);updateHero(h,STEP);stunned=gz.move==='pound'&&h.hurtT>0.3;}ok(stunned,'the Grizzly\'s pound did not stun');
+    // the cottage: a curled Hedgehog is all spines, the Horned Owl's shield breaks only to a combo, a Polymorph Hare's
+    // spell makes you a bunny that can't swing, the Mirror Owl sends back what hit it, teacups circle then fly
+    reset();h=world.hero;const hh=spawnEnemy('hedgehog',h.x+30,FLOOR());hh.spawnT=0;hh.calm=false;hh.state='wind';hh.move='sparkring';hh.st=1;
+    ok(hitEnemy(hh,50,{dir:1})===0 && hh.hp===hh.max,'a hit landed on a curled Hedgehog');
+    reset();h=world.hero;const ho=spawnEnemy('hornedowl',h.x+40,FLOOR());ho.spawnT=0;ho.calm=false;ho.hp=ho.max=1e6;updateEnemy(ho,STEP);
+    ok(hitEnemy(ho,50,{dir:1})===0,'the Horned Owl\'s shield let a hit through');for(let i=0;i<3;i++)hitEnemy(ho,50,{dir:1});ok(!ho.shield && hitEnemy(ho,50,{dir:1})>0,'a combo did not break the shield');
+    reset();h=world.hero;const ph=spawnEnemy('polyhare',h.x+100,FLOOR());ph.spawnT=0;ph.calm=false;
+    for(let i=0;i<60*4&&!(h.polyT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(ph,STEP);updateBolts(STEP);}ok(h.polyT>0,'the Polymorph Hare never bunnified the hero');
+    updateHero(h,STEP);ok(!canAttack(h),'a bunny could still swing');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const mo=spawnEnemy('mirrorowl',h.x+60,FLOOR());mo.spawnT=0;mo.calm=false;mo.hp=mo.max=1e6;hitEnemy(mo,10,{dir:1,shot:true});
+    for(let i=0;i<60&&mo.move!=='mirrorback';i++){world.t+=STEP;updateEnemy(mo,STEP);}ok(mo.move==='mirrorback','the Mirror Owl did not mirror');
+    reset();h=world.hero;const th=spawnEnemy('teahog',h.x+100,FLOOR());th.spawnT=0;th.calm=false;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='teacup');i++){world.t+=STEP;updateEnemy(th,STEP);updateBolts(STEP);}const cup=world.bolts.find(b=>b.look==='teacup');
+    ok(cup && Math.hypot(cx(cup)-cx(th),cup.y-cy(th))<30,'the teacups did not circle the Tea Kettle Hog');
+    // the castle: a Skink leaves its tail clone, the Chameleon all but vanishes, the Frilled star skips off the floor,
+    // the Iguana's star comes home, the Wall Gecko climbs, the Komodo marks the floor with a rain of stars
+    reset();h=world.hero;const sk=spawnEnemy('skink',h.x+40,FLOOR());sk.spawnT=0;sk.calm=false;const skx=sk.x;
+    ok(hitEnemy(sk,50,{dir:1})===0 && sk.hp===sk.max && Math.abs(sk.x-skx)>30 && world.bolts.some(b=>b.look==='decoy'&&b.solid),'the Skink did not drop a tail clone');
+    reset();h=world.hero;const ch=spawnEnemy('chameleon',h.x+120,FLOOR());ch.spawnT=0;ch.calm=false;ch.cool=99;
+    for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(ch,STEP);}ok(ch.alpha<0.2,'the Chameleon did not fade');
+    reset();h=world.hero;h.y-=200;const fr=spawnEnemy('frilled',h.x+120,FLOOR());fr.spawnT=0;fr.face=-1;fr.state='attack';fr.move='ricochet';beastAttack(fr,-1);
+    let bounced=false;for(let i=0;i<60*2;i++){world.t+=STEP;const b=world.bolts.find(b=>b.bounce!=null);updateBolts(STEP);if(b&&b.bounce<3)bounced=true;}ok(bounced,'the Frilled star never skipped off the floor');
+    reset();h=world.hero;h.y-=200;const ig=spawnEnemy('iguana',h.x+60,FLOOR());ig.spawnT=0;ig.face=-1;ig.state='attack';ig.move='bigstar';beastAttack(ig,-1);
+    const bs=world.bolts.find(b=>b.big);let far=0;for(let i=0;i<60*3&&world.bolts.includes(bs);i++){world.t+=STEP;updateBolts(STEP);far=Math.max(far,Math.abs(cx(bs)-cx(ig)));}
+    ok(far>80 && !world.bolts.includes(bs),'the Iguana\'s star did not come home');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const wg=spawnEnemy('wallgecko',h.x+80,FLOOR());wg.spawnT=0;wg.calm=false;const wy=wg.y;let up=0;
+    for(let i=0;i<60*3;i++){world.t+=STEP;h.inv=0;updateEnemy(wg,STEP);updateBolts(STEP);up=Math.max(up,wy-wg.y);}ok(up>40 && !wg.air,'the Wall Gecko never climbed (or never came down)');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const kj=spawnEnemy('komodo',h.x+120,FLOOR());kj.spawnT=0;kj.calm=false;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.rain&&b.look==='shuriken');i++){world.t+=STEP;updateEnemy(kj,STEP);}ok(world.bolts.some(b=>b.rain&&b.look==='shuriken'),'the Komodo never called a star storm');
+    // the hoard: a shelled Armadillo turns every hit, a Magpie steals shards and shoots them back, the Elder Dragon
+    // works through its weapons in turn
+    reset();h=world.hero;const ad=spawnEnemy('armadillo',h.x+30,FLOOR());ad.spawnT=0;ad.calm=false;ad.shellT=1;
+    ok(hitEnemy(ad,50,{dir:1})===0 && ad.hp===ad.max,'a hit landed on a shelled Armadillo');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;world.shards=500;const mg=spawnEnemy('magpie',h.x+30,FLOOR());mg.spawnT=0;mg.calm=false;
+    let coins=false;for(let i=0;i<60*8&&!coins;i++){world.t+=STEP;h.inv=0;updateEnemy(mg,STEP);updateBolts(STEP);coins=world.bolts.some(b=>b.look==='coin'&&b.owner===mg);}
+    ok(world.shards<500 && coins,'the Magpie did not steal shards and shoot them back');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const el=spawnEnemy('elder',h.x+40,FLOOR());el.spawnT=0;el.calm=false;el.hp=el.max=1e7;
+    for(let i=0;i<60*20;i++){world.t+=STEP;h.inv=0;h.x+=Math.sin(i/40)*1.5;updateEnemy(el,STEP);updateBolts(STEP);}ok(el.styleI>=4,'the Elder Dragon only used '+el.styleI+' weapons');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
+    for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
+  });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {
       ok(TYPE_LIST.includes(type),type+' missing');
       reset();const h=world.hero;h.weapon=makeWeapon(5,{type,q:3});const e=spawnEnemy('brute',h.x+24,FLOOR());e.spawnT=0;e.hp=e.max=1e7;
       for(let i=0;i<60;i++){key('KeyZ',i%10<5);poll();world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);}
       key('KeyZ',false);poll();h.specialCd=0;h.attack=null;h.cd=0;
-      key('KeyC',true);poll();for(let i=0;i<60;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);poll();}key('KeyC',false);poll();
+      key('KeyC',true);poll();for(let i=0;i<120;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);updateSpecials(STEP);poll();}key('KeyC',false);poll();
       ok(e.hp<e.max,type+' never hit');ok(!h.special,type+' special never ended');heroPose(h,world.t);
     }
+  });
+  check('every special (three per weapon type) starts, lands a hit and ends',()=>{
+    for(const id of Object.keys(SPECIALS)) {
+      reset();const h=world.hero;h.weapon=makeWeapon(5,{type:SPECIALS[id].type,q:3});h.weapon.sp={id,boons:['aftershock','vamp'],element:'fire'};
+      const e=spawnEnemy('brute',h.x+30,FLOOR());e.spawnT=0;e.hp=e.max=1e7;h.specialCd=0;h.attack=null;h.cd=0;
+      key('KeyC',true);poll();for(let i=0;i<150;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);updateSpecials(STEP);poll();if(i===2)key('KeyC',false);}
+      ok(e.hp<e.max,id+' never hit');ok(!h.special,id+' never ended');heroPose(h,world.t);
+    }
+    clearSpecials();
   });
   check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
     const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});
       const es=[0,18,40].map(dx=>{const e=spawnEnemy('brute',h.x+30+dx,FLOOR());e.spawnT=0;e.hp=e.max=1e6;return e;});return [h,es];};
-    let [h,es]=fresh('sword',['core','skin','ripple']);hitEnemy(es[0],1000,{dir:1});
+    let [h,es]=fresh('sword',['core','skin','skin','skin','ripple']);hitEnemy(es[0],1000,{dir:1});
     ok(es[1].hp<es[1].max && es[1].hp>es[1].max-1000*0.1,'ripple did not splash a little onto the neighbour');
-    [h,es]=fresh('hammer',['core','skin','heft','heavy','crush','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
+    [h,es]=fresh('hammer',['core','skin','skin','skin','heft','heft','heft','heavy','heavy','heavy','crush','crush','crush','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
     ok(es[1].hp===es[1].max,'a shockwave without a finisher');hitEnemy(es[0],1000,{dir:1,big:true});ok(es[1].hp<es[1].max,'the finisher sent no shockwave');
-    [h,es]=fresh('bow',['core','learn','fast','quick','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    [h,es]=fresh('bow',['core','learn','learn','learn','fast','fast','fast','quick','quick','quick','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
     ok(es[0].dead && es[1].hp<es[1].max,'the kill did not scatter onto the next foe');
-    [h,es]=fresh('sword',['core','learn','aim','kite','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
+    [h,es]=fresh('sword',['core','learn','learn','learn','fast','fast','fast','quick','quick','quick','scatter'],'ranged');es[0].hp=5;hitEnemy(es[0],100,{dir:1});
     ok(es[1].hp===es[1].max,'a ranged augment worked with a sword');
     resetMeta();
   });
   check('shard tree feel upgrades: reach grows the weapon, echoes strike twice, shots fly faster and pierce',()=>{
     const T=game.types.sword,mv={big:false,from:0,to:90},h0={x:100,y:80,w:11,face:1};
     ok(attackBox(h0,T,mv,0.3).w>attackBox(h0,T,mv,0).w*1.25,'reach did not grow the swing');
-    resetMeta();bankShards(1e7);setLock('blades');for(const id of ['core','sharp','slice','longb','cleave','whirl','echo','echo','echo','echo','echo'])buyRank(id);
+    resetMeta();bankShards(1e7);setLock('blades');for(const id of ['core','sharp','sharp','sharp','slice','slice','slice','longb','longb','longb','cleave','cleave','cleave','whirl','whirl','whirl','echo','echo','echo','echo','echo'])buyRank(id);
     reset();let h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});let e=spawnEnemy('brute',h.x+30,FLOOR());e.spawnT=0;e.hp=e.max=1e7;
     let twice=0;for(let i=0;i<60;i++){const hp=e.hp;hitEnemy(e,100,{dir:1});if(hp-e.hp>100)twice++;}
     ok(twice>3,'no echo slashes ('+twice+'/60)');
-    resetMeta();bankShards(1e7);setLock('ranged');for(const id of ['core','learn','fast','fast','fast','quick','scatter','pierce','pierce'])buyRank(id);
+    resetMeta();bankShards(1e7);setLock('ranged');for(const id of ['core','learn','learn','learn','fast','fast','fast','quick','quick','quick','scatter','scatter','scatter','pierce','pierce'])buyRank(id);
     reset();h=world.hero;h.weapon=makeWeapon(3,{type:'bow',q:3});world.shots.length=0;h.cd=0;key('KeyZ',true);poll();for(let i=0;i<40&&!world.shots.length;i++){world.t+=STEP;updateHero(h,STEP);poll();}key('KeyZ',false);poll();
     const s=world.shots[0];ok(s && Math.abs(s.vx)>game.types.bow.speed*1.25 && s.pierce>=game.types.bow.pierce+2,'shots did not speed up or pierce');
     resetMeta();
@@ -463,11 +606,27 @@ export function runSmoke(game) {
     ok(!H.inRoom && world.map===map && world.enemies.length===foes,'the map changed while away');
     ok(Math.abs(h.x+h.w/2-H.x)<2,'not set back on the portal');
   });
-  check('the War Goose hatches from its egg, and a hit throws you from the saddle instead of hurting you',()=>{
-    const h=level('1-2');ok(world.egg,'no egg on 1-2');
-    mount(h);ok(h.mount && !world.loose,'did not mount');const hp=h.hp;hurtHero(30,1);
-    ok(!h.mount && world.loose && h.hp===hp,'the hit was not soaked by the goose');
+  check('mounts wait for the stable (three family heads), then your pick hatches and a hit throws you from the saddle',()=>{
+    resetMeta();let h=level('1-2');ok(!world.egg,'an egg before the stable opened');
+    winTrophy(1);winTrophy(2);winTrophy(3);h=level('1-2');ok(!world.egg,'an egg before a mount was picked');
+    chooseMount('wargoose');h=level('1-2');ok(world.egg,'no egg on 1-2');
+    mount(h);ok(h.mount && h.mount.kind==='wargoose' && !world.loose,'did not mount');let hp=h.hp;hurtHero(30,1);
+    ok(!h.mount && world.loose && world.loose.kind==='wargoose' && h.hp===hp,'the hit was not soaked by the goose');
     for(let i=0;i<60*6;i++){world.t+=STEP;updateMount(STEP);}ok(!world.loose,'the goose never flew off');
+    // the Iron Boar's barding soaks the first hit, the second throws you
+    chooseMount('ironboar');h=level('1-2');mount(h);ok(h.mount.kind==='ironboar','the egg hatched the wrong mount');hp=h.hp;
+    hurtHero(30,1);ok(h.mount && h.hp===hp,'the barding did not take the first hit');h.inv=0;
+    hurtHero(30,1);ok(!h.mount && h.hp===hp,'the second hit did not throw you');
+    // the War Griffin flaps once in mid-air
+    chooseMount('griffin');h=level('1-2');mount(h);h.onGround=false;h.coyote=0;h.vy=50;
+    ok(flap(h) && h.vy<0,'no sky flap');ok(!flap(h),'flapped twice');
+    resetMeta();
+  });
+  check('specialized: an off-class weapon still equips and swings, just without the cluster',()=>{
+    resetMeta();setLock('ranged');reset();const h=world.hero;world.bag.fill(null);
+    const axe=makeWeapon(3,{type:'axe',q:4,standout:false});world.bag[2]=axe;
+    ok(equipFromBag(2)!==false && h.weapon===axe,'a ranged specialist could not equip an axe');
+    resetMeta();
   });
   check('ghost houses, auto-scrollers, water and ice change how the level plays',()=>{
     level('9-2');ok(world.gimmick==='ghost' && world.haunts.length>0,'no haunted blades');
@@ -477,6 +636,33 @@ export function runSmoke(game) {
     level('3-3');ok(heroPhysics()?.swim>0,'no swimming underwater');
     level('6-2');ok(heroPhysics()?.friction<1,'ice is not slippery');
     level('1-1');ok(!world.gimmick,'1-1 must stay as it is');
+  });
+  check('every zone comes alive: layers, props and weather, ice you slide on, belts that carry you and wind that pushes',()=>{
+    for(let z=0;z<10;z++){reset();startZone(z);const a=ambience();ok(a.B && a.props.length>=12 && a.parts.length>0,'zone '+(z+1)+' has no props or weather');ok(A.biome[ZONES[z].id]?.layers.length===4 && A.biome[ZONES[z].id].atlas,'zone '+(z+1)+' art missing');}
+    const wide=m=>m.platforms.filter(p=>p.ground && !p.belt && !p.ice && p.w>=120 && p.x>0 && p.x<m.bossLeft).sort((a,b)=>b.w-a.w)[0];
+    reset();startZone(1);ambience();const ice=world.map.platforms.find(p=>p.ice),h=world.hero;
+    ok(ice && ice!==world.map.platforms.find(p=>p.ground && p.x===0),'no ice sheet in the snowy woods (or it is on the runway)');
+    stand(h,ice.x+ice.w/2,ice.y);h.platform=ice;ok(heroPhysics()?.friction<1,'an ice sheet is not slippery');
+    const snow=wide(world.map);stand(h,snow.x+snow.w/2,snow.y);h.platform=snow;ok(!heroPhysics(),'plain snow is slippery');
+    reset();startZone(6);ambience();const belt=world.map.platforms.find(p=>p.belt);ok(belt,'no conveyor belt in the forge');
+    stand(world.hero,belt.x+belt.w/2,belt.y);world.hero.platform=belt;let x0=world.hero.x;
+    for(let i=0;i<30;i++)updateAmbience(STEP);ok(Math.sign(world.hero.x-x0)===Math.sign(belt.belt),'the belt did not carry the hero');
+    reset();startZone(5);const amb=ambience(),g=wide(world.map);stand(world.hero,g.x+g.w/2,g.y);world.hero.platform=g;x0=world.hero.x;
+    amb.wind.phase='warn';amb.wind.t=0;for(let i=0;i<90;i++)updateAmbience(STEP);
+    ok(amb.wind.phase==='gust' && Math.sign(world.hero.x-x0)===amb.wind.dir,'the mountain wind did not push');
+    reset();startZone(0);ambience();ok(!world.map.platforms.some(p=>p.ice||p.belt) && !ambience().wind,'the Sword Graveyard got terrain touches');
+  });
+  check('each trophy power counters the next world',()=>{
+    const hit=(src,dir=1)=>{const h=world.hero;h.inv=0;h.dashT=0;h.hp=h.maxHp=1e6;return hurtHero(1000,dir,src);};
+    resetMeta();reset();const shot0=hit('shot'),lava0=hit('lava'),spell0=hit('magic'),star0=hit('star');hit(null);const kb0=Math.abs(world.hero.vx);
+    winTrophy(1);winTrophy(5);winTrophy(6);winTrophy(7);winTrophy(8);reset();
+    ok(hit('shot')<shot0,'the down coat did not soften shots');ok(hit('lava')<lava0,'the frost beads did not cool the lava');
+    ok(hit('magic')<hit('shot'),'cold iron did not soften spells');ok(hit('star')<shot0*0.75,'the spectacles did not soften shuriken');
+    hit(null);ok(Math.abs(world.hero.vx)<kb0*0.5,'the geta did not root you');
+    level('6-2');ok(heroPhysics()===null,'the down coat still slips on ice');
+    winTrophy(2);level('3-3');ok(heroPhysics().speed>0.8,'the broadhead did not swim faster');
+    reset();world.zone=0;const d0=heroStats().dmg;world.zone=1;ok(Math.abs(heroStats().dmg-d0-HOME_TURF.dmg)<1e-9,'no home turf in world 2 for the goose trophy');
+    world.zone=0;resetMeta();
   });
   check('the loot filter salvages drops below its rarity and always keeps standouts',()=>{
     reset();const was=lootFilter();setLootFilter(3);world.bag=new Array(BAG_SIZE).fill(null);const s0=world.shards;

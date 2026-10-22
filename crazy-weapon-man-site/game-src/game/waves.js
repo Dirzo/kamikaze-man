@@ -8,7 +8,7 @@ import { world } from './world.js';
 import { ZONES, bossSong, zoneSong } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
 import { makeMap, CLEAR_BONUS } from '../data/maps.js';
-import { enemyPool } from '../data/progression.js';
+import { enemyPool, maxRarity } from '../data/progression.js';
 import { spawnEnemy } from './enemy.js';
 import { kill } from './combat.js';
 import { overlap } from './physics.js';
@@ -16,8 +16,9 @@ import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
 import { startBoss, bossDone, clearBoss, bossWarning } from './bosses.js';
 import { clearAbilities } from './abilities.js';
+import { clearSpecials } from './specials.js';
 import { placeSecret } from './secrets.js';
-import { makeWeapon, classType } from './loot.js';
+import { makeWeapon } from './loot.js';
 import { dropWeapon } from './combat.js';
 import { updateCamera } from './camera.js';
 import { splitZone } from './speedrun.js';
@@ -34,6 +35,7 @@ import { modOn } from '../data/temper.js';
 export function startZone(z) {
   clearBoss();
   clearAbilities();
+  clearSpecials();
   world.boss=null;
   for(const key of ['echoes','shots','drops','pickups','enemies','bolts']) world[key].length=0;
   world.nearDrop=null;
@@ -59,9 +61,12 @@ export function startZone(z) {
   }
   world.director={phase:'intro',t:2.6,toSpawn:0,initialCount:world.map.spawns.length,bossStarted:false};
   const elites=modOn(world.temper,'elites'); // TEMPER: ELITE PACKS
+  const packType={};
   world.map.spawns.forEach((spot,i)=>{
-    const pool=enemyPool(z,spot.wave,ZONES[z].pool);
-    const type=pool[Math.floor(Math.random()*pool.length)], d=ENEMIES[type];
+    const pool=enemyPool(z,spot.wave,ZONES[z].pool,world.level?tier:null);
+    // a pack keeps to one kind, with the odd straggler of another (a yeti and its fuzzlets)
+    const lead=packType[spot.pack]??=pool[Math.floor(Math.random()*pool.length)];
+    const type=Math.random()<0.7&&pool.includes(lead)?lead:pool[Math.floor(Math.random()*pool.length)], d=ENEMIES[type];
     spawnEnemy(type,spot.x,d.air?spot.airY:spot.y,{elite:spot.elite||(elites&&i%9===4),wave:spot.wave});
   });
   startGimmick();
@@ -160,7 +165,7 @@ function updateSurvival(dt) {
   const bossUp=!!D.sboss,cap=SURVIVE.alive(world.zone)*(bossUp?SWARM_BOSS.alive:1);
   if(D.spawnT<=0 && alive<cap && !(world.boss && world.boss.dead)) {
     D.spawnT=SURVIVE.every(world.zone)*(bossUp?SWARM_BOSS.every:1);
-    const pool=enemyPool(world.zone,4,ZONES[world.zone].pool).filter(t=>ENEMIES[t].kind!=='mimic');
+    const pool=enemyPool(world.zone,4,ZONES[world.zone].pool,world.level?levelTier(world.level.id):null).filter(t=>ENEMIES[t].kind!=='mimic');
     const type=pool[Math.floor(Math.random()*pool.length)],[x,y]=swarmSpot(ENEMIES[type]);
     const e=spawnEnemy(type,x,y,{elite:Math.random()<0.06,wave:4});
     if(e){e.swarm=true;e.max=e.hp=Math.max(1,Math.round(e.hp*SURVIVE.hp));}
@@ -213,10 +218,9 @@ function openExit() {
   sfx.clear();
   callout('MAP CLEAR - EXIT OPEN',W/2,64,C.gold,{big:true,life:120});
   // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard), already
-  // tuned for the next map so there is always something ready to carry on with
+  // tuned for the next map at the best tier this one rolls, so there is always something ready to carry on with
   const z=world.zone,home=ZONES[z].weapon;
-  // (a specialist gets one of their own class instead)
-  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:classType(home),q:z===0?1:Math.min(10,z+1),standout:false}));
+  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:home,q:maxRarity(z),standout:false}));
 }
 export function enemiesLeft() {
   if(!world.director) return 0;

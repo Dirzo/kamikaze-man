@@ -13,6 +13,7 @@ import { updateSecret, drawSecret } from './game/secrets.js';
 import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone, startSurvival } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
+import { updateSpecials, drawSpecials, drawSpecialScreen } from './game/specials.js';
 import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
@@ -29,14 +30,15 @@ import { newRun, tickRun, endRun, drawResults, RESULTS_TIME } from './game/speed
 import { ow, openOverworld, updateOverworld, drawOverworld } from './game/overworld.js';
 import { loadSave, writeSave, clearLevel, FINAL } from './data/overworld.js';
 import { freshUid } from './game/loot.js';
-import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
-import { P as powers, openPowers, closePowers } from './game/powers.js';
+import { bankShards, winTrophy, TROPHIES, trophyCount, chosenMount, trophyTurf } from './data/meta.js';
+import { STABLE_TROPHIES } from './data/mounts.js';
+import { P as powers, openPowers, closePowers, bagLink, TAB } from './game/powers.js';
 import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
-import { applyLock } from './game/classlock.js';
 import { updateRelics, drawRelics, relicsTaken } from './game/relics.js';
 import { updateHidden, drawHidden } from './game/hidden.js';
-import { updateMount, drawMountWorld } from './game/mount.js';
+import { updateMount, drawMountWorld, saddle } from './game/mount.js';
 import { updateGimmick, drawGimmickWorld, drawGimmickScreen } from './game/gimmicks.js';
+import { updateAmbience, drawAmbienceFront } from './game/ambience.js';
 import { flushBook } from './data/book.js';
 import { temperOf, temperClear, MODS } from './data/temper.js';
 import { relicMask, keepRelics, allRelics, RELIC_COUNT } from './data/relics.js';
@@ -90,7 +92,7 @@ function loadHero() {
     const copy = JSON.parse(JSON.stringify(snap));
     Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMax(copy.lv), weapon: freshUid(copy.weapon) });
     world.bag = copy.bag.map(w => w && freshUid(w));
-    if (copy.mount) h.mount = { chompT: 1, flapT: 0 }; // the War Goose rides along
+    if (copy.mount && chosenMount()) h.mount = saddle(chosenMount()); // your mount rides along (the stable's pick: swap it there)
   }
   return h;
 }
@@ -100,7 +102,13 @@ function openMapBag() {
   world.shards = 0;
   loadHero();
   openInventory();
+  if (world.inv) world.inv.tabs = true; // the first tab of the POWERS window (powers.js)
+  powers.save = ow.save; // the anvil spends this file's relics
+  powers.tab = TAB.BAG;
 }
+// the POWERS window opens and closes the map's bag when you change tab
+bagLink.open = openMapBag;
+bagLink.close = () => world.inv && scene === 'map' && (closeInventory(), closeMapBag(), true);
 function closeMapBag() {
   ow.save.hero = heroSnapshot();
   bankShards(world.shards); // salvaged on the map: straight into the shard tree
@@ -117,13 +125,6 @@ function enterLevel(node) {
   world.temper = temperOf(ow.save).on; // the post-game tier picked on the map (T)
   world.relicsOwned = relicMask(ow.save, node.id);
   newRun();
-  // specialized: off-class weapons in the kit melt into banked shards, for good (a failed
-  // attempt restores the kit from the save, so the save is cleaned too)
-  const melted = applyLock();
-  if (melted) {
-    bankShards(melted);
-    if (snap) (ow.save.hero = heroSnapshot()), writeSave(ow.save);
-  }
   startZone(node.zone);
   h.hp = h.maxHp; // every level starts at full health
   scene = 'play';
@@ -139,7 +140,7 @@ function endLevel(result) {
   flushBook();
   let relics = null, temperUp = 0;
   if (result === 'clear') {
-    if (node.kind === 'castle' && winTrophy(node.region)) trophy = TROPHIES[node.region];
+    if (node.kind === 'castle' && winTrophy(node.region)) trophy = { ...TROPHIES[node.region], turf: trophyTurf(node.region, true) };
     fresh = clearLevel(ow.save, node.id, world.levelExit === 'secret' && node.secret.length ? 'secret' : 'next');
     const had = allRelics(ow.save, node.id);
     relics = { taken: relicsTaken(), fresh: keepRelics(ow.save, node.id, world.relicMask), set: !had && allRelics(ow.save, node.id) };
@@ -148,7 +149,8 @@ function endLevel(result) {
     writeSave(ow.save);
   }
   if (result === 'quit') return openMap();
-  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length };
+  const stable = !!trophy && trophyCount() === STABLE_TROPHIES; // the third family head just fell
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable };
   scene = 'levelEnd';
   sceneT = 0;
 }
@@ -235,6 +237,7 @@ function update(dt) {
   updateEvolution(dt);
   updateShots(dt);
   updateAbilities(dt);
+  updateSpecials(dt);
   updateSecret(dt);
   updateBolts(dt);
   updateHazards(dt);
@@ -243,6 +246,7 @@ function update(dt) {
   updateFx(dt);
   tickToasts(dt);
   updateGimmick(dt);
+  updateAmbience(dt);
   updateCamera(dt);
   if (world.phase === 'dead') {
     world.deadT = (world.deadT || 0) + dt;
@@ -270,6 +274,7 @@ function update(dt) {
 // ---------------------------------------------------------------- drawing
 function drawSlab(zone, p) {
   const sl = A.slabs[zone];
+  if (p.ground && A.biome[zone]) return; // a living zone draws its own ground top (ambience.js)
   if (!sl) return rect(p.x, p.y, p.w, 6, C.stone);
   const cap = sl.cap,
     y0 = p.y - 2;
@@ -302,7 +307,9 @@ function drawWorld(t) {
   drawHero(world.hero, t);
   drawShots(t);
   drawAbilities(t);
+  drawSpecials();
   drawGimmickWorld(t);
+  drawAmbienceFront(); // liquid pits, near weather and the night bazaar's dark
   drawGimmickScreen(t); // the flood, the frost and the dark of a ghost house
   worldLayer();
   drawParticles();
@@ -358,9 +365,11 @@ function drawLevelEnd() {
   if (E.relics) extra.push([E.relics.set ? `ALL ${RELIC_COUNT} RELICS! A STAR FOR ${E.node.id}` : `RELICS ${E.relics.taken}/${RELIC_COUNT} THIS RUN` + (E.relics.fresh ? `  (${E.relics.fresh} NEW)` : ''), E.relics.set ? C.gold : C.cream]);
   if (E.temperUp) extra.push([`TEMPER ${E.temperUp} UNLOCKED: ${MODS[E.temperUp - 1].name}  (T ON THE MAP)`, C.coral]);
   if (E.cards) extra.push([`MONSTER BOOK: ${E.cards} CARD${E.cards > 1 ? 'S' : ''} WENT UP A TIER`, C.sky]);
-  panel('panel', W / 2 - 172, 74, 344, 108 + extra.length * 10);
-  extra.forEach(([s, col], i) => text(s, W / 2, 160 + i * 10, col, { align: 'center' }));
-  text(final ? 'THE ARMORY IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
+  const tr = E.trophy ? 30 : 0; // a trophy takes three more lines: its power and the world it is for
+  if (E.stable) extra.push(['THE STABLE IS OPEN! PICK A MOUNT: E (POWERS) > STABLE', C.lime]);
+  panel('panel', W / 2 - 172, 74, 344, 108 + tr + extra.length * 10);
+  extra.forEach(([s, col], i) => text(s, W / 2, 160 + tr + i * 10, col, { align: 'center' }));
+  text(final ? 'THE HOARD IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
   text(E.node.id + '  ' + E.node.name.toUpperCase(), W / 2, 112, C.paper, { align: 'center' });
   const line = final ? 'YOU BEAT CRAZY WEAPON MAN. THE CLOSETS STILL HAVE SECRETS.'
     : E.secret ? 'SECRET EXIT! A HIDDEN PATH OPENS'
@@ -369,9 +378,18 @@ function drawLevelEnd() {
   text(line, W / 2, 128, clear ? C.lime : C.mist, { align: 'center' });
   if (E.trophy) {
     text('TROPHY: ' + E.trophy.name, W / 2, 140, C.gold, { align: 'center' });
-    text(fitText('NEW PERK  ' + E.trophy.perk + ': ' + E.trophy.desc.toUpperCase(), 330), W / 2, 150, C.cream, { align: 'center' });
+    text('NEW POWER: ' + E.trophy.perk, W / 2, 150, C.cream, { align: 'center' });
+    // the power on two lines, split at the word nearest the middle that fits
+    const words = E.trophy.desc.toUpperCase().split(' ');
+    let cut = words.length;
+    while (cut > 1 && textWidth(words.slice(0, cut).join(' ')) > 330) cut--;
+    const half = words.findIndex((_, i) => textWidth(words.slice(0, i + 1).join(' ')) * 2 >= textWidth(words.join(' ')));
+    cut = Math.min(cut, Math.max(1, half + 1));
+    text(words.slice(0, cut).join(' '), W / 2, 160, C.paper, { align: 'center' });
+    text(fitText(words.slice(cut).join(' '), 330), W / 2, 170, C.paper, { align: 'center' });
+    text(fitText(E.trophy.turf, 330), W / 2, 180, C.lime, { align: 'center' });
   } else text(`+${E.shards} SHARDS BANKED FOR THE SHARD TREE`, W / 2, 144, C.ice, { align: 'center' });
-  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164 + extra.length * 10, C.fog, { align: 'center' });
+  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164 + tr + extra.length * 10, C.fog, { align: 'center' });
 }
 
 function render() {
@@ -389,6 +407,7 @@ function render() {
   drawWorld(world.t);
   drawHud(world.t);
   drawRouteHud();
+  if (scene === 'play') drawSpecialScreen(); // the special's banner and flash go over the HUD too
   drawInventory(clock);
   if (scene === 'pause') drawPause();
   if (scene === 'levelEnd') drawLevelEnd();
@@ -561,6 +580,7 @@ const debug = {
   types: WTYPES,
   hitDamage,
   snapshot(fn) { startRun(); fn(); capture = true; },
+  play(fn) { startRun(); fn(); }, // like snapshot, but the game keeps running (?capture=walkN)
   // show the end-of-run results screen, `T` seconds into its animation
   results(won, T = RESULTS_TIME) { endRun(won); scene = won ? 'won' : 'over'; sceneT = T; },
   sceneT: () => sceneT,

@@ -2,6 +2,7 @@
 // from the shard tree, trophies, gold Monster Book cards, boss pages and the held type's mastery
 // perks (data/meta.js stats). Drawn in the inventory (R) and as the STATS tab of the POWERS window.
 // A row that is still zero is drawn dim, so you can see what there is left to grow.
+import { specialOf, specialRoll, BOONS } from '../data/specials.js';
 import { C, HERO } from '../config.js';
 import { rect, text, fitText } from '../engine/gfx.js';
 import { world } from './world.js';
@@ -27,6 +28,7 @@ INNATE.homing = 'SEEKER SHOTS';
 export function sheetRows(w = null) {
   const s = stats(w?.type || null), T = w && TYPES[w.type], h = world.hero;
   const row = (label, v, f = pct) => [label, f(v), !!v];
+  const some = (...rows) => rows.filter(r => r[2]); // rows only the trophies give: shown once you have them
   const groups = [];
   if (w) {
     const p = proficiency(w.type);
@@ -38,14 +40,17 @@ export function sheetRows(w = null) {
         ['ONE HIT', fmt(hitDamage(w)), true],
         ['STYLE', T.melee ? `MELEE ${T.reach}PX` : `RANGED ${T.speed}PX/S`, true],
         ['ELEMENT', w.family ? ELEMENTS[w.family].word.toUpperCase() : 'NONE', !!w.family],
-        ['MASTERY', `LV ${p.lv} ${profRank(p.lv)}`, true]
+        ['MASTERY', `LV ${p.lv} ${profRank(p.lv)}`, true],
+        ['SPECIAL', specialOf(w).name, true],
+        ...specialRoll(w).boons.map(b => ['+ ' + BOONS[b].label, 'BOON', true])
       ]
     });
   }
   groups.push({
     name: 'OFFENSE', col: C.coral, rows: [
       row('DAMAGE', s.dmg), row('ATTACK SPEED', s.attackSpeed), row('CRIT CHANCE', s.crit), row('CRIT DAMAGE', s.critDmg), row('BOSS DAMAGE', s.bossDmg),
-      row('SWARM DAMAGE', s.swarmDmg), row('EXECUTE', s.execute), row('IMPACT', s.impact), row('ECHO HITS', s.echo)
+      row('SWARM DAMAGE', s.swarmDmg), row('EXECUTE', s.execute), row('IMPACT', s.impact), row('ECHO HITS', s.echo),
+      ...some(row('CHILL ON HIT', s.chillHit))
     ]
   });
   const els = Object.entries(s.infuse).map(([el, v]) => row(ELEMENTS[el].word.toUpperCase() + ' PROC', v));
@@ -58,7 +63,8 @@ export function sheetRows(w = null) {
   groups.push({
     name: 'DEFENSE', col: C.lime, rows: [
       ...(h && !h.dead ? [['MAX HEALTH', fmt(h.maxHp), true]] : []),
-      row('HEALTH', s.hp), row('ARMOR', s.armor), row('HEART HEALING', s.heal), row('REGEN /S', s.regen), row('SAFETY AFTER HIT', s.inv), row('HEART DROPS', s.hearts)
+      row('HEALTH', s.hp), row('ARMOR', s.armor), row('HEART HEALING', s.heal), row('REGEN /S', s.regen), row('SAFETY AFTER HIT', s.inv), row('HEART DROPS', s.hearts),
+      ...some(row('SHOT ARMOR', s.shotArmor), row('SPELL ARMOR', s.magicArmor), row('SHURIKEN ARMOR', s.starArmor), row('LAVA ARMOR', s.lavaArmor), row('KNOCKBACK RESIST', s.knockRes))
     ]
   });
   groups.push({

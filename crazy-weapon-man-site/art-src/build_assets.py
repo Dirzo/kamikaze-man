@@ -92,6 +92,10 @@ def main():
         cute_strip(frames).save(os.path.join(OUT, f'enemy-{etype}.png'))
         man['enemies'][etype] = {'w': frames[0].width, 'h': frames[0].height, 'frames': ['walk1', 'walk2', 'hit']}
 
+    # beastkin families: arcade-cut residents with named frames (beastkin.py)
+    import beastkin
+    beastkin.build(OUT, man)
+
     # bosses: full-size 32-bit style art (hd_bosses.py): the story bosses and the swarm giants
     hd_bosses.build(OUT, man)
     # the War Goose mount and its egg (mounts.py)
@@ -139,6 +143,9 @@ def main():
         man['zones'].append(key)
     # weapon-themed zones (weapon_zones.py); the ranger forest dresses up the mushroom backdrop
     weapon_zones.build(OUT, man, Image.open(os.path.join(OUT, 'bg-mushroom-hollow.png')).convert('RGBA'))
+    # the living zone environments (biomes.py) dress every zone for its beastkin family
+    import biomes
+    biomes.build(OUT, man)
 
     with open(os.path.join(OUT, 'manifest.json'), 'w') as f:
         json.dump(man, f, separators=(',', ':'))  # compact, like the committed manifest

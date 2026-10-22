@@ -15,14 +15,14 @@ import { comboHit } from './waves.js';
 import { logDamage } from './speedrun.js';
 import { BOSS_TOUGH } from '../data/swarm.js';
 import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.js';
-import { heroStats, foeMult } from './perks.js';
+import { heroStats, foeMult, innate } from './perks.js';
 import { stats } from '../data/meta.js';
-import { convertDrop } from './classlock.js';
 import { buck } from './mount.js';
 import { recordKill, CARD_TIERS, CARDS } from '../data/book.js';
 import { toast } from './progress.js';
 import { ENEMIES } from '../data/enemies.js';
 import { alertPack } from './enemy.js';
+import { beastHit, beastDeath, beastPush, beastGuard, beastTaken } from './beastkin.js';
 import { modOn, temper } from '../data/temper.js';
 import { KILL_PAY } from '../data/maps.js';
 
@@ -48,7 +48,8 @@ export function hitEnemy(e, dmg, o = {}) {
   e.calm = false; // a peaceful resident fights back once hit
   if (e.kind === 'mimic' && e.disguised) reveal(e);
   // shields block from the front unless it's a crit or a special
-  if (e.kind === 'shield' && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack') {
+  if (e.kind === 'beast' && beastGuard(e, dir, o)) return 0; // a phasing ghost, a parrying swan
+  if ((e.kind === 'shield' || e.d?.block) && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack' && !innate('broadhead')) {
     dmg *= 0.2;
     if (!o.chain) {
       callout('CLANG', 0, 0, C.ice, { follow: e, life: 40 });
@@ -66,13 +67,15 @@ export function hitEnemy(e, dmg, o = {}) {
     e.calm = false;
     return 0;
   }
-  dmg *= bigFoeMult(e) * foeMult(e);
+  dmg *= bigFoeMult(e) * foeMult(e) * (e.kind === 'beast' ? beastTaken(e) : 1); // a flipped Spin Turtle takes double
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
   logDamage(Math.min(dmg, Math.max(0, e.hp)));
   e.hp -= dmg;
   e.flash = e.boss ? 0.05 : 0.12;
+  // THE YAK ABBOT'S FROST BEADS: now and then a hit chills the foe to half speed
+  if (!o.chip && heroStats().chillHit && Math.random() < heroStats().chillHit) e.chill = Math.max(e.chill || 0, 1.6);
   damageNumber(e, dmg, { crit: o.crit, chip: o.chip, col: o.col });
   const F = hitFeel(hero.weapon?.type, { crit: o.crit, big: o.big || o.plunge, chain: o.chain || o.aoe || o.echo });
   o = { ...o, weight: F.w };
@@ -117,17 +120,19 @@ export function hitEnemy(e, dmg, o = {}) {
   if (!e.boss && !e.swarmBoss) {
     const R = reaction(F.w, { big: o.big || o.hop, crit: o.crit, elite: e.elite, chip: o.chip });
     let push = (o.knock || 0) * (1 + heroStats().impact * 0.5 + heroStats().knock); // HEAVY IMPACT / KNOCKOUT
+    if (e.kind === 'beast') beastHit(e), (push = beastPush(e, push));
     if (o.crit) push *= 1.35;
     if (e.elite) push *= 0.75;
     if (world.t - (e.lastHitAt || -9) < 0.3 && !o.crit) push *= 0.75;
     if (push > 0) {
       e.vx = (dir * push) / (KB_SLIDE + 0.06);
       e.kbT = KB_SLIDE;
-      e.stun = Math.max(e.stun, R.stun);
+      const heavy = e.d?.heavy && !o.big && !o.crit;
+      e.stun = Math.max(e.stun, R.stun * (heavy ? 0.3 : 1));
       e.face = -dir;
       if (!e.air && !o.chain && !o.aoe) {
         if (e.juggle && !e.onGround) e.vy = Math.min(e.vy, -100); // already up: keep it up
-        else if (R.launch) {
+        else if (R.launch && !heavy) {
           e.vy = -R.launch;
           e.onGround = false;
           e.juggle = true;
@@ -137,7 +142,7 @@ export function hitEnemy(e, dmg, o = {}) {
         e.onGround = false;
       }
     }
-    if (e.state === 'wind' && (o.crit || o.special || o.big || F.w >= 2)) e.state = 'idle'; // big hits interrupt wind-ups
+    if (e.state === 'wind' && (o.crit || o.special || o.big || (F.w >= 2 && !e.d?.heavy))) e.state = 'idle'; // big hits interrupt wind-ups
     if (e.calm === false && !e.packAlerted) alertPack(e);
   }
   e.lastHitAt = world.t;
@@ -346,6 +351,7 @@ export function kill(e, o = {}) {
   if (world.killsSinceDrop >= Math.round(10 / pay) || Math.random() < (e.elite ? 0.65 : 0.07 * pay)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
   if (Math.random() < ((e.elite ? 0.4 : 0.035) + stats().hearts) * temper(world.temper).hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
+  if (e.kind === 'beast') beastDeath(e);
   // TEMPER: VENGEFUL: a ring of slow bolts from the fallen
   if (modOn(world.temper, 'vengeful') && !e.swarm && !e.eaten) {
     for (let i = 0; i < 6; i++) {
@@ -381,7 +387,6 @@ export function shatter(e) {
 
 export function dropWeapon(x, y, w) {
   world.killsSinceDrop = 0;
-  if (convertDrop(x, y, w, dropShards)) return; // specialized: another class bursts into shards
   noWeaker(w);
   if (world.drops.length >= 8) world.drops.shift();
   world.drops.push({ id: newId(), x: x - 6, y: y - 6, w: 12, h: 8, vx: (Math.random() - 0.5) * 50, vy: -150, item: w, life: 40, t: 0 });
@@ -408,20 +413,30 @@ export function explode(x, y, dmg, friendly = false, radius = 34) {
       if (!e.dead && Math.abs(cx(e) - x) < radius && Math.abs(cy(e) - y) < radius) hitEnemy(e, dmg * 2, { dir: Math.sign(cx(e) - x) || 1, knock: 30, hop: true });
 }
 
-export function hurtHero(dmg, dir = 1) {
+// what a bolt counts as when nothing says otherwise: the wand cottage's are spells, the ninja
+// castle's are shuriken
+export const shotSrc = () => (world.zone === 7 ? 'magic' : world.zone === 8 ? 'star' : 'shot');
+// src says what hit you, for the trophy perks that soften it: 'shot' (a bolt or something thrown),
+// 'magic' (a spell: also a shot), 'star' (a shuriken: also a shot) or 'lava'. Enemy bolts set
+// world.hitBy while they fly (enemy.js updateBolts) instead of passing it.
+export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
   if (h.mount) return buck(h, dir), 0; // the War Goose takes the hit: you are thrown off instead
   const S = heroStats();
+  if (src === 'shot' || src === 'magic' || src === 'star') dmg *= 1 - S.shotArmor;
+  if (src === 'magic') dmg *= 1 - S.magicArmor;
+  if (src === 'star') dmg *= 1 - S.starArmor;
+  if (src === 'lava') dmg *= 1 - S.lavaArmor;
   dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
   h.hp -= dmg;
   h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
   // knocked back 40px or so, unless that would throw you into a pit: then you just hop where you stand
   const land = cx(h) + dir * 40, pits = world.map?.pits?.length;
-  h.vx = dir * (!pits || world.map.platforms.some(p => p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20);
-  h.vy = -120;
+  h.vx = dir * (!pits || world.map.platforms.some(p => p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20) * (1 - S.knockRes);
+  h.vy = -120 * (1 - S.knockRes * 0.5);
   h.onGround = false;
   h.attack = null;
   heroDamageNumber(h, dmg);

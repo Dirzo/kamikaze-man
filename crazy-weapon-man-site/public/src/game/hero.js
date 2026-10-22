@@ -17,12 +17,14 @@ import { attackBox, activeWindow, canAttack } from './attack-rules.js';
 import { attackMutation, impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
+import { drawPolyHero } from './beastkin.js';
 import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abilities.js';
 import { heroPhysics } from './gimmicks.js';
-import { charge, drawMount, RIDE } from './mount.js';
+import { charge, drawMount, RIDE, flap, mountDef } from './mount.js';
 import { X } from '../engine/gfx.js';
-import { MOUNT } from '../data/gimmicks.js';
 import { MOVE, windHang, plungeOf } from '../data/feel.js';
+import { beginRun, spHit, startCrazy, updateCrazy, impact, heroHidden } from './specials.js';
+import { specialId } from '../data/specials.js';
 
 
 export function createHero() {
@@ -45,6 +47,25 @@ export function updateHero(h, dt) {
   }
   const T = TYPES[h.weapon.type];
   h.inv = Math.max(0, h.inv - dt);
+  // a Frost Cub's arrow (beastkin.js): slower for a moment, frost flaking off
+  if (h.chillT > 0 && (h.chillT -= dt) > 0 && Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
+  // a Fat Cat Fence's poisoned dagger (beastkin.js): a little health ebbs away, never the last of it
+  if (h.poisonT > 0) {
+    h.poisonT -= dt;
+    h.hp = Math.max(1, h.hp - h.poisonDps * dt);
+    if (Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.lime);
+  }
+  // a Polymorph Hare's spell (beastkin.js): a bunny for a moment, and bunnies can't swing
+  if (h.polyT > 0) {
+    h.cd = Math.max(h.cd, 0.1);
+    if ((h.polyT -= dt) <= 0) burst(cx(h), cy(h), 10, 'twinkle', ['lime', 'paper']), callout('BACK TO NORMAL', 0, 0, C.paper, { follow: h, life: 40 });
+  }
+  // a Bubble Newt's bubble (beastkin.js): floated up helplessly for a moment
+  if (h.heldT > 0) {
+    h.heldT -= dt;
+    if (h.bubbled) (h.vy = -22), (h.vx *= 0.9), Math.random() < 0.4 && emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
+    if (h.heldT <= 0) (h.bubbled = false), burst(cx(h), cy(h), 8, 'twinkle', ['ice', 'paper']);
+  }
   h.giantT = Math.max(0, (h.giantT || 0) - dt); // GROWTH SPURT quirk: the weapon is drawn huge
   h.hurtT = Math.max(0, h.hurtT - dt);
   h.cd = Math.max(0, h.cd - dt);
@@ -83,8 +104,8 @@ export function updateHero(h, dt) {
     return;
   }
   const ax = input.axis();
-  // the level's gimmick (water, ice) and the War Goose change how the hero moves
-  const G = heroPhysics() || {}, ride = h.mount ? MOUNT : null;
+  // the level's gimmick (water, ice) and the mount you ride change how the hero moves
+  const G = heroPhysics() || {}, ride = h.mount ? mountDef(h.mount) : null;
   // dash (riding: a longer WAR CHARGE that bowls foes over)
   if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
     h.dashT = HERO.dashTime * (ride ? ride.chargeTime : 1);
@@ -115,9 +136,9 @@ export function updateHero(h, dt) {
   if (ax && ax === Math.sign(h.vx) && !swing && h.hurtT <= 0 && !h.ladder) h.runT = (h.runT || 0) + dt;
   else if (!ax || ax !== Math.sign(h.vx) || swing) h.runT = 0;
   h.sprint = (h.runT || 0) >= MOVE.sprintAfter && !ride && !G.swim;
-  if (h.hurtT <= 0) {
+  if (h.hurtT <= 0 && !(h.heldT > 0)) {
     const slowBy = swing && h.onGround ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
-    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy;
+    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
       h.skidT = 0.16;
@@ -136,7 +157,7 @@ export function updateHero(h, dt) {
   // jump / drop-through
   h.coyote = h.onGround ? HERO.coyote : Math.max(0, h.coyote - dt);
   if (h.onGround || h.ladder) h.hopped = false;
-  if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0) {
+  if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0 && !(h.heldT > 0)) {
     if (input.held('down') && h.onGround && h.platform && !h.platform.solid) {
       input.consume('jump');
       h.dropT = 0.25;
@@ -159,6 +180,8 @@ export function updateHero(h, dt) {
       h.jumpHeld = true;
       h.stretchT = 0.09;
       sfx.jump();
+    } else if (ride && flap(h)) {
+      input.consume('jump'); // SKY FLAP: the griffin beats its wings for one more jump
     } else if (hasAbility('hops') && !h.hopped && !h.ladder) {
       // DOUBLE JUMP: one more hop off thin air
       input.consume('jump');
@@ -182,15 +205,16 @@ export function updateHero(h, dt) {
     startPlunge(h, T);
     return;
   }
-  if (atk && canAttack(h)) {
-    input.consume('attack');
-    startAttack(h, T);
-  }
   // the special is buffered too: pressed during a swing it fires as soon as the hit is done
-  // (cancelling the swing's recovery)
-  if (input.pressed('special', MOVE.specialBuffer) && h.specialCd <= 0 && h.hurtT <= 0 && (!h.attack || pastHit(h, h.attack))) {
+  // (cancelling the swing's recovery). A waiting special goes first, and no new swing starts
+  // in front of it, so holding attack can't eat the press.
+  const spWant = input.pressed('special', MOVE.specialBuffer) && h.specialCd <= 0 && h.hurtT <= 0;
+  if (spWant && (!h.attack || pastHit(h, h.attack))) {
     input.consume('special');
     startSpecial(h, T);
+  } else if (atk && canAttack(h) && !spWant) {
+    input.consume('attack');
+    startAttack(h, T);
   }
   if (h.attack) updateAttack(h, dt, T);
 
@@ -366,8 +390,8 @@ function shoot(h, T, ang, mult = 1, extra = {}) {
     y: h.y + 12,
     w: 6,
     h: 4,
-    vx: Math.cos(ang) * T.speed * (1 + heroStats().shotSpeed) * h.face,
-    vy: Math.sin(ang) * T.speed * (1 + heroStats().shotSpeed),
+    vx: Math.cos(ang) * (T.speed || 260) * (1 + heroStats().shotSpeed) * h.face,
+    vy: Math.sin(ang) * (T.speed || 260) * (1 + heroStats().shotSpeed),
     dmg: hitDamage(w) * mult * (crit ? CRIT.mult + heroStats().critDmg : 1),
     crit,
     knock: T.knock,
@@ -385,19 +409,28 @@ function shoot(h, T, ang, mult = 1, extra = {}) {
     boomerang: !!T.boomerang,
     t: 0,
     proc: mult !== 1,
-    move: { big: h.combo === 2 }
+    move: { big: h.combo === 2 },
+    ...extra.shot
   });
 }
 
 // ---------------------------------------------------------------- specials
 function startSpecial(h, T) {
-  h.specialCd = h.specialMax = T.cool * (1 - heroStats().specialCd);
-  h.special = { kind: T.special, t: 0, hit: new Map(), tick: 0 };
+  // the weapon's own rolled special (data/specials.js); the run carries its damage, size and boons
+  const run = beginRun(h);
+  h.special = { kind: specialId(h.weapon), t: 0, hit: new Map(), tick: 0, run };
   h.attack = null;
-  sfx.special(h.weapon.type);
-  duck(0.5, 0.45);
-  callout(T.specialName, 0, 0, C.gold, { follow: h, life: 45 });
-  const s = h.special;
+  const s = h.special, M = run.mult, z = run.size;
+  // thrown specials: real projectiles carrying the special's damage
+  const api = {
+    shoot: (h, ang, mult, extra) => shoot(h, T, ang, mult * M, extra),
+    ring: (h, ang, mult, extra) => {
+      const f = h.face;
+      h.face = Math.cos(ang) >= 0 ? 1 : -1;
+      shoot(h, T, Math.atan2(Math.sin(ang), Math.abs(Math.cos(ang))), mult * M, extra);
+      h.face = f;
+    }
+  };
   switch (s.kind) {
     case 'iai':
       s.x0 = h.x;
@@ -412,7 +445,7 @@ function startSpecial(h, T) {
       h.onGround = false;
       break;
     case 'volley':
-      for (let i = -2; i <= 2; i++) shoot(h, T, i * 0.12, 0.9);
+      for (let i = -2; i <= 2; i++) shoot(h, T, i * 0.12, 0.9 * M);
       h.special = null;
       h.castT = 0.3;
       break;
@@ -421,7 +454,7 @@ function startSpecial(h, T) {
         const ang = (i / 8) * Math.PI * 2;
         const f = h.face;
         h.face = Math.cos(ang) >= 0 ? 1 : -1;
-        shoot(h, T, Math.atan2(Math.sin(ang), Math.abs(Math.cos(ang))), 0.8, { pierce: 2 });
+        shoot(h, T, Math.atan2(Math.sin(ang), Math.abs(Math.cos(ang))), 0.8 * M, { pierce: 2 });
         h.face = f;
       }
       h.special = null;
@@ -432,45 +465,40 @@ function startSpecial(h, T) {
       break;
     case 'tomahawk': { // axe: hurl a big spinning copy that cuts both ways and comes back
       const L = lookOf(h.weapon);
-      world.shots.push({ id: newId(), type: h.weapon.type, sprite: true, boomerang: true, x: cx(h) + h.face * 6, y: h.y + 8, w: 10, h: 8,
-        vx: h.face * 250, vy: 0, g: 0, dmg: hitDamage(h.weapon) * 1.8, crit: false, knock: 22, pierce: 99, homing: 0, life: 1.6, hit: new Set(),
+      world.shots.push({ id: newId(), type: h.weapon.type, sprite: true, boomerang: true, x: cx(h) + h.face * 6, y: h.y + 8,
+        vx: h.face * 250, vy: 0, g: 0, dmg: hitDamage(h.weapon) * 1.8 * M, w: 10 * z, h: 8 * z, crit: false, knock: 22, pierce: 99, homing: 0, life: 1.6, hit: new Set(),
         element: h.weapon.family, col: L.mid, light: L.light, weapon: h.weapon, emitters: L.emitters, spin: 0, proc: true, t: 0 });
       h.special = null;
       h.castT = 0.3;
       break;
     }
     case 'ricochet': // boomerang: three at once, fanned
-      for (let i = -1; i <= 1; i++) shoot(h, T, i * 0.28, 1.1, { pierce: 3 });
+      for (let i = -1; i <= 1; i++) shoot(h, T, i * 0.28, 1.1 * M, { pierce: 3 });
       h.special = null;
       h.castT = 0.3;
       break;
     case 'nova':
       areaHit(h, 70, 1.5, { knock: 40, hop: true });
       ringBurst(cx(h), cy(h), 30, lookOf(h.weapon).light);
-      shake(0.4);
+      impact(cx(h), cy(h), 2, run.col, run);
       h.special = null;
       h.castT = 0.3;
       break;
+    default:
+      startCrazy(h, s, api);
   }
 }
 
 function areaHit(h, radius, mult, o = {}, once = null) {
-  const T = TYPES[h.weapon.type];
+  const run = h.special && h.special.run;
+  if (!run) return;
+  radius *= run.size;
   for (const e of world.enemies) {
     if (e.dead) continue;
     if (Math.abs(cx(e) - cx(h)) > radius || Math.abs(cy(e) - cy(h)) > radius * 0.7 + 10) continue;
     if (once && once.has(e)) continue;
     if (once) once.add(e);
-    const crit = rollCrit(h);
-    hitEnemy(e, hitDamage(h.weapon) * mult * (crit ? CRIT.mult + heroStats().critDmg : 1), {
-      crit,
-      dir: Math.sign(cx(e) - cx(h)) || h.face,
-      knock: o.knock ?? T.knock,
-      hop: o.hop,
-      element: h.weapon.family,
-      special: true,
-      sparkCol: lookOf(h.weapon).light
-    });
+    spHit(run, e, mult, { knock: o.knock, hop: o.hop });
   }
 }
 function ringBurst(x, y, n, col) {
@@ -504,8 +532,7 @@ function updateSpecial(h, dt) {
         const box = { x: h.face > 0 ? cx(h) : cx(h) - 26, y: h.y + 4, w: 26, h: 16 };
         for (const e of world.enemies)
           if (!e.dead && overlap(box, e)) {
-            const crit = rollCrit(h);
-            hitEnemy(e, hitDamage(h.weapon) * 0.6 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: h.face, knock: 6, element: h.weapon.family, special: true, sparkCol: light });
+            spHit(s.run, e, 0.6, { dir: h.face, knock: 6 });
           }
         sfx.attack('dagger', h.weapon.q);
       }
@@ -522,11 +549,10 @@ function updateSpecial(h, dt) {
           xb = Math.max(s.x0, h.x) + h.w + 6;
         for (const e of world.enemies)
           if (!e.dead && e.x + e.w > xa && e.x < xb && Math.abs(cy(e) - cy(h)) < 26) {
-            const crit = rollCrit(h);
-            hitEnemy(e, hitDamage(h.weapon) * 2.2 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: h.face, knock: 20, element: h.weapon.family, special: true, sparkCol: light });
+            spHit(s.run, e, 2.2, { dir: h.face, knock: 20 });
           }
         for (let x = xa; x < xb; x += 3) emit(x, cy(h) + (Math.random() - 0.5) * 3, 'spark', Math.random() < 0.5 ? light : C.paper);
-        shake(0.35);
+        impact(cx(h), cy(h), 1.5, light, s.run);
         h.vx = 0;
       }
       if (s.t > 0.3) h.special = null;
@@ -537,9 +563,7 @@ function updateSpecial(h, dt) {
         areaHit(h, 90, 1.6, { knock: 24, hop: true });
         for (const e of world.enemies) if (!e.dead && !e.boss && Math.abs(cx(e) - cx(h)) < 90 && e.onGround) e.stun = Math.max(e.stun, 0.8);
         for (let i = -12; i <= 12; i++) emit(cx(h) + i * 7, h.y + h.h - 1, 'chip', i % 2 ? C.sand : C.wood);
-        spark(cx(h), h.y + h.h, { big: true, col: light });
-        shake(0.6);
-        hitstop(0.06);
+        impact(cx(h), h.y + h.h - 2, 2.5, light, s.run);
       }
       if (s.t > 0.6) h.special = null;
       break;
@@ -560,10 +584,8 @@ function updateSpecial(h, dt) {
       if (s.down && h.onGround && !s.slam) {
         s.slam = true;
         areaHit(h, 44, 2, { knock: 28, hop: true });
-        spark(cx(h), h.y + h.h, { big: true, col: light });
         burst(cx(h), h.y + h.h, 10, 'chip', ['sand', 'paper']);
-        shake(0.5);
-        hitstop(0.05);
+        impact(cx(h), h.y + h.h - 2, 2, light, s.run);
       }
       if (s.t > 0.9 || (s.slam && s.t > 0.4)) h.special = null;
       break;
@@ -575,8 +597,7 @@ function updateSpecial(h, dt) {
         for (const e of world.enemies)
           if (!e.dead && !s.hit.has(e) && overlap(box, e)) {
             s.hit.set(e, 1);
-            const crit = rollCrit(h);
-            hitEnemy(e, hitDamage(h.weapon) * 1.8 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: h.face, knock: 30, element: h.weapon.family, special: true, sparkCol: light });
+            spHit(s.run, e, 1.8, { dir: h.face, knock: 30 });
           }
         emit(cx(h) - h.face * 6, h.y + 10 + Math.random() * 6, 'streak', light);
       } else h.vx *= 0.8;
@@ -588,13 +609,12 @@ function updateSpecial(h, dt) {
         let n = 0;
         for (const e of world.enemies) {
           if (e.dead || Math.abs(cx(e) - cx(h)) > 56 || Math.abs(cy(e) - cy(h)) > 34) continue;
-          const crit = rollCrit(h);
-          hitEnemy(e, hitDamage(h.weapon) * 1.7 * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 18, element: h.weapon.family, special: true, sparkCol: light });
+          spHit(s.run, e, 1.7, { dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 18 });
           n++;
         }
         if (n) h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * 0.025 * Math.min(5, n)));
         ringBurst(cx(h), cy(h), 36, light);
-        shake(0.35);
+        impact(cx(h), cy(h), 1.5, C.violet, s.run);
       }
       h.vx = 0;
       if (s.t > 0.4) h.special = null;
@@ -644,13 +664,14 @@ function updateSpecial(h, dt) {
       break;
     }
     default:
-      h.special = null;
+      if (!updateCrazy(h, dt, s)) h.special = null;
   }
   move(h, dt, world.platforms, { gravity: HERO.gravity, maxFall: 460, dropThrough: false });
 }
 
 // ---------------------------------------------------------------- draw
 export function drawHero(h, t) {
+  if (heroHidden(h)) return; // THOUSAND CUTS: he is everywhere at once
   // landing squash and take-off stretch, about the feet
   const k = h.squashT > 0 ? [1.14, 0.86] : h.stretchT > 0 ? [0.88, 1.12] : null;
   if (k) {
@@ -665,6 +686,7 @@ export function drawHero(h, t) {
   drawHeroBody(h, t);
 }
 function drawHeroBody(h, t) {
+  if (h.polyT > 0 && drawPolyHero(h, t)) return;
   if (!h.mount || h.ladder) return drawMount(h, t), drawHeroAnimated(h, t);
   // in the saddle: the goose underneath, the rider sitting a little higher
   drawMount(h, t);

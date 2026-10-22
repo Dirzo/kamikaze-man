@@ -13,10 +13,12 @@ import { enemiesLeft, swarmBossUp } from './waves.js';
 import { COMBO, comboMult } from '../data/swarm.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
+import { specialOf } from '../data/specials.js';
 import { clock as clockOf } from '../data/speedrun.js';
 import { drawRelicPips } from './relics.js';
 import { gimmickName } from './gimmicks.js';
 import { GIMMICKS } from '../data/gimmicks.js';
+import { mountDef } from './mount.js';
 
 const BAR_Y = H - 28;
 
@@ -66,7 +68,7 @@ export function drawHud(t) {
   sep(104);
   // SPECIAL
   const T = TYPES[h.weapon.type];
-  label(T.specialName, 110);
+  label(specialOf(h.weapon).name, 110);
   const ready = h.specialCd <= 0;
   bar(110, y + 2, 44, 4, ready ? 1 : 1 - h.specialCd / (h.specialMax || T.cool), ready ? C.lime : C.teal);
   text(ready ? 'READY' : h.specialCd.toFixed(1), 158, y, ready ? C.lime : C.mist);
@@ -146,7 +148,7 @@ export function drawHud(t) {
     const tags = [];
     if (world.gimmick) tags.push([gimmickName(), C[GIMMICKS[world.gimmick].col]]);
     if (world.temper) tags.push(['TEMPER ' + world.temper, C.coral]);
-    if (h.mount) tags.push(['WAR GOOSE', C.gold]);
+    if (h.mount) tags.push([mountDef(h.mount).name + (h.mount.barding ? ' (BARDED)' : ''), C[mountDef(h.mount).col]]);
     let tx = world.level ? 46 : 6;
     for (const [s, col] of tags) (text(s, tx, 56, col), (tx += textWidth(s) + 8));
   }
