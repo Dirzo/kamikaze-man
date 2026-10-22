@@ -247,7 +247,13 @@ export function heroPose(h, t) {
     const fi = Math.floor(ph) % 6;
     const s = -Math.cos((ph / 6) * Math.PI * 2);
     pose = st.run(s);
-    pose = { ...pose, f: 'walk' + fi, fh: [pose.fh[0], pose.fh[1] + (fi % 3 === 1)], bh: pose.bh && [pose.bh[0], pose.bh[1] + (fi % 3 === 1)] };
+    // swinging forward the arm bends at the elbow (fist up at the chest), swinging back it trails
+    // behind the hip; one-handed carries only, a two-handed grip keeps both hands on the weapon
+    const dip = fi % 3 === 1 ? 1 : 0,
+      swing = k => (k > 0.3 ? 'fwd/near' : k < -0.3 ? 'dback/near' : null),
+      free = !st.grip2;
+    pose = { ...pose, f: 'walk' + fi, fh: [pose.fh[0] + s * 2, pose.fh[1] + dip], bh: pose.bh && [pose.bh[0] - s * 2, pose.bh[1] + dip] };
+    if (free) (pose.armF = swing(s)), (pose.armB = pose.bh && swing(-s));
   } else {
     pose = st.idle(t, b);
     if (pose.f === 'idle' || pose.f === 'idle2') pose.f = br < 0.3 ? 'idle' : br < 0.7 ? 'idle1' : 'idle2';
@@ -268,10 +274,10 @@ export const SHEATH = { at: [7, 6], ang: 112 };
 const BACK_SHEATH = { at: [14, 7], ang: 128 };
 export const DRAW_TIME = 0.18;
 function climbPose(h) {
-  // hand over hand on the rungs with the elbows out (the drawn ladder arms): one fist by the top of
-  // the head, the other at the shoulder, swapping as the legs swap
+  // hand over hand on the rungs in front of his face: from behind, the head and back hide most of
+  // both arms (drawn under the body), one fist higher than the other, swapping as the legs swap
   const ph = Math.floor((h.climbT || 0) * 6) % 2;
-  return { back: ph, f: 'climb' + ph, fh: [13, 8], bh: [3, 8], armF: ph ? 'clo' : 'chi', armB: ph ? 'chiL' : 'cloL', ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: false, ab: false, sheath: true };
+  return { back: ph, f: 'climb' + ph, fh: [10, ph ? 6 : 2], bh: [6, ph ? 2 : 6], ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: false, ab: false, sheath: true };
 }
 
 function specialPose(h, st) {
@@ -389,7 +395,7 @@ function pickArm(dx, dy, far, only) {
   let best = null,
     bd = 1e9;
   for (const m of A.hero.arms.list) {
-    if (m.back !== far || (only ? m.dir !== only : ONLY.has(m.dir))) continue;
+    if (m.back !== far || (only ? (only.includes('/') ? m.dir + '/' + m.reach : m.dir) !== only : ONLY.has(m.dir))) continue;
     const ex = m.f[0] - m.o[0] - dx,
       ey = m.f[1] - m.o[1] - dy,
       d = ex * ex + ey * ey;
@@ -455,7 +461,7 @@ export function drawHeroAnimated(h, t) {
   let bh;
   if (st.grip2 && !pose.sheath && !pose.one) bh = [fh[0] + Math.cos(rad) * st.grip2, fh[1] + Math.sin(rad) * st.grip2];
   else bh = G2(pose.bh ? pose.bh[0] : 5, pose.bh ? pose.bh[1] : 20);
-  const armB = bowB || (pose.armB ? armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, false, face, pose.armB) : armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, true, face));
+  const armB = bowB || (pose.armB ? armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, pose.back == null, face, pose.armB) : armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, true, face));
   // weapon origin: the sprite's grip sits `slide` px behind the front hand along the weapon
   const slide = pose.sheath ? 0 : pose.slide ?? st.slide ?? 0;
   const back = pose.sheath ? G2(...(pose.at || SHEATH.at)) : null;
@@ -539,11 +545,11 @@ export function drawHeroAnimated(h, t) {
   if (pose.wb) tip = drawWeapon();
   if (pose.ab && !flashing) drawArm(armF);
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'line'); // outline tucked under the body
+  if (backView && !flashing) drawArm(armB), drawArm(armF); // reaching in front of him, behind the head
   if (!flashing) frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0);
-  if (backView && !flashing) drawArm(armB);
   if (!pose.wb) tip = drawWeapon();
   drawString();
-  if (!pose.ab && !flashing) drawArm(armF, backView ? 'both' : 'fill');
+  if (!pose.ab && !flashing && !backView) drawArm(armF, 'fill');
   // swing smear: connect recent blade-tip positions while attacking
   const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry'].includes(h.special.kind));
   if (swinging && tip) {
