@@ -17,6 +17,7 @@ import { attackBox, activeWindow, canAttack } from './attack-rules.js';
 import { attackMutation, impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
+import { drawPolyHero } from './beastkin.js';
 import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abilities.js';
 import { heroPhysics } from './gimmicks.js';
 import { charge, drawMount, RIDE } from './mount.js';
@@ -52,6 +53,11 @@ export function updateHero(h, dt) {
     h.poisonT -= dt;
     h.hp = Math.max(1, h.hp - h.poisonDps * dt);
     if (Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.lime);
+  }
+  // a Polymorph Hare's spell (beastkin.js): a bunny for a moment, and bunnies can't swing
+  if (h.polyT > 0) {
+    h.cd = Math.max(h.cd, 0.1);
+    if ((h.polyT -= dt) <= 0) burst(cx(h), cy(h), 10, 'twinkle', ['lime', 'paper']), callout('BACK TO NORMAL', 0, 0, C.paper, { follow: h, life: 40 });
   }
   // a Bubble Newt's bubble (beastkin.js): floated up helplessly for a moment
   if (h.heldT > 0) {
@@ -679,6 +685,7 @@ export function drawHero(h, t) {
   drawHeroBody(h, t);
 }
 function drawHeroBody(h, t) {
+  if (h.polyT > 0 && drawPolyHero(h, t)) return;
   if (!h.mount || h.ladder) return drawMount(h, t), drawHeroAnimated(h, t);
   // in the saddle: the goose underneath, the rider sitting a little higher
   drawMount(h, t);

@@ -137,6 +137,15 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
             if lift < 0:
                 c.ball(hx - 3.2 * s, hy - 0.2 * s, 1.1 * s, 1.3 * s, fur, lift=-0.1)
                 c.put(hx - 3.2 * s, hy - 0.1 * s, (face or 'pink', 2), flat=True)
+        elif ears == 'bunny':  # long rabbit ears, the far one leaning back
+            tilt = -1.2 if lift < 0 else -0.3
+            c.capsule(ex_ + 0.4 * s, hy - hry * 0.6, ex_ + (tilt + 0.4) * s, hy - hry - 5.2 * s + p.bob * 0.5, 1.1 * s, 0.9 * s, pts, lift=lift)
+            if lift > 0:
+                c.capsule(ex_ + 0.4 * s, hy - hry * 0.9, ex_ + 0.2 * s, hy - hry - 4.0 * s + p.bob * 0.5, 0.4 * s, 0.4 * s, 'pink', lift=0.2, contour=False)
+        elif ears == 'tufts':  # an owl's ear tufts
+            c.poly([(ex_ - 0.8 * s, hy - hry * 0.7), (ex_ - 0.4 * s, hy - hry - 2.0 * s), (ex_ + 0.9 * s, hy - hry * 0.8)], pts, base=3 if lift > 0 else 2)
+        elif ears == 'none':
+            pass
         elif ears == 'goat':  # a goat's or yak's ear, sticking out sideways
             if lift < 0:
                 c.capsule(hx - 2.0 * s, hy - 0.8 * s, hx - 4.6 * s, hy + 0.2 * s, 1.0 * s, 0.7 * s, pts, lift=-0.2)

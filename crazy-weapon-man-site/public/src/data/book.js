@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the owl, bunny and hedgehog family (zone 8)
+  dustbunny: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Lives under the cottage bed. Has learned exactly one spell and uses it a lot.' },
+  hedgehog: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Knitted its own cap. Curls up whenever anyone comments on it.' },
+  owlet: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Too young to read the spellbook, so it drops whatever glows.' },
+  hatrabbit: { stats: { shards: 0.02 }, bonus: '+2% shards', lore: 'Nobody knows what is in the hat. Including the rabbit.' },
+  moth: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'Weaves the cottage curtains from its own wing-dust. Sneezing is not allowed.' },
+  polyhare: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Thinks everyone would be happier as a bunny. Has not yet been proved wrong.' },
+  teahog: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'The kettle is always on. The teacups have opinions.' },
+  mirrorowl: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Never learned a spell of its own. Borrows yours.' },
+  broombat: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Delivers the cottage post by broom. Stars included free.' },
+  hornedowl: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Wrote every book on the cottage shelves, and the meteor chapter twice.' },
   // the bear, badger and boar family (zone 7)
   cub: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Sweeps the forge floor, fetches the coal, and is not yet allowed near the big hammers.' },
   badger: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Fixes the pipes under the forge. Prefers to come up through the floor.' },

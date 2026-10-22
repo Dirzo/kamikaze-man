@@ -123,6 +123,18 @@ export const ENEMIES = {
   moltenboar: { name: 'Molten Boar', kind: 'beast', beh: 'molten', fam: 'forge', evo: 8, hp: 1.7, dmg: 1.2, speed: 26, range: 30, wind: 0.6 },
   grizzly: { name: 'Grizzly Foreman', kind: 'beast', beh: 'foreman', fam: 'forge', evo: 9, heavy: true, hp: 2.8, dmg: 1.4, speed: 22, range: 36, wind: 0.6 },
   polarbear: { name: 'Iron Polar Bear', kind: 'beast', beh: 'ironbear', fam: 'forge', evo: 10, heavy: true, hp: 3.0, dmg: 1.5, speed: 22, range: 38, wind: 0.6 },
+  // The owl, bunny and hedgehog family (zone 8, the wand): the storybook cottage's familiars, from
+  // Dust Bunnies on 8-1 up to the Grand Horned Owl.
+  dustbunny: { name: 'Dust Bunny', kind: 'beast', beh: 'zap', fam: 'cottage', evo: 1, hp: 0.55, dmg: 0.7, speed: 40, range: 110, wind: 0.45 },
+  hedgehog: { name: 'Hedgehog Hexer', kind: 'beast', beh: 'curl', fam: 'cottage', evo: 2, hp: 0.85, dmg: 0.8, speed: 30, range: 120, wind: 0.5 },
+  owlet: { name: 'Barn Owlet', kind: 'beast', beh: 'owlet', fam: 'cottage', evo: 3, hp: 0.75, dmg: 0.9, speed: 46, range: 30, wind: 0.4, air: true },
+  hatrabbit: { name: 'Hat Rabbit', kind: 'beast', beh: 'hat', fam: 'cottage', evo: 4, hp: 1.0, dmg: 0.9, speed: 32, range: 150, wind: 0.55 },
+  moth: { name: 'Moth Weaver', kind: 'beast', beh: 'moth', fam: 'cottage', evo: 5, hp: 1.0, dmg: 0.9, speed: 34, range: 140, wind: 0.5 },
+  polyhare: { name: 'Polymorph Hare', kind: 'beast', beh: 'poly', fam: 'cottage', evo: 6, hp: 1.1, dmg: 1.0, speed: 32, range: 170, wind: 0.7 },
+  teahog: { name: 'Tea Kettle Hog', kind: 'beast', beh: 'tea', fam: 'cottage', evo: 7, hp: 1.6, dmg: 1.0, speed: 24, range: 30, wind: 0.5 },
+  mirrorowl: { name: 'Mirror Owl', kind: 'beast', beh: 'mirror', fam: 'cottage', evo: 8, hp: 1.3, dmg: 1.1, speed: 30, range: 150, wind: 0.5 },
+  broombat: { name: 'Broom Bat Witch', kind: 'beast', beh: 'broom', fam: 'cottage', evo: 9, hp: 1.6, dmg: 1.1, speed: 70, range: 60, wind: 0.3, air: true },
+  hornedowl: { name: 'Grand Horned Owl', kind: 'beast', beh: 'archmage', fam: 'cottage', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 26, range: 180, wind: 0.5 },
   ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
@@ -154,7 +166,9 @@ export const DEATHS = {
   macaque: 'squash', vaultmonkey: 'flip', goatmonk: 'topple', gibbon: 'spin', snowsage: 'rise', baboon: 'topple',
   ibex: 'flip', langur: 'spin', yak: 'topple', cloudape: 'rise',
   cub: 'squash', badger: 'flip', boarbellows: 'topple', bearsmith: 'topple', honeybadger: 'spin', anviltoss: 'topple',
-  wolverine: 'spin', moltenboar: 'topple', grizzly: 'topple', polarbear: 'topple'
+  wolverine: 'spin', moltenboar: 'topple', grizzly: 'topple', polarbear: 'topple',
+  dustbunny: 'squash', hedgehog: 'spin', owlet: 'spin', hatrabbit: 'flip', moth: 'rise', polyhare: 'flip', teahog: 'topple',
+  mirrorowl: 'rise', broombat: 'spin', hornedowl: 'rise'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

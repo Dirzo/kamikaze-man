@@ -94,7 +94,7 @@ export const ZONES = [
     weapon: 'wand',
     name: "Grandma's Magic Wand Cottage",
     sub: 'Cookie tins bite. Casseroles are cursed. Grandma waves her wand from the good chair.',
-    pool: ['wraith', 'maw', 'mimic', 'summoner', 'bombchicken', 'crawler', 'goose'],
+    pool: ['dustbunny', 'hedgehog', 'owlet', 'hatrabbit', 'moth', 'polyhare', 'teahog', 'mirrorowl', 'broombat', 'hornedowl'],
     platforms: L4,
     boss: 'bossgrandma',
     music: { key: 55, scale: 'major', bpm: 150, bar: 12, prog: [0, 3, 4, 0], drums: 'waltz', lead: 'p12', arp: 'waltz', theme: '4 - 5 4 2 - | 0 - - - 2 - | 3 - 4 3 1 - | -1 - - - - .', themeB: '0 - 2 - 4 - | 7 - - 6 4 - | 5 - 4 - 2 - | 0 - - - - .', bossTheme: '4 - 5 4 2 - 0 - | 0 - - - 2 - - . | 3 - 4 3 1 - . . | -1 - - - - - - .' }

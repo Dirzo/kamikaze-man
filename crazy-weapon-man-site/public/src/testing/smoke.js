@@ -26,13 +26,13 @@ import { C, STEP, GROUND, HERO, W } from '../config.js';
 const FLOOR = () => world.map?.startY ?? GROUND; // the stage's runway (stages are no longer all at GROUND)
 import { lookOf } from '../game/looks.js';
 import { feel, clearFx } from '../game/fx.js';
-import { cx } from '../game/physics.js';
+import { cx, cy } from '../game/physics.js';
 import { heroPose } from '../game/anim.js';
 import { tickRun, splitZone } from '../game/speedrun.js';
 import { resetRecords } from '../data/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { ENEMIES } from '../data/enemies.js';
-import { attackBox } from '../game/attack-rules.js';
+import { attackBox, canAttack } from '../game/attack-rules.js';
 import { resetMeta, bankShards, buyRank, setLock } from '../data/meta.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
@@ -267,13 +267,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose, fuzzball, lagoon, bazaar, shrine, temple and forge families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1,2,3,4,5,6]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[0,1,2,3,4,5,6].flatMap(z=>ZONES[z].pool);
+  check('the goose, fuzzball, lagoon, bazaar, shrine, temple, forge and cottage families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3,4,5,6,7]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3,4,5,6,7].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):ENEMIES[type].fam==='cottage'?['curl','tea','owlet','broom'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -355,6 +355,20 @@ export function runSmoke(game) {
     for(let i=0;i<60*12&&!(mb.coolT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(mb,STEP);}ok(mb.coolT>0 && world.bolts.some(b=>b.look==='lava'),'the Molten Boar never overheated');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const gz=spawnEnemy('grizzly',h.x+80,FLOOR());gz.spawnT=0;gz.calm=false;gz.rallyCool=99;
     let stunned=false;for(let i=0;i<60*4&&!stunned;i++){world.t+=STEP;h.inv=0;updateEnemy(gz,STEP);updateHero(h,STEP);stunned=gz.move==='pound'&&h.hurtT>0.3;}ok(stunned,'the Grizzly\'s pound did not stun');
+    // the cottage: a curled Hedgehog is all spines, the Horned Owl's shield breaks only to a combo, a Polymorph Hare's
+    // spell makes you a bunny that can't swing, the Mirror Owl sends back what hit it, teacups circle then fly
+    reset();h=world.hero;const hh=spawnEnemy('hedgehog',h.x+30,FLOOR());hh.spawnT=0;hh.calm=false;hh.state='wind';hh.move='sparkring';hh.st=1;
+    ok(hitEnemy(hh,50,{dir:1})===0 && hh.hp===hh.max,'a hit landed on a curled Hedgehog');
+    reset();h=world.hero;const ho=spawnEnemy('hornedowl',h.x+40,FLOOR());ho.spawnT=0;ho.calm=false;ho.hp=ho.max=1e6;updateEnemy(ho,STEP);
+    ok(hitEnemy(ho,50,{dir:1})===0,'the Horned Owl\'s shield let a hit through');for(let i=0;i<3;i++)hitEnemy(ho,50,{dir:1});ok(!ho.shield && hitEnemy(ho,50,{dir:1})>0,'a combo did not break the shield');
+    reset();h=world.hero;const ph=spawnEnemy('polyhare',h.x+100,FLOOR());ph.spawnT=0;ph.calm=false;
+    for(let i=0;i<60*4&&!(h.polyT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(ph,STEP);updateBolts(STEP);}ok(h.polyT>0,'the Polymorph Hare never bunnified the hero');
+    updateHero(h,STEP);ok(!canAttack(h),'a bunny could still swing');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const mo=spawnEnemy('mirrorowl',h.x+60,FLOOR());mo.spawnT=0;mo.calm=false;mo.hp=mo.max=1e6;hitEnemy(mo,10,{dir:1,shot:true});
+    for(let i=0;i<60&&mo.move!=='mirrorback';i++){world.t+=STEP;updateEnemy(mo,STEP);}ok(mo.move==='mirrorback','the Mirror Owl did not mirror');
+    reset();h=world.hero;const th=spawnEnemy('teahog',h.x+100,FLOOR());th.spawnT=0;th.calm=false;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='teacup');i++){world.t+=STEP;updateEnemy(th,STEP);updateBolts(STEP);}const cup=world.bolts.find(b=>b.look==='teacup');
+    ok(cup && Math.hypot(cx(cup)-cx(th),cup.y-cy(th))<30,'the teacups did not circle the Tea Kettle Hog');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
     for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
   });

@@ -235,6 +235,17 @@ const DIE = {
   prowler: () => chip([[N(76), 2], [N(83), 2], [N(71), 5]], { wave: 'p25', vol: 0.04, decay: 0.004 }), // mrrow
   bandit: () => (arp([86, 81, 86, 79], 1, { wave: 'p25', vol: 0.03 }), hiss(4, { vol: 0.04, rate: 0.9, short: true })), // chitter and a puff
   fatcat: () => (chip([[N(64), 4], [N(57), 8]], { wave: 'p50', vol: 0.05, decay: 0.006 }), chip([[N(96), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })), // a purr and a coin
+  // the owl, bunny and hedgehog family: squeaks, hoots and little chimes
+  dustbunny: () => chip([[N(96), 1], [N(100), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }),
+  hedgehog: () => (chip([[N(91), 1], [N(88), 2]], { wave: 'p25', vol: 0.03 }), hiss(2, { vol: 0.025, rate: 1.3, short: true })),
+  owlet: () => chip([[N(84), 2], [N(81), 4]], { wave: 'tri', vol: 0.05, decay: 0.005 }), // a little hoo
+  hatrabbit: () => arp([84, 88, 91, 96], 1, { wave: 'p12', vol: 0.03, decay: 0.003 }), // ta-da
+  moth: () => hiss(5, { vol: 0.03, rate: 1.5 }),
+  polyhare: () => arp([91, 88, 84, 91], 1, { wave: 'p25', vol: 0.03 }),
+  teahog: () => (chip([[N(64), 2], [N(67), 2], [N(60), 4]], { wave: 'p25', vol: 0.045 }), chip([[N(100), 2], [N(103), 3]], { wave: 'p12', vol: 0.025, delay: 0.1 })), // an oink and a clink
+  mirrorowl: () => (chip([[N(79), 3], [N(76), 6]], { wave: 'tri', vol: 0.05 }), chip([[N(103), 2]], { wave: 'p12', vol: 0.025, delay: 0.1 })),
+  broombat: () => arp([96, 100, 103, 100], 1, { wave: 'p12', vol: 0.03, decay: 0.003 }),
+  hornedowl: () => (chip([[N(67), 4], [N(64), 4], [N(60), 8]], { wave: 'tri', vol: 0.06, decay: 0.006 }), arp([88, 91, 96], 2, { wave: 'p12', vol: 0.025 })), // hoo-hoo and a chime
   // the bear, badger and boar family: growls, snorts and the ring of iron
   cub: () => chip([[N(79), 2], [N(84), 3]], { wave: 'p25', vol: 0.035, decay: 0.004 }), // a little roar
   badger: () => (chip([[N(83), 1], [N(86), 2]], { wave: 'p12', vol: 0.03 }), hiss(3, { vol: 0.03, rate: 1.0, short: true })),

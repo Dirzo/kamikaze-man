@@ -96,6 +96,18 @@
 //   molten    Molten Boar: slams leave pools of lava, until it overheats and must cool down
 //   foreman   Grizzly Foreman: rings the bell to rally the smiths; its ground pound stuns
 //   ironbear  Iron Polar Bear: heavy and armoured; light hits barely dent it; a giant hammer spin
+//
+// The owl, bunny and hedgehog family (zone 8, the wand), storybook familiars:
+//   zap       Dust Bunny: a sparkle zap, then it hops away
+//   curl      Hedgehog Hexer: curls into a spiky ball nothing gets through, then a ring of sparks
+//   owlet     Barn Owlet: flies over you dropping slow glowing orbs
+//   hat       Hat Rabbit: pulls doves, a little bomb or a healing carrot out of its hat
+//   moth      Moth Weaver: clouds of wing-dust that blur your view and slow you
+//   poly      Polymorph Hare: its spell turns you into a bunny for a few seconds
+//   tea       Tea Kettle Hog: teacups circle it, then fly at you
+//   mirror    Mirror Owl: whatever you just hit it with, it sends back
+//   broom     Broom Bat Witch: swoops back and forth on its broom, sprinkling star bolts
+//   archmage  Grand Horned Owl: a shield bubble only a combo breaks, and a meteor
 import { C } from '../config.js';
 import { world } from './world.js';
 import { cx, cy, overlap } from './physics.js';
@@ -159,6 +171,11 @@ export function arrowHit(b) {
     h.poisonT = Math.max(h.poisonT || 0, b.poison);
     h.poisonDps = b.dmg * 0.25;
   }
+  if (b.poly) {
+    if (!(h.polyT > 0)) callout('BUNNIFIED!', 0, 0, C.lime, { follow: h, life: 50 });
+    h.polyT = Math.max(h.polyT || 0, b.poly);
+    burst(cx(h), cy(h), 10, 'twinkle', ['lime', 'paper']);
+  }
   if (b.trap) {
     if (!h.bubbled) callout('BUBBLED!', 0, 0, C.ice, { follow: h, life: 40 });
     h.heldT = Math.max(h.heldT || 0, b.trap);
@@ -176,6 +193,16 @@ export function arrowHit(b) {
 }
 // a rain arrow hangs (unseen) over its mark, then drops; returns true while it is still waiting
 export function arrowWait(b, dt) {
+  // Tea Kettle Hog's teacups: round their pot first, then off at you
+  if (b.orbit > 0) {
+    const e = b.owner;
+    b.orbit -= dt;
+    b.oa += dt * 5;
+    if (!e || e.dead) b.orbit = 0;
+    else (b.x = cx(e) + Math.cos(b.oa) * b.or - b.w / 2), (b.y = cy(e) - 4 + Math.sin(b.oa) * b.or * 0.6 - b.h / 2), (b.vx = b.vy = 0);
+    if (b.orbit <= 0) Object.assign(b, vel(aimed({ x: b.x, w: b.w, y: b.y - 6, h: 14, face: 1 }, 150)));
+    return true;
+  }
   if (!(b.wait > 0)) return false;
   b.wait -= dt;
   if (b.wait <= 0) {
@@ -232,6 +259,19 @@ export function beastTick(e, dt) {
     if (e.hidden && e.state !== 'attack') e.pose = 'hide';
     else if (e.pose === 'hide') e.pose = null;
   }
+  // Moth Weaver: inside its dust you are slowed and can hardly see
+  if (e.d.beh === 'moth') {
+    const h = world.hero;
+    e.haze = world.bolts.some(b => b.look === 'mothdust' && b.owner === e && overlap(b, h));
+    if (e.haze) h.chillT = Math.max(h.chillT || 0, 0.2);
+  }
+  // Grand Horned Owl: the shield comes back a while after it breaks
+  if (e.d.beh === 'archmage') {
+    if (e.shield == null) e.shield = true;
+    if (!e.shield && (e.shieldBackT -= dt) <= 0) (e.shield = true), (e.shieldHits = 0), say1(e, 'SHIELD UP.', C.sky);
+  }
+  // Hedgehog Hexer: curled up while it winds up its spark ring
+  if (e.d.beh === 'curl') e.pose = e.state === 'wind' && e.move === 'sparkring' ? 'curl' : e.pose === 'curl' ? null : e.pose;
   // Badger Tinker: under the floor only its dirt shows
   if (e.d.beh === 'burrow') {
     if (e.hidden == null) e.hidden = false;
@@ -591,6 +631,58 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
       else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'cleave');
       else e.vx = toward * e.speed * slow * (dist < 26 ? 0 : 1);
       break;
+    case 'zap':
+      if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'zap');
+      else keep(e, 70, dist, toward, slow);
+      break;
+    case 'curl':
+      if ((e.curlCool ?? 0) <= 0 && dist < 46 && sameLevel) wind(e, 0.9, 'curl', 'sparkring');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'zap');
+      else keep(e, 60, dist, toward, slow);
+      break;
+    case 'owlet':
+    case 'broom': {
+      // up in the air over your head: the owlet hovers just ahead, the bat swoops back and forth
+      e.hoverY = h.y - (d.beh === 'owlet' ? 46 : 38);
+      e.vy = (e.hoverY + Math.sin(e.anim * 2) * 4 - e.y) * 2.5;
+      if (d.beh === 'owlet') e.vx = Math.sign(cx(h) + toward * -10 - cx(e)) * e.speed * slow * (Math.abs(cx(h) - cx(e)) > 14 ? 1 : 0);
+      else {
+        if (!e.swoopDir) e.swoopDir = toward;
+        if ((cx(e) - cx(h)) * e.swoopDir > 90) e.swoopDir = -e.swoopDir;
+        e.vx = e.swoopDir * e.speed * slow;
+        e.face = e.swoopDir;
+      }
+      if (e.cool <= 0 && Math.abs(cx(h) - cx(e)) < (d.beh === 'owlet' ? 30 : 60)) wind(e, d.wind, d.beh === 'owlet' ? 'draw' : 'cast', d.beh === 'owlet' ? 'orb' : 'stars');
+      break;
+    }
+    case 'hat':
+      if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'pull', 'hattrick');
+      else keep(e, 90, dist, toward, slow);
+      break;
+    case 'moth':
+      if ((e.dustCool ?? 0) <= 0 && dist < 150 && near) wind(e, 0.6, 'draw', 'mothdust');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'zap');
+      else keep(e, 90, dist, toward, slow);
+      break;
+    case 'poly':
+      if (e.cool <= 0 && dist < d.range && near && !(h.polyT > 0)) wind(e, d.wind, 'draw', 'polyspell');
+      else keep(e, 110, dist, toward, slow);
+      break;
+    case 'tea':
+      if ((e.teaCool ?? 0) <= 0 && dist < 170 && near) wind(e, 0.6, 'pour', 'teacups');
+      else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'bonk');
+      else keep(e, 70, dist, toward, slow);
+      break;
+    case 'mirror':
+      if (e.mirrorType && (e.mirrorCool ?? 0) <= 0) wind(e, 0.45, 'mirror', 'mirrorback');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'zap');
+      else keep(e, 80, dist, toward, slow);
+      break;
+    case 'archmage':
+      if ((e.meteorCool ?? 0) <= 0 && dist < 220 && near) wind(e, 0.9, 'cast', 'meteor');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'zap');
+      else keep(e, 100, dist, toward, slow);
+      break;
     case 'alpha':
       if (!e.howled || ((e.howlCool ?? 0) <= 0 && dist < 200)) wind(e, 0.55, 'howl', 'howl');
       else if ((e.rainCool ?? 0) <= 0 && dist > 50 && dist < 210 && near) wind(e, 0.7, 'sky', 'rain');
@@ -602,7 +694,7 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
   if (e.howlCool > 0) e.howlCool -= dt;
   if (e.rainCool > 0) e.rainCool -= dt;
   for (const k of ['honkCool', 'guardCool', 'leapCool', 'gravesCool', 'tongueCool', 'shellCool', 'diveCool', 'croakCool', 'slamCool', 'spinCool', 'counterCool',
-    'blinkCool', 'pounceCool', 'smokeCool', 'rallyCool', 'chargeCool', 'tpCool', 'stormCool', 'decoyCool', 'healCool', 'leapCool', 'spikeCool', 'cloneCool', 'poundCool', 'diveCool'])
+    'blinkCool', 'pounceCool', 'smokeCool', 'rallyCool', 'chargeCool', 'tpCool', 'stormCool', 'decoyCool', 'healCool', 'leapCool', 'spikeCool', 'cloneCool', 'poundCool', 'diveCool', 'curlCool', 'dustCool', 'teaCool', 'mirrorCool', 'meteorCool'])
     if (e[k] > 0) e[k] -= dt;
 }
 // the melee swings: lunge speed, how long it lasts, extra reach, damage and knockback
@@ -1042,6 +1134,99 @@ export function beastAttack(e, toward) {
       say1(e, 'BACK TO WORK!', C.gold);
       return;
     }
+    case 'zap': // the cottage's wands: a sparkle bolt (and the Dust Bunny hops away after it)
+      e.attackPose = 'loose';
+      e.st = 0.3;
+      sfx.enemyCast();
+      world.bolts.push({ x: cx(e) + e.face * 10 - 3, y: e.y + e.h * 0.42 - 3, w: 6, h: 6, ...vel(aimed(e, d.beh === 'archmage' ? 170 : 140)), g: 0, dmg: e.dmg * 0.8, col: C.gold, life: 2.5, look: 'spark', owner: e });
+      if (d.beh === 'zap') (e.vx = -e.face * 90), (e.vy = -200), (e.onGround = false), say1(e, 'ZAP!', C.gold);
+      return;
+    case 'sparkring': // Hedgehog Hexer: uncurls in a ring of sparks
+      e.curlCool = 4;
+      e.st = 0.35;
+      sfx.enemyCast();
+      say1(e, 'POP!', C.gold);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        world.bolts.push({ x: cx(e) - 3, y: cy(e) - 3, w: 6, h: 6, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110, g: 0, dmg: e.dmg * 0.6, col: C.gold, life: 1.1, look: 'spark', owner: e });
+      }
+      return;
+    case 'orb': // Barn Owlet: a slow glowing orb, dropped
+      e.st = 0.3;
+      sfx.enemyCast();
+      world.bolts.push({ x: cx(e) - 3, y: e.y + e.h - 2, w: 7, h: 7, vx: e.vx * 0.3, vy: 60, g: 0, dmg: e.dmg, col: C.sky, life: 3, look: 'orb', owner: e });
+      return;
+    case 'stars': // Broom Bat Witch: a sprinkle of stars
+      e.attackPose = 'cast';
+      e.st = 0.25;
+      sfx.enemyCast();
+      for (const sp of [-50, 0, 50]) world.bolts.push({ x: cx(e) - 3, y: e.y + e.h - 2, w: 6, h: 6, vx: sp + e.vx * 0.4, vy: 110, g: 60, dmg: e.dmg * 0.7, col: C.gold, life: 2.5, look: 'spark', owner: e });
+      return;
+    case 'hattrick': { // Hat Rabbit: and from the hat... (doves, a bomb, or a carrot)
+      e.attackPose = 'pull';
+      e.st = 0.4;
+      sfx.enemyCast();
+      const hurt = world.enemies.find(o => !o.dead && o.kind === 'beast' && o.hp < o.max * 0.7 && Math.abs(cx(o) - cx(e)) < 120);
+      const roll = hurt && Math.random() < 0.5 ? 'carrot' : Math.random() < 0.5 ? 'doves' : 'bomb';
+      if (roll === 'carrot') {
+        hurt.hp = Math.min(hurt.max, hurt.hp + hurt.max * 0.25);
+        burst(cx(hurt), cy(hurt), 8, 'twinkle', ['orange', 'lime']);
+        say1(e, 'CARROT!', C.orange);
+      } else if (roll === 'doves') {
+        for (const sp of [-0.15, 0.15]) world.bolts.push({ x: cx(e) - 3, y: e.y + 2, w: 7, h: 5, ...vel(aimed(e, 110, sp, -8)), g: 0, dmg: e.dmg * 0.6, col: C.paper, life: 3, look: 'dove', owner: e });
+        say1(e, 'DOVES!', C.paper);
+      } else {
+        world.bolts.push({ x: cx(e) - 3, y: e.y, w: 6, h: 6, ...vel(lobbed(e, 0.8, 400)), g: 400, dmg: e.dmg * 1.3, col: C.ink, life: 3, look: 'bomb', owner: e });
+        say1(e, 'TA-DA!', C.gold);
+      }
+      return;
+    }
+    case 'mothdust': // Moth Weaver: a cloud of wing-dust where you stand
+      e.dustCool = 6;
+      e.st = 0.35;
+      sfx.enemyCast();
+      world.bolts.push({ x: cx(h) - 32, y: h.y + h.h - 40, w: 64, h: 40, vx: 0, vy: 0, g: 0, dmg: 0, harmless: true, col: C.cream, life: 4, look: 'mothdust', owner: e });
+      say1(e, 'FLUTTER!', C.cream);
+      return;
+    case 'polyspell': // Polymorph Hare: one swirl of green, and you are a bunny
+      e.st = 0.3;
+      sfx.enemyCast();
+      world.bolts.push({ x: cx(e) + e.face * 10 - 4, y: e.y + e.h * 0.42 - 4, w: 8, h: 8, ...vel(aimed(e, 120)), g: 0, dmg: e.dmg * 0.4, poly: 2.6, col: C.lime, life: 3, look: 'polyspell', owner: e });
+      say1(e, 'HOCUS POCUS!', C.lime);
+      return;
+    case 'teacups': // Tea Kettle Hog: three teacups round and round, then at you
+      e.teaCool = 6;
+      e.st = 0.4;
+      sfx.enemyCast();
+      for (let i = 0; i < 3; i++) world.bolts.push({ x: cx(e), y: cy(e), w: 7, h: 6, vx: 0, vy: 0, g: 0, dmg: e.dmg * 0.6, col: C.paper, life: 5, look: 'teacup', owner: e, orbit: 1.1 + i * 0.25, oa: i * 2.09, or: 20 });
+      say1(e, 'TEA TIME!', C.pink);
+      return;
+    case 'mirrorback': { // Mirror Owl: what you did, back at you
+      e.mirrorCool = 3;
+      e.attackPose = 'mirror';
+      e.st = 0.35;
+      sfx.clang();
+      say1(e, `MIRROR ${String(e.mirrorType).toUpperCase()}!`, C.ice);
+      if (e.mirrorShot) for (const sp of [-0.12, 0, 0.12]) world.bolts.push({ x: cx(e) + e.face * 10 - 3, y: e.y + e.h * 0.42 - 3, w: 6, h: 6, ...vel(aimed(e, 170, sp)), g: 0, dmg: e.dmg * 0.7, col: C.ice, life: 2.5, look: 'spark', owner: e });
+      else {
+        const p = e.platform;
+        world.bolts.push({ x: cx(e) + e.face * 10 - 3, y: e.y + e.h - 11, w: 6, h: 10, vx: e.face * 170, vy: 0, g: 0, dmg: e.dmg, col: C.ice, life: 1.6, look: 'crescent', owner: e,
+          ground: true, minX: p ? p.x : -1e9, maxX: p ? p.x + p.w : 1e9 });
+      }
+      e.mirrorType = null;
+      return;
+    }
+    case 'meteor': { // Grand Horned Owl: a meteor (and its little ones) on marked ground
+      e.meteorCool = 7;
+      e.attackPose = 'cast';
+      e.st = 0.5;
+      sfx.enemyCast();
+      say1(e, 'METEOR!', C.orange);
+      const foot = h.y + h.h;
+      world.bolts.push({ x: cx(h) - 7, y: Math.max(-14, foot - 110), w: 14, h: 14, vx: 0, vy: 0, g: 0, fall: 280, wait: 0.9, dmg: e.dmg * 1.6, col: C.orange, life: 3, look: 'meteor', rain: true, markY: foot, big: true, owner: e });
+      for (const o of [-40, 40]) world.bolts.push({ x: cx(h) + o - 3, y: Math.max(-14, foot - 110), w: 6, h: 6, vx: 0, vy: 0, g: 0, fall: 300, wait: 1.1, dmg: e.dmg * 0.7, col: C.orange, life: 3, look: 'meteor', rain: true, markY: foot, owner: e });
+      return;
+    }
     case 'juggle': // Knife Juggler: three daggers up and over
       e.attackPose = 'throw';
       e.st = 0.35;
@@ -1432,11 +1617,12 @@ export function beastAttacking(e, dt, toward) {
   const cool = { hop: 1.3, roll: 1.9, lob: 1.9, twin: 1.6, fan: 1.8, snipe: 2.6, kite: 1.2, frost: 1.6, greatbow: 2.2, alpha: 1.1,
     poke: 1.2, honk: 1.2, shield: 1.3, lunge: 1.9, toss: 1.0, whirl: 2.2, phase: 1.3, flurry: 1.6, parry: 1.2, warlord: 1.4,
     cub: 1.4, burrow: 1.4, bellows: 1.3, smith: 1.9, angry: 1.4 / (1 + 0.25 * (e.anger || 0)), anvil: 1.9, tornado: 2.0, molten: 1.7, foreman: 1.5, ironbear: 1.7,
+    zap: 1.4, curl: 1.6, owlet: 1.8, hat: 2.0, moth: 1.6, poly: 2.4, tea: 1.4, mirror: 1.6, broom: 1.4, archmage: 1.6,
     novice: 1.4, vault: 1.3, ram: 1.4, gibbon: 2.0, heal: 1.4, extend: 1.9, ibex: 1.3, langur: 1.7, yak: 1.6, cloudape: 1.4,
     clumsy: 1.3, sweep: 1.4, iaido: 2.2, decoy: 1.3, sentry: 1.2, twinspin: 2.0, crescent: 1.9, kunai: 1.8, champion: 1.5, sage: 1.4,
     skitter: 1.0, steal: 1.2, dashthru: 1.8, dark: 1.6, juggle: 1.8, blink: 1.2, twinfang: 1.6, pounce: 1.3, smoke: 1.0, fence: 1.4,
     flop: 1.1, tongue: 1.3, shell: 1.3, shellspin: 2.0, chain: 1.7, lurk: 1.4, bubble: 2.0, brawler: 1.4, bounce: 1.6, master: 1.3 }[d.beh] || 1.5;
-  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves', 'croak', 'slam', 'ironspin', 'rally', 'smoke', 'pounce', 'charge', 'storm', 'blinkaway', 'vault', 'plunge', 'rockspikes', 'clones', 'heal', 'apespin', 'firecharge', 'pound', 'bearspin'].includes(e.move) ? 0.6 : cool);
+  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves', 'croak', 'slam', 'ironspin', 'rally', 'smoke', 'pounce', 'charge', 'storm', 'blinkaway', 'vault', 'plunge', 'rockspikes', 'clones', 'heal', 'apespin', 'firecharge', 'pound', 'bearspin', 'sparkring', 'mothdust', 'teacups', 'mirrorback', 'meteor'].includes(e.move) ? 0.6 : cool);
 }
 
 // ---------------------------------------------------------------- hits and deaths (combat.js)
@@ -1514,6 +1700,24 @@ export function beastGuard(e, dir, o) {
     if (e.state !== 'wind') (e.parried = true), wind(e, 0.18, 'draw', 'slash');
     return clang(e, dir, o, 'PARRY!');
   }
+  // Hedgehog Hexer: curled up, it is all spines
+  if (d.beh === 'curl' && e.state === 'wind' && e.move === 'sparkring' && !o.special) return clang(e, dir, o, 'PRICKLY!');
+  // Grand Horned Owl: the shield bubble takes every hit, until a quick combo of them breaks it
+  if (d.beh === 'archmage' && e.shield && !o.special) {
+    e.shieldHits = world.t - (e.shieldAt ?? -9) < 1.0 ? (e.shieldHits || 0) + 1 : 1;
+    e.shieldAt = world.t;
+    if (e.shieldHits >= 4) {
+      e.shield = false;
+      e.shieldBackT = 6;
+      e.stun = Math.max(e.stun, 0.8);
+      burst(cx(e), cy(e), 16, 'twinkle', ['sky', 'paper']);
+      say1(e, 'MY SHIELD!', C.sky);
+      return true;
+    }
+    return clang(e, dir, o, 'SHIELD!');
+  }
+  // Mirror Owl: remembers what hit it
+  if (d.beh === 'mirror' && !o.chip) (e.mirrorType = world.hero.weapon?.type || 'sword'), (e.mirrorShot = !!o.shot);
   // Badger Tinker: underground, there is nothing to hit
   if (d.beh === 'burrow' && e.hidden && e.state !== 'attack' && !o.special) {
     if (!o.chain) say1(e, 'DUG IN', C.sand);
@@ -1754,6 +1958,78 @@ export function drawAnvil(b, t) {
   px(x + 1, y, C.mist);
   return true;
 }
+// the cottage's spells: sparkle bolts, owl orbs, doves, a cartoon bomb, the polymorph swirl,
+// teacups, wing-dust and meteors
+export function drawSpell(b, t) {
+  const x = Math.round(b.x + b.w / 2), y = Math.round(b.y + b.h / 2), k = Math.floor(t * 12 + b.x) % 2;
+  switch (b.look) {
+    case 'spark':
+      rect(x - 2, y - 2, 5, 5, C.ink);
+      rect(x - 1, y, 3, 1, b.col);
+      rect(x, y - 1, 1, 3, b.col);
+      px(x, y, C.paper);
+      if (k) (px(x - 2, y, b.col), px(x + 2, y, b.col));
+      return true;
+    case 'orb':
+      disc(x, y, 3.5, C.ink, C.ink);
+      disc(x, y, 2.5, C.sky, C.paper);
+      return true;
+    case 'polyspell':
+      disc(x, y, 4, C.ink, C.ink);
+      disc(x, y, 3, C.lime, C.paper);
+      px(x + (k ? 1 : -1), y + 1, C.leaf || C.lime);
+      return true;
+    case 'dove': {
+      const f = Math.sign(b.vx) || 1;
+      rect(x - 3, y - 2, 7, 4, C.ink);
+      rect(x - 2, y - 1, 5, 2, C.paper);
+      rect(x - (k ? 1 : 0), y - 3 + k * 4, 2, 1, C.paper);
+      px(x + f * 3, y - 1, C.gold);
+      return true;
+    }
+    case 'bomb':
+      disc(x, y, 3.5, C.ink, C.ink);
+      disc(x, y, 2.5, C.slate, C.stone);
+      px(x + 1, y - 4, k ? C.gold : C.orange);
+      return true;
+    case 'teacup':
+      rect(x - 4, y - 3, 9, 6, C.ink);
+      rect(x - 3, y - 2, 6, 4, C.paper);
+      rect(x - 3, y - 2, 6, 1, C.sky);
+      px(x + 3, y - 1, C.paper);
+      px(x - 1, y, C.pink);
+      return true;
+    case 'mothdust':
+      X.globalAlpha = Math.min(0.55, b.life * 0.4);
+      for (let i = 0; i < 26; i++) {
+        const a = i * 2.39 + t * 0.6, r = (i % 7) * 4;
+        disc(b.x + b.w / 2 + Math.cos(a) * r * 1.3, b.y + b.h / 2 + Math.sin(a) * r * 0.8, 3 + (i % 3), C.cream, C.paper);
+      }
+      X.globalAlpha = 1;
+      return true;
+    case 'meteor':
+      if (b.wait > 0) {
+        if (Math.floor(t * 12) % 2 || b.wait < 0.25) {
+          const r = b.big ? 9 : 4;
+          rect(Math.round(b.x + b.w / 2) - r, Math.round(b.markY) - 1, r * 2 + 1, 1, C.orange);
+        }
+        return true;
+      }
+      disc(x, y, b.w / 2 + 1, C.ink, C.ink);
+      disc(x, y, b.w / 2, C.orange, C.gold);
+      emit(x, y - b.h / 2, 'dot', C.orange);
+      return true;
+  }
+  return false;
+}
+// a hero turned into a bunny by a Polymorph Hare
+export function drawPolyHero(h, t) {
+  const art = A.enemies.dustbunny;
+  if (!art) return false;
+  const f = Math.max(0, art.frames.indexOf(Math.abs(h.vx) > 8 ? 'walk' + (Math.floor(t * 9) % 4) : 'idle' + (Math.floor(t * 2) % 2)));
+  frame(art.im, f, art.w, art.h, Math.round(cx(h) - art.w / 2), Math.round(h.y + h.h - (art.h - 1)), h.face < 0);
+  return true;
+}
 // the Petal Kitsune's decoy: its own shape, flickering pink as it falls apart
 export function drawDecoy(b, t) {
   const art = A.enemies[b.type];
@@ -1815,6 +2091,13 @@ export function drawTell(e, t) {
     const x = Math.round(cx(e) + e.face * 3), y = Math.round(e.y + e.h * 0.22);
     px(x - 2, y, C.gold);
     px(x + 1, y, C.gold);
+  }
+  // the Grand Horned Owl's shield bubble; a Moth Weaver's dust all over your view
+  if (e.d.beh === 'archmage' && e.shield && !e.dead) ring(Math.round(cx(e)), Math.round(cy(e)), Math.round(e.h * 0.62), t);
+  if (e.d.beh === 'moth' && e.haze) {
+    X.globalAlpha = 0.28;
+    rect(Math.round(cx(h)) - 1200, Math.round(cy(h)) - 800, 2400, 1600, C.cream);
+    X.globalAlpha = 1;
   }
   // the Baboon's staff, out across the floor
   if (e.state === 'attack' && e.move === 'extend' && e.extReach > 0) {
