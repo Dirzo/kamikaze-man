@@ -24,7 +24,7 @@ export const ZONES = [
     weapon: 'sword',
     name: 'The Sword Graveyard',
     sub: 'A field of swords nobody came back for. Mind the bandits.',
-    pool: ['stalker', 'crawler', 'goose', 'bombchicken'],
+    pool: ['gosling', 'honker', 'gsquire', 'fencer', 'gtoss', 'whirl', 'ggrave', 'berserker', 'swan', 'gander'],
     platforms: L1,
     boss: null,
     music: { key: 52, scale: 'minor', bpm: 132, prog: [0, 5, 2, 6], drums: 'graveyard', theme: GRAVEYARD }

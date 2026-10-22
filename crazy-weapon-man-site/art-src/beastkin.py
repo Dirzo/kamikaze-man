@@ -736,6 +736,300 @@ def werewolf(c, p):
         arm(c, hx - 3, hy - 13, nock[0], nock[1], 'were', 2.0, elbow=-1.4 if not sky else 1.2, fist='were')
 
 
+# ================================================================ zone 1: the goose family (swords)
+R.update({
+    'goose': ramp('#2e2e3e', '#5a5a6e', '#9a9aac', '#ccccd6', '#eeece6', '#ffffff'),
+    'greyg': ramp('#1e1c24', '#36323a', '#565058', '#7e7676', '#a89e94', '#d0c6b6'),
+    'gosl': ramp('#4a3010', '#8a6418', '#c8a028', '#ecc840', '#fce070', '#fff4b0'),
+    'beak': ramp('#4a1a06', '#8a3410', '#c85a1c', '#f08a2c', '#ffb450', '#ffd890'),
+    'canada': ramp('#1c120c', '#34241a', '#54402c', '#7a6042', '#a0845e', '#c4aa80'),
+    'swan': ramp('#08070c', '#141019', '#221c2a', '#383046', '#544a64', '#7a7090'),
+    'ghost': ramp('#1c3040', '#2e5068', '#4c7c94', '#7aaac0', '#b0d8e6', '#e6fbff'),
+    'rust': ramp('#2a140a', '#4a2412', '#6e381c', '#94522a', '#b4703a', '#d0904e'),
+    'plume': ramp('#2a0c34', '#4a1660', '#6e2a8c', '#9a48b8', '#c47ad8', '#ecb4f4'),
+})
+
+
+def sword(c, gx, gy, ang, L, rp='steel', w=2, guard='gold', hilt='leather', gw=2.5, pommel=True):
+    """A sword gripped at (gx, gy), the blade pointing along ang; L is the blade's length."""
+    dx, dy = math.cos(ang), math.sin(ang)
+    nx, ny = -dy, dx
+    part = c._new(True)
+    for t in (-2.5, -1.5, -0.5, 0.5):  # the grip
+        c.put(gx + dx * t, gy + dy * t, (hilt, 3 if t < 0 else 2), part)
+    if pommel:
+        c.put(gx - dx * 3.4, gy - dy * 3.4, (guard, 4), part)
+    gp = c._new(True)
+    for k in range(-int(gw * 2), int(gw * 2) + 1):  # the crossguard
+        c.put(gx + dx * 1.5 + nx * k / 2, gy + dy * 1.5 + ny * k / 2, (guard, 4 if k < 0 else 3), gp)
+    bp = c._new(True)
+    t = 2.2
+    while t <= L + 2:
+        tip = t > L
+        for k in range(w):
+            off = k - (w - 1) / 2
+            if tip and w > 1 and abs(off) > 0.6:
+                continue
+            c.put(gx + dx * t + nx * off, gy + dy * t + ny * off, (rp, 5 if (k == 0 or tip) else 2 if k == w - 1 else 4), bp)
+        t += 0.5
+
+
+def smear(c, cx_, cy_, r, a0, a1, col=(255, 250, 235)):
+    """the swing's crescent: an arc of light that brightens toward the blade"""
+    n = max(6, int(abs(a1 - a0) * r * 1.3))
+    for i in range(n + 1):
+        a, f = a0 + (a1 - a0) * i / n, i / n
+        cc = mix((110, 130, 190), col, f)
+        c.put(cx_ + math.cos(a) * r, cy_ + math.sin(a) * r, cc, thin=True, flat=True)
+        if f > 0.4:
+            c.put(cx_ + math.cos(a) * (r - 1), cy_ + math.sin(a) * (r - 1), mix(cc, (90, 110, 170), 0.45), thin=True, flat=True)
+
+
+# a goose's pose for a frame: where the head goes, where the sword hand is (relative to the
+# shoulder, in units of the goose's size) and which way the blade points
+def gpose(name):
+    P_ = {'neck': 'up', 'hand': (3.6, 2.6), 'ang': -1.05, 'smear': None}
+    if name == 'draw':
+        P_.update(neck='back', hand=(-1.5, -3.8), ang=-2.5)
+    elif name == 'loose':
+        P_.update(neck='strike', hand=(6.2, 2.4), ang=0.55, smear=(-2.1, 0.55))
+    elif name == 'hit':
+        P_.update(neck='recoil', hand=(0.5, 3.6), ang=1.25)
+    elif name == 'honk':
+        P_.update(neck='honk', hand=(2.4, 3.4), ang=0.9)
+    return P_
+
+
+def goose(c, p, s, body, pose=None, *, neck_rp=None, head_rp=None, cap=None, blade=None, belly=None, chin=None,
+          wing_rp=None, eye_col=None, back=None, front=None, feet=True, tail=True, fur=0.12):
+    """The goose body every member shares: webbed feet, a round body, an S-neck, a head with an
+    orange beak and an angry brow, and the near wing holding a sword. back/front draw extras
+    behind the body / over everything (shields, second swords, armour)."""
+    g = dict(gpose(p.name), **(pose or {}))
+    base = c.h - 2
+    neck_rp, wing_rp = neck_rp or body, wing_rp or body
+    head_rp = head_rp or neck_rp
+    rx, ry = 6.6 * s * (1 + p.sq * 0.4), 5.0 * s * (1 - p.sq * 0.5)
+    bx = c.w * 0.40 + p.lean * s + g.get('dx', 0) * s
+    by = base - 2.6 * s - ry + p.bob + g.get('dy', 0) * s
+    shx, shy = bx + 0.6 * s, by - ry * 0.35
+    L = {'bx': bx, 'by': by, 'rx': rx, 'ry': ry, 'shx': shx, 'shy': shy, 's': s, 'g': g}
+    if back:
+        back(c, p, L)
+    if feet and not g.get('tuck'):
+        for side, st in ((-1, p.step), (1, -p.step)):
+            fx = bx + side * 2.2 * s + st * 1.6 * s
+            lift = max(0, -st) * 1.5
+            c.line([(fx, by + ry - 1), (fx, base - 1 - lift)], ('beak', 2))
+            c.ball(fx + 1.2 * s, base - 0.8 - lift, 1.9 * s, 0.9, 'beak', lift=0.2)
+    elif g.get('tuck'):
+        c.ball(bx - 1.5 * s, by + ry - 0.5, 1.8 * s, 1.0, 'beak'); c.ball(bx + 1.5 * s, by + ry, 1.8 * s, 1.0, 'beak')
+    if tail:
+        c.poly([(bx - rx - 2.4 * s, by - 3.2 * s), (bx - rx + 2 * s, by - 2 * s), (bx - rx + 2 * s, by + 1.6 * s)], body, base=3)
+    c.ball(bx, by, rx, ry, body, fur=fur, tufts=16, tex=2, under=0.5)
+    if belly:
+        belly(c, p, L)
+    # neck and head
+    nk = g['neck']
+    hx, hy = {
+        'honk': (bx + rx + 4.6 * s, by - ry * 0.4),
+        'back': (bx + rx * 0.3, by - ry - 5.2 * s),
+        'strike': (bx + rx * 0.95 + 1.4 * s, by - ry - 3.6 * s),
+        'recoil': (bx + rx * 0.15, by - ry - 4.4 * s),
+        'low': (bx + rx + 2.6 * s, by - ry * 0.9),
+    }.get(nk, (bx + rx * 0.62, by - ry - 5.4 * s))
+    nx0, ny0 = bx + rx * 0.5, by - ry * 0.45
+    mx, my = (nx0 + hx) / 2 - 1.3 * s, (ny0 + hy) / 2 + 0.6 * s
+    c.capsule(nx0, ny0, mx, my, 2.1 * s, 1.8 * s, neck_rp)
+    c.capsule(mx, my, hx, hy + 0.6 * s, 1.8 * s, 1.6 * s, neck_rp, lift=0.1)
+    if chin:
+        c.ball(hx - 0.3 * s, hy + 1.2 * s, 1.7 * s, 1.1 * s, chin, lift=0.35)
+    c.ball(hx, hy, 2.7 * s, 2.5 * s, head_rp, lift=0.15)
+    if nk == 'honk':  # beak wide open
+        c.poly([(hx + 1.6 * s, hy - 1.3 * s), (hx + 6.6 * s, hy - 1.8 * s), (hx + 1.8 * s, hy + 0.1 * s)], 'beak', base=4)
+        c.poly([(hx + 1.6 * s, hy + 0.9 * s), (hx + 5.8 * s, hy + 2.8 * s), (hx + 1.8 * s, hy + 1.9 * s)], 'beak', base=2)
+        c.put(hx + 2.6 * s, hy + 0.5 * s, R['red'][1], flat=True)
+    else:
+        c.poly([(hx + 1.6 * s, hy - 1.1 * s), (hx + 6 * s, hy + 0.4 * s), (hx + 1.6 * s, hy + 1.5 * s)], 'beak', base=4)
+        c.put(hx + 3.4 * s, hy + 0.3 * s, ('beak', 1), flat=True)
+    ex, ey = int(round(hx + 0.4 * s)), int(round(hy - 0.8 * s))
+    if p.hit:
+        c.dot(ex, ey - 1, INK); c.dot(ex + 1, ey, INK); c.dot(ex, ey + 1, INK)
+    elif eye_col:
+        c.dot(ex, ey, eye_col); c.dot(ex + 1, ey, eye_col); c.dot(ex - 1, ey - 1, INK); c.dot(ex, ey - 1, INK)
+    else:
+        c.dot(ex, ey, INK); c.dot(ex + 1, ey, INK); c.dot(ex, ey - 1, WHITE)
+        c.dot(ex - 1, ey - 2, INK); c.dot(ex, ey - 2, INK); c.dot(ex + 1, ey - 1, INK)  # the angry brow
+    if cap:
+        cap(c, hx, hy, s, p)
+    L.update(hx=hx, hy=hy)
+    # the sword wing
+    hx2, hy2 = shx + g['hand'][0] * s, shy + g['hand'][1] * s
+    if blade and not g.get('bare'):
+        if g['smear']:
+            smear(c, shx, shy, blade[1] + 3.5 * s, *g['smear'])
+        sword(c, hx2, hy2, g['ang'], blade[1], rp=blade[0], **(blade[2] if len(blade) > 2 else {}))
+    c.capsule(shx - 1.5 * s, shy, hx2, hy2, 2.6 * s, 1.4 * s, wing_rp, lift=-0.1)
+    c.ball(hx2, hy2, 1.4 * s, 1.3 * s, wing_rp, lift=0.2)
+    L.update(hx2=hx2, hy2=hy2)
+    if front:
+        front(c, p, L)
+    return L
+
+
+# ---- 1. Gosling: a fluffy yellow gosling with a wooden practice sword. Waddles up and pokes.
+def gosling(c, p):
+    base = c.h - 2
+    bx, by = 8 + p.lean, base - 5.4 + p.bob
+    for side, st in ((-1, p.step), (1, -p.step)):
+        fx = bx + side * 1.6 + st
+        c.ball(fx + 0.8, base - 0.8 - max(0, -st), 1.5, 0.8, 'beak', lift=0.2)
+    c.ball(bx, by, 5 * (1 + p.sq * 0.5), 4.3 * (1 - p.sq * 0.5), 'gosl', fur=0.35, tufts=12, tex=1, under=0.5)
+    hx, hy = bx + 2.4 + (1 if p.name == 'loose' else 0), by - 5 + (1 if p.hit else 0)
+    c.ball(hx, hy, 3.4, 3.1, 'gosl', fur=0.3, tufts=8, phase=0.3, lift=0.15)
+    c.ball(hx - 1, hy - 3.2, 1, 1.2, 'gosl', fur=0.4, tufts=3, lift=0.3)
+    c.poly([(hx + 2.4, hy - 0.4), (hx + 5, hy + 0.6), (hx + 2.4, hy + 1.6)], 'beak', base=4)
+    if p.hit:
+        eyes(c, int(hx), int(hy) - 1, 0, True)
+    else:
+        c.dot(int(hx) + 1, int(hy) - 1, INK); c.dot(int(hx) + 1, int(hy) - 2, WHITE)
+    hand, ang = {'draw': ((-1, -3.5), -2.3), 'loose': ((5, 0.5), 0.15), 'hit': ((1, 2.5), 1.2)}.get(p.name, ((3, 1), -0.7))
+    gx, gy = bx + 1 + hand[0], by - 0.5 + hand[1]
+    if p.name == 'loose':
+        smear(c, bx + 1, by - 0.5, 9, -1.8, 0.2)
+    sword(c, gx, gy, ang, 5.5, rp='twig', w=2, guard='wood', hilt='leather', gw=1.5, pommel=False)
+    c.capsule(bx - 0.5, by - 0.5, gx, gy, 1.6, 1.0, 'gosl', lift=-0.1)
+    c.ball(gx, gy, 1.1, 1.1, 'gosl', lift=0.2)
+
+
+# ---- 2. Honker: the classic white goose with a short sword. Its honk is a shockwave you can see
+# that shoves you back; then it comes in swinging.
+def honker(c, p):
+    def knob(c, hx, hy, s, p):
+        c.ball(hx + 1.9 * s, hy - 1.4 * s, 1.0, 0.9, 'beak', lift=0.2)
+    goose(c, p, 1.0, 'goose', cap=knob, blade=('steel', 8))
+
+
+# ---- 3. Gander Squire: a goose in a pot helm behind a round shield. Blocks hits from the front
+# (go round it, or crit it) and bashes with the shield.
+def gsquire(c, p):
+    def helm(c, hx, hy, s, p):
+        c.ball(hx - 0.3, hy - 1.4, 3.1, 2.4, 'steel', clip=lambda x, y: y <= hy - 0.6)
+        c.line([(hx - 3.4, hy - 0.6), (hx + 2.8, hy - 0.6)], ('steel', 1))
+    pose = {'bash': {'hand': (2, 3.4), 'ang': 1.0, 'neck': 'strike'}, 'draw': {'hand': (-1.6, -3.2), 'ang': -2.2, 'neck': 'up'}}.get(p.name)
+
+    def shield(c, p, L):
+        out = 4.6 if p.name == 'bash' else 2.8 if p.name != 'draw' else 2.2
+        sx, sy = L['bx'] + L['rx'] * 0.6 + out, L['by'] - 0.5
+        c.ball(sx, sy, 2.6, 5.4, 'wood', lift=0.1, tex=4)
+        c.ball(sx + 0.3, sy, 1.4, 1.6, 'steel', lift=0.3)  # the boss
+        c.line([(sx - 0.5, sy - 5.2), (sx + 1.6, sy - 4.2)], ('steel', 4))
+    goose(c, p, 1.0, 'goose', pose=pose, cap=helm, blade=('steel', 7), front=shield)
+
+
+# ---- 4. Goose Fencer: a grey goose in a plumed hat with a rapier. Lines up a long lunge across
+# the floor (you can see the line coming): get out of the way, then punish it.
+def fencer(c, p):
+    def hat(c, hx, hy, s, p):
+        c.ball(hx - 0.4, hy - 2.4, 4.6, 1.2, 'leather', lift=0.1)  # the brim
+        c.ball(hx - 0.6, hy - 3.6, 2.4, 1.8, 'leather', lift=0.2, clip=lambda x, y: y <= hy - 2.4)
+        c.capsule(hx - 1.6, hy - 4.2, hx - 5.4, hy - 6.4, 1.2, 0.6, 'plume', lift=0.2)
+    pose = {'lunge': {'hand': (9.0, 0.8), 'ang': 0.02, 'neck': 'low', 'dx': 1.5, 'dy': 0.6},
+            'draw': {'hand': (-2.6, 0.4), 'ang': 0.0, 'neck': 'up'},
+            'loose': {'hand': (8.0, 1.0), 'ang': 0.05, 'neck': 'strike', 'smear': None}}.get(p.name)
+    goose(c, p, 1.0, 'greyg', pose=pose, cap=hat, belly=lambda c, p, L: c.ball(L['bx'] + 1.6, L['by'] + 2, 4, 2.4, 'bone', lift=0.1),
+          blade=('steel', 12, {'w': 1, 'gw': 1.5, 'guard': 'gold'}))
+
+
+# ---- 5. Blade Tosser: a Canada goose that flings its broadsword like a boomerang and catches it
+# on the way back. Without it, it's open.
+def gtoss(c, p):
+    bare = p.name in ('throw', 'bare0', 'bare1')
+    pose = {'throw': {'hand': (6.4, -0.6), 'ang': 0, 'neck': 'strike', 'bare': True},
+            'bare0': {'hand': (2.8, 3.2), 'ang': 0, 'bare': True},
+            'bare1': {'hand': (2.8, 3.2), 'ang': 0, 'bare': True}}.get(p.name)
+    goose(c, p, 1.0, 'canada', pose=pose, neck_rp='swan', chin='goose',
+          belly=lambda c, p, L: c.ball(L['bx'] + 2, L['by'] + 1.8, 4.2, 2.6, 'bone', lift=0.05),
+          blade=('steel', 8, {'w': 3, 'gw': 2.5}))
+
+
+# ---- 6. Whirlwind Goose: spins with its longsword out and comes across the floor like a
+# buzzsaw, then staggers about dizzy. Jump it, then hit it while it's seeing stars.
+def whirl(c, p):
+    spin = p.name.startswith('spin')
+    k = int(p.name[-1]) if spin else 0
+    def sash(c, p, L):
+        c.capsule(L['bx'] - L['rx'] * 0.6, L['by'] - 1.5, L['bx'] + L['rx'] * 0.7, L['by'] + 1, 1.2, 1.2, 'red', lift=0.1)
+    if spin:
+        a = [0.2, 2.3, 4.4][k]
+        pose = {'hand': (math.cos(a) * 4, math.sin(a) * 2.5 + 0.5), 'ang': a, 'neck': 'up', 'smear': (a - 2.6, a)}
+        q = P('idle1')
+        q.name = p.name
+        p = q
+    else:
+        pose = None
+    goose(c, p, 1.0, 'greyg', pose=pose, belly=sash, blade=('steel', 10))
+
+
+# ---- 7. Grave Goose: the ghost of a goose that guarded a sword grave, with its cracked old blade.
+# Your hits pass straight through it while it drifts; it is only solid when it attacks.
+def ggrave(c, p):
+    def wisps(c, p, L):
+        b, s = L['by'] + L['ry'] - 1, L['s']
+        for i, x in enumerate((-4, -1, 2)):
+            c.capsule(L['bx'] + x, b - 1, L['bx'] + x - 1 - (i + p.step) % 2, b + 3 + i % 2, 1.4, 0.5, 'ghost', lift=-0.2)
+    goose(c, p, 1.0, 'ghost', back=wisps, feet=False, eye_col=(120, 255, 220), blade=('rust', 9, {'guard': 'rust', 'hilt': 'rust'}))
+
+
+# ---- 8. Goose Berserker: war paint, a red headband and a sword under each wing. Comes in with a
+# three-hit flurry, and goes faster when it's hurt.
+def berserker(c, p):
+    def band(c, hx, hy, s, p):
+        c.line([(hx - 2.6, hy - 1.6), (hx + 2.2, hy - 1.8)], ('red', 3), w=2)
+        c.line([(hx - 2.6, hy - 1.2), (hx - 5, hy + 0.2 + p.bob)], ('red', 2))
+        c.line([(hx + 0.4, hy - 0.2), (hx + 1.6, hy + 0.6)], R['red'][3], flat=True)  # war paint
+    far = {'loose': (5.4, -2.4, -0.5), 'loose2': (6.6, 1.8, 0.6), 'loose3': (3, -5, -1.6), 'draw': (-2, -2, -2.0), 'hit': (0, 3, 1.4)}.get(p.name, (-0.6, 2.6, -0.6))
+    def second(c, p, L):  # the far wing's sword, behind the body
+        sword(c, L['shx'] + far[0], L['shy'] + far[1] - 1, far[2], 8)
+    pose = {'loose2': {'hand': (5.8, -2.6), 'ang': -0.7, 'neck': 'strike', 'smear': (1.2, -0.7)},
+            'loose3': {'hand': (7.0, 3.6), 'ang': 1.1, 'neck': 'strike', 'smear': (-2.6, 1.1), 'dy': 0.6}}.get(p.name)
+    goose(c, p, 1.05, 'goose', pose=pose, cap=band, back=second, blade=('steel', 8))
+
+
+# ---- 9. Black Swan Duelist: tall, elegant and very good. Takes a guard stance; hit it from the
+# front while it's on guard and it parries and ripostes. Wait it out, or get behind it.
+def swan(c, p):
+    def crest(c, hx, hy, s, p):
+        c.put(hx + 2.6 * s, hy - 0.6 * s, ('red', 4), flat=True)
+    pose = {'guard': {'hand': (5.2, -1.2), 'ang': -1.6, 'neck': 'back'}}.get(p.name)
+    goose(c, p, 1.25, 'swan', pose=pose, cap=crest, blade=('steel', 13, {'guard': 'steel', 'gw': 2.0}))
+    # the swan's red beak: recolour the goose's orange
+    for y in range(c.h):
+        for x in range(c.w):
+            col = c.col[y][x]
+            if isinstance(col, tuple) and col and col[0] == 'beak' and y < c.h * 0.55:
+                c.col[y][x] = ('red', min(5, col[1] + 1))
+
+
+# ---- 10. War Gander: a huge goose in plate with a gold crown helm and a claymore. Leaps across
+# and crashes down where you stand, and plunges its sword into the graveyard to raise a ring of
+# old blades out of the ground. Light hits barely move it.
+def gander(c, p):
+    def crown(c, hx, hy, s, p):
+        c.ball(hx - 0.2, hy - 1.6 * s, 3.2 * s, 2.2 * s, 'steel', clip=lambda x, y: y <= hy - 1.1 * s, lift=0.1)
+        for k in (-2, 0, 2):
+            c.poly([(hx + k * s - 0.9, hy - 3.2 * s), (hx + k * s, hy - 5.2 * s), (hx + k * s + 0.9, hy - 3.2 * s)], 'gold', base=4)
+        c.line([(hx - 3 * s, hy - 3.1 * s), (hx + 2.6 * s, hy - 3.1 * s)], ('gold', 3))
+    def plate(c, p, L):
+        c.ball(L['bx'] + 1.2 * L['s'], L['by'] - 0.4, L['rx'] * 0.72, L['ry'] * 0.82, 'steel', lift=-0.15, tex=0)
+        for k in (-1, 1):  # the plates' rivets
+            c.put(L['bx'] + 1.2 * L['s'] + k * 3, L['by'] - L['ry'] * 0.4, ('gold', 4), flat=True)
+        c.line([(L['bx'] + 1.2 * L['s'], L['by'] - L['ry'] * 0.7), (L['bx'] + 1.2 * L['s'], L['by'] + L['ry'] * 0.6)], ('gold', 3))
+    pose = {'leap': {'hand': (-1, -4.4), 'ang': -2.0, 'neck': 'up', 'tuck': True, 'dy': -3},
+            'plunge': {'hand': (5.0, 3.0), 'ang': 1.45, 'neck': 'strike', 'dy': 0.4}}.get(p.name)
+    goose(c, p, 1.65, 'goose', pose=pose, cap=crown, belly=plate, blade=('steel', 17, {'w': 3, 'gw': 3.5}))
+
+
 # (canvas w, h, draw, extra frames) per type. Sizes include the 1px outline margin.
 DESIGNS = {
     'fuzzlet': (22, 16, fuzzlet, ['jump']),
@@ -748,6 +1042,17 @@ DESIGNS = {
     'yeticub': (32, 30, yeticub, []),
     'yeti': (46, 46, yeti, ['stomp']),
     'werewolf': (44, 46, werewolf, ['howl', 'sky']),
+    # zone 1, the goose family (swords)
+    'gosling': (24, 18, gosling, []),
+    'honker': (34, 30, honker, ['honk']),
+    'gsquire': (34, 30, gsquire, ['bash']),
+    'fencer': (40, 32, fencer, ['lunge']),
+    'gtoss': (34, 30, gtoss, ['throw', 'bare0', 'bare1']),
+    'whirl': (40, 32, whirl, ['spin0', 'spin1', 'spin2']),
+    'ggrave': (34, 30, ggrave, []),
+    'berserker': (38, 32, berserker, ['loose2', 'loose3']),
+    'swan': (44, 40, swan, ['guard']),
+    'gander': (58, 52, gander, ['leap', 'plunge']),
 }
 FAMILY = list(DESIGNS)
 

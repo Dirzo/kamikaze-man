@@ -213,6 +213,17 @@ const DIE = {
   kitsune: () => arp([84, 88, 91, 96, 100, 103], 1, { wave: 'p12', vol: 0.025, decay: 0.002 }), // foxfire wisp
   monk: () => chip([[N(81), 8]], { wave: 'p50', vol: 0.03, decay: 0.002 }), // a bell
   anvil: () => (chip([[N(96), 1], [N(91), 6]], { wave: 'p12', vol: 0.04, decay: 0.004 }), chip([[N(36), 4]], { wave: 'tri', vol: 0.08, decay: 0.01 })), // ting + thud
+  // the goose family: honks of every size
+  gosling: () => chip([[N(96), 1], [N(100), 1], [N(93), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }), // peep
+  honker: () => chip([[640, 2], [520, 2], [380, 4]], { wave: 'p25', vol: 0.045, decay: 0.006 }),
+  gsquire: () => (chip([[N(88), 1], [N(83), 2]], { wave: 'p12', vol: 0.035, decay: 0.008 }), chip([[520, 2], [360, 4]], { wave: 'p25', vol: 0.04, delay: 0.06 })),
+  fencer: () => chip([[700, 1], [620, 1], [700, 1], [420, 4]], { wave: 'p25', vol: 0.04, decay: 0.006 }), // touché
+  gtoss: () => chip([[560, 2], [470, 2], [330, 4]], { wave: 'p25', vol: 0.045, decay: 0.006 }),
+  whirl: () => (arp([84, 79, 74, 67], 1, { wave: 'p25', vol: 0.03 }), chip([[400, 3], [300, 5]], { wave: 'p25', vol: 0.04, delay: 0.05 })), // dizzy honk
+  ggrave: () => arp([79, 83, 86, 91, 95], 2, { wave: 'p12', vol: 0.025, decay: 0.002 }),
+  berserker: () => chip([[720, 1], [760, 1], [600, 2], [420, 2], [300, 4]], { wave: 'p25', vol: 0.05, decay: 0.006 }),
+  swan: () => arp([88, 84, 79, 72], 2, { wave: 'p50', vol: 0.035, decay: 0.003 }),
+  gander: () => (chip([[300, 3], [250, 3], [180, 8]], { wave: 'p25', vol: 0.06, decay: 0.006 }), chip([[N(36), 6]], { wave: 'tri', vol: 0.08, decay: 0.01 })),
   // the fuzzball family: squeaks for the little ones, a roar for the yeti, a howl for Moonfang
   fuzzlet: () => chip([[N(98), 1], [N(103), 1], [N(91), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }),
   burrball: () => (chip([[N(60), 1], [N(55), 1], [N(50), 2]], { wave: 'tri', vol: 0.06, decay: 0.008 }), hiss(3, { vol: 0.03, rate: 1.3, short: true })),

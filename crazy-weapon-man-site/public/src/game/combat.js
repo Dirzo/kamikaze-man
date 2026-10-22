@@ -23,7 +23,7 @@ import { recordKill, CARD_TIERS, CARDS } from '../data/book.js';
 import { toast } from './progress.js';
 import { ENEMIES } from '../data/enemies.js';
 import { alertPack } from './enemy.js';
-import { beastHit, beastDeath, beastPush } from './beastkin.js';
+import { beastHit, beastDeath, beastPush, beastGuard } from './beastkin.js';
 import { modOn, temper } from '../data/temper.js';
 import { KILL_PAY } from '../data/maps.js';
 
@@ -49,7 +49,8 @@ export function hitEnemy(e, dmg, o = {}) {
   e.calm = false; // a peaceful resident fights back once hit
   if (e.kind === 'mimic' && e.disguised) reveal(e);
   // shields block from the front unless it's a crit or a special
-  if (e.kind === 'shield' && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack') {
+  if (e.kind === 'beast' && beastGuard(e, dir, o)) return 0; // a phasing ghost, a parrying swan
+  if ((e.kind === 'shield' || e.d?.block) && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack') {
     dmg *= 0.2;
     if (!o.chain) {
       callout('CLANG', 0, 0, C.ice, { follow: e, life: 40 });

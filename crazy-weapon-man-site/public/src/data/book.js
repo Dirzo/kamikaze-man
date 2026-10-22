@@ -41,6 +41,17 @@ export const CARDS = {
   monk: { stats: { regen: 0.0005 }, bonus: 'Heal 0.05% of max health a second', lore: 'Meditates on a staff balanced on one finger.' },
   anvil: { stats: { impact: 0.03 }, bonus: 'Hits land 3% harder', lore: 'Born on Dad\'s anvil. Barks sparks.' },
   ninja: { stats: { swarmDmg: 0.02 }, bonus: '+2% damage in the swarm', lore: 'Carries forty shuriken and a forty-first for luck.' },
+  // the goose family (zone 1)
+  gosling: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Its sword is made of wood. Its confidence is made of steel.' },
+  honker: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'The honk comes first. The sword comes second. Both hurt.' },
+  gsquire: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Polishes its pot helm every morning and its shield every night.' },
+  fencer: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Lunges first and apologises never. The feather in its hat is its own.' },
+  gtoss: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Throws its sword every time. Catches it most times.' },
+  whirl: { stats: { aoeSize: 0.02 }, bonus: 'Area effects reach 2% wider', lore: 'Learned the spinning slash by accident and never stopped.' },
+  ggrave: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'Still guards the grave of the sword it lost. Still angry about it.' },
+  berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
+  swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
+  gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
   // the fuzzball family (zone 2)
   fuzzlet: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Its first bow was a twig and a whisker. It hits more often than you would think.' },
   burrball: { stats: { knock: 0.04 }, bonus: 'Foes fly 4% further', lore: 'Every arrow that ever missed it is still stuck in its fur. It keeps them for later.' },

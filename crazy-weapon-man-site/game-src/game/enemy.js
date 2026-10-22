@@ -17,7 +17,7 @@ import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
 import { temper, modOn } from '../data/temper.js';
 import { MOVE } from '../data/feel.js';
-import { beastTick, beastThink, beastAttack, beastAttacking, beastFrame, arrowHit } from './beastkin.js';
+import { beastTick, beastThink, beastAttack, beastAttacking, beastFrame, arrowHit, drawTell } from './beastkin.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
@@ -203,7 +203,7 @@ export function updateEnemy(e, dt) {
       break;
     case 'wind':
       e.vx *= 0.8;
-      if (e.st > 0.16 && e.kind !== 'roller' && e.kind !== 'sniper') e.face = toward;
+      if (e.st > 0.16 && e.kind !== 'roller' && e.kind !== 'sniper' && e.move !== 'guard') e.face = toward;
       if (e.st <= 0) attack(e, toward);
       break;
     case 'attack':
@@ -561,6 +561,7 @@ export function drawEnemy(e, t) {
   if (e.alpha != null && e.alpha < 1) X.globalAlpha = e.alpha;
   drawBody(e, t, sx, sy, art);
   X.globalAlpha = 1;
+  if (e.kind === 'beast') drawTell(e, t);
 }
 // the fall-over: p runs 0..1 over the fall, then the body holds still (blinking) until it shatters.
 // Returns false on a blink frame.

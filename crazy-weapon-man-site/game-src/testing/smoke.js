@@ -267,12 +267,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the fuzzball family: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    const fam=ZONES[1].pool;ok(fam.length===10 && fam.every(t=>ENEMIES[t].kind==='beast'),'zone 2 is not the fuzzball family');
+  check('the goose and fuzzball families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[...ZONES[0].pool,...ZONES[1].pool];
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const near=['kite','alpha','greatbow','roll'].includes(ENEMIES[type].beh);
+      const near=ENEMIES[type].fam==='goose'?ENEMIES[type].beh!=='toss':['kite','alpha','greatbow','roll'].includes(ENEMIES[type].beh);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -286,6 +287,11 @@ export function runSmoke(game) {
     for(let i=0;i<4;i++) hitEnemy(q,1,{dir:1});
     for(let i=0;i<30;i++){world.t+=STEP;updateEnemy(q,STEP);}
     ok(world.bolts.filter(b=>b.quill).length>=10,'a Quillback hit four times did not bristle');
+    // a Grave Goose is a ghost between attacks; a Black Swan on guard parries a hit from the front
+    reset();h=world.hero;const g=spawnEnemy('ggrave',h.x+60,FLOOR());g.spawnT=0;g.calm=false;updateEnemy(g,STEP);
+    ok(hitEnemy(g,50,{dir:1})===0 && g.hp===g.max,'a hit landed on a phasing Grave Goose');
+    reset();h=world.hero;const sw=spawnEnemy('swan',h.x+30,FLOOR());sw.spawnT=0;sw.calm=false;sw.face=-1;sw.state='wind';sw.st=1;sw.move='guard';sw.guarding=true;
+    ok(hitEnemy(sw,50,{dir:1})===0 && sw.move==='riposte','the Black Swan did not parry');
   });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {

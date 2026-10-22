@@ -33,9 +33,9 @@ test('opening loot has every weapon type at equal odds and no elemental/mutation
   const seen={};for(let i=0;i<26000;i++){const t=makeWeapon(0).type;seen[t]=(seen[t]||0)+1;}
   for(const t of Object.keys(TYPES)) assert.ok(Math.abs(seen[t]-2000)<260,`${t} dropped ${seen[t]}/2000`);
   assert.deepEqual(availableElements(0),[]); assert.deepEqual(availableMutations(0,10),[]);
-  assert.deepEqual(enemyPool(0,1,ZONES[0].pool),['stalker','crawler']);
-  assert.ok(!enemyPool(0,3,ZONES[0].pool).includes('bombchicken'));
-  assert.ok(enemyPool(0,4,ZONES[0].pool).includes('bombchicken'));
+  assert.deepEqual(enemyPool(0,1,ZONES[0].pool),['gosling','honker']);
+  assert.ok(!enemyPool(0,3,ZONES[0].pool).includes('gander'));
+  assert.ok(enemyPool(0,4,ZONES[0].pool).includes('gander'));
 });
 test('all powers eventually unlock; late-run pressure increases without unbounded hordes',()=>{
   assert.equal(availableTypes(9).length,13); assert.equal(availableElements(9).length,10);
@@ -75,6 +75,11 @@ test('all nine attacks and finisher recovery run exactly 25% faster',()=>{
   assert.ok(Math.abs(0.12/RECOVERY-1.25)<1e-10);
 });
 
+test('the goose family grows up along World 1: goslings on 1-1, War Ganders at the castle', () => {
+  const pool = ZONES[0].pool;
+  assert.deepEqual(enemyPool(0, 1, pool, 0), ['gosling', 'honker', 'gsquire']);
+  assert.ok(enemyPool(0, 1, pool, 1).includes('gander'));
+});
 test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
   const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);
   assert.deepEqual(at(0), ['fuzzlet', 'burrball', 'puffshot']);

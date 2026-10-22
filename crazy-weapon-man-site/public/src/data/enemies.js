@@ -52,6 +52,18 @@ export const ENEMIES = {
   yeticub: { name: 'Frost Cub', kind: 'beast', beh: 'frost', fam: 'fuzz', evo: 8, hp: 1.3, dmg: 0.9, speed: 30, range: 140, wind: 0.6 },
   yeti: { name: 'Greatbow Yeti', kind: 'beast', beh: 'greatbow', fam: 'fuzz', evo: 9, heavy: true, hp: 2.6, dmg: 1.5, speed: 20, range: 220, wind: 0.95 },
   werewolf: { name: 'Moonfang', kind: 'beast', beh: 'alpha', fam: 'fuzz', evo: 10, hp: 2.2, dmg: 1.3, speed: 48, range: 30, wind: 0.42 },
+  // The goose family (zone 1, the sword): from Goslings with practice swords on 1-1 up to the War
+  // Gander at the castle. block: a shield stops hits from the front (as kind 'shield' does).
+  gosling: { name: 'Gosling', kind: 'beast', beh: 'poke', fam: 'goose', evo: 1, hp: 0.5, dmg: 0.55, speed: 46, range: 20, wind: 0.42 },
+  honker: { name: 'Honker', kind: 'beast', beh: 'honk', fam: 'goose', evo: 2, hp: 0.85, dmg: 0.9, speed: 50, range: 24, wind: 0.4 },
+  gsquire: { name: 'Gander Squire', kind: 'beast', beh: 'shield', fam: 'goose', evo: 3, block: true, hp: 1.15, dmg: 0.95, speed: 32, range: 24, wind: 0.5 },
+  fencer: { name: 'Goose Fencer', kind: 'beast', beh: 'lunge', fam: 'goose', evo: 4, hp: 0.9, dmg: 1.15, speed: 38, range: 84, wind: 0.6 },
+  gtoss: { name: 'Blade Tosser', kind: 'beast', beh: 'toss', fam: 'goose', evo: 5, hp: 0.95, dmg: 0.9, speed: 40, range: 150, wind: 0.5 },
+  whirl: { name: 'Whirlwind Goose', kind: 'beast', beh: 'whirl', fam: 'goose', evo: 6, hp: 1.0, dmg: 0.85, speed: 34, range: 100, wind: 0.55 },
+  ggrave: { name: 'Grave Goose', bloodless: true, float: true, kind: 'beast', beh: 'phase', fam: 'goose', evo: 7, hp: 0.9, dmg: 1.0, speed: 30, range: 26, wind: 0.45 },
+  berserker: { name: 'Goose Berserker', kind: 'beast', beh: 'flurry', fam: 'goose', evo: 8, hp: 1.3, dmg: 0.8, speed: 52, range: 26, wind: 0.38 },
+  swan: { name: 'Black Swan Duelist', kind: 'beast', beh: 'parry', fam: 'goose', evo: 9, hp: 1.6, dmg: 1.25, speed: 36, range: 32, wind: 0.45 },
+  gander: { name: 'War Gander', kind: 'beast', beh: 'warlord', fam: 'goose', evo: 10, heavy: true, hp: 3.0, dmg: 1.55, speed: 26, range: 34, wind: 0.55 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
   acornking: { name: 'The Acorn Archer King', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 30, range: 140, wind: 0.6, bolt: 'orange' },
@@ -70,7 +82,9 @@ export const DEATHS = {
   summoner: 'rise', sniper: 'topple', roller: 'spin', squirrel: 'flip', turtle: 'flip', raccoon: 'spin', samurai: 'topple',
   kitsune: 'rise', monk: 'squash', anvil: 'squash', ninja: 'spin',
   fuzzlet: 'squash', burrball: 'spin', puffshot: 'flip', twintuft: 'flip', quillback: 'flip', moss: 'topple',
-  wolfpup: 'spin', yeticub: 'flip', yeti: 'topple', werewolf: 'topple'
+  wolfpup: 'spin', yeticub: 'flip', yeti: 'topple', werewolf: 'topple',
+  gosling: 'squash', honker: 'spin', gsquire: 'topple', fencer: 'topple', gtoss: 'spin', whirl: 'spin', ggrave: 'rise',
+  berserker: 'topple', swan: 'topple', gander: 'topple'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 
