@@ -5,7 +5,7 @@
 // level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
 // The polish pass: ?capture=book (the Monster Book), sheet (the stat sheet), maptemper (relic stars,
 // gimmick badges and a TEMPER tier on the map), ghost, scroll, water, ice (the level gimmicks),
-// room (a golden secret room) and goose (riding the War Goose). ?capture=collection: the unlock tracker.
+// room (a golden secret room) and goose (riding the War Goose). ?capture=collection: the unlock tracker; anvil: the map's bag (first POWERS tab) at the Legendary Anvil.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
@@ -24,13 +24,14 @@ import { updateCamera } from '../game/camera.js';
 import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
 import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
-import { openPowers, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
+import { openPowers, TAB, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
 import { TREE_BY_ID } from '../data/meta.js';
 import { hitEnemy, DEATH_T } from '../game/combat.js';
 import { updateFx } from '../game/fx.js';
 import { recordKill, recordBoss, PAGES } from '../data/book.js';
 import { keepRelics } from '../data/relics.js';
 import { LEVELS } from '../data/overworld.js';
+import { anvil as anvilStrike } from '../game/inventory.js';
 import { enterRoom } from '../game/hidden.js';
 import { mount } from '../game/mount.js';
 import { updateGimmick } from '../game/gimmicks.js';
@@ -50,11 +51,11 @@ function powersScene(game, tab) {
   addProficiency('sword', 2200); addProficiency('bow', 300); addProficiency('katana', 60000); addProficiency('hammer', 9000); addProficiency('wand', 900);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
-  openPowers(tab === 3 ? 1 : tab);
+  openPowers([TAB.TREE, TAB.MASTERY, TAB.TROPHIES, TAB.MASTERY, TAB.TREE, TAB.MASTERY][tab] ?? TAB.TREE);
   powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3 || tab === 5; powers.mast.tier = 2; powers.mast.opt = 1;
   // 4: shards mid-flight into a node being bought; 5: a mastery perk charging up
-  if (tab === 4) { powers.tab = 0; powers.tree.sel = 'echo'; investNode(TREE_BY_ID.echo); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
-  if (tab === 5) { powers.tab = 1; pickPerk('sword', 3, 0); for (let i = 0; i < 40; i++) updatePowers(1 / 60); }
+  if (tab === 4) { powers.tab = TAB.TREE; powers.tree.sel = 'echo'; investNode(TREE_BY_ID.echo); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
+  if (tab === 5) { powers.tab = TAB.MASTERY; pickPerk('sword', 3, 0); for (let i = 0; i < 40; i++) updatePowers(1 / 60); }
 }
 // the save files menu: file 1 a few worlds in, file 2 just started, file 3 empty
 function filesScene(game) {
@@ -74,11 +75,11 @@ function polishScene(game, mode) {
     for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31], ['bombchicken', 12], ['brute', 4], ['wraith', 1], ['maw', 22], ['wizard', 81], ['eyeball', 3]]) recordKill(t, n);
     PAGES[0].kinds.forEach(recordBoss); PAGES[1].kinds.slice(0, 3).forEach(recordBoss);
     mapScene(game, false);
-    openPowers(3);
+    openPowers(TAB.BOOK);
     powers.book.sel = 1;
     return;
   }
-  if (mode === 'collection') {
+  if (mode === 'collection' || mode === 'anvil') {
     // world 1 finished, world 2 half way, a few relics in world 3
     const s = newSave();
     for (const n of LEVELS.filter(n => n.region === 1)) { clearLevel(s, n.id, n.secret.length ? 'secret' : 'next'); keepRelics(s, n.id, 31); }
@@ -89,8 +90,16 @@ function polishScene(game, mode) {
     winTrophy(1); PAGES[0].kinds.forEach(recordBoss);
     for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31]]) recordKill(t, n);
     game.ow.save = s; game.openMap();
-    openPowers(4);
+    openPowers(mode === 'anvil' ? TAB.BAG : TAB.COLL);
     powers.coll = 1;
+    if (mode === 'anvil') {
+      // a katana struck to +3 in the bag, asking for its fourth strike
+      const w = makeWeapon(1, { type: 'katana', q: 3, standout: false });
+      stash(w); stash(makeWeapon(2, { type: 'bow', q: 2 })); stash(makeWeapon(0, { type: 'hammer', q: 1 }));
+      world.inv.sel = world.bag.indexOf(w);
+      for (let i = 0; i < 3; i++) { world.inv.anvilAsk = true; anvilStrike(); }
+      world.inv.anvilAsk = false; anvilStrike();
+    }
     return;
   }
   if (mode === 'maptemper') {
@@ -123,7 +132,7 @@ function polishScene(game, mode) {
   document.documentElement.dataset.capture = 'ready';
 }
 export function captureScene(game, mode) {
-  if(['book','collection','maptemper','ghost','scroll','water','ice','room','goose','sheet'].includes(mode)) return polishScene(game, mode);
+  if(['book','collection','anvil','maptemper','ghost','scroll','water','ice','room','goose','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);

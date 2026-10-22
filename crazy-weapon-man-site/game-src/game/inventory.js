@@ -8,7 +8,7 @@ import { X, canvas, rect, text, textWidth, fitText, panel, dither } from '../eng
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
-import { dps, powerScore, rarityName } from './loot.js';
+import { dps, powerScore, rarityName, freshUid } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { equip } from './drops.js';
 import { toast } from './progress.js';
@@ -23,6 +23,9 @@ import { proficiency, profToNext, profRank, PROF_MAX, PROF_DMG } from '../data/p
 import { fmt } from '../data/curve.js';
 import { RARITY } from '../data/weapons.js';
 import { drawSheet } from './statsheet.js';
+import { TAB, drawTabs, tabAt, showTab, P as powers } from './powers.js';
+import { ANVIL_MAX, strikes, strikeCost, cantStrike, strike, relicsToSpend } from '../data/anvil.js';
+import { ABILITY_LIST } from '../data/abilities.js';
 
 export const BAG_SIZE = 24;
 const COLS = 8,
@@ -35,10 +38,21 @@ const BTNS = [
   { id: 'lock', label: 'LOCK', x: INV.x + 82, w: 60 },
   { id: 'salvage', label: 'SALVAGE', x: INV.x + 148, w: 108 }
 ];
+// on the map the bag has a fourth button: the Legendary Anvil (data/anvil.js)
+const BTNS_MAP = [
+  { id: 'equip', label: 'EQUIP', x: INV.x + 10, w: 52 },
+  { id: 'lock', label: 'LOCK', x: INV.x + 66, w: 46 },
+  { id: 'salvage', label: 'SALVAGE', x: INV.x + 116, w: 78 },
+  { id: 'anvil', label: 'ANVIL', x: INV.x + 198, w: 58 }
+];
+const btns = () => (world.inv?.tabs ? BTNS_MAP : BTNS);
 const BTN_Y = INV.y + 208;
 const CLOSE = { x: INV.x + INV.w - 18, y: INV.y + 5, w: 12, h: 11 };
 const FILTER_BTN = { x: INV.x + 74, y: INV.y + 5, w: 98, h: 11 };
 const SHEET_BTN = { x: EQ.x + EQ.w - 58, y: EQ.y + 5, w: 52, h: 11 };
+// on the overworld the bag is the POWERS window's first tab: its tab strip sits on top and the bag
+// is drawn this much lower (world.inv.tabs)
+const TABS_DY = 22;
 
 export const newBag = () => new Array(BAG_SIZE).fill(null);
 export const bagCount = () => world.bag.filter(Boolean).length;
@@ -146,9 +160,34 @@ export function closeInventory() {
 }
 export const toggleInventory = () => (world.inv ? closeInventory() : openInventory());
 
+// the anvil strikes the picked bag weapon, or the one in your hand when the picked slot is empty;
+// relics are spent for good, so it asks twice
+export function anvil() {
+  const I = world.inv, save = powers.save, inBag = !!world.bag[I.sel], w = inBag ? world.bag[I.sel] : world.hero.weapon;
+  const no = save ? cantStrike(save, w) : 'THE ANVIL IS ON THE MAP';
+  I.confirm = false;
+  if (no) return (I.anvilAsk = false), (I.msg = no), sfx.ui();
+  if (!I.anvilAsk) {
+    I.anvilAsk = true;
+    I.msg = `+${strikes(w) + 1} FOR ${strikeCost(strikes(w))} RELICS${inBag ? '' : ' (IN HAND)'}: G AGAIN`;
+    return sfx.ui();
+  }
+  I.anvilAsk = false;
+  if (strike(save, w) && !w.ability) {
+    // the fifth strike awakens it
+    w.ability = ABILITY_LIST[Math.floor(Math.random() * ABILITY_LIST.length)];
+    w.name = w.name.replace(/ \+\d$/, `, ${ABILITIES[w.ability].clause[0]} +${ANVIL_MAX}`);
+  }
+  freshUid(w); // its look changed: draw it anew
+  I.msg = strikes(w) === ANVIL_MAX ? `+${ANVIL_MAX}! THE ANVIL AWAKENS IT` : `STRUCK! NOW +${strikes(w)}`;
+  sfx.levelUp();
+}
+
 function act(id) {
   const I = world.inv,
     w = world.bag[I.sel];
+  if (id === 'anvil') return anvil();
+  I.anvilAsk = false;
   if (!w) {
     I.msg = 'EMPTY SLOT';
     I.confirm = false;
@@ -203,6 +242,9 @@ export function updateInventory(dt) {
   const I = world.inv;
   if (!I) return;
   I.t += dt;
+  // on the map, R and SHIFT go to the STATS tab (the next one along)
+  if (I.tabs && (input.take('sheet') | input.take('dash'))) return showTab(TAB.STATS);
+  if (I.tabs && input.take('anvil')) return act('anvil');
   if (input.take('sheet')) return (I.sheet = !I.sheet), sfx.ui(I.sheet);
   if (I.sheet) {
     if (input.take('inv') || input.take('pause') || input.take('leave')) (I.sheet = false), sfx.ui();
@@ -237,11 +279,18 @@ canvas.addEventListener('pointerdown', e => {
   if (!I) return;
   e.preventDefault();
   const p = toCanvas(e);
+  if (I.tabs) {
+    const i = tabAt(p.x, p.y);
+    if (i > TAB.BAG) return showTab(i);
+    if (p.y < TABS_DY + 4) return void (p.x >= W - 22 && closeInventory());
+    p.y -= TABS_DY;
+    if (inside(p, SHEET_BTN)) return showTab(TAB.STATS);
+  }
   if (I.sheet) return (I.sheet = false), sfx.ui();
   if (inside(p, CLOSE)) return closeInventory();
   if (inside(p, FILTER_BTN)) return cycleFilter();
   if (inside(p, SHEET_BTN)) return (I.sheet = true), sfx.ui(true);
-  for (const b of BTNS) if (inside(p, { x: b.x, y: BTN_Y, w: b.w, h: 16 })) return act(b.id);
+  for (const b of btns()) if (inside(p, { x: b.x, y: BTN_Y, w: b.w, h: 16 })) return act(b.id);
   const i = cellAt(p);
   if (i < 0) return;
   if (i === I.sel && performance.now() - I.lastClick < 400) act('equip'); // double-click equips
@@ -255,7 +304,9 @@ canvas.addEventListener('pointerdown', e => {
 });
 canvas.addEventListener('pointermove', e => {
   if (!world.inv || e.pointerType !== 'mouse') return;
-  const i = cellAt(toCanvas(e));
+  const p = toCanvas(e);
+  if (world.inv.tabs) p.y -= TABS_DY;
+  const i = cellAt(p);
   world.inv.hover = i;
 });
 
@@ -303,6 +354,8 @@ export function drawInventory(t) {
     h = world.hero;
   if (!I || !h) return;
   dither(0, 0, W, H, C.ink, 9);
+  const tabDy = I.tabs ? TABS_DY : 0;
+  if (I.tabs) drawTabs(t, TAB.BAG), X.save(), X.translate(0, tabDy);
 
   // ---- EQUIPMENT ----
   titleBar(EQ, 'EQUIPMENT');
@@ -314,7 +367,7 @@ export function drawInventory(t) {
   rect(px + 1, py + 60, 70, 9, C.slate);
   const doll = { ...h, x: 0, y: 0, face: 1, vx: 0, vy: 0, attack: null, special: null, ladder: null, dashT: 0, hurtT: 0, castT: 0, onGround: true, dead: false };
   X.save();
-  X.setTransform(2, 0, 0, 2, px + 36 - doll.w, py + 60 - doll.h * 2);
+  X.setTransform(2, 0, 0, 2, px + 36 - doll.w, py + 60 - doll.h * 2 + tabDy);
   drawHeroAnimated(doll, t);
   X.restore();
   const w = h.weapon,
@@ -402,8 +455,8 @@ export function drawInventory(t) {
     text(`${typeName(it.type)} MASTERY LV ${p.lv} ${profRank(p.lv)}`, tx, dy + 61, C.sky);
   }
   // buttons + shards
-  for (const b of BTNS) {
-    const hot = b.id === 'salvage' && I.confirm;
+  for (const b of btns()) {
+    const hot = (b.id === 'salvage' && I.confirm) || (b.id === 'anvil' && I.anvilAsk);
     panel(hot ? 'btn-hot' : 'btn', b.x, BTN_Y, b.w, 16);
     const label = b.id === 'salvage' && it ? `${b.label} +${salvageValue(it)}` : b.id === 'lock' && it && it.locked ? 'UNLOCK' : b.label;
     text(label, b.x + b.w / 2, BTN_Y + 5, it ? C.paper : C.fog, { align: 'center' });
@@ -411,8 +464,10 @@ export function drawInventory(t) {
   if (I.msg) text(I.msg, INV.x + INV.w / 2, BTN_Y - 9, C.lime, { align: 'center' });
   rect(EQ.x + 6, EQ.y + EQ.h + 4, 4, 2, C.sky);
   text(`${fmt(world.shards)} SHARDS`, EQ.x + 14, EQ.y + EQ.h + 2, C.ice);
-  text('Z EQUIP  X LOCK  C SALVAGE  F FILTER  R STATS  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
+  if (I.tabs) text(`${relicsToSpend(powers.save)} RELICS`, EQ.x + 120, EQ.y + EQ.h + 2, C.gold, { align: 'right' });
+  text(I.tabs ? 'Z EQUIP  X LOCK  C SALVAGE  G ANVIL  F FILTER  SHIFT TAB' : 'Z EQUIP  X LOCK  C SALVAGE  F FILTER  R STATS  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
   if (I.sheet) drawSheetWindow(w);
+  if (I.tabs) X.restore();
 }
 
 // the full stat sheet over both windows

@@ -130,3 +130,27 @@ test('the Collection counts each world and the whole game, and names what is sti
   assert.ok(rowPct(row) < 100, 'the trophy and boss page are still missing');
   assert.ok(collection(s, [R.zone]).pct > 0);
 });
+
+test('the Legendary Anvil spends relics to make a weapon a stronger version of itself, up to +5', async () => {
+  const { ANVIL_MAX, strikeCost, strikes, cantStrike, strike, relicsToSpend, furthestZone } = await import('../game-src/data/anvil.js');
+  const { newSave, clearLevel } = await import('../game-src/data/overworld.js');
+  const s = newSave(), w = { type: 'sword', q: 2, home: 0, name: 'Bonkreaver', look: { q: 2 } };
+  assert.match(cantStrike(s, w), /NEEDS 5 RELICS/);
+  for (const n of LEVELS.filter(n => n.region <= 3)) clearLevel(s, n.id), keepRelics(s, n.id, 31);
+  const all = relicsToSpend(s);
+  assert.equal(all, relicTotal(s).got);
+  assert.equal(furthestZone(s), 2);
+  assert.equal(cantStrike(s, w), null);
+  assert.equal(strike(s, w), false);
+  assert.deepEqual([strikes(w), w.q, w.home, w.name, w.look.q], [1, 3, 2, 'Bonkreaver +1', 3]);
+  assert.ok(w.boost > 1);
+  assert.equal(relicsToSpend(s), all - strikeCost(0));
+  let fifth = false;
+  while (strikes(w) < ANVIL_MAX) fifth = strike(s, w);
+  assert.ok(fifth, 'the fifth strike says so');
+  assert.equal(w.name, 'Bonkreaver +5');
+  assert.equal(relicsToSpend(s), all - [0, 1, 2, 3, 4].reduce((t, n) => t + strikeCost(n), 0));
+  assert.match(cantStrike(s, w), /ALREADY \+5/);
+  keepRelics(s, LEVELS.find(n => n.region === 4).id, 31);
+  assert.equal(relicsToSpend(s), all - 75 + 5, 'new relics add to what you can spend');
+});
