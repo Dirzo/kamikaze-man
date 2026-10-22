@@ -60,7 +60,7 @@ export function toggleSound() {
 }
 export function toggleMusic() {
   settings.music = !settings.music;
-  if (musicBus) musicBus.gain.value = settings.music ? 0.55 : 0;
+  if (musicBus) musicBus.gain.cancelScheduledValues(0), (musicBus.gain.value = settings.music ? 0.55 : 0);
   save();
   return settings.music;
 }
@@ -71,6 +71,14 @@ function save() {
   } catch (_) {}
 }
 
+// sound-effect pitch: a hit plays a touch higher or lower each time (and climbs with a streak), and
+// shard pickups climb a scale like Mario's coins. Music never takes it.
+let tune = 1;
+function tuned(k, fn) {
+  const was = tune;
+  tune = k;
+  try { fn(); } finally { tune = was; }
+}
 // steps: [[hz, frames], ...]
 export function chip(steps, { wave = 'p25', vol = 0.05, decay = 0.004, delay = 0, at = null, music = false } = {}) {
   if (!ctx || ctx.state !== 'running') return;
@@ -84,7 +92,7 @@ export function chip(steps, { wave = 'p25', vol = 0.05, decay = 0.004, delay = 0
   g.gain.setValueAtTime(0, t0);
   for (const [f, n] of steps)
     for (let i = 0; i < n; i++) {
-      o.frequency.setValueAtTime(Math.max(20, f), t);
+      o.frequency.setValueAtTime(Math.max(20, music ? f : f * tune), t);
       g.gain.setValueAtTime(f > 0 ? Math.max(0, v) : 0, t);
       v -= decay;
       t += FR;
@@ -104,7 +112,7 @@ export function hiss(frames, { vol = 0.05, rate = 1, drop = 0, short = false, de
   s.loop = true;
   let t = t0,
     v = vol,
-    r = rate;
+    r = music ? rate : rate * tune;
   for (let i = 0; i < frames; i++) {
     s.playbackRate.setValueAtTime(Math.max(0.05, r), t);
     g.gain.setValueAtTime(Math.max(0, v), t);
@@ -208,6 +216,18 @@ const DIE = {
   ninja: () => (hiss(4, { vol: 0.04, rate: 1.5, drop: -0.1, short: true }), arp([91, 96], 1, { wave: 'p12', vol: 0.025, delay: 0.05 })) // poof
 };
 
+const SHARD_SCALE = [84, 86, 88, 89, 91, 93, 95, 96, 98, 100, 101, 103];
+let shardRun = 0, shardAt = -1e9;
+
+// music ducks for a moment under a big hit (crit, finisher, elite kill, special) so it punches through
+export function duck(depth = 0.45, sec = 0.35) {
+  if (!ctx || !musicBus || !settings.music) return;
+  const t = ctx.currentTime, full = 0.55, g = musicBus.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(full * (1 - depth), t);
+  g.linearRampToValueAtTime(full, t + sec);
+}
+
 export const sfx = {
   thud(heavy = false, honk = false) {
     if (!gate('thud', 65)) return;
@@ -247,14 +267,35 @@ export const sfx = {
   },
   // a hit: the weapon's signature sound when it is the hero's weapon landing (type given),
   // a plain smack for procs and chains
-  hit(crit, type) {
+  // step: how many hits in a row (each one a little higher, up to 8)
+  hit(crit, type, step = 0) {
     if (!gate(crit ? 'hitc' : 'hit', crit ? 30 : 35)) return;
-    if (type && SIG[type]) SIG[type](crit ? 1.25 : 1);
-    else {
-      hiss(3, { vol: 0.04, rate: 0.7, drop: 0.15 });
-      chip([[N(57), 1], [N(52), 1]], { wave: 'p50', vol: 0.025, decay: 0.01 });
-    }
+    tuned((1 + (Math.random() - 0.5) * 0.1) * (1 + Math.min(8, step) * 0.03), () => {
+      if (type && SIG[type]) SIG[type](crit ? 1.25 : 1);
+      else {
+        hiss(3, { vol: 0.04, rate: 0.7, drop: 0.15 });
+        chip([[N(57), 1], [N(52), 1]], { wave: 'p50', vol: 0.025, decay: 0.01 });
+      }
+    });
     if (crit) arp([84, 91], 2, { wave: 'p12', vol: 0.045, decay: 0.002 });
+  },
+  // a shard picked up: each one in a quick chain a scale step higher, then back to the bottom
+  shard() {
+    const now = performance.now();
+    shardRun = now - shardAt < 450 ? Math.min(SHARD_SCALE.length - 1, shardRun + 1) : 0;
+    shardAt = now;
+    if (!gate('shard', 28)) return;
+    const m = SHARD_SCALE[shardRun];
+    chip([[N(m), 2], [N(m + 7), 3]], { wave: 'p12', vol: 0.03, decay: 0.004 });
+  },
+  skid() {
+    if (!gate('skid', 140)) return;
+    hiss(5, { vol: 0.03, rate: 1.1, drop: 0.08, short: true });
+  },
+  // low health: a soft two-beat heartbeat
+  heartbeat() {
+    chip([[N(33), 3]], { wave: 'tri', vol: 0.09, decay: 0.02 });
+    chip([[N(31), 3]], { wave: 'tri', vol: 0.07, decay: 0.02, delay: 0.16 });
   },
   // elemental augments: a quiet tag on top of the hit, so a Blazing sword hisses and a
   // Thunderstruck one crackles

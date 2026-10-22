@@ -3,7 +3,7 @@
 import { HERO, C, GROUND } from '../config.js';
 import { updateClimb } from './climbing.js';
 import { input } from '../engine/input.js';
-import { sfx } from '../engine/audio.js';
+import { sfx, duck } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy } from './physics.js';
 import { TYPES, MOVES, RECOVERY } from '../data/weapons.js';
@@ -22,6 +22,7 @@ import { heroPhysics } from './gimmicks.js';
 import { charge, drawMount, RIDE } from './mount.js';
 import { X } from '../engine/gfx.js';
 import { MOUNT } from '../data/gimmicks.js';
+import { MOVE, windHang, plungeOf } from '../data/feel.js';
 
 
 export function createHero() {
@@ -52,8 +53,17 @@ export function updateHero(h, dt) {
   h.comboT = Math.max(0, h.comboT - dt);
   h.dropT = Math.max(0, h.dropT - dt);
   h.castT = Math.max(0, (h.castT || 0) - dt);
+  h.skidT = Math.max(0, (h.skidT || 0) - dt);
+  h.squashT = Math.max(0, (h.squashT || 0) - dt);
+  h.stretchT = Math.max(0, (h.stretchT || 0) - dt);
+  h.lungeT = Math.max(0, (h.lungeT || 0) - dt);
   h.animT += dt;
   const S = heroStats();
+  // low health: a heartbeat (the HUD pulses the screen edge with it)
+  if (h.hp / h.maxHp < 0.25 && (h.beatT = (h.beatT || 0) - dt) <= 0) {
+    h.beatT = 0.8;
+    sfx.heartbeat();
+  }
   if (S.regen && h.hp < h.maxHp) {
     // REGENERATION / INNER PEACE: whole points only, the remainder carries over
     h.regenAcc = (h.regenAcc || 0) + h.maxHp * S.regen * dt;
@@ -98,16 +108,29 @@ export function updateHero(h, dt) {
     if (ride) charge(h);
     return;
   }
-  // run
+  // run: after MOVE.sprintAfter seconds of running one way you hit a sprint (SMW's P-meter in
+  // miniature); a melee swing slows you down and locks which way you face
+  const swing = h.attack && !h.attack.ranged ? h.attack : null;
+  if (ax && ax === Math.sign(h.vx) && !swing && h.hurtT <= 0 && !h.ladder) h.runT = (h.runT || 0) + dt;
+  else if (!ax || ax !== Math.sign(h.vx) || swing) h.runT = 0;
+  h.sprint = (h.runT || 0) >= MOVE.sprintAfter && !ride && !G.swim;
   if (h.hurtT <= 0) {
-    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1);
+    const slowBy = swing ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
+    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy;
+    // turning round at speed on the ground skids (a puff of dust and a lean)
+    if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
+      h.skidT = 0.16;
+      sfx.skid();
+      burst(cx(h) - ax * 4, h.y + h.h - 1, 5, 'dust', ['mist', 'fog', 'paper']);
+    }
     // on ice you slide: turning round (pushing against your own slide) grips a little better
     const a = ax ? HERO.accel * (G.accel || 1) * (G.accel && Math.sign(h.vx) === -ax ? 1.6 : 1) : HERO.friction * (G.friction || 1);
     h.vx += Math.sign(target - h.vx) * Math.min(Math.abs(target - h.vx), a * dt);
-    if (ax) {
+    if (ax && !swing) {
       if (h.face !== ax) h.trail = null; // a turn starts a fresh blade trail
       h.face = ax;
     }
+    if (h.sprint && h.onGround && Math.random() < 0.35) emit(cx(h) - h.face * 5, h.y + h.h - 1, 'dust', C.mist);
   }
   // jump / drop-through
   h.coyote = h.onGround ? HERO.coyote : Math.max(0, h.coyote - dt);
@@ -128,14 +151,17 @@ export function updateHero(h, dt) {
       burst(cx(h), h.y + h.h, 3, 'bubble', ['ice', 'sky']);
     } else if (h.coyote > 0) {
       input.consume('jump');
-      h.vy = -HERO.jump * (ride ? ride.jump : 1);
+      jumpCancel(h);
+      h.vy = -HERO.jump * (ride ? ride.jump : 1) * (h.sprint ? MOVE.sprintJump : 1);
       h.coyote = 0;
       h.onGround = false;
       h.jumpHeld = true;
+      h.stretchT = 0.09;
       sfx.jump();
     } else if (hasAbility('hops') && !h.hopped && !h.ladder) {
       // DOUBLE JUMP: one more hop off thin air
       input.consume('jump');
+      jumpCancel(h);
       h.vy = -HERO.jump * 0.9;
       h.hopped = true;
       h.jumpHeld = true;
@@ -147,18 +173,38 @@ export function updateHero(h, dt) {
     if (h.vy < -90) h.vy *= 0.5; // variable jump height
     h.jumpHeld = false;
   }
-  // attack / special
-  if ((input.pressed('attack', 0.16) || input.held('attack')) && canAttack(h)) {
+  // attack / special. A press during a swing is buffered (MOVE.attackBuffer) and comes out the
+  // moment the swing ends; DOWN + attack in the air is the down-strike (data/feel.js PLUNGE)
+  const atk = input.pressed('attack', MOVE.attackBuffer) || input.held('attack');
+  if (atk && !h.onGround && !h.ladder && !ride && input.held('down') && canAttack(h) && !(plungeOf(h.weapon.type).kind === 'volley' && h.airShot)) {
+    input.consume('attack');
+    startPlunge(h, T);
+    return;
+  }
+  if (atk && canAttack(h)) {
     input.consume('attack');
     startAttack(h, T);
   }
-  if (input.take('special') && h.specialCd <= 0 && h.hurtT <= 0 && !h.attack) startSpecial(h, T);
+  // the special is buffered too: pressed during a swing it fires as soon as the hit is done
+  // (cancelling the swing's recovery)
+  if (input.pressed('special', MOVE.specialBuffer) && h.specialCd <= 0 && h.hurtT <= 0 && (!h.attack || pastHit(h, h.attack))) {
+    input.consume('special');
+    startSpecial(h, T);
+  }
   if (h.attack) updateAttack(h, dt, T);
 
+  // SMW jump arc: falling is faster than rising, with a short hang at the top while jump is held
+  // (water levels keep their own floaty physics)
+  const hang = h.jumpHeld && input.held('jump') && Math.abs(h.vy) < MOVE.apexBand;
+  const gk = G.swim ? 1 : h.vy > 0 && !hang ? MOVE.fallGravity : hang ? MOVE.apexGravity : 1;
   const fallSpeed = h.vy;
-  const landed = move(h, dt, world.platforms, { gravity: HERO.gravity * (G.gravity || 1), maxFall: HERO.maxFall * (G.maxFall || 1), dropThrough: h.dropT > 0 });
+  if (h.lungeT > 0) h.vx += h.face * h.lungeV;
+  const landed = move(h, dt, world.platforms, { gravity: HERO.gravity * (G.gravity || 1) * gk, maxFall: (G.swim ? HERO.maxFall : MOVE.maxFall) * (G.maxFall || 1), dropThrough: h.dropT > 0 });
+  if (h.lungeT > 0) h.vx -= h.face * h.lungeV;
+  if (h.onGround) h.airShot = false;
   if (landed) {
     h.landT = 0.08;
+    if (fallSpeed > 120) h.squashT = 0.07;
     if (fallSpeed > 200) {
       sfx.land();
       burst(cx(h), h.y + h.h, 4, 'dust', ['mist', 'fog']);
@@ -168,6 +214,46 @@ export function updateHero(h, dt) {
 }
 
 // ---------------------------------------------------------------- attacks
+// where a melee swing is: its progress after the heavy-weapon hang (data/feel.js windHang)
+function swingP(h, a) {
+  const p = Math.min(1, a.t / a.dur);
+  return windHang(h.weapon.type, p, activeWindow(h.weapon.type, a.move.big)[0]);
+}
+function inActive(h, a) {
+  const p = swingP(h, a), [s0, s1] = activeWindow(h.weapon.type, a.move.big);
+  return p >= s0 && p <= s1;
+}
+// the hit is done: a melee swing past its active frames, or a shot already loosed
+function pastHit(h, a) {
+  return a.ranged ? a.fired : swingP(h, a) > activeWindow(h.weapon.type, a.move.big)[1];
+}
+// a jump cancels a swing's recovery once its hit has landed (not the wind-up)
+function jumpCancel(h) {
+  const a = h.attack;
+  if (a && !a.ranged && a.hit.size && pastHit(h, a)) {
+    h.attack = null;
+    h.cd = 0;
+    h.comboT = Math.max(h.comboT, 0.3);
+  }
+}
+
+// the down-strike: blades pogo off foes, blunt weapons pound the ground, ranged weapons rain a volley
+function startPlunge(h, T) {
+  const P = plungeOf(h.weapon.type);
+  h.attack = null;
+  sfx.attack(h.weapon.type, h.weapon.q);
+  if (P.kind === 'volley') {
+    for (const a of P.angles) shoot(h, T, a, P.mult);
+    h.vy = Math.min(h.vy, -P.hop);
+    h.airShot = true;
+    h.cd = T.cd;
+    h.castT = 0.3;
+    return;
+  }
+  h.special = { kind: 'plunge', P, t: 0, hit: new Map(), tick: 0 };
+  h.vy = P.fall;
+}
+
 function rollCrit(h) {
   let c = CRIT.chance + (h.lv - 1) * 0.004 + critBonus(h);
   if (h.weapon.family === 'radiant') c += 0.15;
@@ -189,6 +275,11 @@ function startAttack(h, T) {
   }
   const mv = MOVES[T.combo[h.combo]];
   h.attack = { move: mv, moveName: T.combo[h.combo], t: 0, dur: T.cd * mv.dur * fast, weapon: w, hit: new Set() };
+  // a small step into each swing, a bigger one into the finisher
+  if (h.onGround) {
+    h.lungeT = MOVE.lungeTime;
+    h.lungeV = (mv.big ? MOVE.lungeBig : MOVE.lunge) / MOVE.lungeTime;
+  }
   h.cd = h.attack.dur + (h.combo === T.combo.length - 1 ? RECOVERY : 0); // finisher has end lag
   h.comboT = h.attack.dur + 0.3;
 }
@@ -205,7 +296,8 @@ function updateAttack(h, dt, T) {
     if (a.t >= a.dur) h.attack = null;
     return;
   }
-  const p = a.t / a.dur;
+  const p = swingP(h, a);
+  a.p = p; // the pose follows the same (hung) progress as the hitbox
   const [activeStart, activeEnd] = activeWindow(h.weapon.type, a.move.big);
   if (p >= activeStart && p <= activeEnd) {
     const box = attackBox(h, T, a.move, heroStats().reach);
@@ -274,6 +366,7 @@ function startSpecial(h, T) {
   h.special = { kind: T.special, t: 0, hit: new Map(), tick: 0 };
   h.attack = null;
   sfx.special(h.weapon.type);
+  duck(0.5, 0.45);
   callout(T.specialName, 0, 0, C.gold, { follow: h, life: 45 });
   const s = h.special;
   switch (s.kind) {
@@ -477,6 +570,50 @@ function updateSpecial(h, dt) {
       h.vx = 0;
       if (s.t > 0.4) h.special = null;
       break;
+    case 'plunge': { // the down-strike (startPlunge)
+      const P = s.P;
+      h.vx = input.axis() * HERO.speed * 0.7;
+      if (!s.slam) h.vy = Math.max(h.vy, P.fall);
+      const box = { x: h.x - 4, y: h.y + h.h - 6, w: h.w + 8, h: 14 };
+      if (!s.slam) for (const e of world.enemies) {
+        if (e.dead || e.spawnT > 0 || s.hit.has(e) || !overlap(box, e)) continue;
+        s.hit.set(e, 1);
+        const crit = rollCrit(h);
+        hitEnemy(e, hitDamage(h.weapon) * P.mult * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 8, plunge: true, element: h.weapon.family, sparkCol: light });
+        abilityHit(h, e, 0, true);
+        if (P.kind === 'pogo') {
+          // bounce off the head, and the double jump comes back
+          h.vy = -HERO.jump * P.bounce;
+          h.hopped = false;
+          h.jumpHeld = false;
+          h.stretchT = 0.09;
+          sfx.jump();
+          burst(cx(h), h.y + h.h, 6, 'twinkle', [light, 'paper']);
+          h.special = null;
+          break;
+        }
+      }
+      if (h.special && h.onGround && !s.slam) {
+        s.slam = true;
+        s.t = 0;
+        h.squashT = 0.09;
+        if (P.kind === 'pound') {
+          const r = P.radius * (1 + heroStats().aoeSize);
+          for (const e of world.enemies) {
+            if (e.dead || s.hit.has(e) || Math.abs(cx(e) - cx(h)) > r || Math.abs(e.y + e.h - (h.y + h.h)) > 14) continue;
+            const crit = rollCrit(h);
+            hitEnemy(e, hitDamage(h.weapon) * P.wave * (crit ? CRIT.mult + heroStats().critDmg : 1), { crit, dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 22, hop: true, plunge: true, element: h.weapon.family, sparkCol: light });
+          }
+          for (let i = -8; i <= 8; i++) emit(cx(h) + (i * r) / 8, h.y + h.h - 1, 'chip', i % 2 ? C.sand : C.wood);
+          spark(cx(h), h.y + h.h, { big: true, col: light });
+          shake(0.5);
+          hitstop(0.06);
+          sfx.thud(true);
+        } else burst(cx(h), h.y + h.h, 4, 'dust', ['mist', 'fog']);
+      }
+      if (s.slam && s.t > (P.kind === 'pound' ? 0.2 : 0.08)) h.special = null;
+      break;
+    }
     default:
       h.special = null;
   }
@@ -485,6 +622,20 @@ function updateSpecial(h, dt) {
 
 // ---------------------------------------------------------------- draw
 export function drawHero(h, t) {
+  // landing squash and take-off stretch, about the feet
+  const k = h.squashT > 0 ? [1.14, 0.86] : h.stretchT > 0 ? [0.88, 1.12] : null;
+  if (k) {
+    const fx = cx(h), fy = h.y + h.h;
+    X.save();
+    X.translate(fx, fy);
+    X.scale(k[0], k[1]);
+    X.translate(-fx, -fy);
+    drawHeroBody(h, t);
+    return X.restore();
+  }
+  drawHeroBody(h, t);
+}
+function drawHeroBody(h, t) {
   if (!h.mount || h.ladder) return drawMount(h, t), drawHeroAnimated(h, t);
   // in the saddle: the goose underneath, the rider sitting a little higher
   drawMount(h, t);

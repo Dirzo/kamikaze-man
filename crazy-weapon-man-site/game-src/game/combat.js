@@ -2,8 +2,9 @@
 // hurtHero(). Knockback is a fixed push (arcade style): a short free slide then friction.
 import { C } from '../config.js';
 import { world, newId } from './world.js';
-import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel } from './fx.js';
-import { sfx } from '../engine/audio.js';
+import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch } from './fx.js';
+import { hitFeel, reaction, killLaunch } from '../data/feel.js';
+import { sfx, duck } from '../engine/audio.js';
 import { makeWeapon, noWeaker } from './loot.js';
 import { cx, cy } from './physics.js';
 import { ELEMENTS } from '../data/weapons.js';
@@ -21,11 +22,20 @@ import { buck } from './mount.js';
 import { recordKill, CARD_TIERS, CARDS } from '../data/book.js';
 import { toast } from './progress.js';
 import { ENEMIES } from '../data/enemies.js';
+import { alertPack } from './enemy.js';
 import { modOn, temper } from '../data/temper.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 let lastStopAt = -9;
+// hits landed close together: each one plays a step higher (audio pitch), up to 8
+let streakN = 0, streakAt = -9;
+function streak() {
+  const t = feel.frame / 60;
+  streakN = t - streakAt < 0.6 ? Math.min(8, streakN + 1) : 0;
+  streakAt = t;
+  return streakN;
+}
 
 // o: { crit, dir, knock (px), hop, element (family), special, big (a finisher), chain, chip (small/no-feedback
 // hit), aoe (an area augment's hit: starts no more area hits), nova, col }
@@ -63,31 +73,48 @@ export function hitEnemy(e, dmg, o = {}) {
   e.hp -= dmg;
   e.flash = e.boss ? 0.05 : 0.12;
   damageNumber(e, dmg, { crit: o.crit, chip: o.chip, col: o.col });
+  const F = hitFeel(hero.weapon?.type, { crit: o.crit, big: o.big || o.plunge, chain: o.chain || o.aoe || o.echo });
+  o = { ...o, weight: F.w };
   if (!o.chip) {
+    // the white flash: a pure white cut-out for the first frames (held through the freeze), then
+    // the hurt frame; the victim jitters while the world is frozen
+    e.white = 0.05;
+    e.jitAt = performance.now();
+    e.jitFor = F.stop * 1000 + 20;
     const sy = Math.max(e.y + 4, Math.min(e.y + e.h - 4, hero.y + hero.h * 0.45));
     spark(cx(e) - dir * e.w * 0.35, sy, { crit: o.crit, col: o.sparkCol || C.cream });
     if (o.crit) burst(cx(e) - dir * e.w * 0.35, sy, 7, 'twinkle', ['gold', 'pink', 'orange', 'paper']);
+    if (!e.d?.bloodless) bleed(cx(e), sy, dir, (o.crit ? 9 : 4) + F.w * 2, e.onGround ? e.y + e.h : null);
     e.faceUntil = world.t + 0.42;
     e.funnyFace = ((e.funnyFace || 0) + 1) % 3;
-    sfx.hit(o.crit, o.chain ? null : hero.weapon?.type); // the weapon's signature sound
+    sfx.hit(o.crit, o.chain ? null : hero.weapon?.type, o.chain ? 0 : streak()); // the weapon's signature sound
     sfx.thud(o.crit, e.type === 'goose');
     if (!e.boss && world.t > (e.nextBonk || 0)) {
       callout(['BONK!', 'OOF!', 'PLOP!'][e.funnyFace], 0, 0, C.cream, {follow:e, life:22});
       e.nextBonk = world.t + 0.65;
     }
+    // the freeze and the camera kick scale with the weapon's weight (data/feel.js); light hits in a
+    // crowd only freeze every 0.13 s so a pack doesn't stutter
     const now = feel.frame / 60, heavy = 1 + heroStats().impact; // HEAVY IMPACT: longer freeze, bigger shake
-    if (o.crit || e.boss) {
-      hitstop((o.crit ? 0.06 : 0.035) * heavy);
-      lastStopAt = now;
-    } else if (now - lastStopAt > 0.13) {
-      hitstop((o.special ? 0.04 : 0.03) * heavy);
+    if (o.crit || o.big || e.boss || now - lastStopAt > 0.13) {
+      hitstop(F.stop * heavy);
       lastStopAt = now;
     }
-    shake((o.crit ? 0.32 : o.hop ? 0.3 : 0.1) * heavy);
+    if (!o.chain && !o.aoe) kick(dir, F.kick * (heavy > 1 ? 1.3 : 1));
+    if (o.crit) shake(0.32 * heavy);
+    if ((o.crit || o.big) && !o.chain && !o.aoe) duck(o.big ? 0.5 : 0.35, 0.3);
+    if (o.big && !o.chain) {
+      // FINISHER: a zoom punch, ground dust for blunt weapons, a slash streak for blades
+      zoomPunch(0.025);
+      if (F.w >= 2 && e.onGround) for (let i = -5; i <= 5; i++) emit(cx(e) + i * 4, e.y + e.h - 1, 'dust', i % 2 ? C.sand : C.mist);
+      else for (let x = -20; x <= 20; x += 2) emit(cx(e) + x, sy + x * 0.25 * -dir, 'streak', x % 4 ? C.paper : o.sparkCol || C.cream);
+    }
   }
   if (!o.chip) comboHit();
-  // knockback + stagger (not bosses)
+  // knockback + reaction (not bosses): light hits flinch, heavy weapons and finishers launch the
+  // foe so you can juggle it (data/feel.js reaction)
   if (!e.boss && !e.swarmBoss) {
+    const R = reaction(F.w, { big: o.big || o.hop, crit: o.crit, elite: e.elite, chip: o.chip });
     let push = (o.knock || 0) * (1 + heroStats().impact * 0.5 + heroStats().knock); // HEAVY IMPACT / KNOCKOUT
     if (o.crit) push *= 1.35;
     if (e.elite) push *= 0.75;
@@ -95,14 +122,22 @@ export function hitEnemy(e, dmg, o = {}) {
     if (push > 0) {
       e.vx = (dir * push) / (KB_SLIDE + 0.06);
       e.kbT = KB_SLIDE;
-      e.stun = Math.max(e.stun, o.chip ? 0.03 : o.crit ? 0.24 : 0.12);
+      e.stun = Math.max(e.stun, R.stun);
       e.face = -dir;
-      if (!e.air && (o.hop || o.crit)) {
+      if (!e.air && !o.chain && !o.aoe) {
+        if (e.juggle && !e.onGround) e.vy = Math.min(e.vy, -100); // already up: keep it up
+        else if (R.launch) {
+          e.vy = -R.launch;
+          e.onGround = false;
+          e.juggle = true;
+        }
+      } else if (!e.air && o.hop) {
         e.vy = -110;
         e.onGround = false;
       }
     }
-    if (e.state === 'wind' && (o.crit || o.special)) e.state = 'idle'; // big hits interrupt wind-ups
+    if (e.state === 'wind' && (o.crit || o.special || o.big || F.w >= 2)) e.state = 'idle'; // big hits interrupt wind-ups
+    if (e.calm === false && !e.packAlerted) alertPack(e);
   }
   e.lastHitAt = world.t;
   if (o.element && !o.chip) {
@@ -280,14 +315,20 @@ export function kill(e, o = {}) {
   e.dead = true;
   e.deathT = DEATH_T;
   e.fallDir = o.dir || Math.sign(cx(e) - cx(world.hero)) || 1;
-  e.vx = e.fallDir * 70;
-  if (!e.air) (e.vy = -120), (e.onGround = false);
+  const floorY = e.onGround ? e.y + e.h : null;
+  // OVERKILL: the harder the killing blow, the further the body flies (and spins, and bounces off walls)
+  const L = killLaunch(Math.max(0, -e.hp) / (e.max || 1), o.weight ?? 0, o.big);
+  e.vx = e.fallDir * L.vx;
+  e.launched = L.launched && !e.air;
+  if (!e.air) (e.vy = L.vy), (e.onGround = false);
+  if (!e.d?.bloodless) bleed(cx(e), cy(e), e.fallDir, e.elite ? 16 : 10, floorY);
   world.kills++;
   sfx.die(e.type, e.elite);
   burst(cx(e), cy(e), e.elite ? 14 : 8, 'chip', ['paper', 'mist', 'fog']);
   if (e.elite) {
     hitstop(0.08);
     shake(0.45);
+    duck(0.55, 0.45);
   }
   if (e.sleeper) say(e, pickLine(LINES.last), 1.4, true);
   gainXp(e.xp);

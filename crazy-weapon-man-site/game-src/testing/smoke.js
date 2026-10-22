@@ -83,15 +83,15 @@ export function runSmoke(game) {
     let last=first;for(let i=0;i<150;i++){poll();updateHero(h,STEP);if(h.attack && h.attack!==last){swings++;last=h.attack;}}
     ok(swings>=5,'held attack stopped');key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();
   });
-  check('move at full speed and turn without cancelling a live attack',()=>{
+  check('a melee swing slows you down and locks your facing without cancelling (feel #7)',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'hammer',q:0,standout:false});
     h.vx=HERO.speed;key('ArrowRight',true);key('KeyZ',true);poll();updateHero(h,STEP);
     const attack=h.attack,x=h.x;key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();updateHero(h,STEP);
-    ok(h.attack===attack && h.vx===HERO.speed && h.x>x,'attack slowed movement');
+    ok(h.attack===attack && h.vx<HERO.speed && h.vx>0 && h.x>x,'swing should slow, not stop, movement');
     key('ArrowRight',false);key('ArrowLeft',true);poll();updateHero(h,STEP);
-    ok(h.face===-1 && h.attack===attack,'turn cancelled or locked attack');
+    ok(h.face===1 && h.attack===attack,'facing should stay locked for the swing');
     for(let i=0;i<8;i++){poll();updateHero(h,STEP);}
-    ok(h.vx<0 && h.attack===attack,'cannot reverse movement mid-animation');
+    ok(h.vx<0 && h.attack===attack,'you can still back off mid-swing');
     key('ArrowLeft',false);poll();
   });
   check('one swing hits each enemy once, never during wind-up',()=>{
