@@ -16,6 +16,7 @@ import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
 import { startBoss, bossDone, clearBoss, bossWarning } from './bosses.js';
 import { clearAbilities } from './abilities.js';
+import { clearSpecials } from './specials.js';
 import { placeSecret } from './secrets.js';
 import { makeWeapon, classType } from './loot.js';
 import { dropWeapon } from './combat.js';
@@ -34,6 +35,7 @@ import { modOn } from '../data/temper.js';
 export function startZone(z) {
   clearBoss();
   clearAbilities();
+  clearSpecials();
   world.boss=null;
   for(const key of ['echoes','shots','drops','pickups','enemies','bolts']) world[key].length=0;
   world.nearDrop=null;

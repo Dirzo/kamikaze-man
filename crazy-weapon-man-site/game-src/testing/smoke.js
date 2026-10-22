@@ -1,4 +1,6 @@
 // Real browser regression tests. Opt in with ?smoke; never loaded in a normal run.
+import { SPECIALS } from '../data/specials.js';
+import { updateSpecials, clearSpecials } from '../game/specials.js';
 import { input } from '../engine/input.js';
 import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
@@ -273,9 +275,18 @@ export function runSmoke(game) {
       reset();const h=world.hero;h.weapon=makeWeapon(5,{type,q:3});const e=spawnEnemy('brute',h.x+24,FLOOR());e.spawnT=0;e.hp=e.max=1e7;
       for(let i=0;i<60;i++){key('KeyZ',i%10<5);poll();world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);}
       key('KeyZ',false);poll();h.specialCd=0;h.attack=null;h.cd=0;
-      key('KeyC',true);poll();for(let i=0;i<60;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);poll();}key('KeyC',false);poll();
+      key('KeyC',true);poll();for(let i=0;i<120;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);updateSpecials(STEP);poll();}key('KeyC',false);poll();
       ok(e.hp<e.max,type+' never hit');ok(!h.special,type+' special never ended');heroPose(h,world.t);
     }
+  });
+  check('every special (three per weapon type) starts, lands a hit and ends',()=>{
+    for(const id of Object.keys(SPECIALS)) {
+      reset();const h=world.hero;h.weapon=makeWeapon(5,{type:SPECIALS[id].type,q:3});h.weapon.sp={id,boons:['aftershock','vamp'],element:'fire'};
+      const e=spawnEnemy('brute',h.x+30,FLOOR());e.spawnT=0;e.hp=e.max=1e7;h.specialCd=0;h.attack=null;h.cd=0;
+      key('KeyC',true);poll();for(let i=0;i<150;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);updateSpecials(STEP);poll();if(i===2)key('KeyC',false);}
+      ok(e.hp<e.max,id+' never hit');ok(!h.special,id+' never ended');heroPose(h,world.t);
+    }
+    clearSpecials();
   });
   check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
     const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});

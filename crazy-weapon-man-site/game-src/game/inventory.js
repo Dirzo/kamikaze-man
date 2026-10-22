@@ -19,6 +19,7 @@ import { ABILITIES } from '../data/abilities.js';
 import { MUTATIONS } from '../data/progression.js';
 import { ELEMENTS } from '../data/weapons.js';
 import { QUIRKS } from '../data/quirks.js';
+import { SPECIALS, BOONS, specialRoll } from '../data/specials.js';
 import { proficiency, profToNext, profRank, PROF_MAX, PROF_DMG } from '../data/proficiency.js';
 import { fmt } from '../data/curve.js';
 import { RARITY } from '../data/weapons.js';
@@ -325,13 +326,15 @@ export function drawInventory(t) {
   text('LV ' + h.lv, sx + 36, sy + 12, C.paper);
   text(fmt(dps(w)) + ' DPS', sx + 36, sy + 22, C.gold);
   text(typeName(w.type), sx + 36, sy + 32, C.mist);
-  const nameLines = wrap(w.name, 180).slice(0, 3);
+  const nameLines = wrap(w.name, 180).slice(0, 2);
   nameLines.forEach((l, i) => text(l, EQ.x + 10, EQ.y + 90 + i * 9, w.standout ? C.gold : rarityColour(w.q)));
   let ty = EQ.y + 90 + nameLines.length * 9;
   const q = QUIRKS[w.quirk];
   if (q) { text('QUIRK: ' + q.label, EQ.x + 10, ty, C[q.col] || C.paper); ty += 9; }
   const ab = ABILITIES[w.ability];
-  if (ab) text('ABILITY: ' + ab.label, EQ.x + 10, ty, C[ab.col] || C.paper);
+  if (ab) { text('ABILITY: ' + ab.label, EQ.x + 10, ty, C[ab.col] || C.paper); ty += 9; }
+  const sr = specialRoll(w);
+  text('SPECIAL: ' + SPECIALS[sr.id].name + (sr.boons.length ? ' ' + '+'.repeat(sr.boons.length) : ''), EQ.x + 10, ty, C.gold);
 
   rect(SHEET_BTN.x, SHEET_BTN.y, SHEET_BTN.w, SHEET_BTN.h, C.slate);
   text('R: STATS', SHEET_BTN.x + SHEET_BTN.w / 2, SHEET_BTN.y + 2, C.cream, { align: 'center' });
@@ -393,11 +396,14 @@ export function drawInventory(t) {
     if (it.family) extras.push(ELEMENTS[it.family].word.toUpperCase());
     if (it.mutation) extras.push(MUTATIONS[it.mutation].label);
     text(extras.length ? extras.join('  ') : 'NO ELEMENT', tx, dy + 32, it.mutation ? C.gold : C.fog);
+    const isr = specialRoll(it);
+    text(SPECIALS[isr.id].name + (isr.boons.length ? ' ' + '+'.repeat(isr.boons.length) : ''), INV.x + INV.w - 12, dy + 32, C.gold, { align: 'right' });
     const qq = QUIRKS[it.quirk];
     const ia = ABILITIES[it.ability];
     if (qq) text('QUIRK: ' + qq.label, tx, dy + 42, C[qq.col] || C.paper);
     if (ia) text('ABILITY: ' + ia.label, INV.x + INV.w - 12, dy + 42, C[ia.col] || C.paper, { align: 'right' });
-    if (ia || qq) text(fitText((ia || qq).desc, INV.w - 30), tx, dy + 51, C.mist);
+    if (isr.boons.length) text(fitText('SPECIAL BOONS: ' + isr.boons.map(b => BOONS[b].label).join(' + '), INV.w - 30), tx, dy + 51, C[BOONS[isr.boons[0]].col] || C.paper);
+    else if (ia || qq) text(fitText((ia || qq).desc, INV.w - 30), tx, dy + 51, C.mist);
     const p = proficiency(it.type);
     text(`${typeName(it.type)} MASTERY LV ${p.lv} ${profRank(p.lv)}`, tx, dy + 61, C.sky);
   }
@@ -439,12 +445,13 @@ function drawCompare(a, b, my) {
     ['ELEMENT', el(a), el(b), (b.family ? 1 : 0) - (a.family ? 1 : 0)],
     ['QUIRK', QUIRKS[a.quirk]?.label || '-', QUIRKS[b.quirk]?.label || '-', 0],
     ['ABILITY', ABILITIES[a.ability]?.label || '-', ABILITIES[b.ability]?.label || '-', (b.ability ? 1 : 0) - (a.ability ? 1 : 0)],
+    ['SPECIAL', SPECIALS[specialRoll(a).id].name, SPECIALS[specialRoll(b).id].name, specialRoll(b).boons.length - specialRoll(a).boons.length],
     ['MUTATION', a.mutation ? MUTATIONS[a.mutation].label : '-', b.mutation ? MUTATIONS[b.mutation].label : '-', (b.mutation ? 1 : 0) - (a.mutation ? 1 : 0)],
     num('MASTERY', proficiency(a.type).lv, proficiency(b.type).lv, v => 'LV ' + v)
   ];
   rows.forEach(([label, va, vb, d], i) => {
-    const y = my + 11 + i * 9;
-    if (i % 2) rect(EQ.x + 7, y - 1, EQ.w - 14, 9, C.night);
+    const y = my + 11 + i * 8;
+    if (i % 2) rect(EQ.x + 7, y - 1, EQ.w - 14, 8, C.night);
     text(label, EQ.x + 10, y, C.mist);
     text(fitText(va, 58), c1, y, C.paper, { align: 'right' });
     text(fitText(vb, 60), c2 - 8, y, d > 0 ? C.lime : d < 0 ? C.coral : C.paper, { align: 'right' });

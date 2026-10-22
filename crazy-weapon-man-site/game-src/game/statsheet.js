@@ -2,6 +2,7 @@
 // from the shard tree, trophies, gold Monster Book cards, boss pages and the held type's mastery
 // perks (data/meta.js stats). Drawn in the inventory (R) and as the STATS tab of the POWERS window.
 // A row that is still zero is drawn dim, so you can see what there is left to grow.
+import { specialOf, specialRoll, BOONS } from '../data/specials.js';
 import { C, HERO } from '../config.js';
 import { rect, text, fitText } from '../engine/gfx.js';
 import { world } from './world.js';
@@ -38,7 +39,9 @@ export function sheetRows(w = null) {
         ['ONE HIT', fmt(hitDamage(w)), true],
         ['STYLE', T.melee ? `MELEE ${T.reach}PX` : `RANGED ${T.speed}PX/S`, true],
         ['ELEMENT', w.family ? ELEMENTS[w.family].word.toUpperCase() : 'NONE', !!w.family],
-        ['MASTERY', `LV ${p.lv} ${profRank(p.lv)}`, true]
+        ['MASTERY', `LV ${p.lv} ${profRank(p.lv)}`, true],
+        ['SPECIAL', specialOf(w).name, true],
+        ...specialRoll(w).boons.map(b => ['+ ' + BOONS[b].label, 'BOON', true])
       ]
     });
   }

@@ -313,6 +313,48 @@ function specialPose(h, st) {
       return { f: 'lean', fh: [19, 17], ang: 0 };
     case 'reap': // scythe: wound back, then the full sweep
       return keys([[0, { f: 'back', fh: [6, 10], ang: -175, wb: true, ab: true }], [0.5, { f: 'wide', fh: [18, 18], ang: 60 }, 'out'], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']], Math.min(1, T / 0.4));
+    // the added specials (game/specials.js)
+    case 'tornado':
+    case 'berserk':
+    case 'monkey':
+      return { ...spinPose((T * (k === 'berserk' ? 2.4 : 1.8)) % 1, 1, true), flip: k === 'berserk' && Math.floor(T * 14) % 2 === 1 };
+    case 'dragon':
+      if (T > 0.62) return { f: 'jump', fh: [16, 3], ang: -80 };
+      return Math.floor(T * 19) % 2 ? { f: 'lean', fh: [20, 15], ang: -10 } : { f: 'wide', fh: [19, 19], ang: 20 };
+    case 'skysplit':
+    case 'gavel':
+    case 'splitter':
+    case 'pillars': {
+      const at = k === 'skysplit' ? 0.28 : k === 'pillars' ? 0.1 : 0.16;
+      return T < at ? { f: 'back', fh: [5, 8], ang: -250, wb: true, ab: true } : { f: 'crouch', fh: [18, 22], ang: 75 };
+    }
+    case 'crossslash':
+    case 'moon':
+    case 'deathmoon':
+    case 'harvest':
+      return keys([[0, { f: 'back', fh: [6, 10], ang: -175, wb: true, ab: true }], [0.4, { f: 'wide', fh: [18, 18], ang: 60 }, 'out'], [1, { f: 'idle', fh: [15, 18], ang: -40 }, 'io']], Math.min(1, T / 0.3));
+    case 'shadowstep':
+      return { f: 'lean', fh: [19, 17], ang: 0 };
+    case 'thousand':
+      return { f: 'idle', fh: [13, 18], ang: -100 };
+    case 'meteor':
+    case 'dragoon':
+      if (!s.down) return { f: 'jump', fh: [12, 5], ang: k === 'dragoon' ? -60 : -110, wb: true };
+      if (!s.slam) return k === 'dragoon' ? { f: 'fall', fh: [17, 20], ang: 50 } : { f: 'fall', fh: [12, 8], ang: -100 };
+      return { f: 'crouch', fh: [19, 21], ang: k === 'dragoon' ? 80 : 30 };
+    case 'siege':
+    case 'beam':
+      return st.ranged ? keys(st.ranged, T < 0.38 && k === 'siege' ? 0.4 : 0.9) : { f: 'lean', fh: [19, 15], ang: 0 };
+    case 'knives':
+    case 'arrowrain':
+    case 'spearrain':
+    case 'orbit':
+    case 'blackhole':
+    case 'flock':
+    case 'bigstar':
+    case 'megarang':
+      if (st.ranged) return keys(st.ranged, 0.45 + Math.min(1, T / 0.25) * 0.5);
+      return k === 'knives' ? spinPose((T * 3) % 1, 1, true) : { f: 'idle', fh: [14, 4], ang: -90 };
     default:
       return st.idle(T, 0);
   }
@@ -565,7 +607,7 @@ export function drawHeroAnimated(h, t) {
   drawString();
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'fill');
   // swing smear: connect recent blade-tip positions while attacking
-  const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry'].includes(h.special.kind));
+  const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry', 'tornado', 'berserk', 'dragon', 'crossslash', 'moon', 'deathmoon', 'harvest', 'skysplit', 'gavel', 'splitter', 'meteor', 'dragoon', 'knives', 'shadowstep'].includes(h.special.kind));
   if (swinging && tip) {
     h.trail = h.trail || [];
     h.trail.push([tip.x, tip.y, tip.px, tip.py]);

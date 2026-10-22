@@ -8,10 +8,11 @@
 export const refHP = z => Math.round(30 * Math.pow(1.9, Math.max(0, z)));
 export const refDmg = z => Math.round(9 * Math.pow(1.25, Math.max(0, z))); // enemy hit on the hero
 export const share = q => 0.26 + 0.02 * q;
-// 1.4 before weapons got special sooner: Rare, elemental and standout drops come from the first map,
-// so residents take about a hit more. A standout (STANDOUT_SHARE) still one-shots at home.
-export const ENEMY_HP = 1.9;
-export const STANDOUT_SHARE = 2.0;
+// 1.4 before weapons got special sooner, 1.9 before specials went crazy (three per type, boons, big
+// area moves): Rare, elemental and standout drops come from the first map and specials clear crowds,
+// so residents take a couple more hits.
+export const ENEMY_HP = 2.4;
+export const STANDOUT_SHARE = 2.5; // (2.0 at ENEMY_HP 1.9) a standout still one-shots residents at home
 // standouts get more common as you go: 1 in 8 at the start, 1 in 4 from zone 5
 export const standoutChance = z => Math.min(0.25, 0.12 + 0.03 * z);
 export const CRIT = { chance: 0.08, mult: 1.6 };

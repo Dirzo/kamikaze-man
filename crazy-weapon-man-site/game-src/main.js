@@ -13,6 +13,7 @@ import { updateSecret, drawSecret } from './game/secrets.js';
 import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone, startSurvival } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
+import { updateSpecials, drawSpecials, drawSpecialScreen } from './game/specials.js';
 import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
@@ -235,6 +236,7 @@ function update(dt) {
   updateEvolution(dt);
   updateShots(dt);
   updateAbilities(dt);
+  updateSpecials(dt);
   updateSecret(dt);
   updateBolts(dt);
   updateHazards(dt);
@@ -302,6 +304,7 @@ function drawWorld(t) {
   drawHero(world.hero, t);
   drawShots(t);
   drawAbilities(t);
+  drawSpecials();
   drawGimmickWorld(t);
   drawGimmickScreen(t); // the flood, the frost and the dark of a ghost house
   worldLayer();
@@ -389,6 +392,7 @@ function render() {
   drawWorld(world.t);
   drawHud(world.t);
   drawRouteHud();
+  if (scene === 'play') drawSpecialScreen(); // the special's banner and flash go over the HUD too
   drawInventory(clock);
   if (scene === 'pause') drawPause();
   if (scene === 'levelEnd') drawLevelEnd();

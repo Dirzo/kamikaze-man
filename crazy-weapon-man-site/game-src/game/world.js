@@ -11,6 +11,7 @@ export const world = {
   seenMutations: new Set(),
   echoes: [],
   shots: [], // hero projectiles
+  spx: [], // special effects that outlive the move (specials.js)
   bolts: [], // enemy projectiles
   drops: [], // weapons lying on the ground
   bag: new Array(24).fill(null), // inventory.js: weapons carried this run
@@ -44,6 +45,7 @@ export function resetWorld() {
     seenMutations: new Set(),
     echoes: [],
     shots: [],
+    spx: [],
     bolts: [],
     drops: [],
     bag: new Array(24).fill(null),

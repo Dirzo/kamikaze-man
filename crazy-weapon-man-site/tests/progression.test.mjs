@@ -51,10 +51,10 @@ test('all powers eventually unlock; late-run pressure increases without unbounde
   assert.ok(waveBudget(9,4).interval<waveBudget(0,1).interval);
   assert.ok(waveBudget(9,4).alive<=10); assert.equal(waveBudget(0,1).elites,0);
 });
-test('a normal blade needs 2-6 hits at home; standout strength decays across zones',()=>{
+test('a normal blade needs 2-7 hits at home (specials do the crowd work); standout strength decays across zones',()=>{
   for(let z=0;z<10;z++) {
     const w=makeWeapon(z,{q:Math.min(10,z+1),type:'sword',standout:false});
-    const hits=refHP(z)*ENEMY_HP/hitDamage(w); assert.ok(hits>=2.3 && hits<=6);
+    const hits=refHP(z)*ENEMY_HP/hitDamage(w); assert.ok(hits>=2.3 && hits<=7,`zone ${z}: ${hits}`);
   }
   const w=makeWeapon(0,{type:'sword',q:1,standout:true});
   assert.ok(hitDamage(w)>=refHP(0)*ENEMY_HP);
