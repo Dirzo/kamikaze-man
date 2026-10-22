@@ -8,18 +8,20 @@ export const TYPE_UNLOCKS = {
   nunchucks: 0, shuriken: 0, wand: 0,
   spear: 0, axe: 0, boomerang: 0, scythe: 0
 };
+// elements and powers open early so the first maps already drop weapons worth showing off
 export const ELEMENT_UNLOCKS = {
-  fire: 1, ice: 1, poison: 2, water: 2, lightning: 3, earth: 3,
-  wind: 4, radiant: 5, plasma: 6, void: 7
+  fire: 0, ice: 0, poison: 1, water: 1, lightning: 2, earth: 2,
+  wind: 3, radiant: 4, plasma: 5, void: 6
 };
 export const MUTATIONS = {
-  echo: { zone: 2, q: 2, label: 'ECHO CUT', desc: 'Finishers strike a second time.', col: 'sky' },
-  seeker: { zone: 3, q: 3, label: 'HUNGRY STEEL', desc: 'Hits launch a seeking splinter.', col: 'lime' },
-  eruption: { zone: 4, q: 4, label: 'FAULTLINE', desc: 'Finishers erupt beneath nearby foes.', col: 'orange' },
-  orbit: { zone: 6, q: 6, label: 'BLADE HALO', desc: 'Three blades orbit and bite.', col: 'violet' },
-  cataclysm: { zone: 8, q: 8, label: 'MOON BREAKER', desc: 'Every third attack tears open the arena.', col: 'gold' }
+  echo: { zone: 0, q: 2, label: 'ECHO CUT', desc: 'Finishers strike a second time.', col: 'sky' },
+  seeker: { zone: 1, q: 3, label: 'HUNGRY STEEL', desc: 'Hits launch a seeking splinter.', col: 'lime' },
+  eruption: { zone: 2, q: 4, label: 'FAULTLINE', desc: 'Finishers erupt beneath nearby foes.', col: 'orange' },
+  orbit: { zone: 4, q: 5, label: 'BLADE HALO', desc: 'Three blades orbit and bite.', col: 'violet' },
+  cataclysm: { zone: 6, q: 7, label: 'MOON BREAKER', desc: 'Every third attack tears open the arena.', col: 'gold' }
 };
-export const maxRarity = zone => Math.min(10, Math.max(1, zone + 1));
+// a flat ceiling: zone 1 already rolls up to Epic, then about a tier a zone, so ABSURD still waits for the last one
+export const maxRarity = zone => Math.min(10, 3 + Math.floor(Math.max(0, zone) * 0.8));
 export const availableTypes = zone => Object.keys(TYPE_UNLOCKS).filter(k => TYPE_UNLOCKS[k] <= zone);
 export const availableElements = zone => Object.keys(ELEMENT_UNLOCKS).filter(k => ELEMENT_UNLOCKS[k] <= zone);
 export const availableMutations = (zone, q) => Object.keys(MUTATIONS).filter(k => MUTATIONS[k].zone <= zone && MUTATIONS[k].q <= q);

@@ -8,10 +8,12 @@
 export const refHP = z => Math.round(30 * Math.pow(1.9, Math.max(0, z)));
 export const refDmg = z => Math.round(9 * Math.pow(1.25, Math.max(0, z))); // enemy hit on the hero
 export const share = q => 0.26 + 0.02 * q;
-export const ENEMY_HP = 1.4; // 1.6 before maps got MapleStory-dense (40+ residents): each one goes down a hit sooner
+// 1.4 before weapons got special sooner: Rare, elemental and standout drops come from the first map,
+// so residents take about a hit more. A standout (STANDOUT_SHARE) still one-shots at home.
+export const ENEMY_HP = 1.9;
 export const STANDOUT_SHARE = 2.0;
-// standouts get more common as you go: 1 in 16 at the start, 1 in 5 from zone 4
-export const standoutChance = z => Math.min(0.2, 0.06 + 0.035 * z);
+// standouts get more common as you go: 1 in 8 at the start, 1 in 4 from zone 5
+export const standoutChance = z => Math.min(0.25, 0.12 + 0.03 * z);
 export const CRIT = { chance: 0.08, mult: 1.6 };
 export const ELITE_HP = 2.2;
 export const ELITE_DMG = 1.4;

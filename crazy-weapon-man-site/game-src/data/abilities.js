@@ -1,4 +1,4 @@
-// Weapon abilities: a named power on top of the quirk, rolled on Rare and better weapons (and on
+// Weapon abilities: a named power on top of the quirk, rolled on Uncommon and better weapons (and on
 // every standout and boss drop). The weapon's name says so: "..., Caller of Small Meteors".
 // Effects live in game/abilities.js; `clause` words are appended by names.js.
 export const ABILITIES = {
@@ -13,7 +13,7 @@ export const ABILITIES = {
   giantslayer: { label: 'GIANT SLAYER', desc: '+25% damage to elites and bosses.', col: 'gold', clause: ['Bane of Big Things', 'Toppler of Giants'] }
 };
 export const ABILITY_LIST = Object.keys(ABILITIES);
-export const abilityChance = (q, { standout = false, boss = false } = {}) => (standout || boss ? 1 : q < 2 ? 0 : Math.min(0.75, 0.25 + 0.05 * q));
+export const abilityChance = (q, { standout = false, boss = false } = {}) => (standout || boss ? 1 : q < 1 ? 0 : Math.min(0.8, 0.35 + 0.05 * q));
 export function rollAbility(q, o = {}, r = Math.random) {
   return r() < abilityChance(q, o) ? ABILITY_LIST[Math.floor(r() * ABILITY_LIST.length)] : null;
 }

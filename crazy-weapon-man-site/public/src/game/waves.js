@@ -8,7 +8,7 @@ import { world } from './world.js';
 import { ZONES, bossSong, zoneSong } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
 import { makeMap, CLEAR_BONUS } from '../data/maps.js';
-import { enemyPool } from '../data/progression.js';
+import { enemyPool, maxRarity } from '../data/progression.js';
 import { spawnEnemy } from './enemy.js';
 import { kill } from './combat.js';
 import { overlap } from './physics.js';
@@ -213,10 +213,10 @@ function openExit() {
   sfx.clear();
   callout('MAP CLEAR - EXIT OPEN',W/2,64,C.gold,{big:true,life:120});
   // a parting gift from the zone: its own weapon (a better sword from the Sword Graveyard), already
-  // tuned for the next map so there is always something ready to carry on with
+  // tuned for the next map at the best tier this one rolls, so there is always something ready to carry on with
   const z=world.zone,home=ZONES[z].weapon;
   // (a specialist gets one of their own class instead)
-  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:classType(home),q:z===0?1:Math.min(10,z+1),standout:false}));
+  if(home) dropWeapon(world.hero.x+18,world.hero.y,makeWeapon(Math.min(9,z+1),{type:classType(home),q:maxRarity(z),standout:false}));
 }
 export function enemiesLeft() {
   if(!world.director) return 0;
