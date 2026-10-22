@@ -66,7 +66,7 @@ export const MOVE = {
   lungeTime: 0.08,
   attackBuffer: 0.3, // a press this long before the swing ends still comes out
   specialBuffer: 0.45,
-  touchDmg: 0.5, // walking into a riled-up resident: this share of its hit
+  touchDmg: 0.25, // walking into a riled-up resident: this share of its hit
   lookAhead: 0.12, // of the screen width, in the direction you face
   lookAheadSprint: 0.16
 };
