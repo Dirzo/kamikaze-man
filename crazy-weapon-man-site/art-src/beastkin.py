@@ -662,6 +662,7 @@ def yeti(c, p):
     # head: small for the body, sunk between the shoulders, horns curling forward
     fx, fy = hx + 4, hy - 17 + (1 if stomp else 0)
     c.ball(fx, fy, 5.6, 5, 'snow', fur=0.35, tufts=11, phase=0.7, tex=5)
+    c.head = (fx + 1, fy, 5.6, 5)
     c.capsule(fx - 2, fy - 4, fx - 6, fy - 6, 1.8, 1.5, 'bone')
     c.capsule(fx - 6, fy - 6, fx - 8.5, fy - 3, 1.5, 1.2, 'bone')
     c.capsule(fx - 8.5, fy - 3, fx - 6.5, fy + 0.5, 1.2, 0.8, 'bone')
@@ -710,6 +711,7 @@ def werewolf(c, p):
     c.poly([(kx - 4, ky - 1), (kx - 4, ky - 8), (kx - 0.5, ky - 3)], 'were', base=3)
     c.poly([(kx - 1, ky - 3), (kx + 1, ky - 8.5), (kx + 2.5, ky - 2)], 'were', base=4)
     c.ball(kx, ky, 4.6, 4.2, 'were', fur=0.25, tufts=10, lift=0.15)
+    c.head = (kx, ky, 4.6, 4.2)
     c.capsule(kx + 1, ky + 0.6, kx + snout_dx, ky + snout_dy, 2.4, 1.7, 'were', lift=0.2)
     c.dot(int(kx + snout_dx + 1), int(ky + snout_dy - 1), INK)
     if howl:
@@ -845,6 +847,7 @@ def goose(c, p, s, body, pose=None, *, neck_rp=None, head_rp=None, cap=None, bla
     if chin:
         c.ball(hx - 0.3 * s, hy + 1.2 * s, 1.7 * s, 1.1 * s, chin, lift=0.35)
     c.ball(hx, hy, 2.7 * s, 2.5 * s, head_rp, lift=0.15)
+    c.head = (hx, hy, 2.7 * s, 2.5 * s)
     if nk == 'honk':  # beak wide open
         c.poly([(hx + 1.6 * s, hy - 1.3 * s), (hx + 6.6 * s, hy - 1.8 * s), (hx + 1.8 * s, hy + 0.1 * s)], 'beak', base=4)
         c.poly([(hx + 1.6 * s, hy + 0.9 * s), (hx + 5.8 * s, hy + 2.8 * s), (hx + 1.8 * s, hy + 1.9 * s)], 'beak', base=2)

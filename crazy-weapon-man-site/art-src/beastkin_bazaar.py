@@ -164,6 +164,7 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
             c.poly([(ex_ - 1.3 * s, hy - hry * 0.5), (ex_ + 0.2 * s, hy - hry - 2.4 * s), (ex_ + 1.5 * s, hy - hry * 0.6)], pts, base=3 if lift > 0 else 2)
             c.put(ex_ + 0.2 * s, hy - hry - 0.6 * s, ('pink', 3), flat=True)
     c.ball(hx, hy, hrx, hry, fur, lift=0.1)
+    c.head = (hx, hy, hrx, hry)  # where a boss's crown sits (beast_bosses.py)
     if face:  # a monkey's bare face
         c.ball(hx + 1.1 * s, hy + 0.5 * s, 2.7 * s, 2.5 * s, face, lift=0.35, contour=False)
     if stripes and s >= 1:

@@ -58,12 +58,13 @@ class ZCanvas(B.Canvas):
     def put(self, x, y, c, part=None, thin=False, flat=False):
         if self.raw:
             return super().put(x, y, c, part, thin, flat)
-        k, n = self.k, max(1, round(self.k))
-        x0, y0 = round(x * k - (n - 1) / 2), round(y * k - (n - 1) / 2)
+        # the design's pixel round(x) covers [round(x), round(x) + 1): the block covers the same span zoomed,
+        # so dots (eyes, noses) land where they sat on the small sprite, not half a pixel up and left
+        k, x, y = self.k, round(x), round(y)
         part = part if part is not None else self._new(False)
-        for dy in range(n):
-            for dx in range(n):
-                self._raw(super().put, x0 + dx, y0 + dy, c, part, thin, flat)
+        for yy in range(round(y * k), max(round(y * k) + 1, round((y + 1) * k))):
+            for xx in range(round(x * k), max(round(x * k) + 1, round((x + 1) * k))):
+                self._raw(super().put, xx, yy, c, part, thin, flat)
 
     def get(self, x, y):
         return self._raw(super().get, int(round(x * self.k)), int(round(y * self.k)))
@@ -84,8 +85,9 @@ class ZCanvas(B.Canvas):
         k, n = self.k, max(1, round(self.k * w))
         part = part if part is not None else self._new(False)
         for o in range(n):
-            q = [(x * k + o - (n - 1) / 2, y * k) for x, y in pts] if abs(pts[-1][1] - pts[0][1]) > abs(pts[-1][0] - pts[0][0]) else \
-                [(x * k, y * k + o - (n - 1) / 2) for x, y in pts]
+            m = (k - 1) / 2  # a small pixel's centre, zoomed
+            q = [(x * k + m + o - (n - 1) / 2, y * k + m) for x, y in pts] if abs(pts[-1][1] - pts[0][1]) > abs(pts[-1][0] - pts[0][0]) else \
+                [(x * k + m, y * k + m + o - (n - 1) / 2) for x, y in pts]
             self._raw(super().line, q, c, thin, part, flat, 1)
         return part
 
@@ -130,8 +132,18 @@ def recolour(c, rp, to):
 
 # ---------------------------------------------------------------- hats
 def head_top(c):
-    """(x, y, width) of the top of the head, in real pixels: the highest row of the front half"""
+    """(x, y, width) of the top of the head, in real pixels. The body records its head ball (c.head, in the
+    design's coordinates); a hat the beast already wears (a top hat, a hood) is climbed so the crown sits on it.
+    Beasts that are all head fall back to the highest row of the front half."""
     W, H = c._W, c._H
+    if getattr(c, 'head', None):
+        hx, hy, rx, ry = (v * c.k for v in c.head)
+        x, y, w = hx, hy - ry, rx * 1.5
+        band = range(max(0, int(x - w / 2)), min(W, int(x + w / 2) + 1))
+        y = int(round(y))
+        while y > 0 and sum(c.col[y - 1][bx] is not None for bx in band) >= len(band) * 0.6:
+            y -= 1
+        return x, y + max(1, ry * 0.18), w
     for y in range(H):
         xs = [x for x in range(int(W * 0.3), int(W * 0.95)) if c.col[y][x] is not None]
         if len(xs) >= 2:

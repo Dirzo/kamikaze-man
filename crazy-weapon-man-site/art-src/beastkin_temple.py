@@ -188,7 +188,7 @@ def yak(c, p):
             x = L['bx'] - L['brx'] * 0.9 + k * L['brx'] * 0.22
             c.line([(x, L['by'] + L['bry'] * 0.5), (x - 0.4, L['by'] + L['bry'] * 0.95 + (k % 2))], ('yak', 1 + k % 2))
         robe('maroon', 'saffron', False)(c, p, L)
-    cat(c, p, 1.65, 'yak', pose=pose, belly='yak', ears='goat', tail='stub', snout=0.5, nose=('horn', 1), eye=(40, 30, 20),
+    cat(c, p, 1.65, 'yak', pose=pose, belly='goat', ears='goat', tail='stub', snout=0.5, nose=('horn', 1), eye=(250, 196, 70), whisk=False,
         hat=horns('cloud', 'yak'), wear=shag, weapon=stf(1.65, 9.0, 5.0, 'wood', 'gold'), wide=1.4)
 
 

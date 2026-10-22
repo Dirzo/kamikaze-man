@@ -138,6 +138,7 @@ def frog(c, p, s, skin, beltc, pose=None, *, belly='fbelly', warts=False, sac=No
     if sac:
         sac(c, p, L, hx, hy)
     c.ball(hx, hy, 4.2 * s, 2.7 * s, skin, lift=0.15)
+    c.head = (hx, hy - 1.2 * s, 3.4 * s, 2.7 * s)  # between the eye bumps
     c.ball(hx + 1.2 * s, hy + 1.6 * s, 2.8 * s, 1.2 * s, belly, lift=0.25,
            clip=lambda x, y: y > hy + 1.0 * s)
     mo = mouth or g.get('mouth')
@@ -217,6 +218,7 @@ def turtle(c, p, s, skin, beltc, pose=None, *, shell='shell', plast='plast', sno
     hx, hy = bx + 2.2 * s + (0.6 * s if g.get('reach') else 0), by - 6.6 * s + (0.8 if p.hit else 0)
     c.capsule(bx + 0.8 * s, by - 3.6 * s, hx - 0.4 * s, hy + 1.2 * s, 1.6 * s, 1.5 * s, skin, lift=-0.1)  # the neck
     c.ball(hx, hy, 2.9 * s, 2.5 * s, skin, lift=0.1)
+    c.head = (hx, hy, 2.9 * s, 2.5 * s)
     if snout or beak:
         c.ball(hx + 2.2 * s, hy + 0.6 * s, 1.7 * s, 1.4 * s, skin, lift=0.2)
     if beak:  # the snapper's hooked jaw

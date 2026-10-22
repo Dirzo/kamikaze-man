@@ -43,17 +43,25 @@ def horns(rp='bone', n=2, big=1.0):
 
 
 def wings(rp='wing', bone='whelp', size=1.0):
-    """bat-like dragon wings off the back, flapping a little as it walks"""
+    """big bat-like dragon wings off the back: the wrist claw rides above the head and three finger
+    bones fan out behind, the membrane scalloped between them. They flap as it walks and flare up
+    wide when it casts or breathes."""
     def back(c, p, L):
         bx, by, s = L['bx'], L['by'], L['s'] * size
         k = 1 if (p.name == 'idle1' or (p.walk and int(p.name[-1]) % 2)) else 0
         if p.name in ('draw', 'cast', 'breath', 'sky'):
             k = -2
-        top = (bx - 3 * s, by - 9 * s - k)
-        pts = [(bx - 0.5, by - 2), top, (bx - 9 * s, by - 6 * s - k), (bx - 8.4 * s, by - 1.4 * s), (bx - 5.2 * s, by - 2.6 * s), (bx - 3.4 * s, by + 0.6 * s)]
+        k *= s
+        root = (bx - 0.5, by - 2)
+        top = (bx - 4 * s, by - 14 * s - k)  # the wrist, with its claw
+        tips = [(bx - 13 * s, by - 10.5 * s - k), (bx - 11 * s, by - 2 * s - k * 0.5), (bx - 5.5 * s, by + 1.5 * s)]
+        notch = [(bx - 10 * s, by - 6.5 * s - k * 0.7), (bx - 7 * s, by - 2.5 * s - k * 0.3)]
+        pts = [root, top, tips[0], notch[0], tips[1], notch[1], tips[2], (bx - 2 * s, by + 0.5 * s)]
         c.poly(pts, rp, base=2)
-        for q in pts[2:5]:
+        c.line([root, top], (bone, 3), thin=True, w=2 if s > 1.2 else 1)
+        for q in tips:
             c.line([top, q], (bone, 2), thin=True)
+        c.poly([(top[0] - 0.6 * s, top[1] + 0.4), (top[0] + 0.2 * s, top[1] - 1.6 * s), (top[0] + 0.7 * s, top[1] + 0.4)], 'bone', base=4)
     return back
 
 
@@ -135,7 +143,7 @@ CAST = {'hand': (2.0, -5.0), 'ang': -1.5, 'lean': -0.2}
 
 # ---- 1. Whelp Squire: a little red dragon whelp with a squire's sword, too big for it.
 def whelp(c, p):
-    dragon(c, p, 0.9, 'whelp', hat=horns('bone'), back=wings('wing', 'whelp', 0.8), weapon=sw(0.9, 7.0))
+    dragon(c, p, 0.9, 'whelp', hat=horns('bone'), back=wings('wing', 'whelp', 1.0), weapon=sw(0.9, 7.0))
 
 
 # ---- 2. Pangolin Roller: a pangolin with nunchucks that curls up and bowls itself at you.
@@ -156,7 +164,7 @@ def magpie(c, p):
         c.ball(L['bx'] - L['brx'] - 0.4, L['by'] - 0.8, 2.2 * L['s'], 2.2 * L['s'], 'leather', lift=0.1)
         c.put(L['bx'] - L['brx'] - 0.4, L['by'] - 3.0 * L['s'], ('coin', 5), flat=True)
     pose = {'hand': (4.0, -0.4), 'ang': 0.0, 'smear': None} if p.name in ('draw', 'loose', 'idle0', 'idle1') or p.walk else None
-    dragon(c, p, 1.0, 'magpie', pose, belly='mwhite', eye=(120, 220, 255), hat=bib, back=both(wings('magpie', 'mwhite', 0.9), sack), weapon=bw(1.0))
+    dragon(c, p, 1.0, 'magpie', pose, belly='mwhite', eye=(120, 220, 255), hat=bib, back=both(wings('magpie', 'mwhite', 1.0), sack), weapon=bw(1.0))
 
 
 # ---- 4. Armadillo Duelist: an armadillo fencer with a dagger in each paw. Spins in, then shells up.
@@ -183,7 +191,7 @@ def ember(c, p):
     def kasa(c, hx, hy, s, p):
         horns('bone', 2, 0.9)(c, hx, hy, s, p)
         c.poly([(hx - 5.0 * s, hy - 1.8 * s), (hx + 0.2 * s, hy - 5.0 * s), (hx + 5.0 * s, hy - 1.8 * s)], 'tan', base=3)
-    dragon(c, p, 1.1, 'ember', hat=kasa, back=wings('scale', 'ember', 0.8), weapon=kt(1.0), eye=(255, 230, 120), glow=True)
+    dragon(c, p, 1.1, 'ember', hat=kasa, back=wings('scale', 'ember', 1.0), weapon=kt(1.0), eye=(255, 230, 120), glow=True)
 
 
 # ---- 6. Wyrmling Monk: a teal wyrmling in a monk's robe with a staff, and flame breath.
@@ -195,7 +203,7 @@ def wyrmling(c, p):
             hx, hy, s = L['hx'], L['hy'], L['s']
             for i in range(5):
                 c.ball(hx + (4.6 + i * 1.8) * s, hy + 1.2 * s + (i % 2) * 0.6, (0.9 + i * 0.35) * s, (0.8 + i * 0.3) * s, 'lava' if i < 2 else 'ember', lift=0.3)
-    dragon(c, p, 1.1, 'wyrm', pose, hat=horns('bone', 2, 0.8), wear=robe('saffron', 'maroon', False), back=wings('wyrm', 'wyrm', 0.7), weapon=st(1.0), front=flame)
+    dragon(c, p, 1.1, 'wyrm', pose, hat=horns('bone', 2, 0.8), wear=robe('saffron', 'maroon', False), back=wings('wyrm', 'wyrm', 0.9), weapon=st(1.0), front=flame)
 
 
 # ---- 7. Plated Pangolin Smith: a big pangolin in a smith's apron. Its hammer blows scatter hot
@@ -212,7 +220,7 @@ def gemwyrm(c, p):
             x, y, s = L['bx'] + dx * L['s'], L['by'] + dy * L['s'], L['s']
             c.poly([(x, y - 1.4 * s), (x + 0.9 * s, y), (x, y + 1.0 * s), (x - 0.9 * s, y)], 'crystal', base=4)
     dragon(c, p, 1.15, 'gem', {'cast': CAST}.get(p.name), belly='crystal', eye=(200, 250, 255), glow=True, hat=horns('crystal', 3, 0.9),
-           back=wings('gem', 'crystal', 0.8), wear=gems, weapon=wd(1.1, 'crystal'))
+           back=wings('gem', 'crystal', 1.0), wear=gems, weapon=wd(1.1, 'crystal'))
 
 
 # ---- 9. Shadow Kobold: a little slate-grey kobold, sneaky, with a pouch of shuriken.
@@ -242,7 +250,7 @@ def elder(c, p):
         base = L['base']
         for i in range(9):
             c.ball(L['bx'] - 8 + i * 2.4, base - 0.6 - (i % 3) * 0.6, 1.4, 0.8, 'coin', lift=0.3 - (i % 2) * 0.2)
-    dragon(c, p, 1.75, 'hoard', pose, belly='wbelly', eye=(255, 90, 40), glow=True, snout=1.3, hat=crown, back=wings('wing', 'hoard', 1.15),
+    dragon(c, p, 1.75, 'hoard', pose, belly='wbelly', eye=(255, 90, 40), glow=True, snout=1.3, hat=crown, back=wings('wing', 'hoard', 1.25),
            wear=scales('scale', 2), weapon=w, front=hoard, wide=1.25)
 
 
