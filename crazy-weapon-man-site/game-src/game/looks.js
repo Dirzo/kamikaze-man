@@ -359,9 +359,14 @@ export function overlays(L, look, t, u, to) {
     dot(L.face.x + 1, ey, L.mid);
   }
   if ((look.adj === 'Gloomy' || look.adj === 'Moody') && L.face) {
-    const cy = L.face.y0 - 5 + Math.round(Math.sin(t * 2));
-    for (let i = -2; i <= 2; i++) dot(L.face.x + i, cy, C.fog);
-    for (let i = -1; i <= 1; i++) dot(L.face.x + i, cy - 1, C.mist);
+    // its own little rain cloud, kept above the weapon on screen however the weapon is turned
+    // (offset in screen px from the face, not along the sprite, or it ends up beside the blade)
+    const [fx, fy] = to(L.face.x, L.face.y0),
+      cy = fy - 7 * u + Math.round(Math.sin(t * 2)) * u,
+      px = (x, y, col) => ((X.fillStyle = col), X.fillRect(fx + x * u, cy + y * u, u, u));
+    for (let i = -2; i <= 2; i++) px(i, 0, C.fog);
+    for (let i = -1; i <= 1; i++) px(i, -1, C.mist);
+    px((Math.floor(t * 3) % 3) - 1, 1 + (Math.floor(t * 9) % 3), C.sky);
   }
   const pulse = Math.sin(t * 5);
   if (look.relic || look.what || look.standout) {
