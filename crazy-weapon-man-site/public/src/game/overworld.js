@@ -8,7 +8,8 @@ import { X, rect, text, textWidth, panel, dither, frame, screenLayer } from '../
 import { sfx } from '../engine/audio.js';
 import { ZONES } from '../data/zones.js';
 import { P as powers, openPowers, updatePowers, drawPowers, powersWaiting } from './powers.js';
-import { hasTrophy } from '../data/meta.js';
+import { hasTrophy, chosenMount } from '../data/meta.js';
+import { MOUNTS } from '../data/mounts.js';
 import { BOSS_OF } from '../data/families.js';
 import { bossName } from './bosses.js';
 import { GIMMICKS, gimmickOf, EGG_LEVELS } from '../data/gimmicks.js';
@@ -148,7 +149,7 @@ function drawNode(n, t) {
 }
 
 // a level's extras on the map: a gold star once all five relics are home (a count before that),
-// a badge for its gimmick, and an egg where a War Goose waits
+// a badge for its gimmick, and an egg where your mount waits (once the stable is open)
 function star(x, y, col) {
   rect(x - 1, y - 3, 3, 7, C.ink); rect(x - 3, y - 1, 7, 3, C.ink);
   rect(x, y - 2, 1, 5, col); rect(x - 2, y, 5, 1, col); rect(x - 1, y - 1, 3, 3, col);
@@ -162,7 +163,7 @@ function decorate(n, x, y, t) {
     rect(x + 6, y + 1, 5, 5, C.ink);
     rect(x + 7, y + 2, 3, 3, C[GIMMICKS[g].col]);
   }
-  if (EGG_LEVELS.includes(n.id)) {
+  if (chosenMount() && EGG_LEVELS.includes(n.id)) {
     rect(x - 12, y + 1, 4, 5, C.ink);
     rect(x - 11, y + 2, 2, 3, C.cream);
   }
@@ -209,7 +210,7 @@ function drawOverworldHud(t) {
     const g = gimmickOf(n.id), bits = [];
     bits.push(`RELICS ${relicCount(s, n.id)}/${RELIC_COUNT}`);
     if (g) bits.push(GIMMICKS[g].name);
-    if (EGG_LEVELS.includes(n.id)) bits.push('WAR GOOSE EGG');
+    if (chosenMount() && EGG_LEVELS.includes(n.id)) bits.push(MOUNTS[chosenMount()].name + ' EGG');
     text(bits.join('   '), 12, y + 36, g ? C[GIMMICKS[g].col] : C.cream);
   }
   const RT = relicTotal(s), T = temperOf(s);

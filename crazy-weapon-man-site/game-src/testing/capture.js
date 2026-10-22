@@ -5,7 +5,8 @@
 // level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
 // The polish pass: ?capture=book (the Monster Book), sheet (the stat sheet), maptemper (relic stars,
 // gimmick badges and a TEMPER tier on the map), ghost, scroll, water, ice (the level gimmicks),
-// room (a golden secret room) and goose (riding the War Goose).
+// room (a golden secret room) and goose, boar, griffin (riding each mount). stable / stableshut: the
+// STABLE tab after the third family head falls, and still shut.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
@@ -22,7 +23,7 @@ import { addProficiency } from '../data/proficiency.js';
 import { GROUND } from '../config.js';
 import { updateCamera } from '../game/camera.js';
 import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
-import { bankShards, buyRank, winTrophy, choosePerk, setLock } from '../data/meta.js';
+import { bankShards, buyRank, winTrophy, choosePerk, setLock, chooseMount } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
 import { openPowers, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
 import { TREE_BY_ID } from '../data/meta.js';
@@ -44,7 +45,7 @@ function mapScene(game, all) {
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
   bankShards(9000); setLock('blades');
-  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'slice', 'slice', 'longb', 'cleave', 'cleave', 'whirl', 'whirl', 'fleet', 'blink', 'bounty', 'nova']) buyRank(id);
+  for (const id of ['core', 'sharp', 'sharp', 'sharp', 'band', 'band', 'skin', 'skin', 'tutor', 'magnet', 'magnet', 'learn', 'slice', 'slice', 'slice', 'longb', 'longb', 'longb', 'cleave', 'cleave', 'cleave', 'whirl', 'whirl', 'fleet', 'bounty', 'nova']) buyRank(id);
   winTrophy(1); winTrophy(2);
   addProficiency('sword', 2200); addProficiency('bow', 300); addProficiency('katana', 60000); addProficiency('hammer', 9000); addProficiency('wand', 900);
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
@@ -77,6 +78,14 @@ function polishScene(game, mode) {
     powers.book.sel = 1;
     return;
   }
+  if (mode === 'stable' || mode === 'stableshut') {
+    // the stable after the third family head falls (or still shut with two)
+    winTrophy(1); winTrophy(2); if (mode === 'stable') { winTrophy(3); chooseMount('ironboar'); }
+    mapScene(game, false);
+    openPowers(4);
+    powers.stable = 2;
+    return;
+  }
   if (mode === 'maptemper') {
     const s = revealAll(newSave());
     for (const [id, m] of [['1-1', 31], ['1-2', 31], ['1-3', 7], ['1-4', 31], ['1-S', 3], ['2-1', 31]]) keepRelics(s, id, m);
@@ -85,7 +94,7 @@ function polishScene(game, mode) {
     game.ow.temperFlash = 2.4;
     return;
   }
-  const lv = { ghost: '9-2', scroll: '2-5', water: '3-3', ice: '6-2', room: '1-2', goose: '1-2', sheet: '4-2' }[mode];
+  const lv = { ghost: '9-2', scroll: '2-5', water: '3-3', ice: '6-2', room: '1-2', goose: '1-2', boar: '1-2', griffin: '1-2', sheet: '4-2' }[mode];
   game.snapshot(() => {
     game.ow.save = revealAll(newSave());
     game.enterLevel(NODES[lv]);
@@ -94,7 +103,7 @@ function polishScene(game, mode) {
     world.director.phase = 'fight';
     for (const e of world.enemies) e.spawnT = 0;
     if (mode === 'room') { world.hidden.kind = 'golden'; world.hidden.room.map.title = 'SECRET ROOM'; enterRoom(); }
-    else if (mode === 'goose') { mount(h); h.x = m.startX + 140; h.vx = 90; }
+    else if (mode === 'goose' || mode === 'boar' || mode === 'griffin') { mount(h, { goose: 'wargoose', boar: 'ironboar', griffin: 'griffin' }[mode]); h.x = m.startX + 140; h.vx = 90; }
     else if (mode === 'sheet') { addProficiency('katana', 9000); openInventory(); world.inv.sheet = true; }
     else {
       const sp = m.spawns[Math.floor(m.spawns.length * 0.3)];
@@ -107,7 +116,7 @@ function polishScene(game, mode) {
   document.documentElement.dataset.capture = 'ready';
 }
 export function captureScene(game, mode) {
-  if(['book','maptemper','ghost','scroll','water','ice','room','goose','sheet'].includes(mode)) return polishScene(game, mode);
+  if(['book','maptemper','ghost','scroll','water','ice','room','goose','boar','griffin','stable','stableshut','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);

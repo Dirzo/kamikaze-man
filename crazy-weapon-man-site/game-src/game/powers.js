@@ -7,6 +7,8 @@
 //   TROPHIES    the ten family heads' trophies and the perks they gave you
 //   BOOK        the Monster Book (data/book.js): a card per resident, filled in by beating them, and
 //               a page per boss family. Q flips between the cards and the boss pages.
+//   STABLE      shut until three family heads have fallen; then pick one of three mounts
+//               (data/mounts.js), each with its own perks. ENTER rides it; swap any time.
 //   STATS       the stat sheet (statsheet.js) for the weapon you carry on the map
 // Arrows move, SHIFT / V (or clicking a tab) changes tab. Mouse and touch click anything. Rules and
 // numbers live in data/meta.js.
@@ -24,12 +26,15 @@ import { ENEMIES } from '../data/enemies.js';
 import { CARDS, CARD_LIST, CARD_GOALS, CARD_TIERS, TIER_COL, PAGES, PAGE_BONUS, cardKills, cardTier, toNext, bossBeaten, pageDone, bookProgress } from '../data/book.js';
 import { drawSheet } from './statsheet.js';
 import {
-  meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, CLASSES, weaponLock, setLock,
-  MASTERY_TIERS, masteryPerk, perkChoice, choosePerk, tiersOpen, unpicked
+  meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, gate, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, CLASSES, weaponLock, setLock,
+  MASTERY_TIERS, masteryPerk, perkChoice, choosePerk, tiersOpen, unpicked, stableOpen, chosenMount, chooseMount, trophyCount
 } from '../data/meta.js';
+import { MOUNTS, MOUNT_LIST, STABLE_TROPHIES } from '../data/mounts.js';
+import { beast } from './mount.js';
 
-const TABS = ['SHARD TREE', 'MASTERY', 'TROPHIES', 'BOOK', 'STATS'];
-export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, book: { sel: 0, pages: false, page: 0 }, sheetWeapon: null, msg: '', msgT: 0, boxes: [], confirm: false };
+const TABS = ['SHARD TREE', 'MASTERY', 'TROPHIES', 'BOOK', 'STABLE', 'STATS'];
+const STABLE_TAB = 4, STATS_TAB = 5;
+export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, book: { sel: 0, pages: false, page: 0 }, stable: 0, sheetWeapon: null, msg: '', msgT: 0, boxes: [], confirm: false };
 
 export function openPowers(tab = null) {
   P.open = true;
@@ -46,7 +51,7 @@ export function closePowers() {
   sfx.ui();
 }
 // something new to do in there: an open mastery pick, or a rank you can afford
-export const powersWaiting = () => TYPE_LIST.some(t => unpicked(t).length) || TREE.some(n => !cantBuy(n.id));
+export const powersWaiting = () => TYPE_LIST.some(t => unpicked(t).length) || TREE.some(n => !cantBuy(n.id)) || (stableOpen() && !chosenMount());
 
 const say = (m, good = false) => {
   P.msg = m;
@@ -223,7 +228,16 @@ export function updatePowers(dt) {
     if (input.take('leave')) (B.pages = !B.pages), sfx.ui(true);
     if (B.pages) B.page = Math.max(0, Math.min(9, B.page + dy + dx * 5));
     else B.sel = Math.max(0, Math.min(CARD_LIST.length - 1, B.sel + dx + dy * BOOK_COLS));
+  } else if (P.tab === STABLE_TAB) {
+    P.stable = (P.stable + dx + MOUNT_LIST.length) % MOUNT_LIST.length;
+    if (ok) ride(MOUNT_LIST[P.stable]);
   }
+}
+function ride(id) {
+  if (!stableOpen()) return say(`THE STABLE OPENS WHEN ${STABLE_TROPHIES} FAMILY HEADS FALL (${trophyCount()}/${STABLE_TROPHIES})`);
+  if (chosenMount() === id) return say(`ALREADY RIDING THE ${MOUNTS[id].name}`);
+  chooseMount(id);
+  say(`THE ${MOUNTS[id].name} IS SADDLED. ITS EGG WAITS ON THE MAP`, true);
 }
 
 // ---------------------------------------------------------------- mouse / touch
@@ -242,12 +256,14 @@ export function drawPowers(t) {
   P.boxes = [];
   dither(0, 0, W, H, C.ink, 12);
   panel('panel', 4, 4, W - 8, H - 8);
+  let tx = 10;
   TABS.forEach((name, i) => {
-    const x = 10 + i * 70, on = P.tab === i;
-    rect(x, 10, 67, 13, on ? C.gold : C.slate);
-    rect(x + 1, 11, 65, 11, on ? C.night : C.ink);
-    text(name, x + 33, 13, on ? C.gold : C.fog, { align: 'center' });
-    box(x, 10, 67, 13, () => { P.tab = i; P.confirm = false; sfx.ui(); });
+    const x = tx, on = P.tab === i, w = textWidth(name) + 12;
+    tx += w + 3;
+    rect(x, 10, w, 13, on ? C.gold : C.slate);
+    rect(x + 1, 11, w - 2, 11, on ? C.night : C.ink);
+    text(name, x + w / 2, 13, on ? C.gold : i === STABLE_TAB && stableOpen() && !chosenMount() && Math.floor(t * 3) % 2 ? C.lime : C.fog, { align: 'center' });
+    box(x, 10, w, 13, () => { P.tab = i; P.confirm = false; sfx.ui(); });
   });
   rect(W - 21, 10, 13, 13, C.ink);
   text('X', W - 15, 13, C.coral, { align: 'center' });
@@ -257,12 +273,14 @@ export function drawPowers(t) {
   else if (P.tab === 1) drawMastery(t);
   else if (P.tab === 2) drawTrophies(t);
   else if (P.tab === 3) drawBook(t);
+  else if (P.tab === STABLE_TAB) drawStable(t);
   else drawSheet(12, 30, W - 24, H - 66, P.sheetWeapon);
   if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
   const hint = P.tab === 0 ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
     : P.tab === 1 ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
     : P.tab === 2 ? 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE'
     : P.tab === 3 ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`
+    : P.tab === STABLE_TAB ? (stableOpen() ? 'ARROWS: PICK   ENTER: SADDLE UP   SHIFT: NEXT TAB   E: CLOSE' : 'BEAT THREE FAMILY HEADS TO OPEN THE STABLE   SHIFT: NEXT TAB   E: CLOSE')
     : 'EVERYTHING YOUR POWERS ADD UP TO   SHIFT: NEXT TAB   E: CLOSE';
   text(hint, W / 2, H - 18, C.fog, { align: 'center' });
 }
@@ -387,7 +405,8 @@ function drawTree(t) {
   text(L ? `${CLASSES[L].name} SPECIALIST` : 'NOT SPECIALIZED', MAP.x + 4, MAP.y + MAP.h - 10, L ? C[CLASSES[L].col] : C.fog);
   for (const [a, b] of TREE_LINKS) {
     const A = TREE_BY_ID[a], Bn = TREE_BY_ID[b], ra = rank(a), rb = rank(b);
-    const col = ra && rb ? (A.branch === Bn.branch || !A.branch ? colOf(Bn.branch ? Bn : A) : C.gold) : ra || rb ? C.fog : C.slate;
+    // a link lights up once one end holds its gate's ranks: the road on is open
+    const col = ra && rb ? (A.branch === Bn.branch || !A.branch ? colOf(Bn.branch ? Bn : A) : C.gold) : ra >= gate(A) || rb >= gate(Bn) ? C.fog : C.slate;
     dots(...at(A), ...at(Bn), col, ra && rb ? 1 : 2, R[A.size], R[Bn.size]);
   }
   for (const n of TREE) {
@@ -399,6 +418,8 @@ function drawTree(t) {
     disc(x, y, r - 1, C.ink);
     if (k) disc(x, y, Math.max(1, Math.round(((r - 2) * k) / n.max)), col);
     if (k >= n.max) px(x, y, C.cream);
+    // invested but short of its gate: a pip per rank still to go, under the node
+    if (k && k < gate(n)) for (let i = 0; i < gate(n) - k; i++) px(x - (gate(n) - k - 1) + i * 2, y + r + 2, C.cream);
     if (n.size === 'key') for (const [ox, oy] of [[0, -r - 2], [0, r + 2], [-r - 2, 0], [r + 2, 0]]) px(x + ox, y + oy, k ? col : C.stone);
     // an area augment wears a burst of eight rays
     if (n.aoe) for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0], [-0.7, -0.7], [0.7, -0.7], [-0.7, 0.7], [0.7, 0.7]]) px(Math.round(x + ox * (r + 2)), Math.round(y + oy * (r + 2)), k ? C.orange : C.stone);
@@ -424,6 +445,7 @@ function drawNodePanel(t) {
   y += 11;
   if (k) y = para('NOW: ' + nodeText(n, k), S.x + 6, y, S.w - 12, C.paper) + 2;
   if (k < n.max) y = para((k ? 'NEXT: ' : '') + nodeText(n, k + 1), S.x + 6, y, S.w - 12, k ? C.mist : C.paper) + 2;
+  if (n.id !== 'core' && gate(n) > 1) y = para(k >= gate(n) ? 'THE NODES BEYOND ARE OPEN' : `RANK ${gate(n)}/${n.max} OPENS THE NODES BEYOND`, S.x + 6, y + 1, S.w - 12, k >= gate(n) ? C.lime : C.sand) + 2;
   if (n.id === 'core') {
     text('SPECIALIZE (G)', S.x + 6, y + 4, C.gold);
     LOCKS.forEach((c, i) => {
@@ -659,6 +681,37 @@ function drawTrophies(t) {
     box(x, y, 228, 28, () => { P.troph = i; sfx.ui(); });
   }
   text(won ? 'TROPHY PERKS ARE ALWAYS ON, FOR EVERY WEAPON.' : 'EVERY CASTLE HOLDS A FAMILY HEAD. BEAT ONE TO WIN ITS TROPHY.', 12, 200, C.mist);
+}
+
+// ---------------------------------------------------------------- the stable
+function drawStable(t) {
+  const open = stableOpen(), mine = chosenMount();
+  text(open ? (mine ? `THE STABLE   RIDING: ${MOUNTS[mine].name}` : 'THE STABLE IS OPEN! PICK A WAR-BEAST TO RIDE') : `THE STABLE   SHUT: ${trophyCount()}/${STABLE_TROPHIES} FAMILY HEADS BEATEN`, 12, 30, open ? C.gold : C.fog);
+  MOUNT_LIST.forEach((id, i) => {
+    const D = MOUNTS[id], x = 12 + i * 152, y = 42, w = 146, h = 172, sel = P.stable === i, on = mine === id, col = C[D.col];
+    rect(x, y, w, h, sel ? (Math.floor(t * 4) % 2 || !open ? C.gold : col) : on ? col : C.slate);
+    rect(x + 1, y + 1, w - 2, h - 2, C.ink);
+    rect(x + 6, y + 6, w - 12, 52, on ? C.night : C.ink);
+    const G = A.mounts[D.sprite];
+    if (open) beast(id, x + w / 2, y + 56, 1, sel ? Math.floor(t * 6) % 2 : 0, 2);
+    else if (G) {
+      // a dark shape in the stall until the stable opens
+      X.save();
+      X.filter = 'brightness(0)';
+      beast(id, x + w / 2, y + 56, 1, 0, 2);
+      X.restore();
+    }
+    text(open ? D.name : '???', x + w / 2, y + 62, open ? col : C.stone, { align: 'center' });
+    let yy = y + 76;
+    for (const [name, desc] of D.perks) {
+      text(open ? name : '???', x + 8, yy, open ? C.gold : C.stone);
+      yy = para(open ? desc.toUpperCase() : 'BEAT THREE FAMILY HEADS', x + 8, yy + 10, w - 16, open ? C.paper : C.stone) + 3;
+    }
+    if (open) text(`SPEED +${Math.round((D.speed - 1) * 100)}%   JUMP +${Math.round((D.jump - 1) * 100)}%`, x + w / 2, y + h - 30, C.mist, { align: 'center' });
+    if (open) button(on ? 'RIDING' : 'SADDLE UP', x + 20, y + h - 18, w - 40, !on, col, () => ((P.stable = i), ride(id)));
+    box(x, y, w, h - 18, () => ((P.stable = i), sfx.ui()));
+  });
+  text(open ? 'YOUR PICK HATCHES FROM THE ARMOURED EGGS ON THE MAP. A HIT THROWS YOU FROM THE SADDLE.' : 'NO MOUNT WILL CARRY YOU UNTIL THREE CASTLES HAVE FALLEN.', 12, 220, C.mist);
 }
 
 // ---------------------------------------------------------------- the Monster Book

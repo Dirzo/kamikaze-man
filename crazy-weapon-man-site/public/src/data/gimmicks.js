@@ -38,9 +38,10 @@ export const PHYSICS = {
 export const SCROLL_SPEED = 44; // px/s
 export const HAUNT = { count: z => 4 + Math.floor(z / 2), speed: 30, dmg: 0.6, near: 340 };
 
-// ---------------------------------------------------------------- the War Goose
-// An armoured egg waits near the start of these levels; break it and a War Goose hatches to carry
-// you. It stays with you from level to level until a hit knocks you out of the saddle.
+// ---------------------------------------------------------------- mounts
+// Once the stable is open (data/mounts.js), an armoured egg waits near the start of these levels;
+// break it and your mount hatches to carry you. It stays with you from level to level until a hit
+// knocks you out of the saddle.
 export const EGG_LEVELS = ['1-2', '2-1', '3-1', '4-1', '5-1', '6-1', '7-1', '8-1', '9-1', '10-1', '1-S', '2-S', '3-S', '4-S', '5-S', '6-S', '7-S', '8-S', '9-S', '10-S'];
 export const EGG_ZONES = [1, 4, 7]; // a classic ten-map run finds one on these maps
-export const MOUNT = { speed: 1.18, jump: 1.16, chompEvery: 1.3, chompReach: 30, stomp: 1.6, chargeTime: 1.7, loose: 4.5 };
+export const MOUNT = { chompReach: 30, loose: 4.5 }; // what every mount shares; each one's own numbers are in data/mounts.js
