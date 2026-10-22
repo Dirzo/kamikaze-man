@@ -268,13 +268,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose, fuzzball, lagoon, bazaar, shrine, temple, forge, cottage and castle families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1,2,3,4,5,6,7,8]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[0,1,2,3,4,5,6,7,8].flatMap(z=>ZONES[z].pool);
+  check('the goose, fuzzball, lagoon, bazaar, shrine, temple, forge, cottage, castle and hoard families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3,4,5,6,7,8,9]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3,4,5,6,7,8,9].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):ENEMIES[type].fam==='cottage'?['curl','tea','owlet','broom'].includes(B):ENEMIES[type].fam==='castle'?false:['kite','alpha','greatbow','roll'].includes(B);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):ENEMIES[type].fam==='cottage'?['curl','tea','owlet','broom'].includes(B):ENEMIES[type].fam==='castle'?false:ENEMIES[type].fam==='hoard'?['squire','bowl','dillo','wyrm','coinsmith'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -385,6 +385,15 @@ export function runSmoke(game) {
     for(let i=0;i<60*3;i++){world.t+=STEP;h.inv=0;updateEnemy(wg,STEP);updateBolts(STEP);up=Math.max(up,wy-wg.y);}ok(up>40 && !wg.air,'the Wall Gecko never climbed (or never came down)');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const kj=spawnEnemy('komodo',h.x+120,FLOOR());kj.spawnT=0;kj.calm=false;
     for(let i=0;i<60*3&&!world.bolts.some(b=>b.rain&&b.look==='shuriken');i++){world.t+=STEP;updateEnemy(kj,STEP);}ok(world.bolts.some(b=>b.rain&&b.look==='shuriken'),'the Komodo never called a star storm');
+    // the hoard: a shelled Armadillo turns every hit, a Magpie steals shards and shoots them back, the Elder Dragon
+    // works through its weapons in turn
+    reset();h=world.hero;const ad=spawnEnemy('armadillo',h.x+30,FLOOR());ad.spawnT=0;ad.calm=false;ad.shellT=1;
+    ok(hitEnemy(ad,50,{dir:1})===0 && ad.hp===ad.max,'a hit landed on a shelled Armadillo');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;world.shards=500;const mg=spawnEnemy('magpie',h.x+30,FLOOR());mg.spawnT=0;mg.calm=false;
+    let coins=false;for(let i=0;i<60*8&&!coins;i++){world.t+=STEP;h.inv=0;updateEnemy(mg,STEP);updateBolts(STEP);coins=world.bolts.some(b=>b.look==='coin'&&b.owner===mg);}
+    ok(world.shards<500 && coins,'the Magpie did not steal shards and shoot them back');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const el=spawnEnemy('elder',h.x+40,FLOOR());el.spawnT=0;el.calm=false;el.hp=el.max=1e7;
+    for(let i=0;i<60*20;i++){world.t+=STEP;h.inv=0;h.x+=Math.sin(i/40)*1.5;updateEnemy(el,STEP);updateBolts(STEP);}ok(el.styleI>=4,'the Elder Dragon only used '+el.styleI+' weapons');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
     for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
   });

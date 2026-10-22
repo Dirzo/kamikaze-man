@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the dragon hoard family (zone 10)
+  whelp: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Its first sword came out of the hoard. It has not let go of it since.' },
+  pangolin: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Rolls down the coin piles for fun, and down the corridors at you.' },
+  magpie: { stats: { shards: 0.02 }, bonus: '+2% shards', lore: 'Steals anything that glints. Gives it back point first.' },
+  armadillo: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Duels by the rules: two daggers, one spin, and then the shell.' },
+  ember: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Draws once. The floor stays on fire a while afterwards.' },
+  wyrmling: { stats: { aoeSize: 0.02 }, bonus: 'Area effects reach 2% wider', lore: 'Meditates on the hoard every morning. Breathes fire when it loses count.' },
+  platedpango: { stats: { impact: 0.02 }, bonus: 'Hits land 2% harder', lore: 'Mints the vault\'s coins with one hammer blow each. Some come out hot.' },
+  gemwyrm: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Grows its own crystals. Throws the ones that come out wrong.' },
+  kobold: { stats: { speed: 0.02 }, bonus: '+2% move speed', lore: 'Guards the vault doors. Runs away from them, too, when it has to.' },
+  elder: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Collected one of every weapon in the world, and learned them all.' },
   // the lizard ninja family (zone 9)
   gecko: { stats: { speed: 0.02 }, bonus: '+2% move speed', lore: 'Its hood is three sizes too big. Its pose is perfect.' },
   draco: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Jumps off the castle roof every night. Has not touched the ground in years.' },

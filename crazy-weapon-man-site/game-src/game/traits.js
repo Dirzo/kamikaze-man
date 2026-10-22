@@ -9,7 +9,7 @@ import { cx, cy } from './physics.js';
 import { rect, px } from '../engine/gfx.js';
 import { burst, emit, callout } from './fx.js';
 import { sfx } from '../engine/audio.js';
-import { arrowWait, drawArrow, drawQuake, drawSpinSword, drawGrave, drawBubble, drawCroak, drawWave, drawDagger, drawSmoke, drawKunai, drawPetal, drawDecoy, drawSpike, drawFire, drawAnvil, drawSpell, drawShuriken } from './beastkin.js';
+import { arrowWait, drawArrow, drawQuake, drawSpinSword, drawGrave, drawBubble, drawCroak, drawWave, drawDagger, drawSmoke, drawKunai, drawPetal, drawDecoy, drawSpike, drawFire, drawAnvil, drawSpell, drawShuriken, drawHoard } from './beastkin.js';
 
 const say1 = (e, s, col = C.cream) => callout(s, 0, 0, col, { follow: e, life: 36 });
 
@@ -181,6 +181,8 @@ export function drawTraitBolt(b, t) {
     case 'smoke': return drawSmoke(b, t);
     case 'kunai': return drawKunai(b, t);
     case 'shuriken': return drawShuriken(b, t);
+    case 'coin':
+    case 'shard': return drawHoard(b, t);
     case 'petal': return drawPetal(b, t);
     case 'decoy': return drawDecoy(b, t);
     case 'spike': return drawSpike(b, t);

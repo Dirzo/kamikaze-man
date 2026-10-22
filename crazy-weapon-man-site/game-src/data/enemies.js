@@ -147,6 +147,18 @@ export const ENEMIES = {
   iguana: { name: 'Boomerang Star Iguana', kind: 'beast', beh: 'boomer', fam: 'castle', evo: 8, hp: 1.6, dmg: 1.2, speed: 26, range: 180, wind: 0.6 },
   skink: { name: 'Tail Clone Skink', kind: 'beast', beh: 'skink', fam: 'castle', evo: 9, hp: 1.4, dmg: 1.1, speed: 36, range: 160, wind: 0.45 },
   komodo: { name: 'Komodo Jonin', kind: 'beast', beh: 'jonin', fam: 'castle', evo: 10, heavy: true, hp: 2.8, dmg: 1.4, speed: 30, range: 180, wind: 0.5 },
+  // The dragon hoard family (zone 10, every weapon): the gold vault's hoarders, each carrying a
+  // different zone's weapon, from the Whelp Squire on 10-1 up to the Elder Hoard Dragon.
+  whelp: { name: 'Whelp Squire', kind: 'beast', beh: 'squire', fam: 'hoard', evo: 1, hp: 0.7, dmg: 0.8, speed: 40, range: 26, wind: 0.4 },
+  pangolin: { name: 'Pangolin Roller', kind: 'beast', beh: 'bowl', fam: 'hoard', evo: 2, hp: 0.9, dmg: 0.85, speed: 34, range: 28, wind: 0.4 },
+  magpie: { name: 'Magpie Dragon', kind: 'beast', beh: 'magpie', fam: 'hoard', evo: 3, hp: 0.9, dmg: 0.9, speed: 46, range: 180, reach: 20, wind: 0.5 },
+  armadillo: { name: 'Armadillo Duelist', kind: 'beast', beh: 'dillo', fam: 'hoard', evo: 4, hp: 1.1, dmg: 0.95, speed: 38, range: 24, wind: 0.35 },
+  ember: { name: 'Ember Drake Ronin', kind: 'beast', beh: 'ronin', fam: 'hoard', evo: 5, hp: 1.2, dmg: 1.1, speed: 34, range: 150, wind: 0.75 },
+  wyrmling: { name: 'Wyrmling Monk', kind: 'beast', beh: 'wyrm', fam: 'hoard', evo: 6, hp: 1.3, dmg: 1.0, speed: 34, range: 32, wind: 0.45 },
+  platedpango: { name: 'Plated Pangolin Smith', kind: 'beast', beh: 'coinsmith', fam: 'hoard', evo: 7, heavy: true, hp: 2.0, dmg: 1.2, speed: 24, range: 32, wind: 0.6 },
+  gemwyrm: { name: 'Gem Wyrm Mage', kind: 'beast', beh: 'gem', fam: 'hoard', evo: 8, hp: 1.5, dmg: 1.2, speed: 30, range: 170, wind: 0.55 },
+  kobold: { name: 'Shadow Kobold', kind: 'beast', beh: 'kobold', fam: 'hoard', evo: 9, hp: 1.3, dmg: 1.1, speed: 48, range: 160, wind: 0.35 },
+  elder: { name: 'Elder Hoard Dragon', kind: 'beast', beh: 'elder', fam: 'hoard', evo: 10, heavy: true, hp: 3.2, dmg: 1.5, speed: 30, range: 200, reach: 40, wind: 0.5 },
   ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
@@ -182,7 +194,9 @@ export const DEATHS = {
   dustbunny: 'squash', hedgehog: 'spin', owlet: 'spin', hatrabbit: 'flip', moth: 'rise', polyhare: 'flip', teahog: 'topple',
   mirrorowl: 'rise', broombat: 'spin', hornedowl: 'rise',
   gecko: 'flip', draco: 'spin', wallgecko: 'flip', chameleon: 'rise', frilled: 'spin', anole: 'squash', basilisk: 'topple',
-  iguana: 'topple', skink: 'flip', komodo: 'topple'
+  iguana: 'topple', skink: 'flip', komodo: 'topple',
+  whelp: 'flip', pangolin: 'spin', magpie: 'spin', armadillo: 'spin', ember: 'topple', wyrmling: 'flip', platedpango: 'topple',
+  gemwyrm: 'rise', kobold: 'flip', elder: 'topple'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

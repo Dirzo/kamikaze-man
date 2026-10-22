@@ -114,7 +114,7 @@ export const ZONES = [
     weapon: null, // every weapon lives here
     name: 'The Sentient Armory Vault',
     sub: 'The weapons have organized. The inventory is hunting you.',
-    pool: ['wizard', 'wraith', 'mimic', 'eyeball', 'brute', 'flyer', 'samurai', 'ninja', 'anvil', 'turtle'],
+    pool: ['whelp', 'pangolin', 'magpie', 'armadillo', 'ember', 'wyrmling', 'platedpango', 'gemwyrm', 'kobold', 'elder'],
     platforms: L3,
     boss: 'bossweapon',
     music: { key: 49, scale: 'minor', bpm: 156, prog: [0, 5, 3, 4], drums: 'vault', theme: GRAVEYARD }

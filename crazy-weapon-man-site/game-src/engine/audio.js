@@ -235,6 +235,17 @@ const DIE = {
   prowler: () => chip([[N(76), 2], [N(83), 2], [N(71), 5]], { wave: 'p25', vol: 0.04, decay: 0.004 }), // mrrow
   bandit: () => (arp([86, 81, 86, 79], 1, { wave: 'p25', vol: 0.03 }), hiss(4, { vol: 0.04, rate: 0.9, short: true })), // chitter and a puff
   fatcat: () => (chip([[N(64), 4], [N(57), 8]], { wave: 'p50', vol: 0.05, decay: 0.006 }), chip([[N(96), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })), // a purr and a coin
+  // the dragon hoard family: little roars, the clink of coins and one great rumble
+  whelp: () => chip([[N(84), 2], [N(88), 2], [N(79), 4]], { wave: 'p25', vol: 0.035, decay: 0.004 }),
+  pangolin: () => (chip([[N(72), 2], [N(67), 4]], { wave: 'p25', vol: 0.035 }), hiss(2, { vol: 0.025, rate: 1.2, short: true })),
+  magpie: () => arp([96, 100, 96, 103], 1, { wave: 'p12', vol: 0.03, decay: 0.003 }), // a chatter
+  armadillo: () => (chip([[N(76), 2], [N(72), 4]], { wave: 'p25', vol: 0.035 }), chip([[N(103), 2]], { wave: 'p12', vol: 0.025, delay: 0.08 })),
+  ember: () => (hiss(4, { vol: 0.04, rate: 0.9 }), chip([[N(67), 3], [N(60), 6]], { wave: 'p50', vol: 0.045, delay: 0.05 })),
+  wyrmling: () => (chip([[N(79), 2], [N(76), 4]], { wave: 'tri', vol: 0.05 }), hiss(3, { vol: 0.03, rate: 0.8, short: true })),
+  platedpango: () => (chip([[N(60), 4], [N(55), 6]], { wave: 'p50', vol: 0.05 }), arp([96, 100, 103], 1, { wave: 'p12', vol: 0.025, delay: 0.1 })), // a grunt and a coin
+  gemwyrm: () => arp([91, 96, 100, 103, 108], 1, { wave: 'p12', vol: 0.03, decay: 0.003 }), // crystal chimes
+  kobold: () => chip([[N(93), 1], [N(96), 1], [N(91), 2]], { wave: 'p25', vol: 0.03, decay: 0.004 }), // a yip
+  elder: () => (chip([[N(48), 8], [N(43), 12]], { wave: 'p50', vol: 0.07, decay: 0.008 }), arp([96, 100, 103, 108], 2, { wave: 'p12', vol: 0.03, delay: 0.2 })), // a roar and the hoard rattling
   // the lizard ninja family: chirps, hisses and the ring of steel stars
   gecko: () => chip([[N(98), 1], [N(98), 1], [N(101), 2]], { wave: 'p12', vol: 0.03, decay: 0.003 }), // gecko chirp
   draco: () => (hiss(3, { vol: 0.03, rate: 1.4, short: true }), chip([[N(88), 2], [N(84), 3]], { wave: 'p25', vol: 0.03, delay: 0.05 })),
