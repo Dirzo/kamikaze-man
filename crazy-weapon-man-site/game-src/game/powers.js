@@ -1,4 +1,7 @@
-// The POWERS window on the overworld (E / B / Tab, or the Bag button): three tabs over the map.
+// The POWERS window on the overworld (E / B / Tab, or the Bag button): its tabs over the map.
+//   BAG         the weapon bag (inventory.js), drawn under this window's tab strip; main.js opens
+//               and closes it through bagLink, since the map's bag loads and saves the hero
+//   STATS       the stat sheet (statsheet.js) for the weapon you carry on the map
 //   SHARD TREE  a web of linked nodes: invest banked shards in a rank (ENTER), take back the last
 //               step (U: a rank, or a change of class), refund everything and clear the class (Q),
 //               change specialization (G, twice). The right panel shows the picked node.
@@ -9,7 +12,8 @@
 //               a page per boss family. Q flips between the cards and the boss pages.
 //   STABLE      shut until three family heads have fallen; then pick one of three mounts
 //               (data/mounts.js), each with its own perks. ENTER rides it; swap any time.
-//   STATS       the stat sheet (statsheet.js) for the weapon you carry on the map
+//   COLLECTION  the unlock tracker (data/collection.js): every world's levels, secret exits, relics,
+//               easter egg, trophy and boss page, and the game's completion percent
 // Arrows move, SHIFT / V (or clicking a tab) changes tab. Mouse and touch click anything. Rules and
 // numbers live in data/meta.js.
 import { C, W, H } from '../config.js';
@@ -25,6 +29,11 @@ import { A } from '../engine/assets.js';
 import { ENEMIES } from '../data/enemies.js';
 import { CARDS, CARD_LIST, CARD_GOALS, CARD_TIERS, TIER_COL, PAGES, PAGE_BONUS, cardKills, cardTier, toNext, bossBeaten, pageDone, bookProgress } from '../data/book.js';
 import { drawSheet } from './statsheet.js';
+import { SECRETS, foundSecrets } from './secrets.js';
+import { REGIONS } from '../data/overworld.js';
+import { RELIC_COUNT } from '../data/relics.js';
+import { collection, rowPct, missing } from '../data/collection.js';
+import { relicsToSpend } from '../data/anvil.js';
 import {
   meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, gate, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, trophyTurf, trophyZone, CLASSES, weaponLock, setLock,
   MASTERY_TIERS, masteryPerk, perkChoice, choosePerk, tiersOpen, unpicked, stableOpen, chosenMount, chooseMount, trophyCount
@@ -32,13 +41,19 @@ import {
 import { MOUNTS, MOUNT_LIST, STABLE_TROPHIES } from '../data/mounts.js';
 import { beast } from './mount.js';
 
-const TABS = ['SHARD TREE', 'MASTERY', 'TROPHIES', 'BOOK', 'STABLE', 'STATS'];
-const STABLE_TAB = 4, STATS_TAB = 5;
-export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, book: { sel: 0, pages: false, page: 0 }, stable: 0, sheetWeapon: null, msg: '', msgT: 0, boxes: [], confirm: false };
+const TABS = ['BAG', 'STATS', 'SHARD TREE', 'MASTERY', 'TROPHIES', 'STABLE', 'BOOK', 'COLLECTION'];
+export const TAB = { BAG: 0, STATS: 1, TREE: 2, MASTERY: 3, TROPHIES: 4, STABLE: 5, BOOK: 6, COLL: 7 };
+// the map's bag: main.js fills these in (open loads the hero into the bag, close saves it back)
+export const bagLink = { open: null, close: null };
+export const P = { open: false, tab: TAB.TREE, last: TAB.TREE, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, book: { sel: 0, pages: false, page: 0 }, stable: 0, coll: 0, sheetWeapon: null, save: null, msg: '', msgT: 0, boxes: [], confirm: false };
 
 export function openPowers(tab = null) {
-  P.open = true;
+  // E comes back to the last tab you used here (B is the bag's own key)
+  if (tab == null && P.tab === TAB.BAG) tab = P.last;
   if (tab != null) P.tab = tab;
+  if (P.tab !== TAB.BAG) P.last = P.tab;
+  if (P.tab === TAB.BAG && bagLink.open) return (P.open = false), bagLink.open();
+  P.open = true;
   // the mastery sky starts on the weapon you carry
   const i = TYPE_LIST.indexOf(P.sheetWeapon?.type);
   if (i >= 0 && !P.mast.open) P.mast.type = i;
@@ -195,24 +210,22 @@ export function updatePowers(dt) {
   if (ch && (ch.t += dt) >= CHARGE * 0.85 && !ch.done) (ch.done = true), sfx.empower();
   if (ch && ch.t > CHARGE + 0.5) P.charge = null;
   const M = P.mast;
-  if (P.tab === 1 && M.open && (input.take('pause') | input.take('leave'))) return (M.open = false), sfx.ui();
+  if (P.tab === TAB.MASTERY && M.open && (input.take('pause') | input.take('leave'))) return (M.open = false), sfx.ui();
   if (input.take('inv') | input.take('pause')) return closePowers();
   if (input.take('dash')) {
-    P.tab = (P.tab + 1) % TABS.length;
-    P.confirm = false;
-    return sfx.ui();
+    return showTab((P.tab + 1) % TABS.length);
   }
   const dx = (input.take('right') ? 1 : 0) - (input.take('left') ? 1 : 0), dy = (input.take('down') ? 1 : 0) - (input.take('up') ? 1 : 0);
   const ok = input.take('confirm') | input.take('jump');
   if (dx || dy) sfx.ui();
-  if (P.tab === 0) {
+  if (P.tab === TAB.TREE) {
     const n = TREE_BY_ID[P.tree.sel];
     if (dx || dy) (P.tree.sel = (step(n, TREE, dx, dy) || n).id), (P.lockPend = undefined);
     if (ok) P.lockPend !== undefined ? chooseLock(P.lockPend) : buy(TREE_BY_ID[P.tree.sel]);
     if (input.take('undo')) undo();
     if (input.take('lock')) pendLock(LOCKS[(LOCKS.indexOf(P.lockPend !== undefined ? P.lockPend : weaponLock()) + 1) % LOCKS.length]);
     if (input.take('leave')) refundAll();
-  } else if (P.tab === 1) {
+  } else if (P.tab === TAB.MASTERY) {
     if (!M.open) {
       if (dx || dy) M.type = SKY.indexOf(step(SKY[M.type], SKY, dx, dy) || SKY[M.type]);
       if (ok) (M.open = true), (M.tier = entryTier(TYPE_LIST[M.type])), (M.opt = 0);
@@ -221,16 +234,18 @@ export function updatePowers(dt) {
       if (dx) M.opt = dx > 0 ? 1 : 0;
       if (ok) pick(TYPE_LIST[M.type], M.tier, M.opt);
     }
-  } else if (P.tab === 2) {
+  } else if (P.tab === TAB.TROPHIES) {
     P.troph = Math.max(0, Math.min(9, P.troph + dy + dx * 5));
-  } else if (P.tab === 3) {
+  } else if (P.tab === TAB.BOOK) {
     const B = P.book;
     if (input.take('leave')) (B.pages = !B.pages), sfx.ui(true);
     if (B.pages) B.page = Math.max(0, Math.min(9, B.page + dy + dx * 5));
     else B.sel = Math.max(0, Math.min(CARD_LIST.length - 1, B.sel + dx + dy * BOOK_COLS));
-  } else if (P.tab === STABLE_TAB) {
+  } else if (P.tab === TAB.STABLE) {
     P.stable = (P.stable + dx + MOUNT_LIST.length) % MOUNT_LIST.length;
     if (ok) ride(MOUNT_LIST[P.stable]);
+  } else if (P.tab === TAB.COLL) {
+    P.coll = Math.max(0, Math.min(REGIONS.length - 1, P.coll + dy + dx));
   }
 }
 function ride(id) {
@@ -256,33 +271,57 @@ export function drawPowers(t) {
   P.boxes = [];
   dither(0, 0, W, H, C.ink, 12);
   panel('panel', 4, 4, W - 8, H - 8);
-  let tx = 10;
+  drawTabs(t, P.tab);
+  for (const T of P.tabBoxes) box(T.x, T.y, T.w, T.h, () => showTab(T.i));
+  box(W - 22, 9, 15, 15, closePowers);
+  if (P.tab === TAB.TREE) drawTree(t), drawConsolidate();
+  else if (P.tab === TAB.MASTERY) drawMastery(t);
+  else if (P.tab === TAB.TROPHIES) drawTrophies(t);
+  else if (P.tab === TAB.STABLE) drawStable(t);
+  else if (P.tab === TAB.BOOK) drawBook(t);
+  else if (P.tab === TAB.COLL) drawCollection(t);
+  else drawSheet(12, 30, W - 24, H - 66, P.sheetWeapon);
+  if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
+  const hint = P.tab === TAB.TREE ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
+    : P.tab === TAB.MASTERY ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
+    : P.tab === TAB.TROPHIES ? 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE'
+    : P.tab === TAB.STABLE ? (stableOpen() ? 'ARROWS: PICK   ENTER: SADDLE UP   SHIFT: NEXT TAB   E: CLOSE' : 'BEAT THREE FAMILY HEADS TO OPEN THE STABLE   SHIFT: NEXT TAB   E: CLOSE')
+    : P.tab === TAB.BOOK ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`
+    : P.tab === TAB.COLL ? 'ARROWS: PICK A WORLD   SHIFT: NEXT TAB   E: CLOSE'
+    : 'EVERYTHING YOUR POWERS ADD UP TO   SHIFT: NEXT TAB   E: CLOSE';
+  text(hint, W / 2, H - 18, C.fog, { align: 'center' });
+}
+// the tab strip, shared with the map's bag (inventory.js draws it over the bag); each tab is as wide
+// as its name. Leaves where each tab sits in P.tabBoxes for clicks.
+export function drawTabs(t, on) {
+  P.tabBoxes = [];
+  let x = 10;
   TABS.forEach((name, i) => {
-    const x = tx, on = P.tab === i, w = textWidth(name) + 12;
-    tx += w + 3;
-    rect(x, 10, w, 13, on ? C.gold : C.slate);
-    rect(x + 1, 11, w - 2, 11, on ? C.night : C.ink);
-    text(name, x + w / 2, 13, on ? C.gold : i === STABLE_TAB && stableOpen() && !chosenMount() && Math.floor(t * 3) % 2 ? C.lime : C.fog, { align: 'center' });
-    box(x, 10, w, 13, () => { P.tab = i; P.confirm = false; sfx.ui(); });
+    const w = textWidth(name) + 6, sel = on === i; // tight, so eight tabs leave room for the shards
+    rect(x, 10, w, 13, sel ? C.gold : C.slate);
+    rect(x + 1, 11, w - 2, 11, sel ? C.night : C.ink);
+    text(name, x + Math.floor(w / 2), 13, sel ? C.gold : i === TAB.STABLE && stableOpen() && !chosenMount() && Math.floor(t * 3) % 2 ? C.lime : C.fog, { align: 'center' });
+    P.tabBoxes.push({ i, x, y: 10, w, h: 13 });
+    x += w + 2;
   });
   rect(W - 21, 10, 13, 13, C.ink);
   text('X', W - 15, 13, C.coral, { align: 'center' });
-  box(W - 22, 9, 15, 15, closePowers);
   text(`${fmt(meta().shards)} SHARDS`, W - 28, 13, P.drain > 0 && Math.floor(t * 20) % 2 ? C.paper : C.ice, { align: 'right' });
-  if (P.tab === 0) drawTree(t), drawConsolidate();
-  else if (P.tab === 1) drawMastery(t);
-  else if (P.tab === 2) drawTrophies(t);
-  else if (P.tab === 3) drawBook(t);
-  else if (P.tab === STABLE_TAB) drawStable(t);
-  else drawSheet(12, 30, W - 24, H - 66, P.sheetWeapon);
-  if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
-  const hint = P.tab === 0 ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
-    : P.tab === 1 ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
-    : P.tab === 2 ? 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE'
-    : P.tab === 3 ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`
-    : P.tab === STABLE_TAB ? (stableOpen() ? 'ARROWS: PICK   ENTER: SADDLE UP   SHIFT: NEXT TAB   E: CLOSE' : 'BEAT THREE FAMILY HEADS TO OPEN THE STABLE   SHIFT: NEXT TAB   E: CLOSE')
-    : 'EVERYTHING YOUR POWERS ADD UP TO   SHIFT: NEXT TAB   E: CLOSE';
-  text(hint, W / 2, H - 18, C.fog, { align: 'center' });
+}
+export const tabAt = (x, y) => P.tabBoxes?.find(T => x >= T.x && y >= T.y && x < T.x + T.w && y < T.y + T.h)?.i ?? -1;
+// change tab from either side: the bag is its own window, the rest are this one
+export function showTab(i) {
+  P.confirm = false;
+  if (i === TAB.BAG) {
+    P.tab = TAB.BAG;
+    if (!bagLink.open) return showTab(TAB.STATS);
+    P.open = false;
+    return bagLink.open();
+  }
+  if (bagLink.close?.()) P.msg = '';
+  P.tab = P.last = i;
+  if (!P.open) return openPowers(i);
+  sfx.ui();
 }
 
 // ---------------------------------------------------------------- shared pixel helpers
@@ -811,4 +850,50 @@ function drawPages(t) {
   const Pg = PAGES[P.book.page], names = Pg.kinds.map(k => (bossBeaten(k) ? bossName(k) : '???'));
   text(fitText(names.join(', ').toUpperCase(), W - 24), 12, 200, C.mist);
   text(`A COMPLETE PAGE: ${PAGE_BONUS.bonus.toUpperCase()}, ALWAYS ON`, 12, 210, pageDone(Pg) ? C.lime : C.fog);
+}
+
+// ---------------------------------------------------------------- the Collection
+// one row per world: levels, secret exits, relics (and stars), its easter egg, trophy and boss page
+const COL_X = { levels: 196, exits: 240, relics: 290, stars: 336, egg: 380, trophy: 418, page: 454 };
+const frac = ([a, b]) => `${a}/${b}`;
+const full = ([a, b]) => a >= b;
+function tick(x, y, have) {
+  rect(x - 4, y - 1, 9, 9, C.ink);
+  rect(x - 3, y, 7, 7, have ? C.gold : C.night);
+  if (have) rect(x - 2, y + 1, 2, 2, C.cream);
+}
+function collRow(row, y, sel, all = false) {
+  if (sel) rect(10, y - 2, W - 20, 12, C.night);
+  const done = rowPct(row) >= 100 && !all;
+  text(fitText(all ? row.name : `${row.id} ${row.name}`, 150), 14, y, all ? C.gold : done ? C.gold : sel ? C.paper : C.cream);
+  for (const k of ['levels', 'exits', 'relics', 'stars']) text(frac(row[k]), COL_X[k], y, full(row[k]) ? C.gold : row[k][0] ? C.cream : C.stone, { align: 'center' });
+  for (const k of ['egg', 'trophy', 'page']) all ? text(frac(row[k]), COL_X[k], y, full(row[k]) ? C.gold : C.cream, { align: 'center' }) : tick(COL_X[k], y, full(row[k]));
+}
+function drawCollection(t) {
+  const s = P.save || { cleared: {} }, eggs = foundSecrets(), all = collection(s, eggs), G = bookProgress();
+  text(`COMPLETION ${all.pct}%`, 12, 30, all.pct >= 100 && Math.floor(t * 3) % 2 ? C.paper : C.gold);
+  text(`BOOK CARDS ${G.found}/${G.cards} (${G.gold} GOLD)`, W - 12, 30, C.mist, { align: 'right' });
+  text(`${relicsToSpend(s)} RELICS FOR THE ANVIL (G IN THE BAG)`, W / 2 - 10, 30, C.cream, { align: 'center' });
+  const hy = 42;
+  text('WORLD', 14, hy, C.fog);
+  for (const [k, l] of [['levels', 'LEVELS'], ['exits', 'SECRETS'], ['relics', 'RELICS'], ['stars', 'STARS'], ['egg', 'EGG'], ['trophy', 'TROPHY'], ['page', 'PAGE']]) text(l, COL_X[k], hy, C.fog, { align: 'center' });
+  rect(10, hy + 9, W - 20, 1, C.slate);
+  all.rows.forEach((row, i) => {
+    const y = 54 + i * 13;
+    collRow(row, y, P.coll === i);
+    box(10, y - 2, W - 20, 12, () => { P.coll = i; sfx.ui(); });
+  });
+  rect(10, 184, W - 20, 1, C.slate);
+  collRow(all.total, 187, false, true);
+  // what is still out there in the picked world
+  const R = REGIONS[P.coll], row = all.rows[P.coll], M = missing(s, R), y = 201;
+  text(`${R.name}: ${rowPct(row)}%`, 12, y, C.gold);
+  const ex = M.exits.length ? 'A SECRET EXIT STILL HIDES IN ' + M.exits.map(n => n.name.toUpperCase()).join(', ')
+    : M.hiddenExits ? `${M.hiddenExits} SECRET EXIT${M.hiddenExits > 1 ? 'S' : ''} WAIT IN LEVELS YOU HAVEN'T CLEARED`
+    : row.exits[1] ? 'EVERY SECRET EXIT FOUND' : 'NO SECRET EXITS HERE';
+  text(fitText(ex, W - 24), 12, y + 10, M.exits.length || M.hiddenExits ? C.pink : C.lime);
+  const rl = M.relics.length ? `RELICS LEFT: ` + M.relics.map(m => `${m.n.id} ${m.got}/${RELIC_COUNT}`).join('  ') : 'EVERY RELIC FOUND: A STAR ON EVERY LEVEL';
+  text(fitText(rl, W - 24), 12, y + 20, M.relics.length ? C.cream : C.gold);
+  const egg = full(row.egg) ? 'EGG: ' + SECRETS[R.zone % SECRETS.length].name : 'EGG: ??? (IT HIDES ON THE HIGHEST LEDGE OF A MAP HERE)';
+  text(fitText(egg, W - 24), 12, y + 30, full(row.egg) ? C.lime : C.stone);
 }

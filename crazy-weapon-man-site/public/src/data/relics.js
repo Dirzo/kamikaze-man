@@ -2,6 +2,7 @@
 // Coins). Four sit on the map, on its highest and furthest ledges; the fifth waits in the level's
 // secret room, behind its hidden portal. Relics are kept when the level is cleared (a failed attempt
 // keeps nothing, like everything else), and a level with all five wears a star on the overworld.
+// Every relic brought home is one to spend at the Legendary Anvil (data/anvil.js).
 // Pure data + pure functions, safe to import from tests.
 import { LEVELS } from './overworld.js';
 

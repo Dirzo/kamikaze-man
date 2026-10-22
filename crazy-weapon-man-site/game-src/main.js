@@ -32,7 +32,7 @@ import { loadSave, writeSave, clearLevel, FINAL } from './data/overworld.js';
 import { freshUid } from './game/loot.js';
 import { bankShards, winTrophy, TROPHIES, trophyCount, chosenMount, trophyTurf } from './data/meta.js';
 import { STABLE_TROPHIES } from './data/mounts.js';
-import { P as powers, openPowers, closePowers } from './game/powers.js';
+import { P as powers, openPowers, closePowers, bagLink, TAB } from './game/powers.js';
 import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
 import { updateRelics, drawRelics, relicsTaken } from './game/relics.js';
 import { updateHidden, drawHidden } from './game/hidden.js';
@@ -102,7 +102,13 @@ function openMapBag() {
   world.shards = 0;
   loadHero();
   openInventory();
+  if (world.inv) world.inv.tabs = true; // the first tab of the POWERS window (powers.js)
+  powers.save = ow.save; // the anvil spends this file's relics
+  powers.tab = TAB.BAG;
 }
+// the POWERS window opens and closes the map's bag when you change tab
+bagLink.open = openMapBag;
+bagLink.close = () => world.inv && scene === 'map' && (closeInventory(), closeMapBag(), true);
 function closeMapBag() {
   ow.save.hero = heroSnapshot();
   bankShards(world.shards); // salvaged on the map: straight into the shard tree
