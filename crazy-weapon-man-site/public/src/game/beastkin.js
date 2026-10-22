@@ -69,7 +69,7 @@
 //   sentry    Husky Sentry: guards high and low; it parries, counters, and is open just after
 //   twinspin  Twin Blade Inu: spins at you with a katana in each paw, then needs a moment
 //   crescent  Wind Fox: two cuts that send crescents of wind rolling along the floor
-//   kunai     Hound Archer Guard: a volley of petal kunai, then it closes in with the katana
+//   kunai     Hound Guard: a volley of petal kunai, then it closes in with the katana
 //   champion  Tosa Champion: heavy; a charge that can't be stopped and leaves you dazed
 //   sage      Nine Tail Sage: blinks from place to place and calls down storms of razor petals
 import { C } from '../config.js';
@@ -739,7 +739,7 @@ export function beastAttack(e, toward) {
       if (e.waves < 2) e.next = [0.28, 'draw', 'crescent'];
       else e.waves = 0;
       return;
-    case 'kunai': // Hound Archer Guard: three petal kunai, then in it comes
+    case 'kunai': // Hound Guard: three petal kunai, then in it comes
       e.attackPose = 'throw';
       e.st = 0.3;
       sfx.enemyCast();

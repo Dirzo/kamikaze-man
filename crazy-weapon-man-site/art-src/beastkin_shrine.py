@@ -148,7 +148,7 @@ def windfox(c, p):
         front=swirl, weapon=kat(1.05, 8.0))
 
 
-# ---- 8. Hound Archer Guard: a shrine guard dog with a quiver of petal kunai. Throws a volley,
+# ---- 8. Hound Guard: a shrine guard dog with a quiver of petal kunai. Throws a volley,
 # then closes in with the katana.
 def houndguard(c, p):
     def quiver(c, p, L):

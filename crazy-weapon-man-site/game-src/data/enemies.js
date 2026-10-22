@@ -97,7 +97,7 @@ export const ENEMIES = {
   husky: { name: 'Husky Sentry', kind: 'beast', beh: 'sentry', fam: 'shrine', evo: 5, hp: 1.4, dmg: 1.0, speed: 28, range: 28, wind: 0.45 },
   twininu: { name: 'Twin Blade Inu', kind: 'beast', beh: 'twinspin', fam: 'shrine', evo: 6, hp: 1.3, dmg: 0.9, speed: 40, range: 70, wind: 0.55 },
   windfox: { name: 'Wind Fox', kind: 'beast', beh: 'crescent', fam: 'shrine', evo: 7, hp: 1.1, dmg: 1.0, speed: 38, range: 170, wind: 0.5 },
-  houndguard: { name: 'Hound Archer Guard', kind: 'beast', beh: 'kunai', fam: 'shrine', evo: 8, hp: 1.3, dmg: 1.0, speed: 36, range: 170, wind: 0.5 },
+  houndguard: { name: 'Hound Guard', kind: 'beast', beh: 'kunai', fam: 'shrine', evo: 8, hp: 1.3, dmg: 1.0, speed: 36, range: 170, wind: 0.5 },
   tosa: { name: 'Tosa Champion', kind: 'beast', beh: 'champion', fam: 'shrine', evo: 9, heavy: true, hp: 2.8, dmg: 1.4, speed: 22, range: 34, wind: 0.6 },
   ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
