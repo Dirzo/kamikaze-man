@@ -37,7 +37,7 @@ export function startGimmick() {
 }
 export const gimmickName = () => (world.gimmick ? GIMMICKS[world.gimmick].name : '');
 // the hero's movement numbers in this level (multipliers on HERO), or null for the usual
-// Two trophies change them: Mother Goose's Down Coat keeps your footing on ice, and the Acorn
+// Two trophies change them: Mother Goose's Down Coat keeps your footing on ice, and the Yeti
 // King's Broadhead makes you swim 30% faster
 const SWIM_FAST = 1.3;
 export function heroPhysics() {
@@ -46,7 +46,7 @@ export function heroPhysics() {
   if (P && world.gimmick === 'water' && innate('broadhead')) return { ...P, speed: P.speed * SWIM_FAST, swim: P.swim * 1.15 };
   return P;
 }
-// Jr.'s Tiki Torch: the light around you in a ghost house, and how fast its haunted blades creep
+// The Grand Snapper's Glow-Lily: the light around you in a ghost house, and how fast its haunted blades creep
 const TORCH = { light: 1.7, creep: 0.6 };
 
 export function updateGimmick(dt) {

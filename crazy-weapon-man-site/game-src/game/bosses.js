@@ -101,7 +101,7 @@ export function bossHearts(e) {
   for (let i = 0; i < 2; i++) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: e.y + 6, vx: (i ? 1 : -1) * (50 + Math.random() * 40), vy: -170, life: 14 });
 }
 const hazards = [];
-const MONOCLE = 1.5; // the Kingpin's Monocle stretches boss tells and floor warnings this much
+const MONOCLE = 1.5; // the Fat Cat's Monocle stretches boss tells and floor warnings this much
 let boss = null,
   done = false,
   outroT = 0;
@@ -251,7 +251,7 @@ function nextPattern(e) {
   e.aimX = cx(world.hero);
   e.face = Math.sign(e.aimX - cx(e)) || 1;
   e.state = 'wind';
-  e.st = e.tellT = 0.7 * (innate('monocle') ? MONOCLE : 1); // THE KINGPIN'S MONOCLE: a longer look at every tell
+  e.st = e.tellT = 0.7 * (innate('monocle') ? MONOCLE : 1); // THE FAT CAT'S MONOCLE: a longer look at every tell
   sfx.enemyCast();
 }
 
@@ -374,9 +374,9 @@ function cast(e, name) {
     case 'smoke': // poof: reappear behind the hero
     case 'vanish': {
       burst(cx(e), cy(e), 14, 'smoke', ['fog', 'mist', 'slate']);
-      // GRANDMA'S READING GLASSES: nothing gets behind you; it lands where you are looking
+      // THE OWL ARCHMAGE'S SPECTACLES: nothing gets behind you; it lands where you are looking
       const behind = cx(hero) - (hero.face || 1) * 46 * (innate('glasses') ? -1 : 1);
-      if (innate('glasses')) callout('GRANDMA SAW THAT!', 0, 0, C.cream, { follow: hero, life: 50 });
+      if (innate('glasses')) callout('THE OWL SAW THAT!', 0, 0, C.cream, { follow: hero, life: 50 });
       e.x = Math.max(arenaL(), Math.min(arenaR() - e.w, behind - e.w / 2));
       e.face = Math.sign(cx(hero) - cx(e)) || 1;
       burst(cx(e), cy(e), 14, 'smoke', ['fog', 'mist', 'slate']);

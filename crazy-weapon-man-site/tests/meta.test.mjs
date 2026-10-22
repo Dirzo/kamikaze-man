@@ -149,7 +149,7 @@ test('a trophy is won once and its perk is always on', () => {
 });
 test("each trophy is made for the next world: its home turf works there and nowhere else", () => {
   resetMeta();
-  winTrophy(2); // the Acorn King's trophy is for world 3, the lagoon (zone index 2)
+  winTrophy(2); // the Yeti King's trophy is for world 3, the lagoon (zone index 2)
   assert.equal(trophyZone(2), 2);
   assert.equal(stats('sword', 2).dmg - stats('sword', 1).dmg, HOME_TURF.dmg);
   assert.equal(stats('sword', 2).armor - stats('sword').armor, HOME_TURF.armor);

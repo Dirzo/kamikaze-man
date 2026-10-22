@@ -484,7 +484,7 @@ export function runSmoke(game) {
     resetMeta();reset();const shot0=hit('shot'),lava0=hit('lava'),spell0=hit('magic'),star0=hit('star');hit(null);const kb0=Math.abs(world.hero.vx);
     winTrophy(1);winTrophy(5);winTrophy(6);winTrophy(7);winTrophy(8);reset();
     ok(hit('shot')<shot0,'the down coat did not soften shots');ok(hit('lava')<lava0,'the frost beads did not cool the lava');
-    ok(hit('magic')<hit('shot'),'cold iron did not soften spells');ok(hit('star')<shot0*0.75,'the glasses did not soften shuriken');
+    ok(hit('magic')<hit('shot'),'cold iron did not soften spells');ok(hit('star')<shot0*0.75,'the spectacles did not soften shuriken');
     hit(null);ok(Math.abs(world.hero.vx)<kb0*0.5,'the geta did not root you');
     level('6-2');ok(heroPhysics()===null,'the down coat still slips on ice');
     winTrophy(2);level('3-3');ok(heroPhysics().speed>0.8,'the broadhead did not swim faster');

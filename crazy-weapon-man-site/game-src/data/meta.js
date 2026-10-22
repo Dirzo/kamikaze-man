@@ -150,7 +150,8 @@ export const rankCost = (n, rank) => n.cost * rank; // rank = the rank being bou
 const TREE_V = 3; // 3: the clusters trace their weapons, and upgrades are about feel
 
 // ---------------------------------------------------------------- world boss perks and trophies
-// region -> the trophy you take off the family head and the perk it gives. Each trophy is the head's
+// region -> the trophy you take off the family head and the perk it gives. The heads are the beastkin
+// families' bosses (a bigger, spicier version of each zone's beasts) and each trophy is that head's
 // own keepsake, and its power is made for the NEXT world: it counters that world's residents, boss
 // moves or terrain (`for` names them). The power works everywhere; on top of it, the next world
 // (zone index = region) is your home turf: HOME_TURF more damage and less damage taken there.
@@ -158,15 +159,15 @@ const TREE_V = 3; // 3: the clusters trace their weapons, and upgrades are about
 export const HOME_TURF = { dmg: 0.2, armor: 0.2 };
 export const TROPHIES = {
   1: { name: "MOTHER GOOSE'S DOWN COAT", perk: 'GOOSE-DOWN', for: 'ARCHERS AND SNOW', desc: 'Shots hit 25% softer and you never slip on ice', stats: { shotArmor: 0.25 }, innate: 'grip' },
-  2: { name: "THE ACORN KING'S BROADHEAD", perk: 'SHELL SPLITTER', for: 'SHELLS AND THE LAGOON', desc: 'Your hits crack shields and shells, and you swim 30% faster', stats: {}, innate: 'broadhead' },
-  3: { name: "JR.'S TIKI TORCH", perk: 'BEACH BONFIRE', for: 'THE DARK BAZAAR', desc: 'Your light reaches 70% farther in dark levels and haunted blades creep 40% slower', stats: {}, innate: 'torch' },
-  4: { name: "THE KINGPIN'S MONOCLE", perk: 'SEEN EVERY TRICK', for: 'IAI SLASHES AND TRICKS', desc: 'Every boss tell and floor warning lasts 50% longer', stats: {}, innate: 'monocle' },
-  5: { name: "THE SHOGUN'S GETA", perk: 'ROOTED BLOSSOM', for: 'THE WINDY PEAKS', desc: 'You take 70% less knockback, and dashing through foes slices them', stats: { knockRes: 0.7 }, innate: 'dashcut' },
-  6: { name: "THE OGRE KING'S FROST BEADS", perk: 'MOUNTAIN COLD', for: 'THE LAVA FORGE', desc: 'Lava burns 50% less, and 1 hit in 5 chills a foe to half speed', stats: { lavaArmor: 0.5, chillHit: 0.2 } },
-  7: { name: "SR.'S COLD-IRON ANVIL", perk: 'COLD IRON', for: 'WANDS AND SPELLS', desc: 'Spells, sparkles and cookie rain hit 35% softer', stats: { magicArmor: 0.35 } },
-  8: { name: "GRANDMA'S READING GLASSES", perk: 'NOTHING GETS PAST GRANDMA', for: 'NINJAS AND SHURIKEN', desc: 'Foes that teleport behind you land in front of you, and shuriken hit 30% softer', stats: { starArmor: 0.3 }, innate: 'glasses' },
-  9: { name: 'THE STOLEN CROWN', perk: "USURPER'S CLAIM", for: 'THE HOARD AND ITS GUARDS', desc: '+20% damage to bosses and elites, and your safety after a hit lasts 50% longer', stats: { bossDmg: 0.2, inv: 0.5 } },
-  10: { name: 'THE FIRST WEAPON', perk: 'EVERY WEAPON EVER', for: 'THE POST-GAME', desc: '+15% damage with everything, +25% mastery and +25% shards', stats: { dmg: 0.15, mastery: 0.25, shards: 0.25 } }
+  2: { name: "THE YETI KING'S BROADHEAD", perk: 'SHELL SPLITTER', for: 'SHELLS AND THE LAGOON', desc: 'Your hits crack shields and shells, and you swim 30% faster', stats: {}, innate: 'broadhead' },
+  3: { name: "THE GRAND SNAPPER'S GLOW-LILY", perk: 'LAGOON GLOW', for: 'THE DARK BAZAAR', desc: 'Your light reaches 70% farther in dark levels and haunted blades creep 40% slower', stats: {}, innate: 'torch' },
+  4: { name: "THE FAT CAT'S MONOCLE", perk: 'SEEN EVERY TRICK', for: 'IAI SLASHES AND TRICKS', desc: 'Every boss tell and floor warning lasts 50% longer', stats: {}, innate: 'monocle' },
+  5: { name: "THE TOSA SHOGUN'S GETA", perk: 'ROOTED BLOSSOM', for: 'THE WINDY PEAKS', desc: 'You take 70% less knockback, and dashing through foes slices them', stats: { knockRes: 0.7 }, innate: 'dashcut' },
+  6: { name: "THE YAK ABBOT'S FROST BEADS", perk: 'MOUNTAIN COLD', for: 'THE LAVA FORGE', desc: 'Lava burns 50% less, and 1 hit in 5 chills a foe to half speed', stats: { lavaArmor: 0.5, chillHit: 0.2 } },
+  7: { name: "THE BEAR SMITH'S COLD-IRON ANVIL", perk: 'COLD IRON', for: 'WANDS AND SPELLS', desc: 'Spells, sparkles and cookie rain hit 35% softer', stats: { magicArmor: 0.35 } },
+  8: { name: "THE OWL ARCHMAGE'S SPECTACLES", perk: 'NOTHING GETS PAST AN OWL', for: 'NINJAS AND SHURIKEN', desc: 'Foes that teleport behind you land in front of you, and shuriken hit 30% softer', stats: { starArmor: 0.3 }, innate: 'glasses' },
+  9: { name: "THE KOMODO LORD'S STOLEN CROWN", perk: "USURPER'S CLAIM", for: 'THE HOARD AND ITS GUARDS', desc: '+20% damage to bosses and elites, and your safety after a hit lasts 50% longer', stats: { bossDmg: 0.2, inv: 0.5 } },
+  10: { name: "THE DRAGON'S FIRST WEAPON", perk: 'EVERY WEAPON EVER', for: 'THE POST-GAME', desc: '+15% damage with everything, +25% mastery and +25% shards', stats: { dmg: 0.15, mastery: 0.25, shards: 0.25 } }
 };
 // the world a trophy is made for (a zone index), or null for the last one
 export const trophyZone = r => (+r < 10 ? +r : null);

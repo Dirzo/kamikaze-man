@@ -344,7 +344,7 @@ function think(e, dt, dxh, dist, toward, slow) {
     case 'blink':
       if (dist > 90 && e.cool <= 0) {
         burst(cx(e), cy(e), 8, 'smoke', ['violet', 'pink']);
-        // GRANDMA'S READING GLASSES: it never lands behind you
+        // THE OWL ARCHMAGE'S SPECTACLES: it never lands behind you
         const side = innate('glasses') ? world.hero.face || 1 : Math.random() < 0.5 ? -1 : 1;
         e.x = Math.max(4, Math.min(worldWidth() - 4 - e.w, cx(hero) + side * 24 - e.w / 2));
         e.y = Math.min(e.y, hero.y + hero.h - e.h);

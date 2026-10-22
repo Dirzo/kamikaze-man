@@ -73,7 +73,7 @@ export function hitEnemy(e, dmg, o = {}) {
   logDamage(Math.min(dmg, Math.max(0, e.hp)));
   e.hp -= dmg;
   e.flash = e.boss ? 0.05 : 0.12;
-  // THE OGRE KING'S FROST BEADS: now and then a hit chills the foe to half speed
+  // THE YAK ABBOT'S FROST BEADS: now and then a hit chills the foe to half speed
   if (!o.chip && heroStats().chillHit && Math.random() < heroStats().chillHit) e.chill = Math.max(e.chill || 0, 1.6);
   damageNumber(e, dmg, { crit: o.crit, chip: o.chip, col: o.col });
   const F = hitFeel(hero.weapon?.type, { crit: o.crit, big: o.big || o.plunge, chain: o.chain || o.aoe || o.echo });
