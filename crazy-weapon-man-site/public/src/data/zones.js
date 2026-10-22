@@ -63,8 +63,8 @@ export const ZONES = [
     id: 'sakura-shrine',
     weapon: 'katana',
     name: 'The Sakura Katana Shrine',
-    sub: 'Cherry petals, paper lanterns and very small, very serious samurai.',
-    pool: ['samurai', 'kitsune', 'samurai', 'shieldbro', 'sniper', 'eyeball'],
+    sub: 'Cherry petals, paper lanterns, samurai dogs and the fox spirits who watch over them.',
+    pool: ['shibapup', 'corgi', 'akita', 'petalfox', 'husky', 'twininu', 'windfox', 'houndguard', 'tosa', 'ninetail'],
     platforms: L1,
     boss: null,
     music: { key: 50, scale: 'insen', bpm: 100, prog: [0, 3, 2, 4], drums: 'shrine', lead: 'p12', theme: '0 - 1 - 2 - - . | 3 - 2 1 2 - - . | 4 - 3 - 2 - 3 2 | 1 - - - 0 - - .' }

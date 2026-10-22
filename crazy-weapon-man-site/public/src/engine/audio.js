@@ -235,6 +235,17 @@ const DIE = {
   prowler: () => chip([[N(76), 2], [N(83), 2], [N(71), 5]], { wave: 'p25', vol: 0.04, decay: 0.004 }), // mrrow
   bandit: () => (arp([86, 81, 86, 79], 1, { wave: 'p25', vol: 0.03 }), hiss(4, { vol: 0.04, rate: 0.9, short: true })), // chitter and a puff
   fatcat: () => (chip([[N(64), 4], [N(57), 8]], { wave: 'p50', vol: 0.05, decay: 0.006 }), chip([[N(96), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })), // a purr and a coin
+  // the dog and fox family: yips, barks and fox cries
+  shibapup: () => chip([[N(91), 1], [N(96), 2]], { wave: 'p25', vol: 0.035, decay: 0.004 }), // yip
+  corgi: () => chip([[N(84), 2], [N(88), 2], [N(81), 3]], { wave: 'p25', vol: 0.04, decay: 0.005 }), // borf
+  akita: () => (chip([[N(72), 3], [N(67), 6]], { wave: 'p50', vol: 0.04, decay: 0.005 }), chip([[N(100), 2]], { wave: 'p12', vol: 0.025, delay: 0.1 })), // a woof and a sheathe
+  petalfox: () => arp([93, 96, 100, 91], 1, { wave: 'p12', vol: 0.03, decay: 0.003 }), // a fox giggle
+  husky: () => chip([[N(76), 3], [N(83), 3], [N(72), 6]], { wave: 'p25', vol: 0.045, decay: 0.004 }), // awoo
+  twininu: () => (chip([[N(88), 2], [N(84), 3]], { wave: 'p25', vol: 0.035, decay: 0.004 }), chip([[N(98), 1], [N(101), 2]], { wave: 'p12', vol: 0.025, delay: 0.08 })),
+  windfox: () => (arp([96, 91, 88, 84], 1, { wave: 'p12', vol: 0.03 }), hiss(4, { vol: 0.03, rate: 1.3, short: true })), // a cry on the wind
+  houndguard: () => chip([[N(79), 2], [N(74), 4]], { wave: 'p25', vol: 0.04, decay: 0.005 }),
+  tosa: () => (chip([[N(55), 4], [N(50), 8]], { wave: 'p50', vol: 0.06, decay: 0.006 }), chip([[N(36), 6]], { wave: 'tri', vol: 0.08, decay: 0.01 })), // a big bark and a thud
+  ninetail: () => arp([84, 88, 91, 96, 100, 103], 2, { wave: 'p12', vol: 0.035, decay: 0.003 }), // a shimmer of bells
   // the turtle and frog family: ribbits and shell clonks
   tadpole: () => chip([[N(100), 1], [N(96), 1], [N(103), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }), // blip
   pondfrog: () => chip([[N(67), 1], [N(72), 1], [N(64), 3]], { wave: 'p25', vol: 0.045, decay: 0.006 }), // ribbit

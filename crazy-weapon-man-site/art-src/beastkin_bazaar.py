@@ -64,7 +64,8 @@ def cat_eye(c, x, y, col, hit, glow=False):
 
 
 def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, stripes=None, tail='cat', points=None,
-        back=None, front=None, wear=None, hat=None, hold=None, dual=False, blade='steel', glow=False, scar=False, wide=1.0):
+        back=None, front=None, wear=None, hat=None, hold=None, dual=False, blade='steel', glow=False, scar=False, wide=1.0,
+        snout=0.0, ears='cat', tip=None, tails=1, nose=None, weapon=None):
     """The beastkin cat (or raccoon, racc=True): standing up on two legs, a big head with pointed
     ears (round ones for raccoons), a tail, and a dagger in the near paw. dual puts a second
     dagger in the far paw."""
@@ -85,6 +86,17 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
         pts_ = [(tx0, ty0), (tx0 - 3.2 * s, ty0 - 0.6 * s + sw), (tx0 - 5.0 * s, ty0 - 3.2 * s + sw), (tx0 - 5.2 * s, ty0 - 6.0 * s + sw)]
         for i, ((ax, ay), (bx_, by_)) in enumerate(zip(pts_, pts_[1:])):
             c.capsule(ax, ay, bx_, by_, 1.9 * s, 1.8 * s, 'racc' if i % 2 == 0 else 'siampt', lift=-0.1)
+    elif tail == 'curl':  # a shiba's or akita's tail, curled up over the back
+        c.ball(tx0 - 0.6 * s, ty0 - 3.4 * s + sw * 0.3, 2.2 * s, 2.0 * s, fur, lift=-0.05)
+        c.ball(tx0 - 0.2 * s, ty0 - 3.0 * s + sw * 0.3, 1.0 * s, 0.9 * s, belly, lift=0.2)
+    elif tail == 'bush':  # a fox's brush (tails > 1 fans out more of them), white at the tip
+        for k in range(tails):
+            a = (k - (tails - 1) / 2) * 0.32
+            ex, ey = tx0 - 5.2 * s * math.cos(a) - 0.6 * s, ty0 - 3.2 * s + 4.4 * s * math.sin(a) + sw
+            c.capsule(tx0, ty0, ex, ey, 1.4 * s, 2.0 * s, fur, lift=-0.15 + 0.05 * k)
+            c.ball(ex - 0.6 * s * math.cos(a), ey + 0.3 * s * math.sin(a), 1.5 * s, 1.5 * s, tip or 'siam', lift=0.15)
+    elif tail == 'stub':
+        c.ball(tx0, ty0 - 0.4 * s, 1.2 * s, 1.0 * s, fur, lift=-0.1)
     else:
         pts_ = [(tx0, ty0), (tx0 - 2.6 * s, ty0 - 1.0 * s + sw), (tx0 - 3.6 * s, ty0 - 4.0 * s + sw), (tx0 - 2.6 * s, ty0 - 6.4 * s + sw * 1.5)]
         for (ax, ay), (bx_, by_) in zip(pts_, pts_[1:]):
@@ -95,7 +107,7 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
     if dual:
         if g.get('farsmear'):
             smear(c, bx, by - bry * 0.4, far[0] * s + 6 * s, *g['farsmear'])
-        dagger(c, fax, fay, far[2], s, rp=blade)
+        (weapon or (lambda c, p, L, x, y, ang: dagger(c, x, y, ang, s, rp=blade)))(c, p, L, fax, fay, far[2])
     c.capsule(bx + 0.2 * s, by - bry * 0.45, fax, fay, 1.1 * s, 0.9 * s, pts, lift=-0.5)
     c.ball(fax, fay, 0.9 * s, 0.9 * s, pts, lift=-0.3)
     # legs
@@ -123,6 +135,11 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
     for ex_, lift in ((hx - 2.4 * s, -0.25), (hx + 1.4 * s, 0.1)):  # the ears
         if racc:
             c.ball(ex_ + 0.2 * s, hy - hry * 0.95, 1.3 * s, 1.2 * s, fur, lift=lift)
+        elif ears == 'flop':  # a hound's soft ears, folded down
+            c.capsule(ex_ - 0.4 * s, hy - hry * 0.7, ex_ - 1.4 * s, hy + 0.6 * s, 1.3 * s, 1.0 * s, pts, lift=lift - 0.2)
+        elif ears == 'tall':  # a fox's big ears
+            c.poly([(ex_ - 1.5 * s, hy - hry * 0.4), (ex_ + 0.0 * s, hy - hry - 3.6 * s), (ex_ + 1.7 * s, hy - hry * 0.5)], pts, base=3 if lift > 0 else 2)
+            c.poly([(ex_ - 0.5 * s, hy - hry * 0.6), (ex_ + 0.1 * s, hy - hry - 2.2 * s), (ex_ + 0.8 * s, hy - hry * 0.7)], tip or 'siam', base=2, contour=False)
         else:
             c.poly([(ex_ - 1.3 * s, hy - hry * 0.5), (ex_ + 0.2 * s, hy - hry - 2.4 * s), (ex_ + 1.5 * s, hy - hry * 0.6)], pts, base=3 if lift > 0 else 2)
             c.put(ex_ + 0.2 * s, hy - hry - 0.6 * s, ('pink', 3), flat=True)
@@ -132,9 +149,11 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
         c.line([(hx + 0.6 * s, hy - hry + 0.6), (hx + 0.6 * s, hy - hry * 0.45)], (stripes, 1))
     if racc:  # the bandit mask
         c.ball(hx + 0.9 * s, hy - 0.2 * s, 2.8 * s, 1.1 * s, 'siampt', lift=-0.2, contour=False)
-    mz = 2.6 if racc else 2.1
+    mz = (2.6 if racc else 2.1) + snout
+    if snout:  # a dog's or fox's longer snout
+        c.capsule(hx + 1.0 * s, hy + 0.9 * s, hx + mz * s, hy + 1.1 * s, 1.4 * s, 1.0 * s, belly if not points else pts, lift=0.25)
     c.ball(hx + mz * s, hy + 1.1 * s, (1.5 if racc else 1.2) * s, 1.0 * s, belly if not points else pts, lift=0.3)  # the muzzle
-    c.put(hx + (mz + 1.0) * s, hy + 0.5 * s, ('pink', 3) if not racc else INK, flat=True)  # the nose
+    c.put(hx + (mz + 1.0) * s, hy + 0.5 * s, nose or (('pink', 3) if not racc else INK), flat=True)  # the nose
     if points and not racc:  # a Siamese's dark mask
         c.ball(hx + 1.4 * s, hy + 0.2 * s, 2.2 * s, 1.6 * s, pts, lift=-0.1, contour=False)
     cat_eye(c, hx + 1.3 * s, hy - 0.7 * s, eye, p.hit, glow)
@@ -154,6 +173,8 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
         smear(c, shx, shy, g['hand'][0] * s + 5.5 * s, *g['smear'])
     if hold:
         hold(c, p, L, h2x, h2y)
+    elif weapon and not g.get('bare'):
+        weapon(c, p, L, h2x, h2y, g['ang'])
     elif not g.get('bare'):
         dagger(c, h2x, h2y, g['ang'], s, rp=blade)
     c.capsule(shx - 0.4 * s, shy, h2x, h2y, 1.3 * s, 1.0 * s, pts, lift=0.0)

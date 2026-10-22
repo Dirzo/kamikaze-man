@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the dog and fox family (zone 5)
+  shibapup: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Its katana is taller than it is. It has fallen over it four times today.' },
+  corgi: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Short legs, a low stance and a sweep that takes out every ankle in the shrine.' },
+  akita: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Draws, cuts and sheathes before the petal it was watching reaches the ground.' },
+  petalfox: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'The one you hit was petals. It always is.' },
+  husky: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Has guarded the same gate for nine winters. Nothing has got past it yet.' },
+  twininu: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Two katanas and no idea which one it likes more.' },
+  windfox: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Cuts the air itself, and the air goes where it is told.' },
+  houndguard: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Throws the kunai first and asks the questions with the katana.' },
+  tosa: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Grand champion of the shrine. Its charge has never once been stopped.' },
+  ninetail: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Nine tails, nine hundred years, and every cherry tree in the shrine answers to it.' },
   // the cat and raccoon family (zone 4)
   alleykit: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Found its knife in a fish crate. It has not let go of either since.' },
   pickpocket: { stats: { shards: 0.02 }, bonus: '+2% shards', lore: 'Never steals more than it can carry. Carries a very large sack.' },

@@ -88,6 +88,18 @@ export const ENEMIES = {
   prowler: { name: 'Rooftop Prowler', kind: 'beast', beh: 'pounce', fam: 'bazaar', evo: 8, hp: 1.2, dmg: 1.1, speed: 46, range: 24, wind: 0.4 },
   bandit: { name: 'Masked Bandit', kind: 'beast', beh: 'smoke', fam: 'bazaar', evo: 9, hp: 1.4, dmg: 1.0, speed: 40, range: 26, wind: 0.42 },
   fatcat: { name: 'Fat Cat Fence', kind: 'beast', beh: 'fence', fam: 'bazaar', evo: 10, heavy: true, hp: 2.8, dmg: 1.3, speed: 22, range: 170, wind: 0.6 },
+  // The dog and fox family (zone 5, the katana): samurai dogs and the fox spirits of the shrine,
+  // from Shiba Pups on 5-1 up to the Nine Tail Sage.
+  shibapup: { name: 'Shiba Pup', kind: 'beast', beh: 'clumsy', fam: 'shrine', evo: 1, hp: 0.6, dmg: 0.7, speed: 44, range: 22, wind: 0.42 },
+  corgi: { name: 'Corgi Ashigaru', kind: 'beast', beh: 'sweep', fam: 'shrine', evo: 2, hp: 0.8, dmg: 0.8, speed: 40, range: 28, wind: 0.5 },
+  akita: { name: 'Akita Ronin', kind: 'beast', beh: 'iaido', fam: 'shrine', evo: 3, hp: 1.0, dmg: 1.1, speed: 30, range: 140, wind: 0.9 },
+  petalfox: { name: 'Petal Kitsune', kind: 'beast', beh: 'decoy', fam: 'shrine', evo: 4, hp: 0.9, dmg: 0.9, speed: 50, range: 24, wind: 0.38 },
+  husky: { name: 'Husky Sentry', kind: 'beast', beh: 'sentry', fam: 'shrine', evo: 5, hp: 1.4, dmg: 1.0, speed: 28, range: 28, wind: 0.45 },
+  twininu: { name: 'Twin Blade Inu', kind: 'beast', beh: 'twinspin', fam: 'shrine', evo: 6, hp: 1.3, dmg: 0.9, speed: 40, range: 70, wind: 0.55 },
+  windfox: { name: 'Wind Fox', kind: 'beast', beh: 'crescent', fam: 'shrine', evo: 7, hp: 1.1, dmg: 1.0, speed: 38, range: 170, wind: 0.5 },
+  houndguard: { name: 'Hound Archer Guard', kind: 'beast', beh: 'kunai', fam: 'shrine', evo: 8, hp: 1.3, dmg: 1.0, speed: 36, range: 170, wind: 0.5 },
+  tosa: { name: 'Tosa Champion', kind: 'beast', beh: 'champion', fam: 'shrine', evo: 9, heavy: true, hp: 2.8, dmg: 1.4, speed: 22, range: 34, wind: 0.6 },
+  ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
   acornking: { name: 'The Acorn Archer King', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 30, range: 140, wind: 0.6, bolt: 'orange' },
@@ -112,7 +124,9 @@ export const DEATHS = {
   tadpole: 'squash', pondfrog: 'flip', snapper: 'flip', spinturtle: 'spin', toadmonk: 'flip', lilylurker: 'flip',
   bubblenewt: 'spin', shellback: 'topple', bullfrog: 'flip', grandsnapper: 'topple',
   alleykit: 'squash', pickpocket: 'spin', cutpurse: 'topple', lanterncat: 'rise', juggler: 'spin', shadowtom: 'rise',
-  siamese: 'topple', prowler: 'flip', bandit: 'spin', fatcat: 'topple'
+  siamese: 'topple', prowler: 'flip', bandit: 'spin', fatcat: 'topple',
+  shibapup: 'squash', corgi: 'flip', akita: 'topple', petalfox: 'rise', husky: 'topple', twininu: 'spin',
+  windfox: 'rise', houndguard: 'topple', tosa: 'topple', ninetail: 'rise'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

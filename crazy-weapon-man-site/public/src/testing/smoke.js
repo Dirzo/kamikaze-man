@@ -267,13 +267,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose, fuzzball, lagoon and bazaar families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1,2,3]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[0,1,2,3].flatMap(z=>ZONES[z].pool);
+  check('the goose, fuzzball, lagoon, bazaar and shrine families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3,4]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3,4].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -320,6 +320,19 @@ export function runSmoke(game) {
     ok(bd.cloud && miss>5 && miss<35,'the Masked Bandit\'s smoke did not make swings miss ('+miss+'/40)');
     reset();h=world.hero;const lc=spawnEnemy('lanterncat',h.x+150,FLOOR());lc.spawnT=0;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(lc,STEP);}
     ok(lc.alpha<0.3,'the Lantern Cat showed itself in the dark');
+    // the shrine: a Corgi's sweep stays low enough to jump, a Petal Kitsune leaves a decoy behind, a Husky on guard parries
+    // and is open after its counter, the Tosa's charge dazes, the Akita's quick-draw carries it across
+    reset();h=world.hero;const cg=spawnEnemy('corgi',h.x+20,FLOOR());cg.spawnT=0;cg.calm=false;cg.face=-1;cg.state='wind';cg.st=0;cg.move='sweep';h.y-=16;h.onGround=false;
+    const hp0=h.hp;for(let i=0;i<20;i++){world.t+=STEP;h.inv=0;h.y=FLOOR()-h.h-16;h.vy=0;updateEnemy(cg,STEP);}ok(h.hp===hp0,'the Corgi\'s sweep hit a hero in the air');
+    reset();h=world.hero;const pf=spawnEnemy('petalfox',h.x+30,FLOOR());pf.spawnT=0;pf.calm=false;const x0=pf.x;
+    ok(hitEnemy(pf,50,{dir:1})===0 && pf.hp===pf.max && world.bolts.some(b=>b.look==='decoy') && Math.abs(pf.x-x0)>20,'the Petal Kitsune left no decoy');
+    reset();h=world.hero;const hk=spawnEnemy('husky',h.x+30,FLOOR());hk.spawnT=0;hk.calm=false;hk.face=-1;updateEnemy(hk,STEP);
+    ok(hitEnemy(hk,50,{dir:1})===0 && hk.move==='slash','the Husky Sentry did not parry');
+    for(let i=0;i<60*2&&!(hk.openT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(hk,STEP);}ok(hk.openT>0 && hitEnemy(hk,50,{dir:1})>0,'the Husky was not open after its counter');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const ts=spawnEnemy('tosa',h.x+100,FLOOR());ts.spawnT=0;ts.calm=false;
+    for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(ts,STEP);updateHero(h,STEP);}ok(h.hp<h.maxHp && h.hurtT>0.2,'the Tosa\'s charge did not daze');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
+    for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
   });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {
