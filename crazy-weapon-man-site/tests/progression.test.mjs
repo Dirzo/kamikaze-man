@@ -6,6 +6,7 @@ import { TYPES, MOVES, RECOVERY } from '../game-src/data/weapons.js';
 import { activeWindow, attackBox, canAttack } from '../game-src/game/attack-rules.js';
 import { refHP, ENEMY_HP } from '../game-src/data/curve.js';
 import { ZONES } from '../game-src/data/zones.js';
+import { ENEMIES } from '../game-src/data/enemies.js';
 import { ABILITIES } from '../game-src/data/abilities.js';
 import { move } from '../game-src/game/physics.js';
 
@@ -79,6 +80,12 @@ test('the goose family grows up along World 1: goslings on 1-1, War Ganders at t
   const pool = ZONES[0].pool;
   assert.deepEqual(enemyPool(0, 1, pool, 0), ['gosling', 'honker', 'gsquire']);
   assert.ok(enemyPool(0, 1, pool, 1).includes('gander'));
+});
+test('the lagoon family grows up along zone 3: tadpoles on 3-1, the Grand Snapper at the castle', () => {
+  const pool = ZONES[2].pool, at = t => enemyPool(2, 1, pool, t);
+  assert.deepEqual(at(0), ['tadpole', 'pondfrog', 'snapper']);
+  assert.ok(at(1).includes('grandsnapper') && !at(1).includes('tadpole'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'lagoon'));
 });
 test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
   const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);

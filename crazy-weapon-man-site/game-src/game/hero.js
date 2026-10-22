@@ -47,6 +47,12 @@ export function updateHero(h, dt) {
   h.inv = Math.max(0, h.inv - dt);
   // a Frost Cub's arrow (beastkin.js): slower for a moment, frost flaking off
   if (h.chillT > 0 && (h.chillT -= dt) > 0 && Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
+  // a Bubble Newt's bubble (beastkin.js): floated up helplessly for a moment
+  if (h.heldT > 0) {
+    h.heldT -= dt;
+    if (h.bubbled) (h.vy = -22), (h.vx *= 0.9), Math.random() < 0.4 && emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
+    if (h.heldT <= 0) (h.bubbled = false), burst(cx(h), cy(h), 8, 'twinkle', ['ice', 'paper']);
+  }
   h.giantT = Math.max(0, (h.giantT || 0) - dt); // GROWTH SPURT quirk: the weapon is drawn huge
   h.hurtT = Math.max(0, h.hurtT - dt);
   h.cd = Math.max(0, h.cd - dt);
@@ -117,7 +123,7 @@ export function updateHero(h, dt) {
   if (ax && ax === Math.sign(h.vx) && !swing && h.hurtT <= 0 && !h.ladder) h.runT = (h.runT || 0) + dt;
   else if (!ax || ax !== Math.sign(h.vx) || swing) h.runT = 0;
   h.sprint = (h.runT || 0) >= MOVE.sprintAfter && !ride && !G.swim;
-  if (h.hurtT <= 0) {
+  if (h.hurtT <= 0 && !(h.heldT > 0)) {
     const slowBy = swing && h.onGround ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
     const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
@@ -138,7 +144,7 @@ export function updateHero(h, dt) {
   // jump / drop-through
   h.coyote = h.onGround ? HERO.coyote : Math.max(0, h.coyote - dt);
   if (h.onGround || h.ladder) h.hopped = false;
-  if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0) {
+  if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0 && !(h.heldT > 0)) {
     if (input.held('down') && h.onGround && h.platform && !h.platform.solid) {
       input.consume('jump');
       h.dropT = 0.25;

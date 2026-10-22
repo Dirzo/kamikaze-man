@@ -267,13 +267,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose and fuzzball families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[...ZONES[0].pool,...ZONES[1].pool];
+  check('the goose, fuzzball and lagoon families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[...ZONES[0].pool,...ZONES[1].pool,...ZONES[2].pool];
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const near=ENEMIES[type].fam==='goose'?ENEMIES[type].beh!=='toss':['kite','alpha','greatbow','roll'].includes(ENEMIES[type].beh);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -292,6 +292,21 @@ export function runSmoke(game) {
     ok(hitEnemy(g,50,{dir:1})===0 && g.hp===g.max,'a hit landed on a phasing Grave Goose');
     reset();h=world.hero;const sw=spawnEnemy('swan',h.x+30,FLOOR());sw.spawnT=0;sw.calm=false;sw.face=-1;sw.state='wind';sw.st=1;sw.move='guard';sw.guarding=true;
     ok(hitEnemy(sw,50,{dir:1})===0 && sw.move==='riposte','the Black Swan did not parry');
+    // the lagoon: a Snapper hit from the front ducks into its shell, a flipped Spin Turtle takes double, a Shellback's
+    // back is spiked, a Lily Lurker waits under its pad, a Bubble Newt's bubble floats you
+    reset();h=world.hero;const sn=spawnEnemy('snapper',h.x+30,FLOOR());sn.spawnT=0;sn.calm=false;sn.face=-1;
+    ok(hitEnemy(sn,50,{dir:1})===0 && sn.move==='snap' && hitEnemy(sn,50,{dir:1})===0,'the Snapper did not shell up');
+    reset();h=world.hero;const st=spawnEnemy('spinturtle',h.x+60,FLOOR());st.spawnT=0;st.hp=st.max=1e6;const d1=hitEnemy(st,100,{dir:1,chip:true});st.flipT=1;
+    ok(hitEnemy(st,100,{dir:1,chip:true})===d1*2,'a flipped Spin Turtle did not take double');
+    reset();h=world.hero;const sb=spawnEnemy('shellback',h.x+30,FLOOR());sb.spawnT=0;sb.calm=false;sb.face=1;
+    ok(hitEnemy(sb,50,{dir:1})===0 && sb.hp===sb.max,'a hit on the Shellback\'s spiked back landed');
+    reset();h=world.hero;const ll=spawnEnemy('lilylurker',h.x+90,FLOOR());ll.spawnT=0;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(ll,STEP);}
+    ok(ll.hidden && Math.abs(ll.vx)<1,'the Lily Lurker was not hiding');h.x=ll.x-30;let rose=false;
+    for(let i=0;i<90;i++){world.t+=STEP;updateEnemy(ll,STEP);rose=rose||ll.move==='rise';}
+    ok(rose && !ll.hidden,'the Lily Lurker did not spring');
+    reset();h=world.hero;const bn=spawnEnemy('bubblenewt',h.x+70,FLOOR());bn.spawnT=0;bn.calm=false;
+    for(let i=0;i<60*6&&!h.bubbled;i++){world.t+=STEP;h.inv=0;updateEnemy(bn,STEP);updateBolts(STEP);updateHero(h,STEP);}
+    ok(h.bubbled,'a Bubble Newt\'s bubble never caught the hero');
   });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {

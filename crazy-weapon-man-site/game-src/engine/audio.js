@@ -224,6 +224,17 @@ const DIE = {
   berserker: () => chip([[720, 1], [760, 1], [600, 2], [420, 2], [300, 4]], { wave: 'p25', vol: 0.05, decay: 0.006 }),
   swan: () => arp([88, 84, 79, 72], 2, { wave: 'p50', vol: 0.035, decay: 0.003 }),
   gander: () => (chip([[300, 3], [250, 3], [180, 8]], { wave: 'p25', vol: 0.06, decay: 0.006 }), chip([[N(36), 6]], { wave: 'tri', vol: 0.08, decay: 0.01 })),
+  // the turtle and frog family: ribbits and shell clonks
+  tadpole: () => chip([[N(100), 1], [N(96), 1], [N(103), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }), // blip
+  pondfrog: () => chip([[N(67), 1], [N(72), 1], [N(64), 3]], { wave: 'p25', vol: 0.045, decay: 0.006 }), // ribbit
+  snapper: () => (chip([[N(55), 1], [N(50), 3]], { wave: 'p50', vol: 0.045, decay: 0.008 }), chip([[N(43), 3]], { wave: 'tri', vol: 0.06, decay: 0.01, delay: 0.08 })),
+  spinturtle: () => (arp([86, 81, 76, 69], 1, { wave: 'p25', vol: 0.03 }), chip([[N(45), 3]], { wave: 'tri', vol: 0.06, decay: 0.01, delay: 0.08 })),
+  toadmonk: () => chip([[N(57), 2], [N(52), 2], [N(81), 6]], { wave: 'p50', vol: 0.035, decay: 0.003 }), // croak and a bell
+  lilylurker: () => (chip([[N(64), 1], [N(69), 2]], { wave: 'p25', vol: 0.04, decay: 0.006 }), hiss(3, { vol: 0.03, rate: 1.4, short: true })), // splash
+  bubblenewt: () => arp([84, 91, 96, 103], 1, { wave: 'p12', vol: 0.025, decay: 0.002 }), // pop pop pop
+  shellback: () => (chip([[N(50), 2], [N(45), 3]], { wave: 'p50', vol: 0.05, decay: 0.008 }), chip([[N(38), 5]], { wave: 'tri', vol: 0.07, decay: 0.01, delay: 0.08 })),
+  bullfrog: () => (chip([[N(43), 3], [N(40), 3], [N(36), 6]], { wave: 'p25', vol: 0.06, decay: 0.006 }), chip([[N(31), 6]], { wave: 'tri', vol: 0.08, decay: 0.01 })), // BWAAMP
+  grandsnapper: () => (chip([[N(48), 3], [N(43), 4]], { wave: 'p50', vol: 0.055, decay: 0.008 }), chip([[N(81), 8]], { wave: 'p50', vol: 0.03, decay: 0.002, delay: 0.1 })),
   // the fuzzball family: squeaks for the little ones, a roar for the yeti, a howl for Moonfang
   fuzzlet: () => chip([[N(98), 1], [N(103), 1], [N(91), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }),
   burrball: () => (chip([[N(60), 1], [N(55), 1], [N(50), 2]], { wave: 'tri', vol: 0.06, decay: 0.008 }), hiss(3, { vol: 0.03, rate: 1.3, short: true })),

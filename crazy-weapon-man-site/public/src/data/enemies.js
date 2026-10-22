@@ -64,6 +64,18 @@ export const ENEMIES = {
   berserker: { name: 'Goose Berserker', kind: 'beast', beh: 'flurry', fam: 'goose', evo: 8, hp: 1.3, dmg: 0.8, speed: 52, range: 26, wind: 0.38 },
   swan: { name: 'Black Swan Duelist', kind: 'beast', beh: 'parry', fam: 'goose', evo: 9, hp: 1.6, dmg: 1.25, speed: 36, range: 32, wind: 0.45 },
   gander: { name: 'War Gander', kind: 'beast', beh: 'warlord', fam: 'goose', evo: 10, heavy: true, hp: 3.0, dmg: 1.55, speed: 26, range: 34, wind: 0.55 },
+  // The turtle and frog family (zone 3, the nunchucks): a beach dojo whose students wear their rank
+  // on their belts, from the Tadpole Tots on 3-1 to the Grand Snapper at the castle.
+  tadpole: { name: 'Tadpole Tot', kind: 'beast', beh: 'flop', fam: 'lagoon', evo: 1, hp: 0.5, dmg: 0.55, speed: 40, range: 18, wind: 0.36 },
+  pondfrog: { name: 'Pond Frog', kind: 'beast', beh: 'tongue', fam: 'lagoon', evo: 2, hp: 0.85, dmg: 0.9, speed: 40, range: 24, wind: 0.4 },
+  snapper: { name: 'Snapper Shell', kind: 'beast', beh: 'shell', fam: 'lagoon', evo: 3, hp: 1.15, dmg: 1.0, speed: 28, range: 24, wind: 0.5 },
+  spinturtle: { name: 'Spin Turtle', kind: 'beast', beh: 'shellspin', fam: 'lagoon', evo: 4, hp: 1.0, dmg: 0.9, speed: 34, range: 110, wind: 0.5 },
+  toadmonk: { name: 'Toad Monk', kind: 'beast', beh: 'chain', fam: 'lagoon', evo: 5, hp: 1.2, dmg: 0.75, speed: 36, range: 26, wind: 0.45 },
+  lilylurker: { name: 'Lily Lurker', kind: 'beast', beh: 'lurk', fam: 'lagoon', evo: 6, hp: 0.95, dmg: 1.15, speed: 42, range: 26, wind: 0.4 },
+  bubblenewt: { name: 'Bubble Newt', kind: 'beast', beh: 'bubble', fam: 'lagoon', evo: 7, hp: 0.9, dmg: 0.9, speed: 34, range: 160, wind: 0.6 },
+  shellback: { name: 'Shellback Brawler', kind: 'beast', beh: 'brawler', fam: 'lagoon', evo: 8, hp: 1.7, dmg: 1.2, speed: 30, range: 30, wind: 0.5 },
+  bullfrog: { name: 'Bullfrog Bouncer', kind: 'beast', beh: 'bounce', fam: 'lagoon', evo: 9, heavy: true, hp: 2.5, dmg: 1.35, speed: 24, range: 200, wind: 0.6 },
+  grandsnapper: { name: 'Grand Snapper', kind: 'beast', beh: 'master', fam: 'lagoon', evo: 10, heavy: true, hp: 3.0, dmg: 1.5, speed: 24, range: 36, wind: 0.5 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
   acornking: { name: 'The Acorn Archer King', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 30, range: 140, wind: 0.6, bolt: 'orange' },
@@ -84,7 +96,9 @@ export const DEATHS = {
   fuzzlet: 'squash', burrball: 'spin', puffshot: 'flip', twintuft: 'flip', quillback: 'flip', moss: 'topple',
   wolfpup: 'spin', yeticub: 'flip', yeti: 'topple', werewolf: 'topple',
   gosling: 'squash', honker: 'spin', gsquire: 'topple', fencer: 'topple', gtoss: 'spin', whirl: 'spin', ggrave: 'rise',
-  berserker: 'topple', swan: 'topple', gander: 'topple'
+  berserker: 'topple', swan: 'topple', gander: 'topple',
+  tadpole: 'squash', pondfrog: 'flip', snapper: 'flip', spinturtle: 'spin', toadmonk: 'flip', lilylurker: 'flip',
+  bubblenewt: 'spin', shellback: 'topple', bullfrog: 'flip', grandsnapper: 'topple'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

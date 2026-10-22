@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the turtle and frog family (zone 3)
+  tadpole: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Its legs came in last week. Its nunchucks came in first.' },
+  pondfrog: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Its tongue has a longer reach than its chucks, and it knows it.' },
+  snapper: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Ducks into its shell at the first hit, comes out snapping at the second.' },
+  spinturtle: { stats: { aoeSize: 0.02 }, bonus: 'Area effects reach 2% wider', lore: 'A brilliant spin. A terrible landing. It has never once landed the right way up.' },
+  toadmonk: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Counts to four with its chucks. Nobody has ever been on the ground for five.' },
+  lilylurker: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Has been a lily pad for three days. Waiting is the whole technique.' },
+  bubblenewt: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Its chucks spin so fast they blow bubbles. Its bubbles are very hard to leave.' },
+  shellback: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'Never turns its back on a fight, except on purpose, and then you regret it.' },
+  bullfrog: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'The dojo floor has three dents in it. They all have its name on.' },
+  grandsnapper: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Black belt, white beard, iron chucks, and a hundred years of practice.' },
   // the fuzzball family (zone 2)
   fuzzlet: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Its first bow was a twig and a whisker. It hits more often than you would think.' },
   burrball: { stats: { knock: 0.04 }, bonus: 'Foes fly 4% further', lore: 'Every arrow that ever missed it is still stuck in its fur. It keeps them for later.' },

@@ -1054,7 +1054,6 @@ DESIGNS = {
     'swan': (44, 40, swan, ['guard']),
     'gander': (58, 52, gander, ['leap', 'plunge']),
 }
-FAMILY = list(DESIGNS)
 
 
 def frame_names(etype):
@@ -1086,8 +1085,8 @@ def build(out, man):
         man['enemies'][etype] = {'w': ims[0].width, 'h': ims[0].height, 'frames': frame_names(etype)}
 
 
-def preview(path, zoom=6):
-    rows = [(t, frames(t)) for t in DESIGNS]
+def preview(path, zoom=6, only=None):
+    rows = [(t, frames(t)) for t in DESIGNS if not only or t in only]
     cw = max(im.width for _, ims in rows for im in ims) + 4
     ch = [max(im.height for im in ims) + 4 for _, ims in rows]
     cols = max(len(ims) for _, ims in rows)
@@ -1100,10 +1099,11 @@ def preview(path, zoom=6):
     sheet.resize((sheet.width * zoom, sheet.height * zoom), Image.NEAREST).save(path)
 
 
-if __name__ == '__main__':
+def cli():
     root = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'px')
     if len(sys.argv) > 1:
-        preview(sys.argv[1])
+        only = sys.argv[2].split(',') if len(sys.argv) > 2 else None
+        preview(sys.argv[1], only=only)
         print('preview', sys.argv[1])
     else:
         man_path = os.path.join(root, 'manifest.json')
@@ -1112,3 +1112,11 @@ if __name__ == '__main__':
         with open(man_path, 'w') as fh:
             json.dump(man, fh, separators=(',', ':'))
         print('wrote', len(DESIGNS), 'beastkin sheets')
+
+
+# the other zones' families live in their own files and add themselves to R and DESIGNS
+import beastkin_lagoon  # noqa: E402,F401  zone 3, turtles and frogs (nunchucks)
+
+if __name__ == '__main__':
+    import beastkin  # run as the module itself, so the families above register into one DESIGNS
+    beastkin.cli()

@@ -43,8 +43,8 @@ export const ZONES = [
     id: 'turtle-lagoon',
     weapon: 'nunchucks',
     name: 'Nunchuck Turtle Lagoon',
-    sub: 'A beach dojo of shell-backed kids. Jr. trains here. He brought the big sword.',
-    pool: ['turtle', 'crawler', 'turtle', 'roller', 'bombchicken', 'shieldbro'],
+    sub: 'A beach dojo of turtles and frogs. White belts at the gate, the Grand Snapper at the top.',
+    pool: ['tadpole', 'pondfrog', 'snapper', 'spinturtle', 'toadmonk', 'lilylurker', 'bubblenewt', 'shellback', 'bullfrog', 'grandsnapper'],
     platforms: L3,
     boss: 'bossjr',
     music: { key: 50, scale: 'phrygian', bpm: 150, prog: [0, 1, 0, 6], drums: 'drive', lead: 'p12', arp: 'tremolo', theme: '0 . 0 1 0 . 7 . | 6 5 4 . 3 . 1 . | 0 . 0 1 0 . 4 . | 3 1 0 . -1 - . .' }

@@ -62,7 +62,7 @@ export function updateShots(dt) {
     for (const e of world.enemies) {
       if (e.dead || e.spawnT > 0 || s.hit.has(e) || !overlap(s, e)) continue;
       s.hit.add(e);
-      hitEnemy(e, s.dmg, { crit: s.crit, dir: Math.sign(s.vx) || 1, knock: s.knock, element: s.element, sparkCol: s.light });
+      hitEnemy(e, s.dmg, { crit: s.crit, dir: Math.sign(s.vx) || 1, knock: s.knock, element: s.element, sparkCol: s.light, shot: true });
       if (!s.proc) {
         impactMutation(world.hero, e, s);
         quirkHit(world.hero, e, s.dmg, Math.sign(s.vx) || 1);

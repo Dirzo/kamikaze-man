@@ -27,6 +27,23 @@
 //   parry     Black Swan Duelist: on guard, a hit from the front is parried and riposted
 //   warlord   War Gander: heavy; leaps and crashes down where you stand, and raises a ring of
 //             grave swords out of the ground around you
+//
+// The turtle and frog family (zone 3, the nunchucks; rank belts from white to black):
+//   flop      Tadpole Tot: flops along in little hops, flicks its toy chucks when it lands by you
+//   tongue    Pond Frog: hops about; its tongue lashes out and reels you in for a chuck swing
+//   shell     Snapper Shell: hit from the front, it ducks into its shell, then snaps out swinging
+//   shellspin Spin Turtle: spins across the floor in its shell with the chucks out, ricochets
+//             off the ledge's edges, then ends up flipped on its back (hits do double)
+//   chain     Toad Monk: a four-hit chain whose last swing launches you
+//   lurk      Lily Lurker: hides under a lily pad with just its eyes out; walk over it and it
+//             springs up swinging, and it dives back under when you back off
+//   bubble    Bubble Newt: whirls its chucks to blow slow bubbles that float you helpless
+//   brawler   Shellback Brawler: its spiked shell blocks hits from behind (and stings); hit it
+//             and it turns its back on you, then comes round with a two-hit haymaker
+//   bounce    Bullfrog Bouncer: heavy; three body-slam bounces that send ripples along the
+//             floor, and a croak that blasts you away
+//   master    Grand Snapper: heavy; an iron-chuck spin that knocks shots away, a shell counter,
+//             and a slam that sends a wave both ways
 import { C } from '../config.js';
 import { world } from './world.js';
 import { cx, cy, overlap } from './physics.js';
@@ -84,6 +101,11 @@ function loose(e) {
 // what an arrow does on top of its damage (enemy.js updateBolts calls this when one hits you)
 export function arrowHit(b) {
   const h = world.hero;
+  if (b.trap) {
+    if (!h.bubbled) callout('BUBBLED!', 0, 0, C.ice, { follow: h, life: 40 });
+    h.heldT = Math.max(h.heldT || 0, b.trap);
+    h.bubbled = true;
+  }
   if (b.chill) {
     if (!(h.chillT > 0)) callout('CHILLED', 0, 0, C.ice, { follow: h, life: 40 });
     h.chillT = Math.max(h.chillT || 0, b.chill);
@@ -139,6 +161,18 @@ export function beastTick(e, dt) {
   if (e.d.beh === 'flurry' && e.hp < e.max * 0.5) {
     if (!e.berserk) (e.berserk = true), say1(e, 'BERSERK!', C.red);
     e.rage = Math.max(e.rage || 0, 0.2);
+  }
+  // Spin Turtle: flipped on its back after a spin, legs waving
+  if (e.flipT > 0) {
+    e.pose = (e.flipT -= dt) > 0 ? 'flip' : null;
+    if (e.flipT <= 0) say1(e, 'HUP!', C.paper);
+  }
+  // Lily Lurker: under its pad it doesn't wander
+  if (e.d.beh === 'lurk') {
+    if (e.hidden == null) (e.hidden = true), (e.walkSpeed = e.speed);
+    e.speed = e.hidden ? 0 : e.walkSpeed;
+    if (e.hidden && e.state !== 'attack') e.pose = 'hide';
+    else if (e.pose === 'hide') e.pose = null;
   }
   // Moss Stalker: fades into the forest unless it is drawing, shooting or was just hit
   if (e.d.beh === 'snipe') {
@@ -232,6 +266,60 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
       else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'cleave');
       else e.vx = toward * e.speed * slow * (dist < 20 ? 0 : 1);
       break;
+    case 'flop':
+      if (!e.onGround) break;
+      if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'flick');
+      else if ((e.hopT = (e.hopT ?? 0) - dt) <= 0 && dist > 14) (e.hopT = 0.55), (e.vy = -120), (e.vx = toward * e.speed * 1.5 * slow), (e.onGround = false);
+      else e.vx = 0;
+      break;
+    case 'tongue':
+      if (!e.onGround) break;
+      if ((e.tongueCool ?? 0) <= 0 && dist > 34 && dist < 115 && sameLevel) wind(e, 0.45, 'tongue', 'tongue');
+      else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'slash');
+      else if (dist > 60 && (e.hopT = (e.hopT ?? 0) - dt) <= 0) (e.hopT = 1.2), (e.vy = -170), (e.vx = toward * 75 * slow), (e.onGround = false);
+      else e.vx = toward * e.speed * slow * (dist < 16 ? 0 : 1);
+      break;
+    case 'shell':
+    case 'chain':
+      if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', d.beh === 'chain' ? 'chain' : 'slash');
+      else e.vx = toward * e.speed * slow * (dist < 16 ? 0 : 1);
+      break;
+    case 'shellspin':
+      if (e.cool <= 0 && dist < d.range && sameLevel) wind(e, d.wind, 'spin0', 'shellspin');
+      else keep(e, 64, dist, toward, slow);
+      break;
+    case 'lurk':
+      if (e.hidden) {
+        e.vx = 0;
+        if (dist < 38 && sameLevel) wind(e, 0.16, 'hide', 'rise');
+      } else if ((e.diveCool ?? 0) <= 0 && dist > 110) {
+        e.hidden = true; // back under the pad
+        burst(cx(e), e.y + e.h, 8, 'dot', ['sky', 'ice', 'paper']);
+      } else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'slash');
+      else e.vx = toward * e.speed * slow * (dist < 16 ? 0 : 1);
+      break;
+    case 'bubble':
+      if (e.cool <= 0 && dist < d.range && near && dist > 30) wind(e, d.wind, 'blow', 'bubble');
+      else if (e.cool <= 0 && dist <= 30 && sameLevel) wind(e, 0.4, 'draw', 'slash');
+      else keep(e, 100, dist, toward, slow);
+      break;
+    case 'brawler':
+      if ((e.guardCool ?? 0) <= 0 && dist < 60 && sameLevel && world.t - (e.lastHitAt ?? -9) < 1.2) wind(e, 0.9, 'guard', 'spikes');
+      else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'hay');
+      else e.vx = toward * e.speed * slow * (dist < 18 ? 0 : 1);
+      break;
+    case 'bounce':
+      if ((e.croakCool ?? 0) <= 0 && dist < 90 && sameLevel) wind(e, 0.55, 'croak', 'croak');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'idle1', 'bounce');
+      else e.vx = toward * e.speed * slow * (dist < 24 ? 0 : 1);
+      break;
+    case 'master':
+      if ((e.slamCool ?? 0) <= 0 && dist < 180 && near) wind(e, 0.65, 'draw', 'slam');
+      else if ((e.spinCool ?? 0) <= 0 && dist < 120 && sameLevel) wind(e, 0.5, 'draw', 'ironspin');
+      else if ((e.counterCool ?? 0) <= 0 && dist < 56 && sameLevel && world.t - (e.lastHitAt ?? -9) < 1) (wind(e, 1.1, 'shell', 'counter'), (e.guarding = true));
+      else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'cleave');
+      else e.vx = toward * e.speed * slow * (dist < 22 ? 0 : 1);
+      break;
     case 'alpha':
       if (!e.howled || ((e.howlCool ?? 0) <= 0 && dist < 200)) wind(e, 0.55, 'howl', 'howl');
       else if ((e.rainCool ?? 0) <= 0 && dist > 50 && dist < 210 && near) wind(e, 0.7, 'sky', 'rain');
@@ -242,20 +330,53 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
   if (e.stompCool > 0) e.stompCool -= dt;
   if (e.howlCool > 0) e.howlCool -= dt;
   if (e.rainCool > 0) e.rainCool -= dt;
-  for (const k of ['honkCool', 'guardCool', 'leapCool', 'gravesCool']) if (e[k] > 0) e[k] -= dt;
+  for (const k of ['honkCool', 'guardCool', 'leapCool', 'gravesCool', 'tongueCool', 'shellCool', 'diveCool', 'croakCool', 'slamCool', 'spinCool', 'counterCool'])
+    if (e[k] > 0) e[k] -= dt;
 }
 // the melee swings: lunge speed, how long it lasts, extra reach, damage and knockback
 const MELEE = {
   bash: [120, 0.22, 4], claw: [150, 0.22, 4], poke: [140, 0.18, 2], slash: [90, 0.2, 6], sbash: [130, 0.2, 4, 1, 150],
-  lunge: [340, 0.24, 4], riposte: [170, 0.22, 10, 1.3, 170], cleave: [60, 0.28, 14, 1.2, 120], flurry: [100, 0.16, 6, 0.8]
+  lunge: [340, 0.24, 4], riposte: [170, 0.22, 10, 1.3, 170], cleave: [60, 0.28, 14, 1.2, 120], flurry: [100, 0.16, 6, 0.8],
+  flick: [80, 0.16, 3, 0.8], snap: [210, 0.2, 8, 1.3, 150], chain: [90, 0.15, 6, 0.7], rise: [40, 0.25, 6, 1.1], hay: [120, 0.2, 8, 1.25, 170]
 };
+// the combos: the poses of the follow-up swings (the first is 'loose')
+const COMBO = { flurry: ['loose2', 'loose3'], chain: ['loose2', 'loose3', 'loose4'], hay: ['loose2'] };
 function swing(e, h) {
   const M = MELEE[e.move], reach = e.d.range + M[2], box = { x: e.face > 0 ? cx(e) : cx(e) - reach, y: e.y, w: reach, h: e.h };
   if (e.move === 'lunge') (box.x = e.face > 0 ? cx(e) : cx(e) - 18), (box.w = 18);
   if (!e.hitDone && overlap(box, h)) {
     e.hitDone = true;
-    if (hurtHero(e.dmg * (M[3] || 1), e.face) && M[4]) (h.vx = e.face * M[4]), (h.vy = -140);
+    if (hurtHero(e.dmg * (M[3] || 1), e.face)) {
+      if (M[4]) (h.vx = e.face * M[4]), (h.vy = -140);
+      if (e.launchHit) (h.vy = -300), (h.vx = e.face * 60), callout('LAUNCHED!', 0, 0, C.gold, { follow: h, life: 40 });
+    }
   }
+}
+
+// a big ballistic hop onto (about) where the hero stands, and its landing
+function hop(e, h) {
+  const t = 0.6, dx = Math.max(-110, Math.min(110, cx(h) - cx(e)));
+  e.vx = dx / t;
+  e.vy = -0.5 * 760 * t;
+  e.onGround = false;
+  e.pose = 'jump';
+  e.leapAt = world.t;
+  e.leapX = cx(e) + dx;
+  e.face = Math.sign(dx) || e.face;
+  sfx.enemyMelee();
+}
+function land(e, h, k) {
+  e.vx = 0;
+  e.pose = null;
+  shake(0.45);
+  sfx.boom(0.55);
+  burst(cx(e), e.y + e.h, 12, 'dot', ['sky', 'ice', 'paper']);
+  for (const dir of [-1, 1]) {
+    const p = e.platform;
+    world.bolts.push({ x: cx(e) - 4 + dir * 12, y: e.y + e.h - 6, w: 8, h: 6, vx: dir * 140, vy: 0, g: 0, dmg: e.dmg * k * 0.8, col: C.sky, life: 1, look: 'quake', owner: e,
+      ground: true, minX: p ? p.x : -1e9, maxX: p ? p.x + p.w : 1e9 });
+  }
+  if (Math.abs(cx(h) - cx(e)) < e.w * 0.6 + 6 && Math.abs(h.y + h.h - (e.y + e.h)) < 10) hurtHero(e.dmg * k * 1.4, Math.sign(cx(h) - cx(e)) || e.face);
 }
 
 export function beastAttack(e, toward) {
@@ -312,8 +433,17 @@ export function beastAttack(e, toward) {
       e.guardCool = 3;
       e.move = 'slash';
     // falls through
+    case 'counter': // the Grand Snapper's shell: nobody hit it, so it swings
+      if (e.move === 'counter') (e.guarding = false), (e.counterCool = 5), (e.move = 'cleave');
+    // falls through
+    case 'spikes': // the Shellback's back was turned: round it comes with the haymaker
+      if (e.move === 'spikes') (e.guardCool = 4), (e.move = 'hay');
+    // falls through
     case 'flurry':
+    case 'chain':
+    case 'hay':
       e.combo = 0;
+      e.launchHit = false;
     // falls through
     case 'bash': // Wolf Pup: a bow-bash, then the backflip (beastAttacking)
     case 'claw': // Moonfang: the bladed tips of the moon bow
@@ -322,10 +452,24 @@ export function beastAttack(e, toward) {
     case 'sbash':
     case 'lunge':
     case 'riposte':
-    case 'cleave': {
+    case 'cleave':
+    case 'flick':
+    case 'snap':
+    case 'rise': {
       sfx.enemyMelee();
       const M = MELEE[e.move];
-      e.attackPose = { lunge: 'lunge', sbash: 'bash' }[e.move] || 'loose';
+      e.attackPose = { lunge: 'lunge', sbash: 'bash', snap: 'snap', rise: 'rise' }[e.move] || 'loose';
+      if (e.move === 'rise') {
+        // the Lily Lurker springs out of the water
+        e.hidden = false;
+        e.diveCool = 6;
+        e.launchHit = true;
+        e.vy = -120;
+        e.onGround = false;
+        burst(cx(e), e.y + e.h, 10, 'dot', ['sky', 'ice', 'paper']);
+        say1(e, 'SPLOOSH!', C.sky);
+      } else e.launchHit = false;
+      if (e.move === 'snap') say1(e, 'SNAP!', C.orange);
       e.vx = e.face * M[0];
       e.st = M[1];
       if (e.move === 'lunge') say1(e, 'EN GARDE!', C.paper);
@@ -357,11 +501,72 @@ export function beastAttack(e, toward) {
       world.bolts.push({ x: cx(e) + e.face * 6 - 3, y: e.y + e.h * 0.35, w: 6, h: 6, vx: e.face * 170, vy: Math.max(-40, Math.min(40, cy(h) - cy(e))), g: 0, dmg: e.dmg, col: C.mist, life: 3, look: 'gsword', ret: 0.55, owner: e });
       return;
     case 'whirl': // Whirlwind Goose: off it goes
+    case 'shellspin': // Spin Turtle: into the shell and away
+    case 'ironspin': // Grand Snapper: the iron chucks become a wall
       e.pose = 'spin';
       e.spinDir = e.face;
-      e.vx = e.face * 120;
-      e.st = 1.5;
-      say1(e, 'WHEEE!', C.paper);
+      e.spinX0 = cx(e);
+      e.vx = e.face * { whirl: 120, shellspin: 150, ironspin: 55 }[e.move];
+      e.st = e.move === 'shellspin' ? 1.7 : e.move === 'ironspin' ? 1.4 : 1.5;
+      if (e.move === 'ironspin') e.spinCool = 5;
+      say1(e, { whirl: 'WHEEE!', shellspin: 'SHELL SPIN!', ironspin: 'IRON WIND!' }[e.move], C.paper);
+      sfx.enemyMelee();
+      return;
+    case 'tongue': { // Pond Frog: the tongue lashes out; if it sticks, you are reeled in
+      e.tongueCool = 3.5;
+      e.attackPose = 'tongue';
+      e.st = 0.3;
+      e.tongueAt = world.t;
+      e.grabbed = false;
+      sfx.enemyCast();
+      const fx = cx(h) - cx(e);
+      if (Math.sign(fx) === e.face && Math.abs(fx) < 125 && Math.abs(cy(h) - (e.y + e.h * 0.35)) < 22 && h.inv <= 0 && !(h.dashT > 0)) {
+        e.grabbed = true;
+        h.hurtT = Math.max(h.hurtT, 0.26); // no control while it reels you in
+        h.vx = -e.face * Math.max(0, Math.abs(fx) - 20) / 0.26;
+        h.vy = -60;
+        callout('SLURP!', 0, 0, C.pink, { follow: h, life: 40 });
+        e.next = [0.1, 'draw', 'slash'];
+      }
+      return;
+    }
+    case 'bubble': // Bubble Newt: two slow bubbles drift after you
+      e.attackPose = 'blow';
+      e.st = 0.35;
+      sfx.enemyCast();
+      for (let i = 0; i < 2; i++)
+        world.bolts.push({ x: cx(e) + e.face * 14 - 4, y: e.y + 2 - i * 7, w: 8, h: 8, vx: e.face * (38 + i * 14), vy: -6, speed: 38 + i * 14, homing: 0.5, g: 0, dmg: e.dmg * 0.4, trap: 1.1,
+          col: C.ice, life: 4.5, look: 'bubble', owner: e });
+      return;
+    case 'bounce': // Bullfrog Bouncer: three big body slams
+      e.bounces = 3;
+      e.st = 4;
+      hop(e, h);
+      return;
+    case 'croak': { // Bullfrog Bouncer: a croak you can see blasts along the floor
+      e.croakCool = 5;
+      e.attackPose = 'croak';
+      e.st = 0.4;
+      sfx.honk();
+      say1(e, 'CROOOAK!', C.lime);
+      const p = e.platform;
+      world.bolts.push({ x: cx(e) + e.face * 12 - 4, y: e.y + e.h - 14, w: 8, h: 13, vx: e.face * 150, vy: 0, g: 0, dmg: e.dmg * 0.3, knock: 260, col: C.lime, life: 1.2, look: 'croak', owner: e,
+        ground: true, minX: p ? p.x : -1e9, maxX: p ? p.x + p.w : 1e9 });
+      return;
+    }
+    case 'slam': // Grand Snapper: the chucks hit the shallows and a wave runs out both ways
+      e.slamCool = 6;
+      e.attackPose = 'slam';
+      e.st = 0.45;
+      shake(0.45);
+      sfx.boom(0.6);
+      burst(cx(e) + e.face * 16, e.y + e.h, 12, 'dot', ['sky', 'ice', 'paper']);
+      for (const dir of [-1, 1]) {
+        const p = e.platform;
+        world.bolts.push({ x: cx(e) - 5 + dir * 14, y: e.y + e.h - 10, w: 10, h: 10, vx: dir * 140, vy: 0, g: 0, dmg: e.dmg * 0.8, knock: 150, col: C.sky, life: 1.4, look: 'wave', owner: e,
+          ground: true, minX: p ? p.x : -1e9, maxX: p ? p.x + p.w : 1e9 });
+      }
+      if (Math.abs(cx(h) - (cx(e) + e.face * 16)) < 24 && Math.abs(h.y + h.h - (e.y + e.h)) < 8) hurtHero(e.dmg, e.face);
       return;
     case 'leap': { // War Gander: up and over, down where you stand
       const t = 0.75, dx = Math.max(-200, Math.min(200, cx(h) - cx(e)));
@@ -453,11 +658,15 @@ export function beastAttacking(e, dt, toward) {
       if (Math.random() < 0.4) emit(cx(e), e.y + e.h, 'dust', C.fog);
       if (e.hitWall || Math.abs(e.vx) < 5) e.st = 0;
       break;
-    case 'whirl': {
+    case 'whirl':
+    case 'shellspin':
+    case 'ironspin': {
       const box = { x: e.x - 8, y: e.y, w: e.w + 16, h: e.h };
       if (overlap(box, h)) hurtHero(e.dmg, Math.sign(cx(h) - cx(e)) || e.face);
-      if (Math.abs(e.vx) < 5 || e.hitWall) e.spinDir = -e.spinDir; // bounces off the ledge's edge
-      e.vx = e.spinDir * 120;
+      if (e.move === 'ironspin') e.spinDir = toward; // the old master walks the wall at you
+      // bounces off the ledge's edge, or turns back once it has gone a fair way past you
+      else if (Math.abs(e.vx) < 5 || e.hitWall || (Math.abs(cx(e) - e.spinX0) > 110 && Math.sign(cx(e) - e.spinX0) === e.spinDir)) (e.spinDir = -e.spinDir), (e.spinX0 = cx(e));
+      e.vx = e.spinDir * { whirl: 120, shellspin: 150, ironspin: 55 }[e.move];
       if (Math.random() < 0.5) emit(cx(e), e.y + e.h, 'dust', C.mist);
       break;
     }
@@ -478,18 +687,35 @@ export function beastAttacking(e, dt, toward) {
       }
       break;
     case 'flurry':
+    case 'chain':
+    case 'hay': {
       swing(e, h);
       e.vx *= 0.9;
-      // three cuts: forward, back up, and a big one down
-      if (e.st <= 0 && e.combo < 2) {
+      // the follow-ups (COMBO): the berserker's three cuts, the monk's four-hit chain ending in
+      // a launcher, the brawler's haymaker
+      const C2 = COMBO[e.move];
+      if (e.st <= 0 && e.combo < C2.length) {
         e.combo++;
+        const last = e.combo === C2.length;
         e.hitDone = false;
-        e.attackPose = e.combo === 1 ? 'loose2' : 'loose3';
-        e.vx = e.face * (e.combo === 2 ? 150 : 100);
-        e.st = e.combo === 2 ? 0.22 : 0.16;
+        e.attackPose = C2[e.combo - 1];
+        e.vx = e.face * (last ? 150 : 100);
+        e.st = last ? 0.22 : 0.16;
         e.face = toward;
+        e.launchHit = last && e.move === 'chain';
         sfx.enemyMelee();
       }
+      break;
+    }
+    case 'bounce':
+      if (e.onGround && world.t - e.leapAt > 0.15) {
+        land(e, h, 0.7);
+        if (--e.bounces > 0) hop(e, h);
+        else e.st = 0;
+      }
+      break;
+    case 'tongue':
+      if (e.grabbed) e.face = Math.sign(cx(h) - cx(e)) || e.face;
       break;
     case 'poke':
     case 'slash':
@@ -497,6 +723,9 @@ export function beastAttacking(e, dt, toward) {
     case 'lunge':
     case 'riposte':
     case 'cleave':
+    case 'flick':
+    case 'snap':
+    case 'rise':
       swing(e, h);
       e.vx *= e.move === 'lunge' ? 0.97 : 0.9;
       break;
@@ -526,6 +755,12 @@ export function beastAttacking(e, dt, toward) {
     }
   }
   if (e.st > 0) return;
+  // a move that leads straight into another (the Pond Frog's tongue into its swing)
+  if (e.next) {
+    const [t, pose, move] = e.next;
+    e.next = null;
+    return wind(e, t, pose, move);
+  }
   // finished: what comes after
   if (e.move === 'roll') {
     // shake the stuck arrows loose: a spray up and out
@@ -548,6 +783,14 @@ export function beastAttacking(e, dt, toward) {
       e.alpha = 0.22;
     }
   }
+  if (e.move === 'shellspin') {
+    e.pose = null;
+    e.flipT = 1.8; // over it goes, belly up: hits do double now
+    e.stun = Math.max(e.stun, 1.8);
+    say1(e, 'FLIPPED!', C.gold);
+    burst(cx(e), e.y - 2, 6, 'twinkle', ['gold', 'paper']);
+  }
+  if (e.move === 'ironspin') e.pose = null;
   if (e.move === 'whirl') {
     e.pose = null;
     e.stun = Math.max(e.stun, 1.1); // dizzy: hit it now
@@ -556,12 +799,14 @@ export function beastAttacking(e, dt, toward) {
   }
   e.flipped = false;
   const cool = { hop: 1.3, roll: 1.9, lob: 1.9, twin: 1.6, fan: 1.8, snipe: 2.6, kite: 1.2, frost: 1.6, greatbow: 2.2, alpha: 1.1,
-    poke: 1.2, honk: 1.2, shield: 1.3, lunge: 1.9, toss: 1.0, whirl: 2.2, phase: 1.3, flurry: 1.6, parry: 1.2, warlord: 1.4 }[d.beh] || 1.5;
-  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves'].includes(e.move) ? 0.6 : cool);
+    poke: 1.2, honk: 1.2, shield: 1.3, lunge: 1.9, toss: 1.0, whirl: 2.2, phase: 1.3, flurry: 1.6, parry: 1.2, warlord: 1.4,
+    flop: 1.1, tongue: 1.3, shell: 1.3, shellspin: 2.0, chain: 1.7, lurk: 1.4, bubble: 2.0, brawler: 1.4, bounce: 1.6, master: 1.3 }[d.beh] || 1.5;
+  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves', 'croak', 'slam', 'ironspin'].includes(e.move) ? 0.6 : cool);
 }
 
 // ---------------------------------------------------------------- hits and deaths (combat.js)
 export function beastHit(e) {
+  if (e.d.beh === 'lurk' && e.hidden && !e.dead && e.state !== 'wind') wind(e, 0.12, 'hide', 'rise'); // found out: it springs
   if (e.d.beh === 'fan' && (e.hits = (e.hits || 0) + 1) % 4 === 0 && !e.dead) {
     e.bristleT = 0.3;
     say1(e, 'BRISTLE!', C.red);
@@ -590,6 +835,32 @@ export function beastGuard(e, dir, o) {
     if (!o.chain && world.t > (e.phaseSaid ?? -9) + 0.6) (e.phaseSaid = world.t), say1(e, 'PHASED', C.ice);
     return true;
   }
+  const d = e.d;
+  // Snapper Shell: in its shell nothing gets through; hit from the front, in it goes
+  if (d.beh === 'shell' && !o.special && !o.crit && !o.chip) {
+    if (e.state === 'wind' && e.move === 'snap') return clang(e, dir, o, 'SHELL!');
+    if (e.state !== 'attack' && e.face === -dir && (e.shellCool ?? 0) <= 0) {
+      e.shellCool = 2.6;
+      wind(e, 0.75, 'shell', 'snap');
+      return clang(e, dir, o, 'SHELL!');
+    }
+  }
+  // Shellback Brawler: the spiked shell takes any hit on its back, and the spikes sting
+  if (d.beh === 'brawler' && !o.special && !o.chip && (e.face === dir || (e.state === 'wind' && e.move === 'spikes'))) {
+    const h = world.hero;
+    if (!o.shot && Math.abs(cx(h) - cx(e)) < 44 && world.t > (e.thornAt ?? -9) + 0.5) (e.thornAt = world.t), hurtHero(e.dmg * 0.35, -dir);
+    return clang(e, dir, o, 'SPIKES!');
+  }
+  // Grand Snapper: his spinning iron chucks knock shots away; in his shell he counters
+  if (d.beh === 'master' && !o.special) {
+    if (o.shot && e.state === 'attack' && e.move === 'ironspin') return clang(e, dir, o, 'DEFLECT!');
+    if (e.guarding && e.state === 'wind' && !o.chip) {
+      e.guarding = false;
+      e.counterCool = 5;
+      wind(e, 0.12, 'shell', 'slam');
+      return clang(e, dir, o, 'COUNTER!');
+    }
+  }
   if (e.guarding && e.state === 'wind' && e.face === -dir && !o.special && !o.chip) {
     e.guarding = false;
     e.guardCool = 3;
@@ -601,6 +872,14 @@ export function beastGuard(e, dir, o) {
   }
   return false;
 }
+function clang(e, dir, o, word) {
+  sfx.clang();
+  if (!o.chain && world.t > (e.clangSaid ?? -9) + 0.4) (e.clangSaid = world.t), say1(e, word, C.ice);
+  burst(cx(e) - dir * e.w * 0.4, cy(e), 5, 'twinkle', ['paper', 'ice']);
+  return true;
+}
+// how hard a hit lands: a Spin Turtle flipped on its back takes double
+export const beastTaken = e => (e.flipT > 0 ? 2 : 1);
 // heavy beasts (the Greatbow Yeti) barely budge from light hits
 export const beastPush = (e, push) => (e.d.heavy ? push * 0.3 : push);
 
@@ -613,6 +892,7 @@ export function beastFrame(e, t, art) {
     const pose = e.pose || e.attackPose;
     if (pose === 'roll') return at(Math.floor(t * 14) % 2 ? 'roll1' : 'roll0');
     if (pose === 'spin') return at('spin' + (Math.floor(t * 18) % 3));
+    if (pose === 'flip') return at('flip' + (Math.floor(t * 6) % 2));
     if (F.includes(pose)) return at(pose);
   }
   if (e.state === 'wind') return at(F.includes(e.windPose) ? e.windPose : 'draw');
@@ -685,13 +965,61 @@ export function drawGrave(b, t) {
   px(x, y - up - 1, C.paper);
   return true;
 }
+// the Bubble Newt's bubble: a wobbling ring with a glint
+export function drawBubble(b, t) {
+  ring(Math.round(b.x + 4), Math.round(b.y + 4 + Math.sin(t * 5 + b.x * 0.1) * 1.5), 5, t);
+  return true;
+}
+function ring(x, y, r, t) {
+  const k = Math.floor(t * 6) % 2, n = Math.round(r * 5);
+  for (let a = 0; a < n; a++) {
+    const q = (a / n) * Math.PI * 2, rx = r + k * 0.5, ry = r - k * 0.5;
+    px(Math.round(x + Math.cos(q) * (rx + 1)), Math.round(y + Math.sin(q) * (ry + 1)), C.ink);
+  }
+  for (let a = 0; a < n; a++) {
+    const q = (a / n) * Math.PI * 2, rx = r + k * 0.5, ry = r - k * 0.5;
+    px(Math.round(x + Math.cos(q) * rx), Math.round(y + Math.sin(q) * ry), a % 4 ? C.sky : C.paper);
+  }
+  rect(x - Math.round(r * 0.5) - 1, y - Math.round(r * 0.5), 2, 1, C.paper);
+}
+// the Bullfrog's croak: three rings rolling along the floor
+export function drawCroak(b, t) {
+  const f = Math.sign(b.vx) || 1, x = Math.round(b.x + (f > 0 ? 0 : b.w)), y = Math.round(b.y);
+  for (let i = 0; i < 3; i++) {
+    const h = 13 - i * 3, ox = f * i * 3;
+    for (let j = 0; j < h; j++) px(x + ox + f * Math.round(Math.sin((j / (h - 1)) * Math.PI) * 3), y + i * 1.5 + j, (j + i + Math.floor(t * 12)) % 3 ? C.lime : C.paper);
+  }
+  return true;
+}
+// the Grand Snapper's wave: a curl of water with a foam crest
+export function drawWave(b, t) {
+  const f = Math.sign(b.vx) || 1, x = Math.round(b.x), y = Math.round(b.y), k = Math.floor(t * 12) % 2;
+  rect(x - 1, y + 3 - k, b.w + 2, b.h - 2 + k, C.ink);
+  rect(x, y + 4 - k, b.w, b.h - 4 + k, C.sky);
+  rect(x + (f > 0 ? b.w - 4 : 0), y + 2 - k, 4, 3, C.ice);
+  rect(x + (f > 0 ? b.w - 3 : 1), y + 1 - k, 2, 1, C.paper);
+  rect(x + 1, y + b.h - 3, b.w - 2, 1, C.ice);
+  if (Math.random() < 0.5) emit(x + b.w / 2, y + 2, 'dot', C.paper);
+  return true;
+}
 // what a beast shows before it acts: the Goose Fencer's lunge line, the War Gander's landing spot
 export function drawTell(e, t) {
+  // a hero caught in a Bubble Newt's bubble floats inside it
+  const h = world.hero;
+  if (h.bubbled && e.d.beh === 'bubble' && e === world.enemies.find(o => o.d.beh === 'bubble' && !o.dead)) ring(Math.round(cx(h)), Math.round(cy(h)), 12, t);
   if (e.state === 'wind' && e.move === 'lunge' && Math.floor(t * 16) % 2) {
     const y = Math.round(e.y + e.h - 1), x0 = Math.round(cx(e) + e.face * 8);
     for (let i = 0; i < 80; i += 4) px(x0 + e.face * i, y, C.red);
   }
-  if (e.move === 'leap' && e.state === 'attack' && !e.onGround) {
+  // the Pond Frog's tongue, out and back (or stuck to you, reeling you in)
+  if (e.move === 'tongue' && e.state === 'attack' && world.t - e.tongueAt < 0.3) {
+    const k = (world.t - e.tongueAt) / 0.3, x0 = cx(e) + e.face * e.w * 0.5, y0 = Math.round(e.y + e.h * 0.4);
+    const x1 = e.grabbed ? cx(world.hero) : x0 + e.face * 120 * Math.sin(k * Math.PI);
+    const n = Math.abs(Math.round(x1 - x0));
+    for (let i = 0; i <= n; i++) (px(Math.round(x0 + Math.sign(x1 - x0) * i), y0 + 1, C.ink), px(Math.round(x0 + Math.sign(x1 - x0) * i), y0, C.pink));
+    rect(Math.round(x1) - 1, y0 - 1, 3, 3, C.pink);
+  }
+  if ((e.move === 'leap' || e.move === 'bounce') && e.state === 'attack' && !e.onGround) {
     const x = Math.round(e.leapX), y = Math.round(world.hero.y + world.hero.h - 1);
     rect(x - 8, y, 17, 1, Math.floor(t * 14) % 2 ? C.red : C.coral);
     rect(x - 5, y - 1, 11, 1, C.ink);

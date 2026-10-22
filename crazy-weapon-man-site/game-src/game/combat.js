@@ -23,7 +23,7 @@ import { recordKill, CARD_TIERS, CARDS } from '../data/book.js';
 import { toast } from './progress.js';
 import { ENEMIES } from '../data/enemies.js';
 import { alertPack } from './enemy.js';
-import { beastHit, beastDeath, beastPush, beastGuard } from './beastkin.js';
+import { beastHit, beastDeath, beastPush, beastGuard, beastTaken } from './beastkin.js';
 import { modOn, temper } from '../data/temper.js';
 import { KILL_PAY } from '../data/maps.js';
 
@@ -68,7 +68,7 @@ export function hitEnemy(e, dmg, o = {}) {
     e.calm = false;
     return 0;
   }
-  dmg *= bigFoeMult(e) * foeMult(e);
+  dmg *= bigFoeMult(e) * foeMult(e) * (e.kind === 'beast' ? beastTaken(e) : 1); // a flipped Spin Turtle takes double
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
