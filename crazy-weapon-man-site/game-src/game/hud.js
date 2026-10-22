@@ -114,9 +114,8 @@ export function drawHud(t) {
   let sub = '';
   if (world.hidden?.inRoom) sub = 'SECRET ROOM   STAND ON THE PORTAL AND PRESS UP TO GO BACK';
   else if (D) {
-    if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
-    else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
-    else if (D.phase === 'arena') sub = 'MAP CLEAR - THE ARENA IS AT THE END >';
+    if (D.phase === 'fight' || D.phase === 'intro') sub = `RUN TO THE ARENA >   ${enemiesLeft()} LEFT FOR A FULL CLEAR`;
+    else if (D.phase === 'arena') sub = 'FULL CLEAR! - THE ARENA IS AT THE END >';
     else if (D.phase === 'survive') sub = swarmBossUp() ? 'BEAT THE BOSS' : 'SURVIVE THE SWARM';
     else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
   }

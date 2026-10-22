@@ -24,6 +24,7 @@ import { toast } from './progress.js';
 import { ENEMIES } from '../data/enemies.js';
 import { alertPack } from './enemy.js';
 import { modOn, temper } from '../data/temper.js';
+import { KILL_PAY } from '../data/maps.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -331,17 +332,18 @@ export function kill(e, o = {}) {
     duck(0.55, 0.45);
   }
   if (e.sleeper) say(e, pickLine(LINES.last), 1.4, true);
-  gainXp(e.xp);
+  const pay = e.swarm ? 1 : KILL_PAY(world.zone); // stages hold fewer residents than they used to, each pays more
+  gainXp(Math.round(e.xp * pay));
   gainProficiency(e.elite ? 'elite' : 'normal');
   abilityKill();
   nova(e, o);
   bookKill(e);
   // loot: the shards come out of the body when it shatters (shatter below)
   const zone = world.zone;
-  e.shardLoot = (e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0)) * (e.golden ? 4 : 1); // a secret room's golden pack pays four times
+  e.shardLoot = Math.round((e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0)) * (e.golden ? 4 : 1) * pay); // a secret room's golden pack pays four times
   world.killsSinceDrop = (world.killsSinceDrop || 0) + 1;
   // (10 kills / 7%: was 7 / 10% before maps held 40+ residents, so weapons keep the same pace)
-  if (world.killsSinceDrop >= 10 || Math.random() < (e.elite ? 0.65 : 0.07)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
+  if (world.killsSinceDrop >= Math.round(10 / pay) || Math.random() < (e.elite ? 0.65 : 0.07 * pay)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
   if (Math.random() < ((e.elite ? 0.4 : 0.035) + stats().hearts) * temper(world.temper).hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
   // TEMPER: VENGEFUL: a ring of slow bolts from the fallen
@@ -416,7 +418,9 @@ export function hurtHero(dmg, dir = 1) {
   h.hp -= dmg;
   h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
-  h.vx = dir * 130;
+  // knocked back 40px or so, unless that would throw you into a pit: then you just hop where you stand
+  const land = cx(h) + dir * 40, pits = world.map?.pits?.length;
+  h.vx = dir * (!pits || world.map.platforms.some(p => p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20);
   h.vy = -120;
   h.onGround = false;
   h.attack = null;

@@ -100,6 +100,13 @@ export function updateEnemy(e, dt) {
     return;
   }
   if (e.hp <= 0) { kill(e); return; }
+  // knocked into a pit: gone (the hero's pits, hero.js)
+  if (world.map?.pits?.length && !e.air && e.y + e.h >= worldFloor() - 1) {
+    e.hp = 0;
+    kill(e, { dir: e.vx >= 0 ? 1 : -1 });
+    e.deathT = 0;
+    return;
+  }
   tickStatus(e, dt);
   // TEMPER: REGENERATION: a resident left alone for a few seconds knits itself back together
   if (e.hp < e.max && !e.swarm && world.t - (e.lastHitAt ?? -9) > 3 && modOn(world.temper, 'regen')) e.hp = Math.min(e.max, e.hp + e.max * 0.04 * dt);

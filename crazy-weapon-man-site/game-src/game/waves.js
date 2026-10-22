@@ -1,12 +1,13 @@
-// Finite map director: enter -> clear every resident -> boss (if any) -> survival swarm -> open exit
-// -> next zone. While exploring there are no timer spawns; the remaining count includes undiscovered
-// enemies. The swarm locks the screen and pours enemies in until its timer runs out, then the
+// Finite map director: enter -> run to the arena at the end of the stage -> survival swarm with the
+// boss in it -> open exit -> next zone. You don't have to clear the residents on the way (it's a
+// speedrun stage); clearing every one before the arena is a FULL CLEAR and pays shards. While
+// exploring there are no timer spawns. The swarm locks the screen and pours enemies in until its timer runs out, then the
 // zone's swarm boss arrives; beat it to open the exit. Hits during the swarm build a combo.
 import { W, GROUND, HERO, C } from '../config.js';
 import { world } from './world.js';
 import { ZONES, bossSong, zoneSong } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
-import { makeMap } from '../data/maps.js';
+import { makeMap, CLEAR_BONUS } from '../data/maps.js';
 import { enemyPool } from '../data/progression.js';
 import { spawnEnemy } from './enemy.js';
 import { kill } from './combat.js';
@@ -81,10 +82,14 @@ export function updateWaves(dt) {
       if(D.t<=0) D.phase='fight';
       break;
     case 'fight':
-      // map clear: the swarm, and the boss inside it, wait in the arena at the end of the map
+      // the swarm, and the boss inside it, wait in the arena at the end of the stage: run there
+      // any time. Clearing every resident first is a FULL CLEAR, with shards for it.
+      if(world.hero.x+world.hero.w/2>=world.map.bossLeft+8) { startSurvival(); break; }
       if(aliveResidents()===0) {
         D.phase='arena';
-        callout('MAP CLEAR - TO THE ARENA >',W/2,64,C.gold,{big:true,life:120});
+        callout('FULL CLEAR! - TO THE ARENA >',W/2,64,C.gold,{big:true,life:120});
+        dropShards(world.hero.x+world.hero.w/2,world.hero.y,8,CLEAR_BONUS(world.zone));
+        sfx.clear();
       }
       break;
     case 'arena':
@@ -151,7 +156,7 @@ function updateSurvival(dt) {
   const D=world.director,L=world.lock,h=world.hero;
   D.spawnT-=dt;
   updateCombo(dt);
-  const alive=world.enemies.filter(e=>!e.dead && !e.boss).length;
+  const alive=world.enemies.filter(e=>!e.dead && !e.boss && e.x+e.w>L.x0).length; // (residents left behind on the stage don't count)
   const bossUp=!!D.sboss,cap=SURVIVE.alive(world.zone)*(bossUp?SWARM_BOSS.alive:1);
   if(D.spawnT<=0 && alive<cap && !(world.boss && world.boss.dead)) {
     D.spawnT=SURVIVE.every(world.zone)*(bossUp?SWARM_BOSS.every:1);
@@ -189,7 +194,8 @@ function bossArrives() {
 }
 function endSurvival() {
   const D=world.director,h=world.hero,c=world.swarmCombo||{best:0};
-  for(const e of [...world.enemies]) if(!e.dead && !e.boss) kill(e,{dir:Math.sign(e.x-h.x)||1});
+  // the arena's foes fall with the boss; residents you ran past stay where they are (no free loot)
+  for(const e of [...world.enemies]) if(!e.dead && !e.boss && e.x+e.w>world.map.width-W) kill(e,{dir:Math.sign(e.x-h.x)||1});
   const bonus=Math.floor(c.best/COMBO.shardsPer);
   if(bonus>0) dropShards(h.x+h.w/2,h.y,Math.min(40,bonus));
   callout(`SURVIVED! ${world.kills-D.swarmKills} KILLS  BEST COMBO ${c.best}`,W/2,104,C.lime,{big:true,life:150});

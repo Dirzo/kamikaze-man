@@ -5,12 +5,12 @@ import { updateClimb } from './climbing.js';
 import { input } from '../engine/input.js';
 import { sfx, duck } from '../engine/audio.js';
 import { world, newId } from './world.js';
-import { move, overlap, cx, cy } from './physics.js';
+import { move, overlap, cx, cy, worldFloor } from './physics.js';
 import { TYPES, MOVES, RECOVERY } from '../data/weapons.js';
 import { CRIT } from '../data/curve.js';
 import { heroMax, heroStats } from './perks.js';
 import { hitDamage, trainingSword } from './loot.js';
-import { hitEnemy } from './combat.js';
+import { hitEnemy, hurtHero } from './combat.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { lookOf } from './looks.js';
 import { attackBox, activeWindow, canAttack } from './attack-rules.js';
@@ -109,13 +109,14 @@ export function updateHero(h, dt) {
     return;
   }
   // run: after MOVE.sprintAfter seconds of running one way you hit a sprint (SMW's P-meter in
-  // miniature); a melee swing slows you down and locks which way you face
+  // miniature); a melee swing on the ground slows you down and locks which way you face (in the air it
+  // keeps your momentum, so swinging mid-jump never drops you short of a ledge)
   const swing = h.attack && !h.attack.ranged ? h.attack : null;
   if (ax && ax === Math.sign(h.vx) && !swing && h.hurtT <= 0 && !h.ladder) h.runT = (h.runT || 0) + dt;
   else if (!ax || ax !== Math.sign(h.vx) || swing) h.runT = 0;
   h.sprint = (h.runT || 0) >= MOVE.sprintAfter && !ride && !G.swim;
   if (h.hurtT <= 0) {
-    const slowBy = swing ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
+    const slowBy = swing && h.onGround ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
     const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy;
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
@@ -202,6 +203,7 @@ export function updateHero(h, dt) {
   const landed = move(h, dt, world.platforms, { gravity: HERO.gravity * (G.gravity || 1) * gk, maxFall: (G.swim ? HERO.maxFall : MOVE.maxFall) * (G.maxFall || 1), dropThrough: h.dropT > 0 });
   if (h.lungeT > 0) h.vx -= h.face * h.lungeV;
   if (h.onGround) h.airShot = false;
+  pitCheck(h);
   if (landed) {
     h.landT = 0.08;
     if (fallSpeed > 120) h.squashT = 0.07;
@@ -211,6 +213,33 @@ export function updateHero(h, dt) {
     }
   }
   h.landT = Math.max(0, h.landT - dt);
+}
+
+// ---------------------------------------------------------------- pits
+// Standing on solid ground well clear of its edges remembers the spot; falling to the bottom of a
+// pit costs PIT_DMG of your health and puts you back there (Super Mario World would take a life).
+export const PIT_DMG = 0.15;
+function pitCheck(h) {
+  const m = world.map;
+  if (!m?.pits?.length || h.dead) return;
+  const p = h.platform;
+  // (well back from the edge, so you don't land on the lip and step straight back in)
+  if (h.onGround && p?.ground && p.w >= 40) h.safe = { x: p.w >= 80 ? Math.max(p.x + 24, Math.min(p.x + p.w - h.w - 24, h.x)) : p.x + (p.w - h.w) / 2, y: p.y - h.h };
+  if (h.y + h.h < worldFloor() - 1) return;
+  const back = h.safe || { x: m.startX, y: m.startY - h.h };
+  h.inv = 0;
+  h.dashT = 0;
+  h.mount = null;
+  hurtHero(Math.ceil(h.maxHp * PIT_DMG), 1);
+  if (h.dead) return;
+  h.x = back.x;
+  h.y = back.y;
+  h.vx = h.vy = 0;
+  h.special = h.attack = null;
+  h.jumpHeld = false;
+  h.inv = 1.2;
+  burst(cx(h), cy(h), 10, 'smoke', ['fog', 'mist']);
+  callout('WHOOPS!', 0, 0, C.coral, { follow: h, life: 40 });
 }
 
 // ---------------------------------------------------------------- attacks
