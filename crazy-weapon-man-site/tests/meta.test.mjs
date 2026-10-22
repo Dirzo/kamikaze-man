@@ -5,7 +5,7 @@ import { BOSS_OF, SIBLING_DEFS, HEAD_KINDS, FAMILIES, ROLES, levelTier } from '.
 import { readFileSync } from 'node:fs';
 import {
   resetMeta, meta, bankShards, buyRank, cantBuy, rank, respec, undoRank, TREE, TREE_BY_ID, TREE_LINKS, rankCost, stats, setLock, weaponLock, onClass, CLASSES, CLASS_OF, winTrophy, hasTrophy,
-  TROPHIES, gate, linked, stableOpen, chosenMount, chooseMount, trophyCount, MASTERY_TIERS, MASTERY_PERKS, choosePerk, perkChoice, tiersOpen, masteryPerk, SIGNATURE
+  TROPHIES, HOME_TURF, trophyZone, gate, linked, stableOpen, chosenMount, chooseMount, trophyCount, MASTERY_TIERS, MASTERY_PERKS, choosePerk, perkChoice, tiersOpen, masteryPerk, SIGNATURE
 } from '../game-src/data/meta.js';
 import { addProficiency, resetProficiency, PROF_MAX, profToNext } from '../game-src/data/proficiency.js';
 import { TYPE_LIST } from '../game-src/data/weapons.js';
@@ -149,9 +149,27 @@ test('a trophy is won once and its perk is always on', () => {
   assert.ok(winTrophy(7));
   assert.ok(!winTrophy(7), 'twice');
   assert.ok(hasTrophy(7));
-  assert.equal(stats('sword').armor, TROPHIES[7].stats.armor);
+  assert.equal(stats('sword').magicArmor, TROPHIES[7].stats.magicArmor);
   winTrophy(3);
-  assert.ok(stats(null).innate.has('hops'));
+  assert.ok(stats(null).innate.has('torch'));
+});
+test("each trophy is made for the next world: its home turf works there and nowhere else", () => {
+  resetMeta();
+  winTrophy(2); // the Yeti King's trophy is for world 3, the lagoon (zone index 2)
+  assert.equal(trophyZone(2), 2);
+  assert.equal(stats('sword', 2).dmg - stats('sword', 1).dmg, HOME_TURF.dmg);
+  assert.equal(stats('sword', 2).armor - stats('sword').armor, HOME_TURF.armor);
+  assert.equal(stats('sword', 3).dmg, stats('sword').dmg, 'not in the world after');
+  assert.ok(stats('sword', 5).innate.has('broadhead'), 'the power itself works everywhere');
+  assert.equal(trophyZone(10), null, 'the last trophy is for the post-game');
+  winTrophy(10);
+  assert.equal(stats('sword', 9).dmg, TROPHIES[10].stats.dmg);
+  for (const r in TROPHIES) {
+    const T = TROPHIES[r];
+    assert.ok(T.name && T.perk && T.desc && T.for, 'trophy ' + r + ' is filled in');
+    for (const k in T.stats) assert.ok(k in stats(null), 'trophy ' + r + ' stat ' + k + ' is summed');
+  }
+  resetMeta();
 });
 test('mastery runs to 100 and opens ten perk choices along the way, per weapon type', () => {
   resetMeta();

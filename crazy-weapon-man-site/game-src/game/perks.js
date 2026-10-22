@@ -4,7 +4,8 @@ import { world } from './world.js';
 import { stats } from '../data/meta.js';
 import { heroMaxHp } from '../data/curve.js';
 
-export const heroStats = () => stats(world.hero?.weapon?.type || null);
+// (the zone too: a trophy made for this world adds its home-turf edge)
+export const heroStats = () => stats(world.hero?.weapon?.type || null, world.zone ?? null);
 // max health at a hero level, with the account's health bonuses
 export const heroMax = lv => Math.round(heroMaxHp(lv) * (1 + stats().hp));
 // innate abilities (mastery signatures, world boss perks) work like the weapon's own ability

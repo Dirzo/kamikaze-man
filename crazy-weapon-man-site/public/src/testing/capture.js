@@ -54,6 +54,7 @@ function powersScene(game, tab) {
   choosePerk('sword', 0, 0); choosePerk('sword', 1, 1); choosePerk('sword', 2, 0); choosePerk('bow', 0, 1);
   mapScene(game, false);
   openPowers(tab === 3 ? 1 : tab);
+  powers.troph = 1; // the trophies tab shows the Yeti King's broadhead
   powers.tree.sel = tab === 0 ? 'whirl' : 'brutal'; powers.mast.open = tab === 3 || tab === 5; powers.mast.tier = 2; powers.mast.opt = 1;
   // 4: shards mid-flight into a node being bought; 5: a mastery perk charging up
   if (tab === 4) { powers.tab = 0; powers.tree.sel = 'echo'; investNode(TREE_BY_ID.echo); for (let i = 0; i < 16; i++) updatePowers(1 / 60); }
@@ -123,6 +124,8 @@ export function captureScene(game, mode) {
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);
+  // the level-clear screen as you take the world 8 trophy (her castle is cleared on the next frame)
+  if(mode==='trophy') { mapScene(game, true); game.enterLevel(NODES['8-C']); world.phase='cleared'; return; }
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));

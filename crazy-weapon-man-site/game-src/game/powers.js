@@ -26,7 +26,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { CARDS, CARD_LIST, CARD_GOALS, CARD_TIERS, TIER_COL, PAGES, PAGE_BONUS, cardKills, cardTier, toNext, bossBeaten, pageDone, bookProgress } from '../data/book.js';
 import { drawSheet } from './statsheet.js';
 import {
-  meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, gate, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, CLASSES, weaponLock, setLock,
+  meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, gate, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, trophyTurf, trophyZone, CLASSES, weaponLock, setLock,
   MASTERY_TIERS, masteryPerk, perkChoice, choosePerk, tiersOpen, unpicked, stableOpen, chosenMount, chooseMount, trophyCount
 } from '../data/meta.js';
 import { MOUNTS, MOUNT_LIST, STABLE_TROPHIES } from '../data/mounts.js';
@@ -676,11 +676,16 @@ function drawTrophies(t) {
     rect(x, y, 228, 28, sel ? C.gold : C.slate);
     rect(x + 1, y + 1, 226, 26, C.ink);
     cup(x + 6, y + 7, have);
-    text(have ? T.name : '???', x + 26, y + 4, have ? C.gold : C.fog);
-    text(have ? fitText(`${T.perk}: ${T.desc.toUpperCase()}`, 196) : fitText('BEAT ' + bossName(FAMILIES[r].head), 196), x + 26, y + 15, have ? C.lime : C.stone);
+    text(have ? fitText(T.name, 196) : '???', x + 26, y + 4, have ? C.gold : C.fog);
+    text(have ? fitText(T.perk, 196) : fitText('BEAT ' + bossName(FAMILIES[r].head), 196), x + 26, y + 15, have ? C.lime : C.stone);
     box(x, y, 228, 28, () => { P.troph = i; sfx.ui(); });
   }
-  text(won ? 'TROPHY PERKS ARE ALWAYS ON, FOR EVERY WEAPON.' : 'EVERY CASTLE HOLDS A FAMILY HEAD. BEAT ONE TO WIN ITS TROPHY.', 12, 200, C.mist);
+  // the picked trophy: what it does, and the world it is made for (shown before you win it too)
+  const r = P.troph + 1, T = TROPHIES[r], have = hasTrophy(r), z = trophyZone(r);
+  text(fitText((have ? T.perk : 'BEAT ' + bossName(FAMILIES[r].head)) + (z == null ? '' : `  FOR WORLD ${z + 1}: ${T.for}`), W - 24), 12, 199, have ? C.gold : C.fog);
+  text(fitText(T.desc.toUpperCase(), W - 24), 12, 209, have ? C.paper : C.stone);
+  text(fitText(trophyTurf(r), W - 24), 12, 219, have ? C.lime : C.stone);
+  text(won ? 'TROPHY POWERS ARE ALWAYS ON, FOR EVERY WEAPON.' : 'EVERY CASTLE HOLDS A FAMILY HEAD. ITS TROPHY IS MADE FOR THE NEXT WORLD.', 12, 231, C.mist);
 }
 
 // ---------------------------------------------------------------- the stable
