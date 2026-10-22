@@ -184,15 +184,16 @@ export function updateHero(h, dt) {
     startPlunge(h, T);
     return;
   }
-  if (atk && canAttack(h)) {
-    input.consume('attack');
-    startAttack(h, T);
-  }
   // the special is buffered too: pressed during a swing it fires as soon as the hit is done
-  // (cancelling the swing's recovery)
-  if (input.pressed('special', MOVE.specialBuffer) && h.specialCd <= 0 && h.hurtT <= 0 && (!h.attack || pastHit(h, h.attack))) {
+  // (cancelling the swing's recovery). A waiting special goes first, and no new swing starts
+  // in front of it, so holding attack can't eat the press.
+  const spWant = input.pressed('special', MOVE.specialBuffer) && h.specialCd <= 0 && h.hurtT <= 0;
+  if (spWant && (!h.attack || pastHit(h, h.attack))) {
     input.consume('special');
     startSpecial(h, T);
+  } else if (atk && canAttack(h) && !spWant) {
+    input.consume('attack');
+    startAttack(h, T);
   }
   if (h.attack) updateAttack(h, dt, T);
 

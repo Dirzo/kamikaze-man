@@ -4,7 +4,7 @@ import { LEVELS, NODES } from '../game-src/data/overworld.js';
 import { BOSS_OF, SIBLING_DEFS, HEAD_KINDS, FAMILIES, ROLES, levelTier } from '../game-src/data/families.js';
 import { readFileSync } from 'node:fs';
 import {
-  resetMeta, meta, bankShards, buyRank, cantBuy, rank, respec, undoRank, TREE, TREE_BY_ID, TREE_LINKS, rankCost, stats, setLock, weaponLock, allowedType, CLASSES, CLASS_OF, winTrophy, hasTrophy,
+  resetMeta, meta, bankShards, buyRank, cantBuy, rank, respec, undoRank, TREE, TREE_BY_ID, TREE_LINKS, rankCost, stats, setLock, weaponLock, onClass, CLASSES, CLASS_OF, winTrophy, hasTrophy,
   TROPHIES, MASTERY_TIERS, MASTERY_PERKS, choosePerk, perkChoice, tiersOpen, masteryPerk, SIGNATURE
 } from '../game-src/data/meta.js';
 import { addProficiency, resetProficiency, PROF_MAX, profToNext } from '../game-src/data/proficiency.js';
@@ -76,17 +76,17 @@ test('shards bank, ranks need a linked node, undo takes back the last rank, refu
   assert.equal(rank('sharp'), 0);
   assert.equal(undoRank(), null);
 });
-test('specializing: only your class drops, and only your class cluster opens and works', () => {
+test('specializing opens only your class cluster, and it only powers that class', () => {
   resetMeta();
   assert.equal(Object.values(CLASSES).reduce((n, c) => n + c.types.length, 0), 13, 'every weapon type has a class');
-  assert.ok(allowedType('bow') && allowedType('hammer'), 'no lock: everything drops');
+  assert.ok(!onClass('bow') && !onClass('sword'), 'not specialized: no class is powered');
   bankShards(100000);
   buyRank('core');
   buyRank('sharp');
   assert.match(cantBuy('slice'), /SPECIALIZE IN BLADES/);
   assert.ok(setLock('blades'));
   assert.equal(weaponLock(), 'blades');
-  assert.ok(allowedType('katana') && !allowedType('bow') && !allowedType('hammer'));
+  assert.ok(onClass('katana') && !onClass('bow') && !onClass('hammer'));
   // round the sword's outline: grip, guard, the edge of the blade, out to the keystone
   for (const id of ['slice', 'longb', 'cleave', 'whirl', 'echo']) assert.ok(buyRank(id), id);
   assert.match(cantBuy('frenzy'), /LINKED/, 'the tip waits at the end of an edge');
@@ -100,7 +100,7 @@ test('specializing: only your class drops, and only your class cluster opens and
   assert.ok(Math.abs(stats('bow').impact - 0.1) < 1e-9, 'shared nodes work with everything');
   assert.match(cantBuy('heft'), /SPECIALIZE IN BLUNT/);
   setLock(null);
-  assert.ok(allowedType('bow'));
+  assert.ok(!onClass('katana'));
   for (const t of Object.keys(CLASS_OF)) assert.ok(CLASSES[CLASS_OF[t]]);
   resetMeta();
 });

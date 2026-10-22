@@ -17,7 +17,6 @@ import { BOSS_TOUGH } from '../data/swarm.js';
 import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.js';
 import { heroStats, foeMult } from './perks.js';
 import { stats } from '../data/meta.js';
-import { convertDrop } from './classlock.js';
 import { buck } from './mount.js';
 import { recordKill, CARD_TIERS, CARDS } from '../data/book.js';
 import { toast } from './progress.js';
@@ -381,7 +380,6 @@ export function shatter(e) {
 
 export function dropWeapon(x, y, w) {
   world.killsSinceDrop = 0;
-  if (convertDrop(x, y, w, dropShards)) return; // specialized: another class bursts into shards
   noWeaker(w);
   if (world.drops.length >= 8) world.drops.shift();
   world.drops.push({ id: newId(), x: x - 6, y: y - 6, w: 12, h: 8, vx: (Math.random() - 0.5) * 50, vy: -150, item: w, life: 40, t: 0 });

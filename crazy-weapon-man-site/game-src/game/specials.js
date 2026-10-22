@@ -45,8 +45,10 @@ export function beginRun(h) {
     kills: 0,
     healed: 0,
     praised: 0,
-    cancel
+    cancel,
+    foes: new Set() // every foe this special touched
   };
+  globalThis.__spLog?.push(run); // (testing: tools record what each special reached)
   h.specialCd = h.specialMax = sp.cool * (1 - heroStats().specialCd) * (B.has('quick') ? 0.65 : 1);
   if (B.has('guard')) h.inv = Math.max(h.inv, 1.3);
   if (B.has('aftershock')) world.spx.push({ k: 'shock', x: cx(h), y: h.y + h.h, t: 0, delay: 0.55, run, hit: new Map(), follow: h });
@@ -70,6 +72,7 @@ export function spHit(run, e, mult, o = {}) {
     dmg *= 3;
     if (!o.quiet) callout('EXECUTE', 0, 0, C.coral, { follow: e, life: 30 });
   }
+  run.foes.add(e);
   const dealt = hitEnemy(e, dmg, {
     crit,
     dir: o.dir || Math.sign(cx(e) - cx(h)) || h.face,

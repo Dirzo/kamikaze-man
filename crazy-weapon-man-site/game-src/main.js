@@ -33,7 +33,6 @@ import { freshUid } from './game/loot.js';
 import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
 import { P as powers, openPowers, closePowers } from './game/powers.js';
 import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
-import { applyLock } from './game/classlock.js';
 import { updateRelics, drawRelics, relicsTaken } from './game/relics.js';
 import { updateHidden, drawHidden } from './game/hidden.js';
 import { updateMount, drawMountWorld } from './game/mount.js';
@@ -118,13 +117,6 @@ function enterLevel(node) {
   world.temper = temperOf(ow.save).on; // the post-game tier picked on the map (T)
   world.relicsOwned = relicMask(ow.save, node.id);
   newRun();
-  // specialized: off-class weapons in the kit melt into banked shards, for good (a failed
-  // attempt restores the kit from the save, so the save is cleaned too)
-  const melted = applyLock();
-  if (melted) {
-    bankShards(melted);
-    if (snap) (ow.save.hero = heroSnapshot()), writeSave(ow.save);
-  }
   startZone(node.zone);
   h.hp = h.maxHp; // every level starts at full health
   scene = 'play';

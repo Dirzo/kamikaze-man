@@ -10,7 +10,7 @@ import { profMult } from '../data/proficiency.js';
 import { world } from './world.js';
 import { lustMult } from '../data/lust.js';
 import { comboMult } from '../data/swarm.js';
-import { stats, weaponLock, allowedType, CLASSES } from '../data/meta.js';
+import { stats, weaponLock, CLASSES } from '../data/meta.js';
 import { temper } from '../data/temper.js';
 let uid = 1;
 // what the hero has grown into with a type: its mastery level and every damage perk
@@ -25,7 +25,6 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
   const types = availableTypes(zone);
   // every type is equally likely (a zone's own weapon still arrives as its map-clear gift)
   type = type || types[Math.floor(r() * types.length)];
-  if ((boss || standout === true) && weaponLock()) type = classType(type); // a guaranteed prize is always one you can use
   if (q == null) {
     const top = maxQ(zone);
     q = Math.min(10, Math.floor((top + 0.99) * Math.pow(r(), elite || boss ? 0.85 : 1.2)));
@@ -49,12 +48,6 @@ export function makeWeapon(zone, { elite = false, boss = false, standout = null,
 // a weapon loaded from a save gets a new id (looks are cached by id)
 export const freshUid = w => ((w.uid = uid++), w);
 
-// a type of your specialization's class for a drop that must be a weapon you can use
-export function classType(type) {
-  if (allowedType(type)) return type;
-  const T = CLASSES[weaponLock()].types;
-  return T[Math.floor(Math.random() * T.length)];
-}
 // the first weapon: a sword, or your specialization's own starter
 export function trainingSword() {
   const STARTER = weaponLock() ? CLASSES[weaponLock()].starter : 'sword', BASE = STARTER[0].toUpperCase() + STARTER.slice(1);

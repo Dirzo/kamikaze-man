@@ -20,6 +20,7 @@ import { MUTATIONS } from '../data/progression.js';
 import { ELEMENTS } from '../data/weapons.js';
 import { QUIRKS } from '../data/quirks.js';
 import { SPECIALS, BOONS, specialRoll } from '../data/specials.js';
+import { weaponLock, onClass } from '../data/meta.js';
 import { proficiency, profToNext, profRank, PROF_MAX, PROF_DMG } from '../data/proficiency.js';
 import { fmt } from '../data/curve.js';
 import { RARITY } from '../data/weapons.js';
@@ -389,6 +390,7 @@ export function drawInventory(t) {
     text(fitText(it.name, INV.w - (it.locked ? 44 : 30)), tx, dy + 2, col);
     if (it.locked) padlock(INV.x + INV.w - 22, dy);
     text(`${it.standout ? 'STANDOUT ' : ''}${rarityName(it).toUpperCase()} ${typeName(it.type)}`, tx, dy + 12, C.mist);
+    if (weaponLock() && !onClass(it.type)) text('OFF-CLASS', INV.x + INV.w - 12, dy + 12, C.coral, { align: 'right' }); // no specialization cluster for it
     const gain = Math.round((powerScore(it) / Math.max(1, powerScore(w)) - 1) * 100);
     text(fmt(dps(it)) + ' DPS', tx, dy + 22, C.paper);
     text(`${gain >= 0 ? '+' : ''}${gain}% POWER VS EQUIPPED`, INV.x + INV.w - 14, dy + 22, gain >= 0 ? C.lime : C.coral, { align: 'right' });
