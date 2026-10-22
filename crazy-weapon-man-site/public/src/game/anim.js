@@ -234,13 +234,14 @@ export function heroPose(h, t) {
   else if (h.special) pose = specialPose(h, st);
   else if (h.castT > 0 && st.ranged) pose = keys(st.ranged, 0.45 + (1 - h.castT / 0.3) * 0.5);
   else if (h.attack && !h.attack.ranged) {
-    const p = Math.min(1, h.attack.t / h.attack.dur),
+    const p = h.attack.p ?? Math.min(1, h.attack.t / h.attack.dur), // (heavy weapons hang at the top: hero.js swingP)
       mv = h.attack.moveName;
     if (st.spin) pose = spinPose(p, mv === 'spinBig' ? 2 : 1, mv === 'spinBig');
     else pose = keys(st.moves[mv] || Object.values(st.moves)[0], p);
   } else if (h.attack && h.attack.ranged && st.ranged) pose = keys(st.ranged, Math.min(1, h.attack.t / h.attack.dur));
   else if (h.ladder) pose = climbPose(h);
   else if (h.dashT > 0) pose = { ...st.dash };
+  else if (h.skidT > 0 && h.onGround) pose = { ...st.idle(t, 0), f: 'lean', dy: 1 }; // braking into the turn
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
     // six-frame walk (contact, down, passing per leg); the arms swing against the legs, so the
@@ -304,6 +305,9 @@ function specialPose(h, st) {
       return s.slam ? { f: 'crouch', fh: [18, 22], ang: 75 } : { f: 'back', fh: [5, 8], ang: -250, wb: true, ab: true };
     case 'vault':
       if (!s.down) return { f: 'jump', fh: [13, 20], ang: 90 };
+      return s.slam ? { f: 'crouch', fh: [19, 21], ang: 30 } : { f: 'fall', fh: [12, 8], ang: -100 };
+    case 'plunge': // the down-strike: blades point straight down, blunt weapons come down overhead
+      if (s.P.kind === 'pogo') return { f: 'fall', fh: [13, 22], ang: 90 };
       return s.slam ? { f: 'crouch', fh: [19, 21], ang: 30 } : { f: 'fall', fh: [12, 8], ang: -100 };
     case 'skewer': // spear thrust held out in front for the whole charge
       return { f: 'lean', fh: [19, 17], ang: 0 };

@@ -1,9 +1,10 @@
 // Plays a map with the real collision code: from sampled spots on every surface the hero walks,
-// jumps (with and without a late steer) and drops through ledges, and climbs every ladder. Returns
+// jumps (with and without a late steer, with the faster fall of the real jump) and drops through ledges, and climbs every ladder. Returns
 // which surfaces can reach which, so tests can prove nothing is stranded and nothing is one-way.
 import { move } from '../game-src/game/physics.js';
 import { world } from '../game-src/game/world.js';
 import { HERO } from '../game-src/config.js';
+import { MOVE } from '../game-src/data/feel.js';
 
 const DT = 1 / 60;
 export function surfaceGraph(map) {
@@ -29,7 +30,7 @@ export function surfaceGraph(map) {
             let airborne = a.jump || a.drop;
             for (let t = 0; t < 2.2; t += DT) {
               if (a.steer && t >= a.steer) b.vx = dir * HERO.speed;
-              move(b, DT, P, { gravity: HERO.gravity, maxFall: HERO.maxFall, dropThrough: a.drop && t < 0.25 });
+              move(b, DT, P, { gravity: HERO.gravity * (b.vy > 0 ? MOVE.fallGravity : 1), maxFall: MOVE.maxFall, dropThrough: a.drop && t < 0.25 }); // the SMW arc: no apex hang, to be safe
               if (!b.onGround) { airborne = true; continue; }
               // the deepest floor doubles as the world floor, which reports no platform
               const j = b.platform ? P.indexOf(b.platform) : P.findIndex(q => q.y === b.y + b.h && b.x + b.w > q.x && b.x < q.x + q.w);

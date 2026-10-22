@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { makeMap, cameraTarget, cameraTargetY, LAYOUTS, DEPTHS, ownMap } from '../game-src/data/maps.js';
+import { makeMap, cameraTarget, cameraTargetY, LAYOUTS, ownMap, FOES, KILL_PAY } from '../game-src/data/maps.js';
 import { surfaceGraph } from './map-reach.mjs';
 import { HERO, GROUND, W } from '../game-src/config.js';
 import { world } from '../game-src/game/world.js';
@@ -10,17 +10,6 @@ import { move } from '../game-src/game/physics.js';
 import { LEVELS } from '../game-src/data/overworld.js';
 const MAPS=[...Array.from({length:10},(_,z)=>[z,null]),...LEVELS.map(n=>[n.zone,n.id])];
 const label=(z,id)=>id?'level '+id:'zone '+(z+1);
-test('World 1 goes deeper down the Ant Tunnel: level 1-1 is map 1 exactly, every later level is its own map',()=>{
-  assert.equal(JSON.stringify(makeMap(0,'1-1')),JSON.stringify(makeMap(0)));
-  const seen=new Set([JSON.stringify(makeMap(0).platforms)]);
-  for(const id of Object.keys(DEPTHS)) {
-    const m=makeMap(0,id);
-    assert.equal(m.title,DEPTHS[id].title);
-    assert.ok(!seen.has(JSON.stringify(m.platforms)),id+' repeats a layout');
-    seen.add(JSON.stringify(m.platforms));
-  }
-  assert.ok(makeMap(0,'1-C').floorY>makeMap(0,'1-2').floorY,'the castle is the deepest');
-});
 test('every overworld level plays its own map, and the road to each castle grows',()=>{
   const seen=new Set();
   for(const n of LEVELS) {
@@ -34,16 +23,28 @@ test('every overworld level plays its own map, and the road to each castle grows
     assert.ok(c.spawns.length>first.spawns.length && c.width>=first.width,'castle of world '+R+' is no bigger than its first level');
   }
 });
-test('map 1 keeps its Ant Tunnel layout; the others are distinct MapleStory-style fields',()=>{
-  assert.equal(LAYOUTS[0].style,'chambers');
-  const fields=new Set();
+test('every map is a Super Mario World style run: one-way through, no ladders, pits and high routes',()=>{
+  const recipes=new Set();
   for(let z=0;z<10;z++) {
     const m=makeMap(z);
     assert.equal(m.name,ZONES[z].name);assert.ok(m.title);
-    assert.equal(JSON.stringify(makeMap(z)),JSON.stringify(m));
-    if(m.style==='field')fields.add(JSON.stringify({...LAYOUTS[z],title:0,label:0}));
+    assert.equal(JSON.stringify(makeMap(z)),JSON.stringify(m),'seeded: the same every run');
+    recipes.add(JSON.stringify({...LAYOUTS[z],title:0,label:0}));
   }
-  assert.equal(fields.size,LAYOUTS.filter(l=>l.style==='field').length,'two field zones share the same recipe');
+  assert.equal(recipes.size,10,'two worlds share the same recipe');
+  for(const [z,id] of MAPS) {
+    const m=makeMap(z,id);
+    assert.equal(m.ladders.length,0,'ladders in '+label(z,id));
+    assert.ok(m.platforms.some(p=>p.hunt),'no floating ledges in '+label(z,id));
+    for(const p of m.pits) {
+      assert.ok(p.w<=56 || m.platforms.some(q=>q.step && q.x>p.x && q.x+q.w<p.x+p.w),'a wide chasm with no stepping ledge in '+label(z,id));
+      assert.ok(m.floorY>Math.max(...m.platforms.filter(q=>q.ground).map(q=>q.y)),'no pit bottom under the ground');
+    }
+  }
+  assert.ok(MAPS.filter(([z,id])=>makeMap(z,id).pits.length).length>MAPS.length*0.9,'most stages have pits');
+});
+test('fewer residents than the old fields, and each pays more so the economy keeps pace',()=>{
+  for(let z=0;z<10;z++) assert.ok(Math.abs(FOES(z)*KILL_PAY(z)-(50+4*z))<1e-9);
 });
 test('ladders end level with the platform they hang from, so the climb stops there',()=>{
   for(const [z,id] of MAPS) for(const l of makeMap(z,id).ladders) {
@@ -53,7 +54,7 @@ test('ladders end level with the platform they hang from, so the climb stops the
 test('maps are bounded, populated along their whole route and end at the exit',()=>{
   for(const [z,id] of MAPS) {
     const m=makeMap(z,id);
-    assert.ok(m.width>=2.5*W && m.width<=14*W);
+    assert.ok(m.width>=6*W && m.width<=13*W);
     assert.ok(m.spawns.length>=27+z*2-1);
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
     assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));
@@ -129,13 +130,12 @@ test('camera tracks the route and never reveals space outside the map',()=>{
   }
 });
 
-test('field residents come in packs that stand a body apart', () => {
+test('residents stand in small groups along the route, a body apart', () => {
   for (let z = 0; z < 10; z++) {
-    if (LAYOUTS[z].style !== 'field') continue;
     const m = makeMap(z), packs = new Map();
     for (const s of m.spawns) packs.set(s.pack, [...(packs.get(s.pack) || []), s]);
-    assert.ok([...packs.values()].filter(p => p.length >= 3).length >= packs.size - 1, 'zone ' + (z + 1) + ' has stragglers');
+    assert.ok([...packs.values()].every(p => p.length <= LAYOUTS[z].pack[1] + 3), 'zone ' + (z + 1) + ' has a crowd');
     for (const a of m.spawns) for (const b of m.spawns)
-      if (a !== b && a.y === b.y) assert.ok(Math.abs(a.x - b.x) >= 20, 'residents overlap in zone ' + (z + 1));
+      if (a !== b && a.y === b.y) assert.ok(Math.abs(a.x - b.x) >= 16, 'residents overlap in zone ' + (z + 1));
   }
 });

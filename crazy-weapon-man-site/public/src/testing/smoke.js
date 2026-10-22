@@ -3,6 +3,7 @@ import { input } from '../engine/input.js';
 import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
 import { spawnEnemy, updateEnemy, drawEnemy } from '../game/enemy.js';
+import { secretRoom } from '../data/maps.js';
 import { hitEnemy, hurtHero, dropWeapon } from '../game/combat.js';
 import { makeWeapon, dps, powerScore } from '../game/loot.js';
 import { updateDrops } from '../game/drops.js';
@@ -21,7 +22,8 @@ import { QUIRK_LIST } from '../data/quirks.js';
 import { proficiency, PROF_KEY } from '../data/proficiency.js';
 import { ZONES } from '../data/zones.js';
 import { MUTATIONS } from '../data/progression.js';
-import { C, STEP, GROUND, HERO } from '../config.js';
+import { C, STEP, GROUND, HERO, W } from '../config.js';
+const FLOOR = () => world.map?.startY ?? GROUND; // the stage's runway (stages are no longer all at GROUND)
 import { lookOf } from '../game/looks.js';
 import { feel, clearFx } from '../game/fx.js';
 import { cx } from '../game/physics.js';
@@ -83,19 +85,19 @@ export function runSmoke(game) {
     let last=first;for(let i=0;i<150;i++){poll();updateHero(h,STEP);if(h.attack && h.attack!==last){swings++;last=h.attack;}}
     ok(swings>=5,'held attack stopped');key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();
   });
-  check('move at full speed and turn without cancelling a live attack',()=>{
+  check('a melee swing slows you down and locks your facing without cancelling (feel #7)',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'hammer',q:0,standout:false});
     h.vx=HERO.speed;key('ArrowRight',true);key('KeyZ',true);poll();updateHero(h,STEP);
     const attack=h.attack,x=h.x;key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();updateHero(h,STEP);
-    ok(h.attack===attack && h.vx===HERO.speed && h.x>x,'attack slowed movement');
+    ok(h.attack===attack && h.vx<HERO.speed && h.vx>0 && h.x>x,'swing should slow, not stop, movement');
     key('ArrowRight',false);key('ArrowLeft',true);poll();updateHero(h,STEP);
-    ok(h.face===-1 && h.attack===attack,'turn cancelled or locked attack');
+    ok(h.face===1 && h.attack===attack,'facing should stay locked for the swing');
     for(let i=0;i<8;i++){poll();updateHero(h,STEP);}
-    ok(h.vx<0 && h.attack===attack,'cannot reverse movement mid-animation');
+    ok(h.vx<0 && h.attack===attack,'you can still back off mid-swing');
     key('ArrowLeft',false);poll();
   });
   check('one swing hits each enemy once, never during wind-up',()=>{
-    reset();const h=world.hero,e=spawnEnemy('crawler',h.x+23,GROUND);e.spawnT=0;e.hp=e.max=10000;
+    reset();const h=world.hero,e=spawnEnemy('crawler',h.x+23,FLOOR());e.spawnT=0;e.hp=e.max=10000;
     key('KeyZ',true);poll();updateHero(h,STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);poll();
     const hp=e.hp;ok(hp===10000,'damage before contact frame');
     for(let i=0;i<23;i++){poll();updateHero(h,STEP);} const after=e.hp;ok(after<hp,'swing missed');
@@ -113,8 +115,8 @@ export function runSmoke(game) {
   check('all five mutations deal damage and terminate their pending effects',()=>{
     for(const mutation of Object.keys(MUTATIONS)) {
       reset();const h=world.hero;h.weapon=makeWeapon(9,{q:9,type:'sword'});h.weapon.mutation=mutation;
-      const e=spawnEnemy('brute',h.x+26,GROUND);e.spawnT=0;e.hp=e.max=100000;
-      if(mutation==='seeker') { const n=spawnEnemy('crawler',h.x+65,GROUND);n.spawnT=0;n.hp=n.max=100000; }
+      const e=spawnEnemy('brute',h.x+26,FLOOR());e.spawnT=0;e.hp=e.max=100000;
+      if(mutation==='seeker') { const n=spawnEnemy('crawler',h.x+65,FLOOR());n.spawnT=0;n.hp=n.max=100000; }
       if(mutation==='cataclysm'){h.attackCount=2;attackMutation(h);}else impactMutation(h,e,{weapon:h.weapon,move:{big:true}});
       for(let i=0;i<90;i++){world.t+=STEP;updateEvolution(STEP);game.updateShots(STEP);}
       ok(world.enemies.some(n=>n.hp<n.max),mutation+' did no damage');ok(world.echoes.length===0,'pending effect leaked');
@@ -186,7 +188,7 @@ export function runSmoke(game) {
   check('speedrun clock, splits, per-weapon damage, mastery and an animated results screen',()=>{
     resetRecords();reset();const h=world.hero,R=world.run;ok(R && R.t===0 && R.weapons.size===0,'no fresh run record');
     tickRun(1.5);ok(Math.abs(R.t-1.5)<1e-9,'clock did not run');
-    const e=spawnEnemy('brute',h.x+30,GROUND);e.spawnT=0;e.hp=e.max=1e6;
+    const e=spawnEnemy('brute',h.x+30,FLOOR());e.spawnT=0;e.hp=e.max=1e6;
     const w1=h.weapon;hitEnemy(e,100,{dir:1});const w2=makeWeapon(1,{type:'bow',q:2});h.weapon=w2;hitEnemy(e,40,{dir:1});hitEnemy(e,40,{dir:1});
     ok(R.weapons.get(w1).dmg===100 && R.weapons.get(w2).dmg===80 && R.dealt===180,'damage was not credited per weapon');
     e.hp=5;hitEnemy(e,500,{dir:1});ok(R.weapons.get(w2).dmg===85,'overkill counted as damage dealt');
@@ -255,20 +257,20 @@ export function runSmoke(game) {
     const types=Object.keys(ENEMIES).filter(k=>ENEMIES[k].alert);ok(types.length>=25,'only '+types.length+' tricks');
     ok(new Set(types.map(k=>ENEMIES[k].alert.do)).size===types.length,'two enemy types share a trick');
     for(const type of types) {
-      reset();const h=world.hero;h.inv=99;const e=spawnEnemy(type,h.x-60,GROUND);e.spawnT=0;e.calm=false;e.face=1;
+      reset();const h=world.hero;h.inv=99;const e=spawnEnemy(type,h.x-60,FLOOR());e.spawnT=0;e.calm=false;e.face=1;
       const before=world.bolts.length;fireTrait(e);ok(world.bolts.length>before,type+' trick made nothing');
       for(let i=0;i<400;i++){world.t+=STEP;updateBolts(STEP);}
       ok(world.bolts.length===0,type+' trick never cleaned up');
     }
     // calm residents keep wandering: no tricks until they notice you
-    reset();const h=world.hero;const e=spawnEnemy('squirrel',h.x+400,GROUND);e.spawnT=0;
+    reset();const h=world.hero;const e=spawnEnemy('squirrel',h.x+400,FLOOR());e.spawnT=0;
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {
       ok(TYPE_LIST.includes(type),type+' missing');
-      reset();const h=world.hero;h.weapon=makeWeapon(5,{type,q:3});const e=spawnEnemy('brute',h.x+24,GROUND);e.spawnT=0;e.hp=e.max=1e7;
+      reset();const h=world.hero;h.weapon=makeWeapon(5,{type,q:3});const e=spawnEnemy('brute',h.x+24,FLOOR());e.spawnT=0;e.hp=e.max=1e7;
       for(let i=0;i<60;i++){key('KeyZ',i%10<5);poll();world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);}
       key('KeyZ',false);poll();h.specialCd=0;h.attack=null;h.cd=0;
       key('KeyC',true);poll();for(let i=0;i<60;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);poll();}key('KeyC',false);poll();
@@ -277,7 +279,7 @@ export function runSmoke(game) {
   });
   check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
     const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});
-      const es=[0,18,40].map(dx=>{const e=spawnEnemy('brute',h.x+30+dx,GROUND);e.spawnT=0;e.hp=e.max=1e6;return e;});return [h,es];};
+      const es=[0,18,40].map(dx=>{const e=spawnEnemy('brute',h.x+30+dx,FLOOR());e.spawnT=0;e.hp=e.max=1e6;return e;});return [h,es];};
     let [h,es]=fresh('sword',['core','skin','ripple']);hitEnemy(es[0],1000,{dir:1});
     ok(es[1].hp<es[1].max && es[1].hp>es[1].max-1000*0.1,'ripple did not splash a little onto the neighbour');
     [h,es]=fresh('hammer',['core','skin','heft','heavy','crush','shock'],'blunt');world.lastWave=-9;hitEnemy(es[0],1000,{dir:1});
@@ -292,7 +294,7 @@ export function runSmoke(game) {
     const T=game.types.sword,mv={big:false,from:0,to:90},h0={x:100,y:80,w:11,face:1};
     ok(attackBox(h0,T,mv,0.3).w>attackBox(h0,T,mv,0).w*1.25,'reach did not grow the swing');
     resetMeta();bankShards(1e7);setLock('blades');for(const id of ['core','sharp','slice','longb','cleave','whirl','echo','echo','echo','echo','echo'])buyRank(id);
-    reset();let h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});let e=spawnEnemy('brute',h.x+30,GROUND);e.spawnT=0;e.hp=e.max=1e7;
+    reset();let h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});let e=spawnEnemy('brute',h.x+30,FLOOR());e.spawnT=0;e.hp=e.max=1e7;
     let twice=0;for(let i=0;i<60;i++){const hp=e.hp;hitEnemy(e,100,{dir:1});if(hp-e.hp>100)twice++;}
     ok(twice>3,'no echo slashes ('+twice+'/60)');
     resetMeta();bankShards(1e7);setLock('ranged');for(const id of ['core','learn','fast','fast','fast','quick','scatter','pierce','pierce'])buyRank(id);
@@ -301,7 +303,7 @@ export function runSmoke(game) {
     resetMeta();
   });
   check('every weapon ability does its thing',()=>{
-    const fresh=ab=>{reset();const h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});h.weapon.ability=ab;const e=spawnEnemy('brute',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e7;return [h,e];};
+    const fresh=ab=>{reset();const h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});h.weapon.ability=ab;const e=spawnEnemy('brute',h.x+20,FLOOR());e.spawnT=0;e.hp=e.max=1e7;return [h,e];};
     let [h,e]=fresh('vampire');h.hp=10;abilityHit(h,e,5,false);ok(h.hp>10,'thirsty did not heal');
     [h,e]=fresh('meteor');abilityHit(h,e,5,true);for(let i=0;i<120;i++){world.t+=STEP;updateAbilities(STEP);}ok(e.hp<e.max,'no meteor landed');
     [h,e]=fresh('bubble');let hp=h.hp;hurtHero(10,1);ok(h.hp===hp,'bubble did not block');h.inv=0;hurtHero(10,1);ok(h.hp<hp,'bubble blocked twice');
@@ -329,14 +331,14 @@ export function runSmoke(game) {
   check('every quirk fires on cheap weapons and never recurses',()=>{
     for(const id of QUIRK_LIST) {
       reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});h.weapon.quirk=id;h.hp=h.maxHp-20;
-      const e=spawnEnemy('crawler',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e6;const e2=spawnEnemy('stalker',h.x-20,GROUND);e2.spawnT=0;e2.hp=e2.max=1e6;
+      const e=spawnEnemy('crawler',h.x+20,FLOOR());e.spawnT=0;e.hp=e.max=1e6;const e2=spawnEnemy('stalker',h.x-20,FLOOR());e2.spawnT=0;e2.hp=e2.max=1e6;
       const rnd=Math.random;Math.random=()=>0;let fired;try{fired=quirkHit(h,e,50,1);}finally{Math.random=rnd;}
       ok(fired,'quirk '+id+' did not fire');
       for(let i=0;i<120;i++){world.t+=STEP;game.updateShots(STEP);updateEnemy(e,STEP);}
       ok(world.shots.length===0 || world.shots.every(s=>s.proc),'quirk '+id+' left a non-proc shot');
     }
     reset();let n=0;const h=world.hero;h.weapon=makeWeapon(0,{q:0,standout:false});
-    const e=spawnEnemy('crawler',h.x+20,GROUND);e.spawnT=0;e.hp=e.max=1e9;
+    const e=spawnEnemy('crawler',h.x+20,FLOOR());e.spawnT=0;e.hp=e.max=1e9;
     for(let i=0;i<400;i++){world.t+=1;if(quirkHit(h,e,1,1))n++;}
     ok(n>160 && n<240,'common quirk rate off: '+n+'/400');
     h.weapon=makeWeapon(9,{q:10,standout:true});n=0;
@@ -358,7 +360,7 @@ export function runSmoke(game) {
   check('weapon mastery grows from kills, persists in storage and boosts damage',()=>{
     reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'staff',q:0,standout:false});
     const before=proficiency('staff').lv,dmg0=game.hitDamage(h.weapon);
-    for(let i=0;i<60;i++){const e=spawnEnemy('crawler',h.x+30,GROUND);e.spawnT=0;hitEnemy(e,1e9,{dir:1});}
+    for(let i=0;i<60;i++){const e=spawnEnemy('crawler',h.x+30,FLOOR());e.spawnT=0;hitEnemy(e,1e9,{dir:1});}
     ok(proficiency('staff').lv>before,'no staff mastery from kills');
     ok(game.hitDamage(h.weapon)>dmg0,'mastery did not add damage');
     const saved=JSON.parse(localStorage.getItem(PROF_KEY));ok(saved.staff.lv===proficiency('staff').lv,'mastery not saved');
@@ -376,53 +378,35 @@ export function runSmoke(game) {
       ok(z===9?world.phase==='won':world.zone===z+1,'zone '+z+' stalled');
     }
   });
-  check('ladders connect chamber floors to suspended hunting ledges',()=>{
-    reset();startZone(1);world.enemies=[];const h=world.hero,l=world.map.ladders[0];
-    h.x=l.x-h.w/2;h.y=l.bottom-h.h;
-    key('ArrowUp',true);let drew=false;
-    for(let i=0;i<270;i++){poll();updateHero(h,STEP);drew||=!h.ladder && h.drawT>0 && !heroPose(h,1).sheath;}
-    key('ArrowUp',false);poll();
+  check('a pit costs 15% of your health and puts you back on the last safe ground; foes knocked in are gone',()=>{
+    reset();startZone(1);world.enemies=[];const h=world.hero,m=world.map,q=m.pits[0];
+    ok(q,'stage has no pit');
+    const lip=m.platforms.find(p=>p.ground && p.x+p.w===q.x);
+    h.x=lip.x+lip.w-h.w-20;h.y=lip.y-h.h;h.vx=0;h.vy=0;h.onGround=true;h.platform=lip;h.inv=0;
+    updateHero(h,STEP);const safe={...h.safe},hp=h.hp;ok(safe && safe.y===lip.y-h.h,'safe ground not remembered');
+    h.x=q.x+q.w/2-h.w/2;h.y=lip.y-h.h+4;h.onGround=false;h.platform=null;
+    for(let i=0;i<120 && h.hp===hp;i++){poll();updateHero(h,STEP);}
+    ok(h.hp===hp-Math.ceil(h.maxHp*0.15),'the fall cost the wrong amount');
+    ok(Math.abs(h.x-safe.x)<1 && Math.abs(h.y-safe.y)<1 && h.inv>0,'not put back on safe ground');
+    const e=spawnEnemy('crawler',q.x+q.w/2,lip.y);e.spawnT=0;e.x=q.x+q.w/2-e.w/2;e.y=m.floorY-e.h;e.onGround=false;
+    for(let i=0;i<30 && !e.dead;i++)updateEnemy(e,STEP);ok(e.dead,'a foe in the pit lived');
+  });
+  check('ladders in secret rooms still climb and stop at the top',()=>{
+    reset();world.enemies=[];world.map=secretRoom(0,'vault');world.platforms=world.map.platforms;const h=world.hero,l=world.map.ladders[0];
+    h.x=l.x-h.w/2;h.y=l.bottom-h.h;h.vx=h.vy=0;h.onGround=true;
+    key('ArrowUp',true);for(let i=0;i<270;i++){poll();updateHero(h,STEP);}key('ArrowUp',false);poll();
     ok(h.onGround && Math.abs(h.y+h.h-l.exitY)<1 && h.x===l.exitX,'upper dismount failed');
-    ok(drew,'weapon was not drawn again off the ladder');
-    h.x=l.x-h.w/2;key('ArrowDown',true);
-    for(let i=0;i<20;i++){poll();updateHero(h,STEP);}
-    ok(h.ladder && heroPose(h,1).sheath,'weapon not sheathed on the ladder');
-    const c0=h.climbT;key('ArrowDown',false);poll();updateHero(h,STEP);ok(h.ladder && h.climbT===c0,'climb animation ran while holding still');
-    key('ArrowDown',true);
-    for(let i=0;i<260;i++){poll();updateHero(h,STEP);}
-    key('ArrowDown',false);poll();
-    ok(h.onGround && Math.abs(h.y+h.h-l.bottom)<1,'bottom dismount failed');
-    updateCamera(STEP,true);ok(Math.abs(world.cameraY-(l.bottom-GROUND+12))<1,'camera missed chamber route');
+    startZone(0);
   });
-  check('story bosses crash into the swarm after a themed warning, and the swarm keeps coming',()=>{
-    reset();startZone(2);const h=world.hero;h.inv=1e9;world.director.phase='fight';
-    for(const e of world.enemies)e.dead=true;
-    updateWaves(STEP);h.x=world.map.bossLeft+40;h.y=world.map.bossFloor-h.h;updateWaves(STEP);
-    ok(world.director.phase==='survive' && !world.boss,'the boss was there before the swarm');
-    let warnedFirst=false,steps=0;
-    for(;steps<1200 && !world.boss;steps++){updateWaves(STEP);h.inv=1e9;if(world.director.warned && !world.boss)warnedFirst=true;}
-    ok(world.boss && world.boss.type==='bossjr' && warnedFirst,'no warned boss arrival in the swarm');
-    ok(steps>=60*5,'the boss arrived too soon to be a swarm moment');
-    world.enemies=world.enemies.filter(e=>!e.swarm);
-    for(let i=0;i<300;i++){updateWaves(STEP);world.t+=STEP;h.inv=1e9;}
-    ok(world.enemies.some(e=>e.swarm && !e.dead),'the swarm stopped when the boss arrived');
-    const b=world.boss;b.hp=0;for(let i=0;i<200;i++){updateBoss(b,STEP);updateWaves(STEP);}
-    ok(world.director.phase==='exit','beating the boss did not end the swarm');
-  });
-  check('nonlethal hits trigger expressive faces',()=>{
-    reset();const e=spawnEnemy('goose',100,GROUND);e.spawnT=0;e.hp=e.max=10000;
-    hitEnemy(e,2,{dir:1});ok(e.faceUntil>world.t);const first=e.funnyFace;
-    hitEnemy(e,2,{dir:1});ok(e.funnyFace!==first);
-  });
-  check('finite map stays locked with undiscovered enemies and never replenishes them',()=>{
+  check('stages run straight to the arena: residents left behind never respawn, and a full clear pays',()=>{
     reset();startZone(0);const count=world.enemies.length, ids=world.enemies.map(e=>e.id).join(',');
-    world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;
-    for(let i=0;i<1200;i++)updateWaves(STEP);
-    ok(world.director.phase==='fight' && world.zone===0,'escaped with enemies left');
-    ok(world.enemies.length===count && world.enemies.map(e=>e.id).join(',')===ids,'map respawned enemies');
-    for(const e of world.enemies)e.dead=true;
-    updateWaves(STEP);ok(world.director.phase==='arena' && !world.lock,'clear did not send the hero to the arena');
-    updateWaves(STEP);ok(world.director.phase==='survive' && world.lock && world.lock.x1===world.map.width,'the arena did not start the survival swarm');
+    for(let i=0;i<300;i++)updateWaves(STEP);
+    ok(world.director.phase==='fight' && world.enemies.length===count && world.enemies.map(e=>e.id).join(',')===ids,'map respawned enemies');
+    const shards=world.pickups.length;for(const e of world.enemies)e.dead=true;
+    updateWaves(STEP);ok(world.director.phase==='arena' && !world.lock && world.pickups.length>shards,'a full clear paid nothing');
+    reset();startZone(0);ok(world.enemies.some(e=>!e.dead),'stage has no residents');
+    world.hero.x=world.map.bossLeft+10;world.hero.y=world.map.bossFloor-world.hero.h;
+    for(let i=0;i<200 && world.director.phase!=='survive';i++)updateWaves(STEP);ok(world.director.phase==='survive' && world.lock && world.lock.x1===world.map.width,'the arena did not start with residents left behind');
     let peak=0;for(let i=0;i<240;i++){updateWaves(STEP);peak=Math.max(peak,world.enemies.filter(e=>!e.dead).length);}
     ok(peak>=3,'swarm did not pour in');
     for(const e of world.enemies.filter(e=>e.swarm && !e.dead)) ok(e.x>=world.lock.x0 && e.x+e.w<=world.lock.x1,'swarm left the locked screen');
@@ -434,13 +418,14 @@ export function runSmoke(game) {
     const boss=world.boss;ok(world.director.phase==='survive' && boss && boss.boss && boss.w>30 && boss.name===bossName(headOfZone(0)),'the family head did not arrive when the timer ran out');
     for(let i=0;i<60;i++)updateWaves(STEP);ok(world.director.phase==='survive','swarm ended before its boss fell');
     boss.hp=0;for(let i=0;i<200 && world.director.phase==='survive';i++){updateBoss(boss,STEP);updateWaves(STEP);}
-    ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead||e.boss) && !world.swarmCombo,'boss defeat did not open the exit');
+    ok(world.director.phase==='exit' && !world.lock && world.enemies.every(e=>e.dead||e.boss||e.x+e.w<=world.map.width-W) && !world.swarmCombo,'boss defeat did not open the exit');
+    world.hero.x=world.map.exitX-world.hero.w/2;world.hero.y=world.map.exitY-world.hero.h;
     for(let i=0;i<90;i++)updateWaves(STEP);
     ok(world.zone===1,'cleared exit did not advance');
   });
   check('world-space movement, camera and projectiles work beyond the first screen',()=>{
-    reset();const h=world.hero;h.x=850;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
-    const e=spawnEnemy('crawler',h.x+55,GROUND);e.spawnT=0;e.hp=e.max=10000;
+    reset();const h=world.hero,g=world.map.platforms.find(p=>p.ground && p.x>800 && p.w>=120);h.x=g.x+8;h.y=g.y-h.h;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
+    const e=spawnEnemy('crawler',h.x+55,g.y);e.spawnT=0;e.hp=e.max=10000;
     key('KeyZ',true);poll();updateHero(h,STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);
     for(let i=0;i<50;i++){poll();updateHero(h,STEP);game.updateShots(STEP);}
     ok(h.x>800 && e.x>800 && e.hp<e.max,'offscreen projectile or actor was clipped');
@@ -453,11 +438,11 @@ export function runSmoke(game) {
     ok(e.x===x,'distant pack left its map section');
   });
   check('residents stroll peacefully until the hero comes close or hits them',()=>{
-    reset();const h=world.hero,e=spawnEnemy('stalker',h.x+150,GROUND);e.spawnT=0;h.inv=100;
+    reset();const h=world.hero,e=spawnEnemy('stalker',h.x+150,FLOOR());e.spawnT=0;h.inv=100;
     let attacked=false;
     for(let i=0;i<240;i++){world.t+=STEP;updateEnemy(e,STEP);attacked||=e.state!=='idle';}
     ok(e.calm && !attacked,'resident attacked from across the screen');
-    const far=spawnEnemy('crawler',h.x+150,GROUND);far.spawnT=0;hitEnemy(far,1,{dir:1});ok(!far.calm,'a hit did not provoke');
+    const far=spawnEnemy('crawler',h.x+150,FLOOR());far.spawnT=0;hitEnemy(far,1,{dir:1});ok(!far.calm,'a hit did not provoke');
     e.x=h.x+30;for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(e,STEP);}
     ok(!e.calm,'resident ignored the hero right next to it');
   });
@@ -501,9 +486,9 @@ export function runSmoke(game) {
     setLootFilter(was);
   });
   check('the Monster Book counts kills, and TEMPER makes residents tougher',()=>{
-    resetBook();reset();const h=world.hero,e=spawnEnemy('stalker',h.x+20,GROUND);e.spawnT=0;hitEnemy(e,e.hp*10,{dir:1});
+    resetBook();reset();const h=world.hero,e=spawnEnemy('stalker',h.x+20,FLOOR());e.spawnT=0;hitEnemy(e,e.hp*10,{dir:1});
     ok(cardKills('stalker')===1,'kill not in the book');resetBook();
-    reset();const a=spawnEnemy('brute',h.x+40,GROUND);world.temper=5;const b=spawnEnemy('brute',h.x+40,GROUND);world.temper=0;
+    reset();const a=spawnEnemy('brute',h.x+40,FLOOR());world.temper=5;const b=spawnEnemy('brute',h.x+40,FLOOR());world.temper=0;
     ok(b.hp>a.hp*2 && b.dmg>a.dmg,'TEMPER 5 did not toughen them');
   });
   const report=document.createElement('pre');report.id='smoke-results';report.textContent=results.join('\n');document.body.append(report);

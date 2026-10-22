@@ -9,7 +9,8 @@ const parts = [];
 const sparks = [];
 const numbers = [];
 const callouts = [];
-export const feel = { trauma: 0, stop: 0, frame: 0 };
+export const feel = { trauma: 0, stop: 0, frame: 0, kx: 0, ky: 0, zoom: 0 };
+const splats = []; // blood on the floor: thin pixel streaks that fade after a few seconds
 
 // ---------------------------------------------------------------- particles
 export function emit(x, y, kind, col) {
@@ -46,6 +47,7 @@ export function emit(x, y, kind, col) {
     case 'flame': p.vx = (r() - 0.5) * 12; p.vy = -30 - r() * 24; p.life = 12 + r() * 8; p.size = r() < 0.4 ? 2 : 1; break;
     case 'chip': p.vx = (r() - 0.5) * 110; p.vy = -40 - r() * 70; p.g = 360; p.life = 18 + r() * 12; p.size = r() < 0.3 ? 2 : 1; break;
     case 'dust': p.vx = (r() - 0.5) * 40; p.vy = -6 - r() * 10; p.life = 14 + r() * 8; break;
+    case 'blood': p.vx = (r() - 0.2) * 120; p.vy = -50 - r() * 80; p.g = 420; p.life = 18 + r() * 14; p.size = r() < 0.35 ? 2 : 1; break;
   }
   p.max = p.life;
   parts.push(p);
@@ -113,6 +115,36 @@ export function callout(s, x, y, col = C.paper, { big = false, life = 70, follow
 }
 
 // ---------------------------------------------------------------- feel
+// blood: a spray thrown the way the hit went, and streaks left on the floor under the foe
+// (floorY: the surface it stands on, or null in the air)
+export function bleed(x, y, dir, n, floorY = null) {
+  for (let i = 0; i < n; i++) {
+    emit(x, y, 'blood', i % 3 ? C.red : C.wine);
+    const p = parts[parts.length - 1];
+    p.vx = Math.abs(p.vx) * dir;
+  }
+  if (floorY == null) return;
+  for (let i = 0; i < Math.ceil(n / 3); i++) {
+    if (splats.length > 90) splats.shift();
+    splats.push({ x: Math.round(x + dir * (3 + Math.random() * 22) - 1), y: Math.round(floorY) - 1, w: 1 + Math.floor(Math.random() * 3), col: Math.random() < 0.6 ? C.red : C.wine, life: 420 + Math.random() * 120 });
+  }
+}
+export function drawSplats() {
+  for (const s of splats) {
+    if (s.life < 60 && s.life & 1) continue;
+    X.fillStyle = s.col;
+    X.fillRect(s.x, s.y, s.w, 1);
+  }
+}
+// a hit's camera kick: the view jumps a few px the way the blow went and springs back
+export function kick(dir, amount) {
+  if (Math.abs(amount) >= Math.abs(feel.kx)) feel.kx = dir * amount;
+  feel.ky = Math.max(feel.ky, amount >= 3 ? 1 : 0);
+}
+// a finisher's zoom punch: a fraction (0.02 = 2%) that eases back out
+export function zoomPunch(f) {
+  feel.zoom = Math.max(feel.zoom, f);
+}
 export function shake(amount) {
   feel.trauma = Math.min(1, Math.max(feel.trauma, amount));
 }
@@ -143,11 +175,20 @@ export function updateFx(dt) {
     if (!c.big) c.y -= 0.3;
     if (--c.life <= 0) callouts.splice(i, 1);
   }
-  // trauma -> whole-pixel rumble (alternating sides every 2 frames)
+  for (let i = splats.length - 1; i >= 0; i--) if (--splats[i].life <= 0) splats.splice(i, 1);
+  // trauma -> whole-pixel rumble (alternating sides every 2 frames). (Was 4t^2, which rounded
+  // everything below 0.36 to nothing: crits and slams never moved the screen.)
   feel.trauma = Math.max(0, feel.trauma - 2.4 * dt);
-  const amp = Math.round(4 * feel.trauma * feel.trauma);
-  view.ox = amp ? (Math.floor(feel.frame / 2) % 2 ? amp : -amp) : 0;
-  view.oy = amp > 1 ? (Math.floor(feel.frame / 4) % 2 ? 1 : -1) * Math.ceil(amp / 2) : 0;
+  const amp = Math.round(5 * Math.pow(feel.trauma, 1.5));
+  // plus the last hit's kick, springing back over a few frames
+  const kx = Math.round(feel.kx), ky = Math.round(feel.ky);
+  feel.kx *= 0.55;
+  feel.ky *= 0.5;
+  if (Math.abs(feel.kx) < 0.5) feel.kx = 0;
+  feel.zoom = feel.zoom > 0.002 ? feel.zoom * 0.8 : 0;
+  view.ox = kx + (amp ? (Math.floor(feel.frame / 2) % 2 ? amp : -amp) : 0);
+  view.oy = ky + (amp > 1 ? (Math.floor(feel.frame / 4) % 2 ? 1 : -1) * Math.ceil(amp / 2) : 0);
+  view.zoom = 1 + feel.zoom;
 }
 
 export function drawParticles() {
@@ -230,6 +271,6 @@ function critStar(x, y, r, age) {
 }
 
 export function clearFx() {
-  parts.length = sparks.length = numbers.length = callouts.length = 0;
-  feel.trauma = feel.stop = 0;
+  parts.length = sparks.length = numbers.length = callouts.length = splats.length = 0;
+  feel.trauma = feel.stop = feel.kx = feel.ky = feel.zoom = 0;
 }

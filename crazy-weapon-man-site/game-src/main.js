@@ -13,7 +13,7 @@ import { updateSecret, drawSecret } from './game/secrets.js';
 import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone, startSurvival } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
-import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx } from './game/fx.js';
+import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
 import { updateInventory, drawInventory, toggleInventory, closeInventory } from './game/inventory.js';
@@ -269,6 +269,7 @@ function drawWorld(t) {
   drawMountWorld(t);
   drawDrops(t);
   drawHazards(t);
+  drawSplats();
   for (const e of world.enemies) if (e.dead) e.boss ? drawBoss(e, t) : drawEnemy(e, t);
   for (const e of world.enemies) if (!e.dead) e.boss ? drawBoss(e, t) : drawEnemy(e, t);
   drawBolts();

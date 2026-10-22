@@ -40,9 +40,20 @@ function gem(x, y) {
   rect(x + 1, y + 1, 1, 1, C.paper);
 }
 
+// low health: the screen edge pulses red in time with the heartbeat (hero.js plays it)
+export const LOW_HP = 0.25;
+function lowHealth(h, t) {
+  if (h.dead || h.hp / h.maxHp >= LOW_HP) return;
+  const beat = (Math.sin(t * Math.PI * 2 * 1.25) + 1) / 2, lv = 3 + beat * 6, d = 3 + Math.round(beat * 3);
+  dither(0, 0, W, d, C.red, lv);
+  dither(0, BAR_Y - d, W, d, C.red, lv);
+  dither(0, d, d, BAR_Y - d * 2, C.red, lv);
+  dither(W - d, d, d, BAR_Y - d * 2, C.red, lv);
+}
 export function drawHud(t) {
   const h = world.hero;
   if (!h) return;
+  lowHealth(h, t);
   // ---- bottom bar ----
   panel('panel', 0, BAR_Y, W, 28);
   const y = BAR_Y + 10;
@@ -103,9 +114,8 @@ export function drawHud(t) {
   let sub = '';
   if (world.hidden?.inRoom) sub = 'SECRET ROOM   STAND ON THE PORTAL AND PRESS UP TO GO BACK';
   else if (D) {
-    if (D.phase === 'fight') sub = `${enemiesLeft()} ENEMIES LEFT   CLEAR THE MAP`;
-    else if (D.phase === 'intro') sub = `${enemiesLeft()} ENEMIES LEFT   EXPLORE >`;
-    else if (D.phase === 'arena') sub = 'MAP CLEAR - THE ARENA IS AT THE END >';
+    if (D.phase === 'fight' || D.phase === 'intro') sub = `RUN TO THE ARENA >   ${enemiesLeft()} LEFT FOR A FULL CLEAR`;
+    else if (D.phase === 'arena') sub = 'FULL CLEAR! - THE ARENA IS AT THE END >';
     else if (D.phase === 'survive') sub = swarmBossUp() ? 'BEAT THE BOSS' : 'SURVIVE THE SWARM';
     else if (D.phase === 'exit') sub = 'MAP CLEAR - REACH THE EXIT >';
   }

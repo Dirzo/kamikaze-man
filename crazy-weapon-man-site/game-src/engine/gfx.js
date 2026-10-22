@@ -29,9 +29,11 @@ matchMedia('(any-pointer: coarse)').addEventListener('change',fit);
 fit();
 
 // ---- world offset (screenshake) ----
-export const view = { ox: 0, oy: 0 };
+export const view = { ox: 0, oy: 0, zoom: 1 };
 export function worldLayer() {
-  X.setTransform(1, 0, 0, 1, view.ox - Math.round(world.cameraX || 0), view.oy - Math.round(world.cameraY || 0));
+  const z = view.zoom || 1, ex = view.ox - Math.round(world.cameraX || 0), ey = view.oy - Math.round(world.cameraY || 0);
+  if (z === 1) X.setTransform(1, 0, 0, 1, ex, ey);
+  else X.setTransform(z, 0, 0, z, (W * (1 - z)) / 2 + ex * z, (H * (1 - z)) / 2 + ey * z); // a zoom punch, about the screen centre
 }
 export function screenLayer() {
   X.setTransform(1, 0, 0, 1, 0, 0);
@@ -94,6 +96,23 @@ export function frame(im, fi, fw, fh, x, y, flip = false) {
       n = Math.round(im.width / fw);
     X.drawImage(f, (n - 1 - fi) * fw, 0, fw, fh, x, y, fw, fh);
   }
+}
+// a one-colour cut-out of a sprite strip (a hit's white flash), made once per image and colour
+const tints = new Map();
+export function tinted(im, col) {
+  let m = tints.get(col);
+  if (!m) tints.set(col, (m = new WeakMap()));
+  if (m.has(im)) return m.get(im);
+  const cv = document.createElement('canvas');
+  cv.width = im.width;
+  cv.height = im.height;
+  const g = cv.getContext('2d');
+  g.drawImage(im, 0, 0);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = col;
+  g.fillRect(0, 0, cv.width, cv.height);
+  m.set(im, cv);
+  return cv;
 }
 export function image(im, x, y, flip = false) {
   X.drawImage(flip ? flipOf(im) : im, Math.round(x), Math.round(y));

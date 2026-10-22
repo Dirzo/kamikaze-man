@@ -2,7 +2,7 @@
 // faster and meaner after each third of its health. Telegraphs are pixel markers, never circles.
 import { C, W, GROUND } from '../config.js';
 import { A } from '../engine/assets.js';
-import { frame, rect, X, text } from '../engine/gfx.js';
+import { frame, rect, X, text, tinted } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
@@ -11,7 +11,7 @@ import { hurtHero, dropWeapon, dropShards, tickStatus, kill } from './combat.js'
 import { makeWeapon, baseDps } from './loot.js';
 import { ROLES, TIER_HP, TIER_DMG, WORLD_RAMP, HEAD_DMG, NEW_HEADS, SIBLING_DEFS } from '../data/families.js';
 import { stats } from '../data/meta.js';
-import { spawnEnemy } from './enemy.js';
+import { spawnEnemy, jitter } from './enemy.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { gainXp, gainProficiency, toast } from './progress.js';
@@ -171,6 +171,7 @@ export function updateBoss(e, dt) {
   if(!e.dead && world.map && cx(hero)<world.map.bossLeft-100) return;
   updateBubble(e, dt);
   e.flash = Math.max(0, e.flash - dt);
+  e.white = Math.max(0, (e.white || 0) - dt);
   e.anim += dt;
   if (e.dead) {
     outroT += dt;
@@ -684,7 +685,7 @@ export function drawBoss(e, t) {
     sy = Math.round(e.y + e.h - (art.h - 3));
   if (e.dead && Math.floor(t * 20) % 2) return;
   const f = e.flash > 0 ? 2 : Math.floor(e.anim * 2) % 2;
-  frame(art.im, f, art.w, art.h, sx, sy, e.face < 0);
+  frame(e.white > 0 ? tinted(art.im, C.paper) : art.im, f, art.w, art.h, sx + jitter(e), sy, e.face < 0);
   if (e.state === 'wind') {
     const label = { charge: 'DASH THROUGH', slam: 'JUMP / DASH', stomp: 'JUMP', fan: 'FIND THE GAP', toss: 'KEEP MOVING', summon: 'CLEAR ADDS', strikes: 'MOVE OFF MARKS', tide: 'JUMP THE WAVE', shell: 'JUMP THE SHELL', avalanche: 'JUMP THE SNOWBALLS', stars: 'FIND THE GAP', sparkles: 'FIND THE GAP', vanish: 'WATCH YOUR BACK', iai: 'JUMP!' }[e.pattern.split(':')[0]] || 'MOVE OFF MARKS';
     text(label, cx(e), sy - 30, C.gold, {align:'center'});
