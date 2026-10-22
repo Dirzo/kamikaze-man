@@ -490,9 +490,12 @@ function animSheet(zoom = 3, types = Object.keys(WTYPES), cols = ['idle', 'run',
       h.onGround = true;
       h.inv = 0;
       const T = WTYPES[type];
-      if (c === 'run') {
+      let at = 1.0; // 'idle:t', 'run:t' and 'climb:t' pick a moment of that loop
+      if (c.startsWith('idle:')) at = +c.slice(5);
+      else if (c.startsWith('climb')) (h.ladder = true), (h.climbT = +c.slice(6) || 0);
+      else if (c.startsWith('run')) {
         h.vx = 90;
-        h.animT = 0.15;
+        h.animT = c[3] === ':' ? +c.slice(4) : 0.15;
       } else if (c === 'jump') {
         h.onGround = false;
         h.vy = -100;
@@ -502,16 +505,22 @@ function animSheet(zoom = 3, types = Object.keys(WTYPES), cols = ['idle', 'run',
       } else if (c === 'dash') h.dashT = 0.1;
       else if (c[0] === 'a' || c[0] === 'b' || c[0] === 'c') {
         const step = c[0] === 'a' ? 0 : c[0] === 'b' ? 1 : 2;
-        const p = c[1] === ':' ? +c.slice(2) : c[0] === 'a' ? [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] : [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] ?? 0.5;
+        const p = c[1] === ':' ? parseFloat(c.slice(2)) : c[0] === 'a' ? [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] : [0.05, 0.25, 0.45, 0.6, 0.8, 1][+c[1]] ?? 0.5;
         if (T.melee) {
           const mn = T.combo[step];
           h.attack = { move: MOVES[mn], moveName: mn, t: p, dur: 1, hit: new Set() };
         } else h.attack = { ranged: true, t: p, dur: 1, fired: true };
       }
-      X.setTransform(1, 0, 0, 1, 0, 0);
-      X.fillStyle = bg;
-      X.fillRect(170, 120, cw, ch);
-      drawHeroAnimated(h, 1.0);
+      // 'a:0.5~': play the few frames before too, so the swing smear shows
+      const steps = c.endsWith('~') && h.attack ? [0.2, 0.15, 0.1, 0.05, 0] : [0];
+      const p0 = h.attack ? h.attack.t : 0;
+      for (const d of steps) {
+        if (h.attack) h.attack.t = Math.max(0, p0 - d);
+        X.setTransform(1, 0, 0, 1, 0, 0);
+        X.fillStyle = bg;
+        X.fillRect(170, 120, cw, ch);
+        drawHeroAnimated(h, at);
+      }
       g.drawImage(X.canvas, 170, 120, cw, ch, i * cw * zoom, r * ch * zoom, cw * zoom, ch * zoom);
     });
   });

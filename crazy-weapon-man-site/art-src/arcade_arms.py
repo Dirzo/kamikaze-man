@@ -188,8 +188,35 @@ ARMS = {
         '3444455O44',
         '.33333333',
     ],
+    # ladder arms, seen from behind: fists on the rungs straight above the shoulders, elbows just out.
+    # 'chi' grips the rung by the top of the head, 'clo' the one at shoulder height; mirrored (L) below
+    ('chi', 'near'): [
+        'VVv',
+        'vFv',
+        'zvz',
+        '544',
+        '544',
+        '544',
+        '544',
+        '5444',
+        'O444',
+        '3344',
+        '.33.',
+    ],
+    ('clo', 'near'): [
+        'VVv',
+        'vFv',
+        'zvz',
+        '544',
+        'O444',
+        '3344',
+        '.33.',
+    ],
 }
-DIRS = {'draw': -45, 'fwd': 0, 'dfwd': 45, 'down': 90, 'dback': 135, 'back': 180, 'uback': -135, 'up': -90, 'ufwd': -45}
+for _d in ('chi', 'clo'):
+    ARMS[(_d + 'L', 'near')] = [r.rjust(max(map(len, ARMS[(_d, 'near')])), '.')[::-1] for r in ARMS[(_d, 'near')]]
+ONLY = ('draw', 'chi', 'clo', 'chiL', 'cloL')  # picked by name only, never as the nearest match
+DIRS = {'chi': -70, 'clo': 0, 'chiL': -110, 'cloL': 180, 'draw': -45, 'fwd': 0, 'dfwd': 45, 'down': 90, 'dback': 135, 'back': 180, 'uback': -135, 'up': -90, 'ufwd': -45}
 # the far arm is the same drawing one shade darker, so it sits back in depth
 DARKER = {'5': '4', '4': '3', '3': '2', '2': '1', 'O': '3', 'V': 'v', 'v': 'z', 'F': 'z', 'z': 'z'}
 
