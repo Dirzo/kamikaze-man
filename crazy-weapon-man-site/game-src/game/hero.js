@@ -45,6 +45,8 @@ export function updateHero(h, dt) {
   }
   const T = TYPES[h.weapon.type];
   h.inv = Math.max(0, h.inv - dt);
+  // a Frost Cub's arrow (beastkin.js): slower for a moment, frost flaking off
+  if (h.chillT > 0 && (h.chillT -= dt) > 0 && Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
   h.giantT = Math.max(0, (h.giantT || 0) - dt); // GROWTH SPURT quirk: the weapon is drawn huge
   h.hurtT = Math.max(0, h.hurtT - dt);
   h.cd = Math.max(0, h.cd - dt);
@@ -117,7 +119,7 @@ export function updateHero(h, dt) {
   h.sprint = (h.runT || 0) >= MOVE.sprintAfter && !ride && !G.swim;
   if (h.hurtT <= 0) {
     const slowBy = swing && h.onGround ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
-    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy;
+    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
       h.skidT = 0.16;

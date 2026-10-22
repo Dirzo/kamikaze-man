@@ -74,3 +74,11 @@ test('all nine attacks and finisher recovery run exactly 25% faster',()=>{
   for(const [type,cd] of Object.entries(before)) assert.ok(Math.abs(cd/TYPES[type].cd-1.25)<1e-10);
   assert.ok(Math.abs(0.12/RECOVERY-1.25)<1e-10);
 });
+
+test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
+  const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);
+  assert.deepEqual(at(0), ['fuzzlet', 'burrball', 'puffshot']);
+  assert.ok(at(1).includes('werewolf') && at(1).includes('yeti') && !at(1).includes('fuzzlet'));
+  for (let t = 0; t <= 1; t += 0.1) assert.ok(at(t).length >= 3 && at(t).length <= 6, String(t));
+  assert.ok(enemyPool(1, 4, pool).includes('werewolf'), 'a classic run meets the whole family by the deep rooms');
+});

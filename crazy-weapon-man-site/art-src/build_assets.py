@@ -92,6 +92,10 @@ def main():
         cute_strip(frames).save(os.path.join(OUT, f'enemy-{etype}.png'))
         man['enemies'][etype] = {'w': frames[0].width, 'h': frames[0].height, 'frames': ['walk1', 'walk2', 'hit']}
 
+    # beastkin families: arcade-cut residents with named frames (beastkin.py)
+    import beastkin
+    beastkin.build(OUT, man)
+
     # bosses: full-size 32-bit style art (hd_bosses.py): the story bosses and the swarm giants
     hd_bosses.build(OUT, man)
     # the War Goose mount and its egg (mounts.py)

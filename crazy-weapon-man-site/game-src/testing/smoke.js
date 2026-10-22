@@ -267,6 +267,26 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
+  check('the fuzzball family: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    const fam=ZONES[1].pool;ok(fam.length===10 && fam.every(t=>ENEMIES[t].kind==='beast'),'zone 2 is not the fuzzball family');
+    for(const type of fam) {
+      const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
+      reset();const h=world.hero;h.maxHp=h.hp=1e6;
+      const near=['kite','alpha','greatbow','roll'].includes(ENEMIES[type].beh);
+      const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
+      let shots=0,seen=new Set();
+      for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
+      ok(h.hp<h.maxHp||shots>0,type+' never attacked');ok(seen.has('wind')&&seen.has('attack'),type+' never wound up and attacked');
+      for(let i=0;i<400;i++){world.t+=STEP;updateBolts(STEP);}
+    }
+    reset();let h=world.hero;const t=spawnEnemy('twintuft',h.x+80,FLOOR());t.spawnT=0;hitEnemy(t,t.hp+5,{dir:1});
+    for(let i=0;i<5;i++){world.t+=STEP;for(const e of [...world.enemies]) updateEnemy(e,STEP);}
+    ok(world.enemies.filter(e=>e.type==='fuzzlet'&&!e.dead).length===2,'a Twin Tuft did not split into two Fuzzlets');
+    reset();h=world.hero;const q=spawnEnemy('quillback',h.x+80,FLOOR());q.spawnT=0;q.hp=q.max=1e6;
+    for(let i=0;i<4;i++) hitEnemy(q,1,{dir:1});
+    for(let i=0;i<30;i++){world.t+=STEP;updateEnemy(q,STEP);}
+    ok(world.bolts.filter(b=>b.quill).length>=10,'a Quillback hit four times did not bristle');
+  });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {
       ok(TYPE_LIST.includes(type),type+' missing');

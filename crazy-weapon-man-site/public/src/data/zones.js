@@ -33,8 +33,8 @@ export const ZONES = [
     id: 'ranger-forest',
     weapon: 'bow',
     name: "The Ranger's Mushroom Forest",
-    sub: 'Every toadstool is an archery range. The squirrels never miss twice.',
-    pool: ['squirrel', 'crawler', 'squirrel', 'wizard', 'shieldbro', 'goose'],
+    sub: 'Every toadstool is an archery range. The fuzzballs grow up fast out here.',
+    pool: ['fuzzlet', 'burrball', 'puffshot', 'twintuft', 'quillback', 'moss', 'wolfpup', 'yeticub', 'yeti', 'werewolf'],
     platforms: L2,
     boss: null,
     music: { key: 57, scale: 'dorian', bpm: 124, prog: [0, 3, 0, 4], drums: 'forest', lead: 'p50', theme: '4 - 5 4 2 - 0 - | 1 - 2 - 4 - - . | 4 - 5 7 5 - 4 2 | 3 - 2 1 2 - - .' }

@@ -40,7 +40,18 @@ export const CARDS = {
   kitsune: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Its foxfire is the glint off a katana you never saw.' },
   monk: { stats: { regen: 0.0005 }, bonus: 'Heal 0.05% of max health a second', lore: 'Meditates on a staff balanced on one finger.' },
   anvil: { stats: { impact: 0.03 }, bonus: 'Hits land 3% harder', lore: 'Born on Dad\'s anvil. Barks sparks.' },
-  ninja: { stats: { swarmDmg: 0.02 }, bonus: '+2% damage in the swarm', lore: 'Carries forty shuriken and a forty-first for luck.' }
+  ninja: { stats: { swarmDmg: 0.02 }, bonus: '+2% damage in the swarm', lore: 'Carries forty shuriken and a forty-first for luck.' },
+  // the fuzzball family (zone 2)
+  fuzzlet: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Its first bow was a twig and a whisker. It hits more often than you would think.' },
+  burrball: { stats: { knock: 0.04 }, bonus: 'Foes fly 4% further', lore: 'Every arrow that ever missed it is still stuck in its fur. It keeps them for later.' },
+  puffshot: { stats: { aoeSize: 0.02 }, bonus: 'Area effects reach 2% wider', lore: 'Aims at the sky on purpose. The sky has never once dodged.' },
+  twintuft: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'One holds the bow, one pulls the string. They argue over who gets the credit.' },
+  quillback: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Fletches its arrows with its own quills, so every shot is a little personal.' },
+  moss: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Wears the forest like a cloak and carries a longbow taller than it is.' },
+  wolfpup: { stats: { speed: 0.02 }, bonus: '+2% move speed', lore: 'Has not decided which end of the bow to hit you with, so it uses both.' },
+  yeticub: { stats: { hp: 0.015 }, bonus: '+1.5% max health', lore: 'Carved its bow from an icicle. Its arrows never thaw.' },
+  yeti: { stats: { impact: 0.03 }, bonus: 'Hits land 3% harder', lore: 'Its greatbow is a whole antler strung with frozen vine. It only ever needs one arrow.' },
+  werewolf: { stats: { bossDmg: 0.02 }, bonus: '+2% damage to bosses and elites', lore: 'When the moon is up, so is every bow in the forest.' }
 };
 export const CARD_LIST = Object.keys(CARDS).filter(t => ENEMIES[t]);
 

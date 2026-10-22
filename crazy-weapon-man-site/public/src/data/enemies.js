@@ -38,6 +38,20 @@ export const ENEMIES = {
   kitsune: { name: 'Kitsune Spirit', bloodless: true, kind: 'blink', hp: 0.8, dmg: 0.95, speed: 40, range: 22, wind: 0.44, alert: { do: 'foxfire', every: 5.5, dmg: 0.55 } },
   monk: { name: 'Pebble Monk', kind: 'shield', hp: 1.25, dmg: 1.05, speed: 32, range: 26, wind: 0.56, alert: { do: 'beads', every: 5, dmg: 0.6 } },
   anvil: { name: 'Anvil Pup', bloodless: true, kind: 'roller', hp: 1.4, dmg: 1.2, speed: 26, range: 140, wind: 0.66, alert: { do: 'sparks', every: 5, dmg: 0.6 } },
+  // The fuzzball family (zone 2, the bow): beastkin archers that grow up along the world's road,
+  // from Fuzzlets on its first level to Moonfang werewolves at the castle. kind 'beast' hands the
+  // AI to game/beastkin.js, which reads beh; evo is the family rank (data/progression.js
+  // familyPool lets ranks in as the levels go on). Their sprites have named frames (art-src/beastkin.py).
+  fuzzlet: { name: 'Fuzzlet', kind: 'beast', beh: 'hop', fam: 'fuzz', evo: 1, hp: 0.55, dmg: 0.6, speed: 44, range: 120, wind: 0.4 },
+  burrball: { name: 'Burr Ball', kind: 'beast', beh: 'roll', fam: 'fuzz', evo: 2, hp: 0.9, dmg: 0.9, speed: 32, range: 150, wind: 0.55 },
+  puffshot: { name: 'Puff Archer', kind: 'beast', beh: 'lob', fam: 'fuzz', evo: 3, hp: 0.75, dmg: 0.8, speed: 30, range: 170, wind: 0.6 },
+  twintuft: { name: 'Twin Tuft', kind: 'beast', beh: 'twin', fam: 'fuzz', evo: 4, hp: 1.05, dmg: 0.75, speed: 34, range: 130, wind: 0.55 },
+  quillback: { name: 'Quillback', kind: 'beast', beh: 'fan', fam: 'fuzz', evo: 5, hp: 1.15, dmg: 0.8, speed: 30, range: 130, wind: 0.6 },
+  moss: { name: 'Moss Stalker', kind: 'beast', beh: 'snipe', fam: 'fuzz', evo: 6, hp: 0.85, dmg: 1.35, speed: 26, range: 280, wind: 1.05 },
+  wolfpup: { name: 'Wolf Pup', kind: 'beast', beh: 'kite', fam: 'fuzz', evo: 7, hp: 0.95, dmg: 1.0, speed: 72, range: 26, wind: 0.32 },
+  yeticub: { name: 'Frost Cub', kind: 'beast', beh: 'frost', fam: 'fuzz', evo: 8, hp: 1.3, dmg: 0.9, speed: 30, range: 140, wind: 0.6 },
+  yeti: { name: 'Greatbow Yeti', kind: 'beast', beh: 'greatbow', fam: 'fuzz', evo: 9, heavy: true, hp: 2.6, dmg: 1.5, speed: 20, range: 220, wind: 0.95 },
+  werewolf: { name: 'Moonfang', kind: 'beast', beh: 'alpha', fam: 'fuzz', evo: 10, hp: 2.2, dmg: 1.3, speed: 48, range: 30, wind: 0.42 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
   acornking: { name: 'The Acorn Archer King', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 30, range: 140, wind: 0.6, bolt: 'orange' },
@@ -54,7 +68,9 @@ export const DEATHS = {
   stalker: 'topple', crawler: 'flip', goose: 'spin', bombchicken: 'squash', brute: 'topple', wraith: 'rise', maw: 'flip',
   flyer: 'spin', wizard: 'topple', taxman: 'topple', mimic: 'flip', eyeball: 'rise', shieldbro: 'topple', blinker: 'rise',
   summoner: 'rise', sniper: 'topple', roller: 'spin', squirrel: 'flip', turtle: 'flip', raccoon: 'spin', samurai: 'topple',
-  kitsune: 'rise', monk: 'squash', anvil: 'squash', ninja: 'spin'
+  kitsune: 'rise', monk: 'squash', anvil: 'squash', ninja: 'spin',
+  fuzzlet: 'squash', burrball: 'spin', puffshot: 'flip', twintuft: 'flip', quillback: 'flip', moss: 'topple',
+  wolfpup: 'spin', yeticub: 'flip', yeti: 'topple', werewolf: 'topple'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

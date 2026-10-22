@@ -23,6 +23,7 @@ import { recordKill, CARD_TIERS, CARDS } from '../data/book.js';
 import { toast } from './progress.js';
 import { ENEMIES } from '../data/enemies.js';
 import { alertPack } from './enemy.js';
+import { beastHit, beastDeath, beastPush } from './beastkin.js';
 import { modOn, temper } from '../data/temper.js';
 import { KILL_PAY } from '../data/maps.js';
 
@@ -117,17 +118,19 @@ export function hitEnemy(e, dmg, o = {}) {
   if (!e.boss && !e.swarmBoss) {
     const R = reaction(F.w, { big: o.big || o.hop, crit: o.crit, elite: e.elite, chip: o.chip });
     let push = (o.knock || 0) * (1 + heroStats().impact * 0.5 + heroStats().knock); // HEAVY IMPACT / KNOCKOUT
+    if (e.kind === 'beast') beastHit(e), (push = beastPush(e, push));
     if (o.crit) push *= 1.35;
     if (e.elite) push *= 0.75;
     if (world.t - (e.lastHitAt || -9) < 0.3 && !o.crit) push *= 0.75;
     if (push > 0) {
       e.vx = (dir * push) / (KB_SLIDE + 0.06);
       e.kbT = KB_SLIDE;
-      e.stun = Math.max(e.stun, R.stun);
+      const heavy = e.d?.heavy && !o.big && !o.crit;
+      e.stun = Math.max(e.stun, R.stun * (heavy ? 0.3 : 1));
       e.face = -dir;
       if (!e.air && !o.chain && !o.aoe) {
         if (e.juggle && !e.onGround) e.vy = Math.min(e.vy, -100); // already up: keep it up
-        else if (R.launch) {
+        else if (R.launch && !heavy) {
           e.vy = -R.launch;
           e.onGround = false;
           e.juggle = true;
@@ -137,7 +140,7 @@ export function hitEnemy(e, dmg, o = {}) {
         e.onGround = false;
       }
     }
-    if (e.state === 'wind' && (o.crit || o.special || o.big || F.w >= 2)) e.state = 'idle'; // big hits interrupt wind-ups
+    if (e.state === 'wind' && (o.crit || o.special || o.big || (F.w >= 2 && !e.d?.heavy))) e.state = 'idle'; // big hits interrupt wind-ups
     if (e.calm === false && !e.packAlerted) alertPack(e);
   }
   e.lastHitAt = world.t;
@@ -346,6 +349,7 @@ export function kill(e, o = {}) {
   if (world.killsSinceDrop >= Math.round(10 / pay) || Math.random() < (e.elite ? 0.65 : 0.07 * pay)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
   if (Math.random() < ((e.elite ? 0.4 : 0.035) + stats().hearts) * temper(world.temper).hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
+  if (e.kind === 'beast') beastDeath(e);
   // TEMPER: VENGEFUL: a ring of slow bolts from the fallen
   if (modOn(world.temper, 'vengeful') && !e.swarm && !e.eaten) {
     for (let i = 0; i < 6; i++) {

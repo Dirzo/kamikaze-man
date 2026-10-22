@@ -213,6 +213,17 @@ const DIE = {
   kitsune: () => arp([84, 88, 91, 96, 100, 103], 1, { wave: 'p12', vol: 0.025, decay: 0.002 }), // foxfire wisp
   monk: () => chip([[N(81), 8]], { wave: 'p50', vol: 0.03, decay: 0.002 }), // a bell
   anvil: () => (chip([[N(96), 1], [N(91), 6]], { wave: 'p12', vol: 0.04, decay: 0.004 }), chip([[N(36), 4]], { wave: 'tri', vol: 0.08, decay: 0.01 })), // ting + thud
+  // the fuzzball family: squeaks for the little ones, a roar for the yeti, a howl for Moonfang
+  fuzzlet: () => chip([[N(98), 1], [N(103), 1], [N(91), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }),
+  burrball: () => (chip([[N(60), 1], [N(55), 1], [N(50), 2]], { wave: 'tri', vol: 0.06, decay: 0.008 }), hiss(3, { vol: 0.03, rate: 1.3, short: true })),
+  puffshot: () => arp([91, 86, 79], 1, { wave: 'p25', vol: 0.03, decay: 0.003 }),
+  twintuft: () => (chip([[N(96), 1], [N(91), 2]], { wave: 'p12', vol: 0.03 }), chip([[N(93), 1], [N(88), 2]], { wave: 'p12', vol: 0.03, delay: 0.07 })),
+  quillback: () => (hiss(4, { vol: 0.035, rate: 1.6, short: true }), chip([[N(84), 1], [N(77), 2]], { wave: 'p25', vol: 0.03 })),
+  moss: () => (hiss(5, { vol: 0.03, rate: 0.8, drop: 0.08 }), chip([[N(67), 2], [N(62), 3]], { wave: 'p50', vol: 0.025 })),
+  wolfpup: () => chip([[N(86), 1], [N(91), 1], [N(84), 2], [N(79), 3]], { wave: 'p25', vol: 0.035, decay: 0.004 }), // yip
+  yeticub: () => chip([[N(76), 2], [N(72), 2], [N(67), 4]], { wave: 'p50', vol: 0.035, decay: 0.004 }),
+  yeti: () => (chip([[N(43), 3], [N(41), 3], [N(36), 8]], { wave: 'tri', vol: 0.1, decay: 0.006 }), hiss(6, { vol: 0.04, rate: 0.5, drop: 0.1 })), // roar
+  werewolf: () => arp([67, 72, 76, 79, 76, 72], 3, { wave: 'p25', vol: 0.04, decay: 0.002 }), // a last howl
   ninja: () => (hiss(4, { vol: 0.04, rate: 1.5, drop: -0.1, short: true }), arp([91, 96], 1, { wave: 'p12', vol: 0.025, delay: 0.05 })) // poof
 };
 
