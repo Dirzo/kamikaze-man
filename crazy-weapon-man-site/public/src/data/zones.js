@@ -32,8 +32,8 @@ export const ZONES = [
   {
     id: 'ranger-forest',
     weapon: 'bow',
-    name: "The Ranger's Mushroom Forest",
-    sub: 'Every toadstool is an archery range. The fuzzballs grow up fast out here.',
+    name: "The Ranger's Snowy Woods",
+    sub: 'Snowfall, pines and slippery ice. The fuzzballs grow up fast out here, into wolves and yetis.',
     pool: ['fuzzlet', 'burrball', 'puffshot', 'twintuft', 'quillback', 'moss', 'wolfpup', 'yeticub', 'yeti', 'werewolf'],
     platforms: L2,
     boss: null,

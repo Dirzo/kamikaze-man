@@ -5,19 +5,23 @@ import { A } from '../engine/assets.js';
 import { ZONES } from '../data/zones.js';
 import { roomAt } from '../data/maps.js';
 import { X, rect, text, textWidth, screenLayer, worldLayer } from '../engine/gfx.js';
+import { drawBiomeBackdrop, drawBiomeTerrain, drawBiomeProps } from './ambience.js';
 const visible=(x,y,w,h)=>x+w>=world.cameraX && x<=world.cameraX+W && y+h>=world.cameraY && y<=world.cameraY+H;
 export function drawMapBackdrop() {
   const map=world.map;if(!map)return;
   const bg=A.bg[ZONES[world.zone].id],camera=Math.round(world.cameraX||0),cameraY=Math.round(world.cameraY||0);
+  // the zone's living environment (ambience.js): parallax layers, weather, its own terrain and props
+  const living=drawBiomeBackdrop();
   screenLayer();
   const ox=Math.floor(camera*.25)%W;
   // Keep the authored scene at its native proportions at every depth.
-  for(let x=-ox;x<W;x+=W)X.drawImage(bg,0,0,W,GROUND,x,0,W,H);
+  if(!living)for(let x=-ox;x<W;x+=W)X.drawImage(bg,0,0,W,GROUND,x,0,W,H);
   if(map.dark){X.globalAlpha=map.dark*.13;rect(0,0,W,H,C.ink);X.globalAlpha=1;} // deeper down the tunnel, less daylight
+  if(living)drawBiomeTerrain();
   worldLayer();
   const slab=A.slabs[ZONES[world.zone].id];
   // Terrain uses the biome's existing earth texture, never a replacement cave palette.
-  for(const p of map.solids) {
+  if(!living)for(const p of map.solids) {
     if(!visible(p.x,p.y,p.w,p.h))continue;
     const left=Math.max(p.x,Math.floor(camera/32)*32),right=Math.min(p.x+p.w,camera+W+32);
     const top=Math.max(p.y,Math.floor(cameraY/32)*32),bottom=Math.min(p.y+p.h,cameraY+H+32);
@@ -35,7 +39,7 @@ export function drawMapBackdrop() {
     }
   }
   // pit bottoms: a row of spikes, so a gap reads as a gap
-  for(const q of map.pits||[]) {
+  if(!living)for(const q of map.pits||[]) {
     const y=map.floorY;
     if(!visible(q.x,y-8,q.w,16))continue;
     rect(q.x,y-1,q.w,8,C.ink);
@@ -47,6 +51,7 @@ export function drawMapBackdrop() {
     rect(l.x-5,l.top,1,l.bottom-l.top,C.wood);rect(l.x+5,l.top,1,l.bottom-l.top,C.wood);
     for(let y=l.top+4;y<l.bottom;y+=9){rect(l.x-5,y,11,3,C.woodD);rect(l.x-5,y,10,1,C.sand);}
   }
+  if(living)drawBiomeProps();
 }
 export function drawMapExit(t) {
   const map=world.map;if(!map)return;

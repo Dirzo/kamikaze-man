@@ -143,6 +143,9 @@ def main():
         man['zones'].append(key)
     # weapon-themed zones (weapon_zones.py); the ranger forest dresses up the mushroom backdrop
     weapon_zones.build(OUT, man, Image.open(os.path.join(OUT, 'bg-mushroom-hollow.png')).convert('RGBA'))
+    # the living zone environments (biomes.py) dress every zone for its beastkin family
+    import biomes
+    biomes.build(OUT, man)
 
     with open(os.path.join(OUT, 'manifest.json'), 'w') as f:
         json.dump(man, f, separators=(',', ':'))  # compact, like the committed manifest

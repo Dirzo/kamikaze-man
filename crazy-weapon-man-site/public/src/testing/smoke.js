@@ -48,6 +48,7 @@ import { updateHidden } from '../game/hidden.js';
 import { updateRelics } from '../game/relics.js';
 import { mount, updateMount, flap } from '../game/mount.js';
 import { heroPhysics, updateGimmick } from '../game/gimmicks.js';
+import { ambience, updateAmbience } from '../game/ambience.js';
 import { setLootFilter, lootFilter } from '../game/inventory.js';
 import { cardKills, resetBook } from '../data/book.js';
 import { RELIC_COUNT } from '../data/relics.js';
@@ -634,6 +635,21 @@ export function runSmoke(game) {
     level('3-3');ok(heroPhysics()?.swim>0,'no swimming underwater');
     level('6-2');ok(heroPhysics()?.friction<1,'ice is not slippery');
     level('1-1');ok(!world.gimmick,'1-1 must stay as it is');
+  });
+  check('every zone comes alive: layers, props and weather, ice you slide on, belts that carry you and wind that pushes',()=>{
+    for(let z=0;z<10;z++){reset();startZone(z);const a=ambience();ok(a.B && a.props.length>=12 && a.parts.length>0,'zone '+(z+1)+' has no props or weather');ok(A.biome[ZONES[z].id]?.layers.length===4 && A.biome[ZONES[z].id].atlas,'zone '+(z+1)+' art missing');}
+    const wide=m=>m.platforms.filter(p=>p.ground && !p.belt && !p.ice && p.w>=120 && p.x>0 && p.x<m.bossLeft).sort((a,b)=>b.w-a.w)[0];
+    reset();startZone(1);ambience();const ice=world.map.platforms.find(p=>p.ice),h=world.hero;
+    ok(ice && ice!==world.map.platforms.find(p=>p.ground && p.x===0),'no ice sheet in the snowy woods (or it is on the runway)');
+    stand(h,ice.x+ice.w/2,ice.y);h.platform=ice;ok(heroPhysics()?.friction<1,'an ice sheet is not slippery');
+    const snow=wide(world.map);stand(h,snow.x+snow.w/2,snow.y);h.platform=snow;ok(!heroPhysics(),'plain snow is slippery');
+    reset();startZone(6);ambience();const belt=world.map.platforms.find(p=>p.belt);ok(belt,'no conveyor belt in the forge');
+    stand(world.hero,belt.x+belt.w/2,belt.y);world.hero.platform=belt;let x0=world.hero.x;
+    for(let i=0;i<30;i++)updateAmbience(STEP);ok(Math.sign(world.hero.x-x0)===Math.sign(belt.belt),'the belt did not carry the hero');
+    reset();startZone(5);const amb=ambience(),g=wide(world.map);stand(world.hero,g.x+g.w/2,g.y);world.hero.platform=g;x0=world.hero.x;
+    amb.wind.phase='warn';amb.wind.t=0;for(let i=0;i<90;i++)updateAmbience(STEP);
+    ok(amb.wind.phase==='gust' && Math.sign(world.hero.x-x0)===amb.wind.dir,'the mountain wind did not push');
+    reset();startZone(0);ambience();ok(!world.map.platforms.some(p=>p.ice||p.belt) && !ambience().wind,'the Sword Graveyard got terrain touches');
   });
   check('the loot filter salvages drops below its rarity and always keeps standouts',()=>{
     reset();const was=lootFilter();setLootFilter(3);world.bag=new Array(BAG_SIZE).fill(null);const s0=world.shards;

@@ -38,6 +38,7 @@ browser regression suite. These are absent from normal runs.
 | `game-src/game/speedrun.js`, `data/speedrun.js` | Run clock, splits, damage log, results screen |
 | `game-src/data/proficiency.js`, `quirks.js`, `lust.js` | Weapon mastery (saved), quirk table and rates, Weapon Lust numbers |
 | `game-src/data/maps.js`, `game-src/game/camera.js`, `map-view.js` | Multi-screen routes, solid terrain, ladders, two-axis camera, minimap and exit portals |
+| `game-src/game/ambience.js`, `data/biomes.js` | Living zone environments: parallax layers, weather, animated props, ice, belts, wind, dark |
 | `game-src/engine/` | Input, canvas, assets and chiptune audio |
 | `art-src/` | Editable pixel sources and reproducible PNG exporters |
 | `legacy-src/` | Historical patch stack; reference only |
@@ -45,6 +46,19 @@ browser regression suite. These are absent from normal runs.
 
 Do not wrap or monkey-patch gameplay functions. Change the owning module and update its meaningful
 regressions. New weapon powers belong in the mutation schedule, not a new script-injection layer.
+
+## Zone environments
+
+Every zone is dressed for its beastkin family, whimsical like MapleStory: a golden-hour sword
+graveyard, snowy woods under an aurora, a lily-pad lagoon with a bamboo dojo, a lantern-lit night
+bazaar, a sakura shrine, a misty mountain temple, a lava forge, a storybook cottage, a moonlit ninja
+castle and the dragon's gold vault. `art-src/biomes.py` (with `biome_art1.py`, `biome_art2.py`)
+exports four tileable parallax layers per zone plus an atlas of ground, lip, cave-roof, pit and
+animated prop sprites; `game/ambience.js` scrolls the layers, scatters the props along the route
+(seeded, so a map always looks the same), runs the weather and the sky's critters, and adds a few
+terrain touches that never change a layout: ice sheets in zone 2 (slippery), wind gusts in zone 6
+(they push), conveyor belts in zone 7 (they carry you) and pools of darkness in zone 4 that only the
+lamps light. `?capture=walk1`..`walk10` leaves a zone running for recordings.
 
 ## Progression
 

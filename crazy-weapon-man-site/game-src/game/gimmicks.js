@@ -36,7 +36,9 @@ export function startGimmick() {
 }
 export const gimmickName = () => (world.gimmick ? GIMMICKS[world.gimmick].name : '');
 // the hero's movement numbers in this level (multipliers on HERO), or null for the usual
-export const heroPhysics = () => (world.gimmick && !world.hidden?.inRoom ? PHYSICS[world.gimmick] || null : null);
+// (an ice sheet in the snowy woods, ambience.js, is slippery wherever the level is)
+export const heroPhysics = () =>
+  (world.gimmick && !world.hidden?.inRoom ? PHYSICS[world.gimmick] || null : null) || (world.hero?.onGround && world.hero.platform?.ice ? PHYSICS.ice : null);
 
 export function updateGimmick(dt) {
   const h = world.hero;
