@@ -101,7 +101,7 @@ export function updateDrops(dt) {
         const n = Math.floor(world.shardAcc);
         world.shardAcc -= n;
         world.shards += n;
-        sfx.pickup();
+        sfx.shard();
       } else {
         const heal = Math.round(h.maxHp * 0.15 * (1 + stats().heal));
         h.hp = Math.min(h.maxHp, h.hp + heal);

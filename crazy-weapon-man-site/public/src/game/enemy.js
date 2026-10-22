@@ -2,7 +2,7 @@
 // Knockback/stagger come from combat.js; while kbT/stun run the AI waits.
 import { C, W, GROUND } from '../config.js';
 import { A } from '../engine/assets.js';
-import { frame, rect, text, X, px } from '../engine/gfx.js';
+import { frame, rect, text, X, px, tinted } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
@@ -16,6 +16,7 @@ import { makeWeapon } from './loot.js';
 import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
 import { temper, modOn } from '../data/temper.js';
+import { MOVE } from '../data/feel.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
@@ -81,21 +82,31 @@ export function updateEnemy(e, dt) {
   const hero = world.hero;
   updateBubble(e, dt);
   e.flash = Math.max(0, e.flash - dt);
+  e.white = Math.max(0, (e.white || 0) - dt);
+  e.alertT = Math.max(0, (e.alertT || 0) - dt);
   e.anim += dt;
   if (e.dead) {
     e.deathT -= dt;
-    e.vx *= 0.9;
-    const air = deathOf(e.type) === 'rise';
+    e.vx *= e.launched ? Math.pow(0.97, dt * 60) : 0.9; // a launched body keeps flying
+    const air = deathOf(e.type) === 'rise' && !e.launched;
     if (air) (e.vy = -26), (e.y += e.vy * dt);
     else {
-      const was = e.onGround;
+      const was = e.onGround, vx = e.vx;
       move(e, dt, world.platforms, { air: false });
+      if (e.launched && e.hitWall) (e.vx = -vx * 0.6), burst(cx(e), cy(e), 4, 'dust', ['mist', 'fog']); // off the wall
       if (e.onGround && !was && !e.landed) (e.landed = true), burst(cx(e), e.y + e.h, 5, 'dust', ['mist', 'fog']);
     }
     if (e.deathT <= SHATTER_T) shatter(e);
     return;
   }
   if (e.hp <= 0) { kill(e); return; }
+  // knocked into a pit: gone (the hero's pits, hero.js)
+  if (world.map?.pits?.length && !e.air && e.y + e.h >= worldFloor() - 1) {
+    e.hp = 0;
+    kill(e, { dir: e.vx >= 0 ? 1 : -1 });
+    e.deathT = 0;
+    return;
+  }
   tickStatus(e, dt);
   // TEMPER: REGENERATION: a resident left alone for a few seconds knits itself back together
   if (e.hp < e.max && !e.swarm && world.t - (e.lastHitAt ?? -9) > 3 && modOn(world.temper, 'regen')) e.hp = Math.min(e.max, e.hp + e.max * 0.04 * dt);
@@ -114,6 +125,11 @@ export function updateEnemy(e, dt) {
     e.kbT -= dt;
     physics();
     return;
+  }
+  // launched into the air: helpless until it lands (follow-up hits keep it up)
+  if (e.juggle) {
+    if (e.onGround && e.vy >= 0) e.juggle = false;
+    else e.stun = Math.max(e.stun, 0.05);
   }
   if (e.stun > 0) {
     e.stun -= dt;
@@ -196,6 +212,13 @@ export function updateEnemy(e, dt) {
       if (e.st <= 0) e.state = 'idle';
       break;
   }
+  // MapleStory touch damage: walking into a riled-up resident hurts (a dash goes through safely).
+  // Calm, staggered, juggled and just-woken residents don't.
+  // Only a resident on the move bumps you (its swing is its own hit), at most once a second.
+  if (!e.calm && !e.swarmBoss && e.state === 'idle' && Math.abs(e.vx) > 4 && e.stun <= 0 && e.kbT <= 0 && !(e.wakeT > 0) && world.t > (e.touchAt ?? -9) + 1) {
+    const body = { x: e.x + 2, y: e.y + 2, w: e.w - 4, h: e.h - 3 };
+    if (overlap(body, hero) && hurtHero(e.dmg * MOVE.touchDmg, Math.sign(cx(hero) - cx(e)) || -hero.face)) e.touchAt = world.t;
+  }
   // Residents own their platform: they never walk (or get nudged) off its edge on their own,
   // so a sniper on a ledge stays a sniper on a ledge. Only knockback can throw them off.
   if (!e.air && e.onGround && e.platform) {
@@ -240,12 +263,33 @@ function windup(e, t) {
 
 export function provoke(e) {
   if (!e.calm) return;
+  notice(e, 0);
+  alertPack(e);
+}
+// one resident notices you: a little "!" over its head, a hop and a turn to face you, and a beat
+// before it comes at you (its trick comes a moment later)
+function notice(e, delay) {
+  const hero = world.hero;
   e.calm = false;
-  e.cool = Math.max(e.cool, 0.5);
-  // a little "!" so you can see who noticed you; its trick comes a moment later
-  if (world.t > (e.alertedAt || -9) + 4) callout('!', 0, 0, C.gold, { follow: e, life: 30 });
+  e.cool = Math.max(e.cool, 0.5 + delay);
+  if (world.t > (e.alertedAt || -9) + 4) {
+    e.alertT = 0.6;
+    if (!e.air && e.onGround && !e.juggle) (e.vy = -90), (e.onGround = false);
+    e.wakeT = Math.max(e.wakeT || 0, 0.3 + delay);
+  }
+  if (hero) e.face = Math.sign(cx(hero) - cx(e)) || e.face;
   e.alertedAt = world.t;
   e.traitT = Math.max(e.traitT || 0, 1.4 + Math.random());
+}
+// the rest of its pack (same floor, close by) notices together, one after another
+export function alertPack(e) {
+  e.packAlerted = true;
+  for (const n of world.enemies) {
+    if (n === e || n.dead || !n.calm || n.boss || n.swarm || n.state === 'sleep' || n.state === 'disguised') continue;
+    if (Math.abs(cx(n) - cx(e)) > 80 || Math.abs(n.y + n.h - (e.y + e.h)) > 10) continue;
+    n.packAlerted = true;
+    notice(n, 0.04 + Math.random() * 0.14);
+  }
 }
 // stroll back and forth on the home platform, pausing now and then
 function wander(e, dt, slow) {
@@ -474,9 +518,16 @@ export function drawBolts(t = world.t) {
 }
 
 // ---------------------------------------------------------------- draw
+// while the world is frozen on a hit, the struck foe shakes side to side (px offset)
+export function jitter(e) {
+  if (!e.jitAt) return 0;
+  const age = performance.now() - e.jitAt;
+  if (age > e.jitFor) return 0;
+  return Math.floor(age / 34) % 2 ? 1 : -1;
+}
 export function drawEnemy(e, t) {
   const art = A.enemies[e.type];
-  const sx = Math.round(cx(e) - art.w / 2),
+  const sx = Math.round(cx(e) - art.w / 2) + (e.dead ? 0 : jitter(e)),
     sy = Math.round(e.y + e.h - (art.h - 1));
   if (e.spawnT > 0 && Math.floor(t * 30) % 2) return;
   if (e.dead && (e.shattered || e.deathT <= SHATTER_T)) return; // it has burst into shards
@@ -492,7 +543,7 @@ export function drawEnemy(e, t) {
     X.translate(fx, fy);
     X.scale(k, k);
     X.translate(-fx, -fy);
-    drawBody(e, t, Math.round(fx - art.w / 2), Math.round(fy - (art.h - 1)), art);
+    drawBody(e, t, Math.round(fx - art.w / 2) + jitter(e), Math.round(fy - (art.h - 1)), art);
     X.restore();
     if (e.state === 'wind' && e.kind === 'sniper' && !e.dead) aimLine(e, t);
     return;
@@ -509,7 +560,7 @@ function deathPose(e, fx, fy, k, t) {
     h = e.h * k;
   if (p >= 1 && Math.floor(t * 24) % 2) return false; // about to burst
   const about = (px0, py0, fn) => (X.translate(px0, py0), fn(), X.translate(-px0, -py0));
-  switch (deathOf(e.type)) {
+  switch (e.launched ? 'spin' : deathOf(e.type)) {
     case 'topple': // tip over the far foot, onto its back
       about(fx + (dir * e.w * k) / 2, fy, () => X.rotate(dir * ease * Math.PI * 0.5));
       break;
@@ -534,12 +585,19 @@ function drawBody(e, t, sx, sy, art) {
   if (e.flash > 0 || e.dead) f = 2;
   else if (Math.abs(e.vx) > 8 || e.air) f = Math.floor(e.anim * 8) % 2;
   const bob = e.d.float ? Math.round(Math.sin(e.anim * 3) * 2) : 0;
-  frame(art.im, f, art.w, art.h, sx, sy + bob - (e.state === 'wind' && e.kind === 'bomb' && Math.floor(t * 16) % 2 ? 1 : 0), e.face < 0);
+  frame(e.white > 0 && !e.dead ? tinted(art.im, C.paper) : art.im, f, art.w, art.h, sx, sy + bob - (e.state === 'wind' && e.kind === 'bomb' && Math.floor(t * 16) % 2 ? 1 : 0), e.face < 0);
   // faces, eyes and blush are part of each sprite (art-src/cute_enemies.py); hits squeeze them shut
   if (e.dead) return;
   // a secret room's golden pack glitters; a TEMPER ward is a violet ring
   if (e.golden && Math.floor(t * 8 + e.id) % 3 === 0) px(Math.round(e.x + ((e.anim * 37) % e.w)), Math.round(e.y + ((e.anim * 53) % e.h)), C.gold);
   if (e.ward) for (let a = 0; a < 12; a++) if ((a + Math.floor(t * 8)) % 3) px(Math.round(cx(e) + Math.cos((a * Math.PI) / 6) * (e.w / 2 + 4)), Math.round(cy(e) + Math.sin((a * Math.PI) / 6) * (e.h / 2 + 3)), C.violet);
+  // noticed you: a gold "!" that pops up over its head
+  if (e.alertT > 0) {
+    const mx = Math.round(cx(e)), top = sy - 14 - (e.alertT > 0.5 ? 2 : 0);
+    rect(mx - 2, top - 1, 5, 11, C.ink);
+    rect(mx - 1, top, 3, 6, C.gold);
+    rect(mx - 1, top + 7, 3, 2, C.gold);
+  }
   // elite marker: small gold chevron
   if (e.elite) {
     const mx = Math.round(cx(e)),

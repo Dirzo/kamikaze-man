@@ -105,8 +105,10 @@ const STYLES = {
   hammer: {
     slide: 6,
     grip2: -6,
-    idle: (t, b) => ({ f: b ? 'idle2' : 'wide', fh: [15, 18 + b], ang: 64 + sin(t * 1.2) * 2 }),
-    run: s => ({ fh: [13, 19 + Math.abs(s)], ang: -62 + s * 4 }),
+    // the head rests on the ground at idle and drags along behind him on the walk (ground: the
+    // angle is solved so the head sits on the floor)
+    idle: (t, b) => ({ f: 'wide', fh: [15, 18 + b], ang: 64, ground: 'front' }),
+    run: s => ({ fh: [9, 19], ang: 150, ground: 'back', one: true }),
     air: up => (up ? { f: 'jump', fh: [15, 8], ang: -95 } : { f: 'fall', fh: [14, 15], ang: -40 }),
     dash: { f: 'lean', fh: [11, 19], ang: 160, wb: true },
     moves: {
@@ -223,27 +225,43 @@ function spinPose(p, turns, big) {
 // ---------------------------------------------------------------- which pose now
 export function heroPose(h, t) {
   const st = styleOf(h.weapon.type);
-  const b = Math.floor(t * 1.6) % 2;
+  // breathing: a slow in-and-out (about 1.6 s a breath, like MapleStory's stand loop): the head
+  // sinks first, then the shoulders, and the hands ride down with them
+  const br = (1 - Math.cos((t / 1.6) * Math.PI * 2)) / 2,
+    b = br;
   let pose;
   if (h.dead || h.hurtT > 0) pose = { ...st.idle(t, 0), f: 'hurt', fh: [17, 15], bh: [0, 14], ang: st.idle(t, 0).ang - 40 };
   else if (h.special) pose = specialPose(h, st);
   else if (h.castT > 0 && st.ranged) pose = keys(st.ranged, 0.45 + (1 - h.castT / 0.3) * 0.5);
   else if (h.attack && !h.attack.ranged) {
-    const p = Math.min(1, h.attack.t / h.attack.dur),
+    const p = h.attack.p ?? Math.min(1, h.attack.t / h.attack.dur), // (heavy weapons hang at the top: hero.js swingP)
       mv = h.attack.moveName;
     if (st.spin) pose = spinPose(p, mv === 'spinBig' ? 2 : 1, mv === 'spinBig');
     else pose = keys(st.moves[mv] || Object.values(st.moves)[0], p);
   } else if (h.attack && h.attack.ranged && st.ranged) pose = keys(st.ranged, Math.min(1, h.attack.t / h.attack.dur));
   else if (h.ladder) pose = climbPose(h);
   else if (h.dashT > 0) pose = { ...st.dash };
+  else if (h.skidT > 0 && h.onGround) pose = { ...st.idle(t, 0), f: 'lean', dy: 1 }; // braking into the turn
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
-    const ph = h.animT * 9;
-    const fi = Math.floor(ph) % 4;
-    const s = Math.sin((ph / 4) * Math.PI * 2);
-    pose = { f: ['run1', 'run2', 'run3', 'run2'][fi], ...st.run(s) };
-    if (!pose.f) pose.f = 'run1';
-  } else pose = st.idle(t, b);
+    // six-frame walk (contact, down, passing per leg); the arms swing against the legs, so the
+    // near hand is back while the near leg reaches forward, and the hands dip on the planted step
+    const ph = h.animT * 11;
+    const fi = Math.floor(ph) % 6;
+    const s = -Math.cos((ph / 6) * Math.PI * 2);
+    pose = st.run(s);
+    // swinging forward the arm bends at the elbow (fist up at the chest), swinging back it trails
+    // behind the hip; one-handed carries only, a two-handed grip keeps both hands on the weapon
+    const dip = fi % 3 === 1 ? 1 : 0,
+      swing = k => (k > 0.3 ? 'fwd/near' : k < -0.3 ? 'dback/near' : null),
+      free = !st.grip2;
+    pose = { ...pose, f: 'walk' + fi, fh: [pose.fh[0] + s * 2, pose.fh[1] + dip], bh: pose.bh && [pose.bh[0] - s * 2, pose.bh[1] + dip] };
+    // (the far arm only shows swinging back: forward it would leave a lone fist in front of the chest)
+    if (free) (pose.armF = swing(s)), (pose.armB = pose.bh && s > 0.3 ? 'dback/near' : null);
+  } else {
+    pose = st.idle(t, b);
+    if (pose.f === 'idle' || pose.f === 'idle2') pose.f = br < 0.3 ? 'idle' : br < 0.7 ? 'idle1' : 'idle2';
+  }
   if (!pose.f) pose.f = 'idle';
   // just off a ladder: the hand reaches over the shoulder and draws the weapon back out
   if (h.drawT > 0 && !h.attack && !h.special && !h.ladder && !h.dead) {
@@ -260,9 +278,10 @@ export const SHEATH = { at: [7, 6], ang: 112 };
 const BACK_SHEATH = { at: [14, 7], ang: 128 };
 export const DRAW_TIME = 0.18;
 function climbPose(h) {
-  const ph = Math.floor((h.climbT || 0) * 6) % 2,
-    lift = ph ? 0 : 3; // short reach: hands grip the rungs beside the head
-  return { back: ph, f: 'climb' + ph, fh: [13, 1 + lift], bh: [3, 4 - lift], ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: false, ab: false, sheath: true };
+  // hand over hand on the rungs in front of his face: from behind, the head and back hide most of
+  // both arms (drawn under the body), one fist higher than the other, swapping as the legs swap
+  const ph = Math.floor((h.climbT || 0) * 6) % 2;
+  return { back: ph, f: 'climb' + ph, fh: [10, ph ? 6 : 2], bh: [6, ph ? 2 : 6], ang: BACK_SHEATH.ang, at: BACK_SHEATH.at, wb: false, ab: false, sheath: true };
 }
 
 function specialPose(h, st) {
@@ -286,6 +305,9 @@ function specialPose(h, st) {
       return s.slam ? { f: 'crouch', fh: [18, 22], ang: 75 } : { f: 'back', fh: [5, 8], ang: -250, wb: true, ab: true };
     case 'vault':
       if (!s.down) return { f: 'jump', fh: [13, 20], ang: 90 };
+      return s.slam ? { f: 'crouch', fh: [19, 21], ang: 30 } : { f: 'fall', fh: [12, 8], ang: -100 };
+    case 'plunge': // the down-strike: blades point straight down, blunt weapons come down overhead
+      if (s.P.kind === 'pogo') return { f: 'fall', fh: [13, 22], ang: 90 };
       return s.slam ? { f: 'crouch', fh: [19, 21], ang: 30 } : { f: 'fall', fh: [12, 8], ang: -100 };
     case 'skewer': // spear thrust held out in front for the whole charge
       return { f: 'lean', fh: [19, 17], ang: 0 };
@@ -375,11 +397,12 @@ const angIndex = deg => (((Math.round((deg / 360) * ROT_STEPS) % ROT_STEPS) + RO
 // Hand-drawn arms (art-src/arcade_arms.py): eight directions, each bent and straight, front arms
 // plus a darker copy for the far arm. A pose asks for a hand position; we draw the arm whose fist
 // offset from the shoulder is closest and report where its fist really is, so the weapon sits in it.
+const ONLY = new Set(['draw', 'chi', 'clo', 'chiL', 'cloL']); // drawn for one pose: only used when a pose names them
 function pickArm(dx, dy, far, only) {
   let best = null,
     bd = 1e9;
   for (const m of A.hero.arms.list) {
-    if (m.back !== far || (only ? m.dir !== only : m.dir === 'draw')) continue;
+    if (m.back !== far || (only ? (only.includes('/') ? m.dir + '/' + m.reach : m.dir) !== only : ONLY.has(m.dir))) continue;
     const ex = m.f[0] - m.o[0] - dx,
       ey = m.f[1] - m.o[1] - dy,
       d = ex * ex + ey * ey;
@@ -437,15 +460,22 @@ export function drawHeroAnimated(h, t) {
   // weapon goes in the back fist and fh/bh swap arms
   const want = G2(pose.fh[0], pose.fh[1]);
   const bowB = pose.bf ? armFor(shB[0], shB[1], want[0] + 1, want[1] + 1, true, face) : null;
-  const armF = bowB ? armFor(shF[0], shF[1], ...G2(pose.bh[0], pose.bh[1]).map(v => v + 1), false, face, pose.pull && 'draw') : armFor(shF[0], shF[1], want[0] + 1, want[1] + 1, false, face);
+  const armF = bowB ? armFor(shF[0], shF[1], ...G2(pose.bh[0], pose.bh[1]).map(v => v + 1), false, face, pose.pull && 'draw') : armFor(shF[0], shF[1], want[0] + 1, want[1] + 1, false, face, pose.armF);
   const fh = bowB ? [bowB.fist[0] - 1, bowB.fist[1] - 1] : [armF.fist[0] - 1, armF.fist[1] - 1];
+  if (pose.ground && !pose.sheath) {
+    // tilt the weapon until its head touches the floor (feet row), in front of him or trailing behind
+    const reach = Math.hypot(L.tip[0] - L.gx, L.tip[1] - L.gy) - (pose.slide ?? st.slide ?? 0) - 2,
+      floor = sy0 + (Hh.feet ?? Hh.h - 1) - 2;
+    const a = (Math.asin(Math.max(-1, Math.min(1, (floor - fh[1] - 1) / reach))) * 180) / Math.PI;
+    pose.ang = pose.ground === 'back' ? 180 - a : a;
+  }
   const angW = face > 0 ? pose.ang : 180 - pose.ang; // world-space angle
   const rad = (angW * Math.PI) / 180;
   // two-handed: the back hand rides the handle grip2 px from the front hand along the weapon
   let bh;
   if (st.grip2 && !pose.sheath && !pose.one) bh = [fh[0] + Math.cos(rad) * st.grip2, fh[1] + Math.sin(rad) * st.grip2];
   else bh = G2(pose.bh ? pose.bh[0] : 5, pose.bh ? pose.bh[1] : 20);
-  const armB = bowB || armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, true, face);
+  const armB = bowB || (pose.armB ? armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, pose.back == null, face, pose.armB) : armFor(shB[0], shB[1], bh[0] + 1, bh[1] + 1, true, face));
   // weapon origin: the sprite's grip sits `slide` px behind the front hand along the weapon
   const slide = pose.sheath ? 0 : pose.slide ?? st.slide ?? 0;
   const back = pose.sheath ? G2(...(pose.at || SHEATH.at)) : null;
@@ -488,9 +518,12 @@ export function drawHeroAnimated(h, t) {
     });
     // tip position for the swing smear
     const tip = to(L.tip[0], L.tip[1]);
-    const tp = m.transformPoint(new DOMPoint(tip[0], tip[1]));
+    const tp = m.transformPoint(new DOMPoint(tip[0], tip[1])),
+      pv = m.transformPoint(new DOMPoint(0, 0));
     X.restore();
-    return { x: tp.x - view.ox + Math.round(world.cameraX || 0), y: tp.y - view.oy + Math.round(world.cameraY || 0), col: L.light };
+    const ox = -view.ox + Math.round(world.cameraX || 0),
+      oy = -view.oy + Math.round(world.cameraY || 0);
+    return { x: tp.x + ox, y: tp.y + oy, px: pv.x + ox, py: pv.y + oy, col: L.light };
   };
 
   // bow string pulled to the back hand
@@ -526,24 +559,56 @@ export function drawHeroAnimated(h, t) {
   if (pose.wb) tip = drawWeapon();
   if (pose.ab && !flashing) drawArm(armF);
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'line'); // outline tucked under the body
+  if (backView && !flashing) drawArm(armB), drawArm(armF); // reaching in front of him, behind the head
   if (!flashing) frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0);
-  if (backView && !flashing) drawArm(armB);
   if (!pose.wb) tip = drawWeapon();
   drawString();
-  if (!pose.ab && !flashing) drawArm(armF, backView ? 'both' : 'fill');
+  if (!pose.ab && !flashing && !backView) drawArm(armF, 'fill');
   // swing smear: connect recent blade-tip positions while attacking
   const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry'].includes(h.special.kind));
   if (swinging && tip) {
     h.trail = h.trail || [];
-    h.trail.push([tip.x, tip.y]);
-    if (h.trail.length > 6) h.trail.shift();
-    for (let i = 1; i < h.trail.length; i++) {
-      const [x0, y0] = h.trail[i - 1],
-        [x1, y1] = h.trail[i];
-      if (Math.hypot(x1 - x0, y1 - y0) < 3) continue;
-      line(x0, y0, x1, y1, i >= h.trail.length - 2 ? C.paper : tip.col, i < h.trail.length - 3 ? 2 : 1);
-    }
+    h.trail.push([tip.x, tip.y, tip.px, tip.py]);
+    if (h.trail.length > 5) h.trail.shift();
+    smear(h.trail, tip.col);
   } else h.trail = null;
+}
+
+// Swing smear in the Slormancer / arcade style: a thin crescent swept by the outer part of the
+// weapon around the hand between recent frames, thickest at the newest edge and thinning as it
+// fades, with a white rim along the blade's arc. Straight thrusts (little turn) leave none. The arc
+// is interpolated by angle round the hand so it curves, and drawn pixel by pixel so it stays crisp.
+function smear(tr, col) {
+  const [, , cx, cy] = tr[tr.length - 1]; // pivot: the hand now
+  const polar = ([x, y]) => [Math.atan2(y - cy, x - cx), Math.hypot(x - cx, y - cy)];
+  for (let i = 1; i < tr.length; i++) {
+    const [a0, r0] = polar(tr[i - 1]),
+      [a1, r1] = polar(tr[i]);
+    let da = a1 - a0;
+    da = ((da + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    if (Math.abs(da) < 0.17 || Math.abs(da) > 2.6 || Math.min(r0, r1) < 6) continue;
+    const age = (tr.length - 1 - i) / Math.max(1, tr.length - 2), // 0 newest .. 1 oldest
+      thick = Math.max(1.5, Math.min(r0, r1) * (0.3 - age * 0.18));
+    const n = Math.ceil(Math.abs(da) * Math.max(r0, r1) * 1.3) + 1;
+    X.fillStyle = col;
+    X.globalAlpha = 0.6 - age * 0.35;
+    for (let v = 0; v <= n; v++) {
+      const k = v / n,
+        a = a0 + da * k,
+        r = r0 + (r1 - r0) * k,
+        w = thick * (age ? 1 : 0.5 + k * 0.5);
+      for (let d = 1; d <= w; d++) X.fillRect(Math.round(cx + Math.cos(a) * (r - d)), Math.round(cy + Math.sin(a) * (r - d)), 1, 1);
+    }
+    X.fillStyle = C.paper;
+    X.globalAlpha = 0.9 - age * 0.6;
+    for (let v = 0; v <= n; v++) {
+      const k = v / n,
+        a = a0 + da * k,
+        r = r0 + (r1 - r0) * k;
+      X.fillRect(Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), 1, 1);
+    }
+  }
+  X.globalAlpha = 1;
 }
 
 function line(x0, y0, x1, y1, col, every = 1) {

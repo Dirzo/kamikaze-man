@@ -158,6 +158,68 @@ LEGS = {
 }
 
 
+# Walk cycle, six frames (MapleStory walks in 4, Metal Slug runs in 12+): contact, down, passing for
+# each leg. The near leg is drawn in the light trouser shades with the steel toe cap, the far leg in
+# the dark ones, so you can always tell which leg is in front. 'down' frames also sink the upper
+# body 1px (see FRAMES), so the head bobs low on the planted step and rises on the pass.
+WALK = [
+    [  # 0 contact: near leg reaching forward, far leg pushing off behind
+        '....PppuuPpppu......',
+        '...PpP...Ppuu.......',
+        '..PpP.....Ppuu......',
+        '..PpP......Ppu......',
+        '.KkP........Kkkj....',
+        '.KKkk.......Kkkkjn..',
+        'KKKK........KKKKKK..',
+    ],
+    [  # 1 down: weight on the near leg, far heel lifts behind
+        '....PppuuPpppu......',
+        '...PpP...Ppuu.......',
+        '..PpP.....Ppu.......',
+        '.KKk......Ppu.......',
+        'KKk.......Kkkj......',
+        '..........Kkkkjn....',
+        '..........KKKKKK....',
+    ],
+    [  # 2 passing: near leg straight under him, far foot swings through beside the shin
+        '....PppuuPpppu......',
+        '.....PpPPpuu........',
+        '......PpPpu.........',
+        '......KkPpu.........',
+        '......KKkPpu........',
+        '........Kkkkjn......',
+        '........KKKKKK......',
+    ],
+    [  # 3 contact: far leg reaching forward, near leg pushing off behind
+        '....PppuuPpppu......',
+        '....PpuuPpP.........',
+        '...Ppu....PpP.......',
+        '..Ppu......PpP......',
+        '.Kkkj.......KkP.....',
+        '.Kkkkjn.....KKkk....',
+        'KKKKKK......KKKKK...',
+    ],
+    [  # 4 down: weight on the far leg, near heel lifts behind
+        '....PppuuPpppu......',
+        '....PpuuPpP.........',
+        '...Ppu...PpP........',
+        '..Kkkj...PpP........',
+        '.Kkkkjn..KKkk.......',
+        '.........KKkkk......',
+        '.........KKKKK......',
+    ],
+    [  # 5 passing: far leg straight under him, near foot swings through in front
+        '....PppuuPpppu......',
+        '.....PpPPpuu........',
+        '.....PpP.Ppu........',
+        '.....PpP.Kkkj.......',
+        '.....PpP.Kkkkjn.....',
+        '....KKkk............',
+        '....KKKKK...........',
+    ],
+]
+
+
 def shift(rows, dx):
     if dx > 0:
         return [('.' * dx + r)[:W] for r in rows]
@@ -166,11 +228,15 @@ def shift(rows, dx):
     return list(rows)
 
 
-def body(legs='stand', lean=0, dip=0, head=None, torso=None):
-    up = shift((head or HEAD) + (torso or SIDE), lean)
-    rows = up + LEGS[legs]
-    if dip:  # upper body sinks into the hips (breathing, crouch)
-        rows = ['.' * W] * dip + up[:len(up) - dip] + LEGS[legs]
+def body(legs='stand', lean=0, dip=0, head=None, torso=None, nod=0):
+    hd, to = (head or HEAD), (torso or SIDE)
+    legs = LEGS[legs] if isinstance(legs, str) else legs
+    up = shift(hd + to, lean)
+    rows = up + legs
+    if nod:  # only the head sinks onto the shoulders (the in-between of a breath)
+        rows = ['.' * W] + shift(hd + to[1:], lean) + legs
+    if dip:  # upper body sinks into the hips (breathing, the planted step): the hip row tucks under the sash
+        rows = ['.' * W] * dip + up + legs[dip:]
     assert len(rows) == H, (legs, len(rows))
     return [r.ljust(W, '.')[:W] for r in rows]
 
@@ -191,7 +257,10 @@ FRAMES = {
     'back': body('run2', lean=-1, torso=TWIST),
     'crouch': None,  # filled in below
     'wide': body('wide'),
+    'idle1': body(nod=1),
 }
+for i, legs in enumerate(WALK):
+    FRAMES['walk%d' % i] = body(legs, lean=1, dip=1 if i in (1, 4) else 0)
 r1 = body('run1', lean=1)
 FRAMES['run3'] = r1[:21] + [r[::-1] for r in LEGS['run1']]
 FRAMES['run3'] = [r.ljust(W, '.')[:W] for r in FRAMES['run3']]
@@ -232,7 +301,8 @@ for i, legs in enumerate(BACK_LEGS):
 # shoulder pixels (back, front) in the 20x28 art, before the outline
 SH = {'idle': ((5, 13), (7, 13)), 'idle2': ((5, 14), (7, 14)), 'run1': ((6, 13), (8, 13)), 'run2': ((6, 13), (8, 13)),
       'run3': ((6, 13), (8, 13)), 'lean': ((7, 13), (9, 13)), 'back': ((5, 13), (8, 13)), 'hurt': ((5, 13), (8, 13)),
-      'crouch': ((5, 15), (7, 15)), 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
+      'crouch': ((5, 15), (7, 15)), 'idle1': ((5, 13), (7, 13)),
+      **{'walk%d' % i: ((6, 14 if i in (1, 4) else 13), (8, 14 if i in (1, 4) else 13)) for i in range(6)}, 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
 # (both sockets sit under the ear, the near one a step forward of the far one)
 
 

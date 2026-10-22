@@ -34,6 +34,13 @@ export function drawMapBackdrop() {
       X.restore();
     }
   }
+  // pit bottoms: a row of spikes, so a gap reads as a gap
+  for(const q of map.pits||[]) {
+    const y=map.floorY;
+    if(!visible(q.x,y-8,q.w,16))continue;
+    rect(q.x,y-1,q.w,8,C.ink);
+    for(let x=q.x+1;x<q.x+q.w-3;x+=6){rect(x+2,y-7,1,6,C.mist);rect(x+1,y-4,3,3,C.fog);rect(x,y-2,5,2,C.stone);}
+  }
   for(const l of map.ladders) {
     if(!visible(l.x-8,l.top,16,l.bottom-l.top))continue;
     rect(l.x-6,l.top,2,l.bottom-l.top,C.woodD);rect(l.x+4,l.top,2,l.bottom-l.top,C.woodD);
@@ -50,7 +57,7 @@ export function drawMapExit(t) {
   rect(x-14,ground-42,28,5,C.fog);rect(x-17,ground-3,34,3,C.stone);
   if(open)for(let y=ground-31+Math.floor(t*5)%4;y<ground-4;y+=6)rect(x-4,y,8,2,C.ice);
   else {rect(x-7,ground-23,14,5,C.wine);rect(x-2,ground-25,4,9,C.red);}
-  const label=open?'NEXT MAP >':'CLEAR ALL TO OPEN',half=textWidth(label)/2,cam=world.cameraX||0;
+  const label=open?'NEXT MAP >':'BEAT THE ARENA TO OPEN',half=textWidth(label)/2,cam=world.cameraX||0;
   text(label,Math.max(cam+half+6,Math.min(cam+W-half-6,x)),ground-55,open?C.lime:C.mist,{align:'center'});
 }
 export function drawRouteHud() {

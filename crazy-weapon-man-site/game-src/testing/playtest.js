@@ -219,8 +219,10 @@ function newRun(game, skill, from, level = null) {
       if (!e.boss && !e.swarmBoss && S.t - S.hitT > 30) { kill(e); report.skips = (report.skips || 0) + 1; return; }
       if (inReach && !h.ladder) {
         want.add('attack');
-        if (h.face !== dir) want.add(dir > 0 ? 'right' : 'left');
-        else if (T.melee && gap > T.reach * 0.5) want.add(dir > 0 ? 'right' : 'left');
+        // over a pit mid-jump: keep carrying on toward the far side while swinging
+        if (!h.onGround && !world.map.platforms.some(p => p.y >= h.y + h.h && cx(h) >= p.x && cx(h) < p.x + p.w)) want.add(h.vx < 0 ? 'left' : 'right');
+        if (h.face !== dir && !pitAhead(h, dir)) want.add(dir > 0 ? 'right' : 'left');
+        else if (T.melee && gap > T.reach * 0.5 && !pitAhead(h, dir)) want.add(dir > 0 ? 'right' : 'left');
         if (S.t - S.bestT > 6) warp(h, goal);
         return;
       }
@@ -242,9 +244,24 @@ function newRun(game, skill, from, level = null) {
     if (c < S.best - 12) { S.best = c; S.bestT = S.t; }
   }
 
+  // a pit (or a drop too deep to step down) just ahead on the stage: jump it, holding for distance
+  function pitAhead(h, dir) {
+    if (!world.map.pits?.length || !(h.onGround || (h.coyote > 0 && h.vy >= 0))) return false;
+    const feet = h.y + h.h, x = cx(h) + dir * (h.w / 2 + 12);
+    return !world.map.platforms.some(p => x >= p.x && x < p.x + p.w && p.y >= feet - 34 && p.y <= feet + 34);
+  }
   function route(want, h, goal, feet, dx, dir) {
     const dy = goal.feet - feet, ladders = world.map.ladders;
-    const walk = () => { if (Math.abs(dx) > 4) want.add(dir > 0 ? 'right' : 'left'); };
+    const walk = () => {
+      if (Math.abs(dx) > 4) want.add(dir > 0 ? 'right' : 'left');
+      // (a jump still held from before has to be let go for a frame first)
+      if (pitAhead(h, dir)) {
+        // the goal is just short of the edge: stop there rather than walk off
+        if (Math.abs(dx) <= 24) { want.delete(dir > 0 ? 'right' : 'left'); return; }
+        if (held.has('jump')) { want.delete('jump'); S.jumpT = 0; }
+        else { want.add('jump'); S.jumpT = 0.4; }
+      }
+    };
     if (h.ladder) {
       if (dy < -6) want.add('up');
       else if (dy > 6) want.add('down');
@@ -272,7 +289,8 @@ function newRun(game, skill, from, level = null) {
       return;
     }
     // down: drop through a ledge, or walk off its edge
-    if (h.onGround && h.platform && !h.platform.solid && Math.abs(dx) < 120) { want.add('down'); want.add('jump'); return; }
+    const under = world.map.platforms.some(p => p.y > feet && cx(h) >= p.x && cx(h) < p.x + p.w);
+    if (h.onGround && h.platform && !h.platform.solid && under && Math.abs(dx) < 120) { want.add('down'); want.add('jump'); return; }
     walk();
     if (h.hitWall && h.onGround) { want.add('jump'); S.jumpT = 0.3; }
   }
@@ -284,6 +302,7 @@ function newRun(game, skill, from, level = null) {
       const box = { x, y, w: h.w, h: h.h };
       if (x < 2 || x + h.w > world.map.width - 2) continue;
       if (solids.some(p => box.x < p.x + p.w && box.x + box.w > p.x && box.y < p.y + p.h && box.y + box.h > p.y)) continue;
+      if (world.map.pits?.length && !world.map.platforms.some(p => p.y >= y + h.h - 2 && x + h.w / 2 >= p.x && x + h.w / 2 < p.x + p.w)) continue; // never over a pit
       h.x = x; h.y = Math.min(y, world.map.floorY - h.h); h.vx = h.vy = 0; h.ladder = null;
       break;
     }
