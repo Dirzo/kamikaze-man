@@ -12,6 +12,7 @@ export const A = {
   bg: {}, // zone id -> image
   slabs: {}, // zone id -> { im, w, h, cap }
   ui: {}, // frame name -> { im, slice, size }
+  biome: {}, // zone id -> { layers: [im x4], atlas, sprites, under, anchors } (art-src/biomes.py)
   glyphs: null,
   palette: null
 };
@@ -48,6 +49,11 @@ export async function loadAssets(onProgress = () => {}) {
   for (const [key, info] of Object.entries(man.weapons)) add(img(PX_ASSETS + `weapon-${key}.png`).then(im => (A.weapons[key] = { im, ...info })));
   for (const [zone, file] of Object.entries(man.backgrounds)) add(img(PX_ASSETS + file).then(im => (A.bg[zone] = im)));
   for (const [zone, info] of Object.entries(man.slabs)) add(img(PX_ASSETS + info.file).then(im => (A.slabs[zone] = { im, ...info })));
+  for (const [zone, info] of Object.entries(man.biomes || {})) {
+    const b = (A.biome[zone] = { ...info, layers: [] });
+    info.layers.forEach((f, i) => add(img(PX_ASSETS + f).then(im => (b.layers[i] = im))));
+    add(img(PX_ASSETS + info.atlas).then(im => (b.atlas = im)));
+  }
   for (const [name, info] of Object.entries(man.ui || {})) add(img(PX_ASSETS + `ui/${name}.png`).then(im => (A.ui[name] = { im, ...info })));
   let done = 0;
   await Promise.all(jobs.map(p => p.then(() => onProgress(++done / jobs.length))));

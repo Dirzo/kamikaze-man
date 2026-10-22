@@ -37,6 +37,7 @@ import { updateRelics, drawRelics, relicsTaken } from './game/relics.js';
 import { updateHidden, drawHidden } from './game/hidden.js';
 import { updateMount, drawMountWorld } from './game/mount.js';
 import { updateGimmick, drawGimmickWorld, drawGimmickScreen } from './game/gimmicks.js';
+import { updateAmbience, drawAmbienceFront } from './game/ambience.js';
 import { flushBook } from './data/book.js';
 import { temperOf, temperClear, MODS } from './data/temper.js';
 import { relicMask, keepRelics, allRelics, RELIC_COUNT } from './data/relics.js';
@@ -243,6 +244,7 @@ function update(dt) {
   updateFx(dt);
   tickToasts(dt);
   updateGimmick(dt);
+  updateAmbience(dt);
   updateCamera(dt);
   if (world.phase === 'dead') {
     world.deadT = (world.deadT || 0) + dt;
@@ -270,6 +272,7 @@ function update(dt) {
 // ---------------------------------------------------------------- drawing
 function drawSlab(zone, p) {
   const sl = A.slabs[zone];
+  if (p.ground && A.biome[zone]) return; // a living zone draws its own ground top (ambience.js)
   if (!sl) return rect(p.x, p.y, p.w, 6, C.stone);
   const cap = sl.cap,
     y0 = p.y - 2;
@@ -303,6 +306,7 @@ function drawWorld(t) {
   drawShots(t);
   drawAbilities(t);
   drawGimmickWorld(t);
+  drawAmbienceFront(); // liquid pits, near weather and the night bazaar's dark
   drawGimmickScreen(t); // the flood, the frost and the dark of a ghost house
   worldLayer();
   drawParticles();
@@ -561,6 +565,7 @@ const debug = {
   types: WTYPES,
   hitDamage,
   snapshot(fn) { startRun(); fn(); capture = true; },
+  play(fn) { startRun(); fn(); }, // like snapshot, but the game keeps running (?capture=walkN)
   // show the end-of-run results screen, `T` seconds into its animation
   results(won, T = RESULTS_TIME) { endRun(won); scene = won ? 'won' : 'over'; sceneT = T; },
   sceneT: () => sceneT,

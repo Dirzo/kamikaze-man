@@ -1,6 +1,8 @@
 // Deterministic visual fixtures for CI screenshots. Opt in with ?capture=combat|bag|swarm|results|ladder|late|kills,
 // ?capture=secret1..secret10 for where each map hides its easter egg,
-// ?capture=tour1..tour10 for a look at each zone's layout with its residents in place, or
+// ?capture=tour1..tour10 for a look at each zone's layout with its residents in place,
+// ?capture=walk1..walk10 for the same zone left running (the hero can't be hurt) to film its weather
+// and animated props, or
 // ?capture=boss1..boss10 for each zone's boss mid-swarm, pulling its surprise, ?capture=lv1-3 (any
 // level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
 // The polish pass: ?capture=book (the Monster Book), sheet (the stat sheet), maptemper (relic stars,
@@ -16,6 +18,7 @@ import { spawnEnemy } from '../game/enemy.js';
 import { openInventory, stash } from '../game/inventory.js';
 import { startBoss, updateBoss, updateHazards, castMove } from '../game/bosses.js';
 import { ZONES } from '../data/zones.js';
+import { updateAmbience } from '../game/ambience.js';
 import { MOVES } from '../data/weapons.js';
 import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
@@ -114,6 +117,7 @@ export function captureScene(game, mode) {
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));
+  if(/^walk\d+$/.test(mode)) return walk(game,+mode.slice(4));
   if(/^secret\d+$/.test(mode)) return secret(game,+mode.slice(6));
   if(/^boss\d+$/.test(mode)) return bossFight(game,+mode.slice(4));
   if(/^lv[\dSFC-]+$/.test(mode) && NODES[mode.slice(2)]) return bossFight(game,NODES[mode.slice(2)].zone+1,NODES[mode.slice(2)]);
@@ -200,6 +204,19 @@ function tour(game,n) {
     h.x=spot.x-30;h.y=spot.y-h.h;h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type:'katana',q:3,standout:false});
     for(const e of world.enemies) e.spawnT=0;
     updateCamera(0,true);
+    for(let i=0;i<180;i++) updateAmbience(1/60); // let the weather, smoke and critters get going
+  });
+  document.documentElement.dataset.capture='ready';
+}
+// a zone left running: the hero can't be hurt, so a recording can follow them along the route
+function walk(game,n) {
+  game.play(()=>{
+    const z=Math.max(0,Math.min(9,n-1));
+    startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};
+    const m=world.map,spot=m.spawns[Math.floor(m.spawns.length*0.2)],h=world.hero;
+    h.x=spot.x-60;h.y=spot.y-h.h;h.inv=1e9;h.lv=1+z*3;h.weapon=makeWeapon(z,{type:'katana',q:3,standout:false});
+    updateCamera(0,true);
+    for(let i=0;i<180;i++) updateAmbience(1/60);
   });
   document.documentElement.dataset.capture='ready';
 }

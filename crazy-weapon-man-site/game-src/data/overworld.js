@@ -16,7 +16,7 @@ export const OVERWORLD_KEY = 'crazyWeaponMan.overworld.v1';
 // bottom row back right to left, like a winding road)
 export const REGIONS = [
   { id: 1, zone: 0, col: 0, row: 0, name: 'SWORD GRAVEYARD' },
-  { id: 2, zone: 1, col: 1, row: 0, name: "RANGER'S MUSHROOM FOREST" },
+  { id: 2, zone: 1, col: 1, row: 0, name: "RANGER'S SNOWY WOODS" },
   { id: 3, zone: 2, col: 2, row: 0, name: 'NUNCHUCK TURTLE LAGOON' },
   { id: 4, zone: 3, col: 3, row: 0, name: "THIEVES' NIGHT BAZAAR" },
   { id: 5, zone: 4, col: 4, row: 0, name: 'SAKURA KATANA SHRINE' },
@@ -39,7 +39,7 @@ const N = [
   ['W1', 1, 'warp', 'Graveyard Cannon', 306, 246, [], null, { to: 'W1b' }],
   ['1-F', 1, 'fort', 'Gravedigger Fort', 252, 150, ['1-C']],
   ['1-C', 1, 'castle', 'Graveyard Keep', 318, 120, ['2-1']],
-  // 2 Ranger's Mushroom Forest: a secret shortcut past the bluffs; the low road skips the fort
+  // 2 Ranger's Snowy Woods: a secret shortcut past the bluffs; the low road skips the fort
   ['2-1', 2, 'level', 'Toadstool Trail', 40, 140, ['2-2']],
   ['2-2', 2, 'level', 'Squirrel Snipers', 96, 186, ['2-3'], ['2-S']],
   ['2-S', 2, 'secret', 'Spore Hollow', 150, 244, ['2-4']],
