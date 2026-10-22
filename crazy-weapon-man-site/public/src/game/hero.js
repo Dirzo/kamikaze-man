@@ -17,6 +17,7 @@ import { attackBox, activeWindow, canAttack } from './attack-rules.js';
 import { attackMutation, impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
 import { drawHeroAnimated, fireAt } from './anim.js';
+import { drawPolyHero } from './beastkin.js';
 import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abilities.js';
 import { heroPhysics } from './gimmicks.js';
 import { charge, drawMount, RIDE, flap, mountDef } from './mount.js';
@@ -46,6 +47,25 @@ export function updateHero(h, dt) {
   }
   const T = TYPES[h.weapon.type];
   h.inv = Math.max(0, h.inv - dt);
+  // a Frost Cub's arrow (beastkin.js): slower for a moment, frost flaking off
+  if (h.chillT > 0 && (h.chillT -= dt) > 0 && Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
+  // a Fat Cat Fence's poisoned dagger (beastkin.js): a little health ebbs away, never the last of it
+  if (h.poisonT > 0) {
+    h.poisonT -= dt;
+    h.hp = Math.max(1, h.hp - h.poisonDps * dt);
+    if (Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.lime);
+  }
+  // a Polymorph Hare's spell (beastkin.js): a bunny for a moment, and bunnies can't swing
+  if (h.polyT > 0) {
+    h.cd = Math.max(h.cd, 0.1);
+    if ((h.polyT -= dt) <= 0) burst(cx(h), cy(h), 10, 'twinkle', ['lime', 'paper']), callout('BACK TO NORMAL', 0, 0, C.paper, { follow: h, life: 40 });
+  }
+  // a Bubble Newt's bubble (beastkin.js): floated up helplessly for a moment
+  if (h.heldT > 0) {
+    h.heldT -= dt;
+    if (h.bubbled) (h.vy = -22), (h.vx *= 0.9), Math.random() < 0.4 && emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
+    if (h.heldT <= 0) (h.bubbled = false), burst(cx(h), cy(h), 8, 'twinkle', ['ice', 'paper']);
+  }
   h.giantT = Math.max(0, (h.giantT || 0) - dt); // GROWTH SPURT quirk: the weapon is drawn huge
   h.hurtT = Math.max(0, h.hurtT - dt);
   h.cd = Math.max(0, h.cd - dt);
@@ -116,9 +136,9 @@ export function updateHero(h, dt) {
   if (ax && ax === Math.sign(h.vx) && !swing && h.hurtT <= 0 && !h.ladder) h.runT = (h.runT || 0) + dt;
   else if (!ax || ax !== Math.sign(h.vx) || swing) h.runT = 0;
   h.sprint = (h.runT || 0) >= MOVE.sprintAfter && !ride && !G.swim;
-  if (h.hurtT <= 0) {
+  if (h.hurtT <= 0 && !(h.heldT > 0)) {
     const slowBy = swing && h.onGround ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
-    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy;
+    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
       h.skidT = 0.16;
@@ -137,7 +157,7 @@ export function updateHero(h, dt) {
   // jump / drop-through
   h.coyote = h.onGround ? HERO.coyote : Math.max(0, h.coyote - dt);
   if (h.onGround || h.ladder) h.hopped = false;
-  if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0) {
+  if (input.pressed('jump', HERO.jumpBuffer) && h.hurtT <= 0 && !(h.heldT > 0)) {
     if (input.held('down') && h.onGround && h.platform && !h.platform.solid) {
       input.consume('jump');
       h.dropT = 0.25;
@@ -666,6 +686,7 @@ export function drawHero(h, t) {
   drawHeroBody(h, t);
 }
 function drawHeroBody(h, t) {
+  if (h.polyT > 0 && drawPolyHero(h, t)) return;
   if (!h.mount || h.ladder) return drawMount(h, t), drawHeroAnimated(h, t);
   // in the saddle: the goose underneath, the rider sitting a little higher
   drawMount(h, t);

@@ -225,7 +225,7 @@ function drawOverworldHud(t) {
     text(`TEMPER ${T.on}: THE ENEMIES GET`, W - 206, py + 5, C.coral);
     mods.forEach((m, i) => text(m.name, W - 206, py + 15 + i * 9, i === mods.length - 1 ? C.cream : C.mist));
   }
-  if (ow.temperMsg > 0) text('BEAT THE SENTIENT ARMORY TO OPEN TEMPER', W - 12, y + 36, C.coral, { align: 'right' });
+  if (ow.temperMsg > 0) text('BEAT THE DRAGON TO OPEN TEMPER', W - 12, y + 36, C.coral, { align: 'right' });
   else if (T.max) text(`T: TEMPER ${T.on}/${T.max}` + (T.on ? '  ' + rewardText(T.on) : '  OFF'), W - 12, y + 36, tCol, { align: 'right' });
   const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK    JUMP / ENTER: FIRE THE CANNON' : isLevel(n) ? 'ARROWS: WALK    JUMP / ENTER: PLAY LEVEL' : 'ARROWS: WALK';
   if (hint) text(hint, 12, y + 26, C.mist);

@@ -1,3 +1,4 @@
+import { ENEMIES } from './enemies.js';
 // The run's introduction schedule. All random loot and the director use these gates.
 // One new idea at a time: finishers -> elements -> build-defining mutations. Weapon types are all
 // open from the start.
@@ -34,7 +35,16 @@ export const ENEMY_UNLOCKS = {
   // each weapon zone's own residents show up from its first wave
   squirrel: 4, turtle: 8, raccoon: 12, samurai: 16, kitsune: 17, monk: 20, anvil: 24, ninja: 32
 };
-export function enemyPool(zone, wave, pool) {
+// A beastkin family (ENEMIES[k].evo) grows up along its world's road instead of by stage: the
+// first level meets ranks 1-3, each level after lets the next rank in (deeper rooms one sooner),
+// and the old ranks drop out six behind the newest. tier: how far along the road the level is
+// (families.js levelTier); without one (classic runs) the map's depth stands in for it.
+export const familyTop = (wave, tier) => Math.min(10, tier != null ? 3 + Math.round(tier * 7) + (wave >= 3 ? 1 : 0) : wave * 3 - 1);
+export function enemyPool(zone, wave, pool, tier) {
+  if (pool.length && pool.every(k => ENEMIES[k]?.evo)) {
+    const top = familyTop(wave, tier);
+    return pool.filter(k => ENEMIES[k].evo <= top && ENEMIES[k].evo > top - 6);
+  }
   const stage = zone * 4 + Math.max(0, wave - 1);
   const allowed = pool.filter(k => (ENEMY_UNLOCKS[k] ?? 0) <= stage);
   return allowed.length ? allowed : ['stalker'];

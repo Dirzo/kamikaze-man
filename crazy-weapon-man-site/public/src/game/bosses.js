@@ -24,19 +24,19 @@ import { temper } from '../data/temper.js';
 // the boss families (data/families.js); every other level's boss is one of their siblings.
 const BOSSES = {
   bossjr: {
-    name: 'CRAZY WEAPON MAN JR.',
+    name: 'THE GRAND SNAPPER',
     patterns: ['charge', 'tide', 'shell', 'toss'],
     surprise: 'surf',
-    warn: 'THE TIDE IS GOING OUT... FAST',
-    intro: ['DAD SAID I COULD USE THE BIG SWORD', 'THIS SWORD IS TALLER THAN ME. GOOD.'],
-    phase: ['WATCH ME SPIN IT!', 'THE BIG SWORD IS WINNING, DAD!'],
-    defeat: 'REMATCH... WITH A BIGGER SWORD',
+    warn: 'THE LAGOON GOES STILL...',
+    intro: ['A HUNDRED YEARS OF NUNCHUCK FORM', 'MY SHELL HAS NEVER BEEN CRACKED'],
+    phase: ['WATCH THE CHUCKS SPIN!', 'THE OLD SHELL STILL SNAPS!'],
+    defeat: 'A WORTHY... STUDENT...',
     bolt: 'pink',
     speed: 46
   },
   bossman: {
-    name: 'OGRE KING GRUMBLEFOOT',
-    patterns: ['stomp', 'avalanche', 'fan', 'summon:monk'],
+    name: 'THE YAK ABBOT',
+    patterns: ['stomp', 'avalanche', 'fan', 'summon:macaque'],
     surprise: 'avalanche',
     warn: 'THE MOUNTAIN GROANS...',
     intro: ['MY STAFF HAS BROKEN A THOUSAND HEROES', 'I MEDITATE ON THE PERFECT SWING'],
@@ -46,30 +46,30 @@ const BOSSES = {
     speed: 30
   },
   bosssr: {
-    name: 'CRAZY WEAPON MAN SR.',
+    name: 'THE BEAR SMITH',
     patterns: ['anvils', 'charge', 'strikes', 'molten'],
     surprise: 'overheat',
     warn: 'SOMEONE LEFT THE FORGE ON HIGH',
-    intro: ['WHO LEFT THE FORGE DOOR OPEN', 'I FORGED YOUR FIRST SWORD, KID'],
-    phase: ['THIS HAMMER MADE EVERY BLADE YOU OWN', 'BACK IN MY DAY WE SHARED ONE ANVIL'],
+    intro: ['WHO LEFT THE FORGE DOOR OPEN', 'I FORGED EVERY HAMMER ON THIS MOUNTAIN'],
+    phase: ['THIS HAMMER MADE EVERY BLADE YOU OWN', 'STOKE THE FIRES!'],
     defeat: 'KEEP... YOUR EDGE... SHARP',
     bolt: 'sky',
     speed: 40
   },
   bossgrandma: {
-    name: 'GRANDMA, ARMED',
-    patterns: ['lob', 'sparkles', 'cookies', 'summon:crawler'],
+    name: 'THE OWL ARCHMAGE',
+    patterns: ['lob', 'sparkles', 'cookies', 'summon:dustbunny'],
     surprise: 'helpings',
-    warn: 'A WAND CRACKLES IN THE KITCHEN...',
+    warn: 'A WAND CRACKLES IN THE STUDY...',
     intro: ['SIT DOWN, DEAR. THIS WAND STINGS', 'I CAST SPELLS BEFORE SWORDS HAD EDGES'],
-    phase: ['SECOND HELPINGS... OF LIGHTNING!', 'NOBODY OUT-WANDS GRANDMA'],
+    phase: ['SECOND HELPINGS... OF LIGHTNING!', 'NOBODY OUT-WANDS THE ARCHMAGE'],
     defeat: 'TAKE MY OLD WAND FOR THE ROAD',
     bolt: 'orange',
     speed: 28
   },
   bossceo: {
-    name: 'THE USURPER NINJA LORD',
-    patterns: ['stars', 'vanish', 'coins', 'summon:ninja'],
+    name: 'THE KOMODO LORD',
+    patterns: ['stars', 'vanish', 'coins', 'summon:gecko'],
     surprise: 'clones',
     warn: 'A SHADOW MOVES ON THE ROOF...',
     intro: ['I TOOK THIS CASTLE ONE STAR AT A TIME', 'TEN THOUSAND SHURIKEN. ALL SHARPENED.'],
@@ -79,13 +79,13 @@ const BOSSES = {
     speed: 44
   },
   bossweapon: {
-    name: 'THE SENTIENT ARMORY',
+    name: 'THE DRAGON',
     patterns: ['swordrain', 'charge', 'graves', 'stars', 'strikes'],
     surprise: 'arsenal',
-    warn: 'EVERY WEAPON YOU DROPPED IS HUMMING...',
-    intro: ['I AM EVERY WEAPON YOU DROPPED', 'YOU SOLD MY COUSIN FOR SHARDS'],
-    phase: ['THE RACKS ARE EMPTY. I AM THE RACKS.', 'I KNOW ALL YOUR MOVES'],
-    defeat: 'EQUIP... ME...',
+    warn: 'THE HOARD IS SHIFTING...',
+    intro: ['I HOARDED EVERY WEAPON EVER MADE', 'YOURS WOULD LOOK NICE ON THE PILE'],
+    phase: ['TO THE HOARD! EVERY BLADE!', 'I KNOW ALL YOUR MOVES'],
+    defeat: 'TAKE... ONE... COIN...',
     bolt: 'violet',
     speed: 50
   }

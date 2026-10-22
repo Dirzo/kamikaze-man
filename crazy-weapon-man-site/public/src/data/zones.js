@@ -24,7 +24,7 @@ export const ZONES = [
     weapon: 'sword',
     name: 'The Sword Graveyard',
     sub: 'A field of swords nobody came back for. Mind the bandits.',
-    pool: ['stalker', 'crawler', 'goose', 'bombchicken'],
+    pool: ['gosling', 'honker', 'gsquire', 'fencer', 'gtoss', 'whirl', 'ggrave', 'berserker', 'swan', 'gander'],
     platforms: L1,
     boss: null,
     music: { key: 52, scale: 'minor', bpm: 132, prog: [0, 5, 2, 6], drums: 'graveyard', theme: GRAVEYARD }
@@ -33,8 +33,8 @@ export const ZONES = [
     id: 'ranger-forest',
     weapon: 'bow',
     name: "The Ranger's Mushroom Forest",
-    sub: 'Every toadstool is an archery range. The squirrels never miss twice.',
-    pool: ['squirrel', 'crawler', 'squirrel', 'wizard', 'shieldbro', 'goose'],
+    sub: 'Every toadstool is an archery range. The fuzzballs grow up fast out here.',
+    pool: ['fuzzlet', 'burrball', 'puffshot', 'twintuft', 'quillback', 'moss', 'wolfpup', 'yeticub', 'yeti', 'werewolf'],
     platforms: L2,
     boss: null,
     music: { key: 57, scale: 'dorian', bpm: 124, prog: [0, 3, 0, 4], drums: 'forest', lead: 'p50', theme: '4 - 5 4 2 - 0 - | 1 - 2 - 4 - - . | 4 - 5 7 5 - 4 2 | 3 - 2 1 2 - - .' }
@@ -43,8 +43,8 @@ export const ZONES = [
     id: 'turtle-lagoon',
     weapon: 'nunchucks',
     name: 'Nunchuck Turtle Lagoon',
-    sub: 'A beach dojo of shell-backed kids. Jr. trains here. He brought the big sword.',
-    pool: ['turtle', 'crawler', 'turtle', 'roller', 'bombchicken', 'shieldbro'],
+    sub: 'A beach dojo of turtles and frogs. White belts at the gate, the Grand Snapper at the top.',
+    pool: ['tadpole', 'pondfrog', 'snapper', 'spinturtle', 'toadmonk', 'lilylurker', 'bubblenewt', 'shellback', 'bullfrog', 'grandsnapper'],
     platforms: L3,
     boss: 'bossjr',
     music: { key: 50, scale: 'phrygian', bpm: 150, prog: [0, 1, 0, 6], drums: 'drive', lead: 'p12', arp: 'tremolo', theme: '0 . 0 1 0 . 7 . | 6 5 4 . 3 . 1 . | 0 . 0 1 0 . 4 . | 3 1 0 . -1 - . .' }
@@ -53,8 +53,8 @@ export const ZONES = [
     id: 'thieves-bazaar',
     weapon: 'dagger',
     name: "The Thieves' Night Bazaar",
-    sub: 'Daggers half price. Your wallet, full price. Watch the raccoons.',
-    pool: ['raccoon', 'taxman', 'raccoon', 'mimic', 'blinker', 'goose'],
+    sub: 'Daggers half price. Your wallet, full price. Watch the cats, and the raccoons.',
+    pool: ['alleykit', 'pickpocket', 'cutpurse', 'lanterncat', 'juggler', 'shadowtom', 'siamese', 'prowler', 'bandit', 'fatcat'],
     platforms: L4,
     boss: null,
     music: { key: 55, scale: 'harmonic', bpm: 118, prog: [0, 3, 4, 0], drums: 'swing', theme: '0 1 2 . 1 0 -1 0 | 4 - 3 2 1 - . . | 2 3 4 . 5 4 3 2 | 1 2 1 0 0 - - .' }
@@ -63,8 +63,8 @@ export const ZONES = [
     id: 'sakura-shrine',
     weapon: 'katana',
     name: 'The Sakura Katana Shrine',
-    sub: 'Cherry petals, paper lanterns and very small, very serious samurai.',
-    pool: ['samurai', 'kitsune', 'samurai', 'shieldbro', 'sniper', 'eyeball'],
+    sub: 'Cherry petals, paper lanterns, samurai dogs and the fox spirits who watch over them.',
+    pool: ['shibapup', 'corgi', 'akita', 'petalfox', 'husky', 'twininu', 'windfox', 'houndguard', 'tosa', 'ninetail'],
     platforms: L1,
     boss: null,
     music: { key: 50, scale: 'insen', bpm: 100, prog: [0, 3, 2, 4], drums: 'shrine', lead: 'p12', theme: '0 - 1 - 2 - - . | 3 - 2 1 2 - - . | 4 - 3 - 2 - 3 2 | 1 - - - 0 - - .' }
@@ -73,8 +73,8 @@ export const ZONES = [
     id: 'mountain-monastery',
     weapon: 'staff',
     name: 'The Mountain Staff Monastery',
-    sub: 'The monks spin staves and chant battle hymns. The Ogre King is meditating. Loudly.',
-    pool: ['monk', 'kitsune', 'monk', 'roller', 'summoner', 'sniper'],
+    sub: 'Monkey monks spin staves, the goats keep the gates, and the Yak Abbot is meditating. Loudly.',
+    pool: ['macaque', 'vaultmonkey', 'goatmonk', 'gibbon', 'snowsage', 'baboon', 'ibex', 'langur', 'yak', 'cloudape'],
     platforms: L3,
     boss: 'bossman',
     music: { key: 54, scale: 'penta', bpm: 104, prog: [0, 3, 2, 0], drums: 'chant', lead: 'p50', bass: 'drone', theme: '0 - 0 - 1 - 2 - | 2 - 1 - 0 - - . | 3 - 2 - 1 - 2 - | 0 - - - - - . .' }
@@ -83,8 +83,8 @@ export const ZONES = [
     id: 'storm-forge',
     weapon: 'hammer',
     name: "Dad's Hammer & Anvil Forge",
-    sub: 'Runaway anvils and fatherly advice. Sr. is hammering something loud.',
-    pool: ['anvil', 'brute', 'anvil', 'roller', 'bombchicken', 'mimic', 'shieldbro'],
+    sub: 'Runaway anvils and roaring forges. The Bear Smith is hammering something loud.',
+    pool: ['cub', 'badger', 'boarbellows', 'bearsmith', 'honeybadger', 'anviltoss', 'wolverine', 'moltenboar', 'grizzly', 'polarbear'],
     platforms: L2,
     boss: 'bosssr',
     music: { key: 47, scale: 'minor', bpm: 146, prog: [0, 6, 5, 4], drums: 'forge', oct: 0, theme: '0 0 . 0 2 . 3 . | 0 0 . 0 4 - 3 . | 0 0 . 0 2 . 3 5 | 4 - 3 2 0 - - .' }
@@ -93,8 +93,8 @@ export const ZONES = [
     id: 'witch-cottage',
     weapon: 'wand',
     name: "Grandma's Magic Wand Cottage",
-    sub: 'Cookie tins bite. Casseroles are cursed. Grandma waves her wand from the good chair.',
-    pool: ['wraith', 'maw', 'mimic', 'summoner', 'bombchicken', 'crawler', 'goose'],
+    sub: 'Storybook familiars with wands and teacups. The Owl Archmage reads by the fire.',
+    pool: ['dustbunny', 'hedgehog', 'owlet', 'hatrabbit', 'moth', 'polyhare', 'teahog', 'mirrorowl', 'broombat', 'hornedowl'],
     platforms: L4,
     boss: 'bossgrandma',
     music: { key: 55, scale: 'major', bpm: 150, bar: 12, prog: [0, 3, 4, 0], drums: 'waltz', lead: 'p12', arp: 'waltz', theme: '4 - 5 4 2 - | 0 - - - 2 - | 3 - 4 3 1 - | -1 - - - - .', themeB: '0 - 2 - 4 - | 7 - - 6 4 - | 5 - 4 - 2 - | 0 - - - - .', bossTheme: '4 - 5 4 2 - 0 - | 0 - - - 2 - - . | 3 - 4 3 1 - . . | -1 - - - - - - .' }
@@ -103,8 +103,8 @@ export const ZONES = [
     id: 'ninja-castle',
     weapon: 'shuriken',
     name: 'The Shuriken Ninja Castle',
-    sub: 'A moonlit castle full of throwing stars. The Usurper Ninja Lord took it one star at a time.',
-    pool: ['ninja', 'samurai', 'ninja', 'kitsune', 'shieldbro', 'eyeball'],
+    sub: 'A moonlit castle full of throwing stars. The Komodo Lord took it one star at a time.',
+    pool: ['gecko', 'draco', 'wallgecko', 'chameleon', 'frilled', 'anole', 'basilisk', 'iguana', 'skink', 'komodo'],
     platforms: L1,
     boss: 'bossceo',
     music: { key: 50, scale: 'hirajoshi', bpm: 138, prog: [0, 3, 2, 4], drums: 'taiko', lead: 'p12', theme: '0 . 2 . 3 - 2 0 | 1 - 0 -1 0 - - . | 3 . 4 . 5 - 4 3 | 2 - 1 2 0 - - .' }
@@ -112,9 +112,9 @@ export const ZONES = [
   {
     id: 'armory-vault',
     weapon: null, // every weapon lives here
-    name: 'The Sentient Armory Vault',
-    sub: 'The weapons have organized. The inventory is hunting you.',
-    pool: ['wizard', 'wraith', 'mimic', 'eyeball', 'brute', 'flyer', 'samurai', 'ninja', 'anvil', 'turtle'],
+    name: "The Dragon's Gold Vault",
+    sub: 'Every weapon ever made, piled high. The dragon hoard wants yours too.',
+    pool: ['whelp', 'pangolin', 'magpie', 'armadillo', 'ember', 'wyrmling', 'platedpango', 'gemwyrm', 'kobold', 'elder'],
     platforms: L3,
     boss: 'bossweapon',
     music: { key: 49, scale: 'minor', bpm: 156, prog: [0, 5, 3, 4], drums: 'vault', theme: GRAVEYARD }

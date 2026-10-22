@@ -24,7 +24,7 @@ export const REGIONS = [
   { id: 7, zone: 6, col: 3, row: 1, name: "DAD'S HAMMER & ANVIL FORGE", flip: true },
   { id: 8, zone: 7, col: 2, row: 1, name: "GRANDMA'S MAGIC WAND COTTAGE", flip: true },
   { id: 9, zone: 8, col: 1, row: 1, name: 'SHURIKEN NINJA CASTLE', flip: true },
-  { id: 10, zone: 9, col: 0, row: 1, name: 'SENTIENT ARMORY VAULT', flip: true }
+  { id: 10, zone: 9, col: 0, row: 1, name: "THE DRAGON'S GOLD VAULT", flip: true }
 ];
 
 // [id, region, kind, name, x, y, next, secret?, extra?]
@@ -48,7 +48,7 @@ const N = [
   ['2-5', 2, 'level', 'Quiver Canopy', 210, 70, ['2-F']],
   ['2-F', 2, 'fort', "Archer's Fort", 268, 96, ['2-C']],
   ['2-C', 2, 'castle', 'Ranger Lodge', 318, 156, ['3-1']],
-  // 3 Nunchuck Turtle Lagoon (Jr.)
+  // 3 Nunchuck Turtle Lagoon (the Grand Snapper)
   ['W1b', 3, 'warp', 'Lagoon Landing', 40, 234, ['3-1'], null, { to: 'W1' }],
   ['3-1', 3, 'level', 'Shell Beach', 44, 150, ['3-2']],
   ['3-2', 3, 'level', 'Tidepool Dojo', 100, 150, ['3-3', '3-4']],
@@ -57,7 +57,7 @@ const N = [
   ['3-S', 3, 'secret', 'Sunken Sandal', 214, 246, ['3-C']],
   ['3-5', 3, 'level', 'Sandbar Sparring', 214, 150, ['3-F']],
   ['3-F', 3, 'fort', 'Coral Fort', 266, 100, ['3-C']],
-  ['3-C', 3, 'castle', "Jr.'s Lagoon Dojo", 318, 170, ['4-1'], null, { boss: 'bossjr' }],
+  ['3-C', 3, 'castle', "The Snapper's Dojo", 318, 170, ['4-1'], null, { boss: 'bossjr' }],
   // 4 Thieves' Night Bazaar: a black market basement hides a cannon to the monastery
   ['4-1', 4, 'level', 'Lantern Alley', 40, 156, ['4-2', '4-3']],
   ['4-2', 4, 'level', 'Pickpocket Plaza', 100, 96, ['4-4']],
@@ -66,7 +66,7 @@ const N = [
   ['W2', 4, 'warp', 'Bazaar Cannon', 222, 250, [], null, { to: 'W2b' }],
   ['4-4', 4, 'level', 'Half-Price Hustle', 164, 156, ['4-F']],
   ['4-F', 4, 'fort', 'Pawnshop Fort', 232, 112, ['4-C']],
-  ['4-C', 4, 'castle', "Fence King's Vault", 312, 166, ['5-1']],
+  ['4-C', 4, 'castle', "The Fat Cat's Vault", 312, 166, ['5-1']],
   // 5 Sakura Katana Shrine: a moonlit secret skips the fort
   ['5-1', 5, 'level', 'Petal Path', 40, 120, ['5-2']],
   ['5-2', 5, 'level', 'Lantern Bridge', 96, 120, ['5-3', '5-4']],
@@ -76,7 +76,7 @@ const N = [
   ['5-5', 5, 'level', 'Thousand Cuts Stair', 210, 120, ['5-F']],
   ['5-F', 5, 'fort', 'Paper Wall Fort', 264, 90, ['5-C']],
   ['5-C', 5, 'castle', 'Shrine of the Last Sheath', 316, 200, ['6-1']],
-  // 6 Mountain Staff Monastery (the Ogre King): a hot spring hides a cannon to Grandma's
+  // 6 Mountain Staff Monastery (the Yak Abbot): a hot spring hides a cannon to Grandma's
   ['W2b', 6, 'warp', 'Monastery Landing', 40, 54, ['6-1'], null, { to: 'W2' }],
   ['6-1', 6, 'level', 'Switchback Steps', 40, 116, ['6-2']],
   ['6-2', 6, 'level', 'Prayer Wheel Pass', 96, 150, ['6-3', '6-4']],
@@ -86,7 +86,7 @@ const N = [
   ['W3', 6, 'warp', 'Monastery Cannon', 272, 250, [], null, { to: 'W3b' }],
   ['6-5', 6, 'level', 'Cloud Gong Ridge', 220, 190, ['6-C']],
   ['6-F', 6, 'fort', 'Staff Spinner Fort', 224, 96, ['6-C']],
-  ['6-C', 6, 'castle', "Ogre King's Summit", 304, 146, ['7-1'], null, { boss: 'bossman' }],
+  ['6-C', 6, 'castle', "The Yak Abbot's Summit", 304, 146, ['7-1'], null, { boss: 'bossman' }],
   // 7 Dad's Hammer & Anvil Forge (Sr.)
   ['7-1', 7, 'level', 'Sparkfall Foundry', 40, 146, ['7-2']],
   ['7-2', 7, 'level', 'Anvil Rain', 96, 146, ['7-3', '7-4']],
@@ -95,7 +95,7 @@ const N = [
   ['7-4', 7, 'level', 'Slag Slide', 152, 206, ['7-5']],
   ['7-5', 7, 'level', 'Quench Tank', 210, 150, ['7-F']],
   ['7-F', 7, 'fort', 'Bolt & Nut Fort', 262, 196, ['7-C']],
-  ['7-C', 7, 'castle', "Sr.'s Big Loud Anvil", 318, 120, ['8-1'], null, { boss: 'bosssr' }],
+  ['7-C', 7, 'castle', "The Bear Smith's Big Anvil", 318, 120, ['8-1'], null, { boss: 'bosssr' }],
   // 8 Grandma's Magic Wand Cottage: a knitting maze hides a cannon to the vault
   ['W3b', 8, 'warp', 'Cottage Landing', 40, 236, ['8-1'], null, { to: 'W3' }],
   ['8-1', 8, 'level', 'Doily Garden', 40, 140, ['8-2']],
@@ -106,8 +106,8 @@ const N = [
   ['8-4', 8, 'level', 'Grandfather Clock Climb', 208, 100, ['8-F']],
   ['8-5', 8, 'level', 'Rocking Chair Rapids', 208, 206, ['8-C']],
   ['8-F', 8, 'fort', 'Teacup Fort', 264, 110, ['8-C']],
-  ['8-C', 8, 'castle', "Grandma's Good Chair", 318, 170, ['9-1'], null, { boss: 'bossgrandma' }],
-  // 9 Shuriken Ninja Castle (the Usurper Ninja Lord)
+  ['8-C', 8, 'castle', "The Archmage's Study", 318, 170, ['9-1'], null, { boss: 'bossgrandma' }],
+  // 9 Shuriken Ninja Castle (the Komodo Lord)
   ['9-1', 9, 'level', 'Moat Hop', 40, 156, ['9-2', '9-3']],
   ['9-2', 9, 'level', 'Shoji Shadows', 100, 96, ['9-4']],
   ['9-3', 9, 'level', 'Rooftop Run', 100, 210, ['9-4'], ['9-S']],
@@ -115,8 +115,8 @@ const N = [
   ['9-4', 9, 'level', 'Throwing Star Gallery', 164, 156, ['9-5']],
   ['9-5', 9, 'level', 'Hostile Takeover Tower', 220, 106, ['9-F']],
   ['9-F', 9, 'fort', 'Throwing Star Fort', 268, 176, ['9-C']],
-  ['9-C', 9, 'castle', "The Usurper's Castle", 318, 116, ['10-1'], null, { boss: 'bossceo' }],
-  // 10 Sentient Armory Vault: the final castle; a closet of bonus nonsense for the thorough
+  ['9-C', 9, 'castle', "The Komodo Lord's Castle", 318, 116, ['10-1'], null, { boss: 'bossceo' }],
+  // 10 The Dragon's Gold Vault: the final castle; a closet of bonus nonsense for the thorough
   ['W4b', 10, 'warp', 'Vault Landing', 40, 54, ['10-1'], null, { to: 'W4' }],
   ['10-1', 10, 'level', 'Weapon Rack Rally', 40, 140, ['10-2']],
   ['10-2', 10, 'level', 'Inventory Uprising', 96, 140, ['10-3', '10-4']],
@@ -125,7 +125,7 @@ const N = [
   ['10-S', 10, 'secret', 'Crazy Weapon Closet', 212, 248, []],
   ['10-5', 10, 'level', 'Every Weapon Ever', 210, 140, ['10-F']],
   ['10-F', 10, 'fort', 'Last Armory Fort', 262, 96, ['10-C']],
-  ['10-C', 10, 'castle', 'The Sentient Armory', 318, 156, [], null, { boss: 'bossweapon', final: true }]
+  ['10-C', 10, 'castle', "The Dragon's Hoard", 318, 156, [], null, { boss: 'bossweapon', final: true }]
 ];
 
 export const NODES = {};

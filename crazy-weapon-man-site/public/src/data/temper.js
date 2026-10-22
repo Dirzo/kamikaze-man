@@ -1,5 +1,5 @@
 // TEMPER: the post-game difficulty tiers (Slormancer's Ultimatums and Diablo's Torments, tempered
-// like steel). Beating the Sentient Armory opens TEMPER 1; beating any castle at your highest temper
+// like steel). Beating the Dragon opens TEMPER 1; beating any castle at your highest temper
 // opens the next, up to TEMPER 10. Each tier makes every level's enemies tougher and switches on one
 // more enemy modifier (they stack), and pays back in rarer weapons, more shards and more XP. Choose
 // the tier on the overworld (T). Kept in the overworld save. Pure data, safe to import from tests.

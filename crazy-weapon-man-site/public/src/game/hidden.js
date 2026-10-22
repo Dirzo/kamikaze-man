@@ -19,6 +19,7 @@ import { relicSpots } from '../data/relics.js';
 import { ZONES } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
 import { enemyPool } from '../data/progression.js';
+import { levelTier } from '../data/families.js';
 import { spawnEnemy } from './enemy.js';
 import { makeWeapon } from './loot.js';
 import { dropWeapon, dropShards } from './combat.js';
@@ -124,7 +125,7 @@ function fill(R, kind) {
     const prize = Math.floor(Math.random() * 3);
     R.chests = [{ x: 140, y: f }, { x: 210, y: f }, { x: 330, y: m.ledge.y }].map((c, i) => ({ ...c, open: false, prize: i === prize }));
   } else if (kind === 'golden') {
-    const pool = enemyPool(z, 4, ZONES[z].pool).filter(t => ENEMIES[t].kind !== 'mimic' && !ENEMIES[t].air);
+    const pool = enemyPool(z, 4, ZONES[z].pool, world.level ? levelTier(world.level.id) : null).filter(t => ENEMIES[t].kind !== 'mimic' && !ENEMIES[t].air);
     // (spawned straight into the room's list: world.enemies is the room's while you are inside)
     for (let i = 0; i < 5; i++) {
       const e = spawnEnemy(pool[i % pool.length], 150 + i * 56, f, { wave: 4 });

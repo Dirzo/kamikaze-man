@@ -61,9 +61,12 @@ export function startZone(z) {
   }
   world.director={phase:'intro',t:2.6,toSpawn:0,initialCount:world.map.spawns.length,bossStarted:false};
   const elites=modOn(world.temper,'elites'); // TEMPER: ELITE PACKS
+  const packType={};
   world.map.spawns.forEach((spot,i)=>{
-    const pool=enemyPool(z,spot.wave,ZONES[z].pool);
-    const type=pool[Math.floor(Math.random()*pool.length)], d=ENEMIES[type];
+    const pool=enemyPool(z,spot.wave,ZONES[z].pool,world.level?tier:null);
+    // a pack keeps to one kind, with the odd straggler of another (a yeti and its fuzzlets)
+    const lead=packType[spot.pack]??=pool[Math.floor(Math.random()*pool.length)];
+    const type=Math.random()<0.7&&pool.includes(lead)?lead:pool[Math.floor(Math.random()*pool.length)], d=ENEMIES[type];
     spawnEnemy(type,spot.x,d.air?spot.airY:spot.y,{elite:spot.elite||(elites&&i%9===4),wave:spot.wave});
   });
   startGimmick();
@@ -162,7 +165,7 @@ function updateSurvival(dt) {
   const bossUp=!!D.sboss,cap=SURVIVE.alive(world.zone)*(bossUp?SWARM_BOSS.alive:1);
   if(D.spawnT<=0 && alive<cap && !(world.boss && world.boss.dead)) {
     D.spawnT=SURVIVE.every(world.zone)*(bossUp?SWARM_BOSS.every:1);
-    const pool=enemyPool(world.zone,4,ZONES[world.zone].pool).filter(t=>ENEMIES[t].kind!=='mimic');
+    const pool=enemyPool(world.zone,4,ZONES[world.zone].pool,world.level?levelTier(world.level.id):null).filter(t=>ENEMIES[t].kind!=='mimic');
     const type=pool[Math.floor(Math.random()*pool.length)],[x,y]=swarmSpot(ENEMIES[type]);
     const e=spawnEnemy(type,x,y,{elite:Math.random()<0.06,wave:4});
     if(e){e.swarm=true;e.max=e.hp=Math.max(1,Math.round(e.hp*SURVIVE.hp));}

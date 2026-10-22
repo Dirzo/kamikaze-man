@@ -616,24 +616,14 @@ HEADS = {**STORY, 'bossgoose': SWARM['mothergoose'], 'bossacorn': SWARM['acornki
 
 
 def build(out, man):
-    global LOOK
+    """Every boss is a beast now (beast_bosses.py): the heads, their siblings and the old swarm
+    giants are their zone's beastkin drawn again at boss size. The hand-drawn bodies above stay
+    for reference; SIBLINGS still gives each sibling its hat and hat colour."""
+    import beast_bosses
     man.setdefault('bosses', {})
-    LOOK = {}
-    for kind, (w, h, draw) in HEADS.items():
-        ims = frames(draw, w, h)
-        strip(ims).save(os.path.join(out, f'boss-{kind}.png'))
-        man['bosses'][kind] = {'w': w, 'h': h, 'frames': ['idle1', 'idle2', 'hit']}
-    for etype, (w, h, draw) in SWARM.items():
-        ims = frames(draw, w, h)
-        strip(ims).save(os.path.join(out, f'enemy-{etype}.png'))
-        man['enemies'][etype] = {'w': w, 'h': h, 'frames': ['walk1', 'walk2', 'hit']}
-    for kind in SIBLINGS:
-        LOOK, k = sibling_look(kind)
-        w, h, draw = HEADS[SIBLINGS[kind][0]]
-        ims = frames(draw, w, h, k)
-        strip(ims).save(os.path.join(out, f'boss-{kind}.png'))
-        man['bosses'][kind] = {'w': ims[0].size[0], 'h': ims[0].size[1], 'frames': ['idle1', 'idle2', 'hit']}
-    LOOK = {}
+    beast_bosses.build_heads(out, man)
+    beast_bosses.build_giants(out, man)
+    beast_bosses.build_siblings(out, man, {k: v[:4] for k, v in SIBLINGS.items()})
 
 
 if __name__ == '__main__':
