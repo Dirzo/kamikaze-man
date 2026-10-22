@@ -16,7 +16,7 @@ import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './g
 import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
-import { updateInventory, drawInventory, toggleInventory, closeInventory } from './game/inventory.js';
+import { updateInventory, drawInventory, toggleInventory, closeInventory, openInventory, newBag } from './game/inventory.js';
 import { ZONES, TITLE_MUSIC } from './data/zones.js';
 import { rarityColour } from './game/looks.js';
 import { updateCamera } from './game/camera.js';
@@ -82,19 +82,37 @@ function openMap(fresh = []) {
   sceneT = 0;
 }
 const heroSnapshot = () => JSON.parse(JSON.stringify({ lv: world.hero.lv, xp: world.hero.xp, weapon: world.hero.weapon, bag: world.bag, mount: !!world.hero.mount }));
-function enterLevel(node) {
-  closeInventory();
-  resetWorld();
-  clearFx();
-  clearBoss();
+// the saved hero as world.hero + world.bag: fresh copies with new ids, so a failed attempt can
+// never touch the saved gear
+function loadHero() {
   const h = (world.hero = createHero()), snap = ow.save.hero;
   if (snap) {
-    // fresh copies with new ids, so a failed attempt can never touch the saved gear
     const copy = JSON.parse(JSON.stringify(snap));
     Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMax(copy.lv), weapon: freshUid(copy.weapon) });
     world.bag = copy.bag.map(w => w && freshUid(w));
     if (copy.mount) h.mount = { chompT: 1, flapT: 0 }; // the War Goose rides along
   }
+  return h;
+}
+// the bag on the map (B / Tab): the saved hero's kit, written back to the save when it closes
+function openMapBag() {
+  world.bag = newBag();
+  world.shards = 0;
+  loadHero();
+  openInventory();
+}
+function closeMapBag() {
+  ow.save.hero = heroSnapshot();
+  bankShards(world.shards); // salvaged on the map: straight into the shard tree
+  world.shards = 0;
+  writeSave(ow.save);
+}
+function enterLevel(node) {
+  closeInventory();
+  resetWorld();
+  clearFx();
+  clearBoss();
+  const h = loadHero(), snap = ow.save.hero;
   world.level = node;
   world.temper = temperOf(ow.save).on; // the post-game tier picked on the map (T)
   world.relicsOwned = relicMask(ow.save, node.id);
@@ -162,6 +180,12 @@ function update(dt) {
     return;
   }
   if (scene === 'map') {
+    if (world.inv) {
+      updateInventory(dt);
+      if (!world.inv) input.consume('bag'), closeMapBag(); // (B closed it: don't reopen next step)
+      return;
+    }
+    if (!powers.open && input.take('bag')) return input.consume('inv'), openMapBag();
     if (!powers.open && input.take('pause')) return showFiles();
     const node = updateOverworld(dt);
     if (node) enterLevel(node);
@@ -361,7 +385,7 @@ function render() {
   }
   if (scene === 'title') return drawTitle(t);
   if (scene === 'files') return drawTitle(t), drawFiles(t);
-  if (scene === 'map') return drawOverworld(t);
+  if (scene === 'map') return drawOverworld(t), drawInventory(t); // the bag (B) opens over the map
   drawWorld(world.t);
   drawHud(world.t);
   drawRouteHud();
@@ -411,7 +435,13 @@ click('b-pause', () => {
 });
 click('b-bag', () => {
   if (scene === 'play') toggleInventory();
-  else if (scene === 'map') powers.open ? closePowers() : openPowers();
+  else if (scene === 'map' && world.inv) closeInventory(), closeMapBag();
+  else if (scene === 'map') powers.open && closePowers(), openMapBag();
+});
+click('b-powers', () => {
+  if (scene !== 'map') return;
+  if (world.inv) closeInventory(), closeMapBag();
+  powers.open ? closePowers() : openPowers();
 });
 click('b-restart', () => {
   if (world.level && scene !== 'map') enterLevel(world.level); // retry this level, from the map's saved hero

@@ -47,6 +47,7 @@ export const KEYS = {
   dash: ['ShiftLeft', 'ShiftRight', 'KeyV', 'KeyI'],
   pause: ['Escape', 'KeyP'],
   inv: ['KeyE', 'KeyB', 'Tab'],
+  bag: ['KeyB', 'Tab'], // on the map E is POWERS, so the bag is B / Tab there (in a level all three open it)
   leave: ['KeyQ'],
   undo: ['KeyU', 'Backspace'],
   lock: ['KeyG'],
