@@ -65,7 +65,7 @@ def cat_eye(c, x, y, col, hit, glow=False):
 
 def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, stripes=None, tail='cat', points=None,
         back=None, front=None, wear=None, hat=None, hold=None, dual=False, blade='steel', glow=False, scar=False, wide=1.0,
-        snout=0.0, ears='cat', tip=None, tails=1, nose=None, weapon=None):
+        snout=0.0, ears='cat', tip=None, tails=1, nose=None, weapon=None, face=None):
     """The beastkin cat (or raccoon, racc=True): standing up on two legs, a big head with pointed
     ears (round ones for raccoons), a tail, and a dagger in the near paw. dual puts a second
     dagger in the far paw."""
@@ -133,7 +133,14 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
     hx, hy = bx + 1.2 * s, by - bry - 2.4 * s + (0.6 if p.hit else 0) + g.get('hdy', 0) * s
     hrx, hry = 3.7 * s, 3.3 * s
     for ex_, lift in ((hx - 2.4 * s, -0.25), (hx + 1.4 * s, 0.1)):  # the ears
-        if racc:
+        if ears == 'monkey':  # a monkey's round ear, out at the side of its head
+            if lift < 0:
+                c.ball(hx - 3.2 * s, hy - 0.2 * s, 1.1 * s, 1.3 * s, fur, lift=-0.1)
+                c.put(hx - 3.2 * s, hy - 0.1 * s, (face or 'pink', 2), flat=True)
+        elif ears == 'goat':  # a goat's or yak's ear, sticking out sideways
+            if lift < 0:
+                c.capsule(hx - 2.0 * s, hy - 0.8 * s, hx - 4.6 * s, hy + 0.2 * s, 1.0 * s, 0.7 * s, pts, lift=-0.2)
+        elif racc:
             c.ball(ex_ + 0.2 * s, hy - hry * 0.95, 1.3 * s, 1.2 * s, fur, lift=lift)
         elif ears == 'flop':  # a hound's soft ears, folded down
             c.capsule(ex_ - 0.4 * s, hy - hry * 0.7, ex_ - 1.4 * s, hy + 0.6 * s, 1.3 * s, 1.0 * s, pts, lift=lift - 0.2)
@@ -144,6 +151,8 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
             c.poly([(ex_ - 1.3 * s, hy - hry * 0.5), (ex_ + 0.2 * s, hy - hry - 2.4 * s), (ex_ + 1.5 * s, hy - hry * 0.6)], pts, base=3 if lift > 0 else 2)
             c.put(ex_ + 0.2 * s, hy - hry - 0.6 * s, ('pink', 3), flat=True)
     c.ball(hx, hy, hrx, hry, fur, lift=0.1)
+    if face:  # a monkey's bare face
+        c.ball(hx + 1.1 * s, hy + 0.5 * s, 2.7 * s, 2.5 * s, face, lift=0.35, contour=False)
     if stripes and s >= 1:
         c.line([(hx - 0.8 * s, hy - hry + 0.4), (hx - 0.4 * s, hy - hry * 0.4)], (stripes, 1))
         c.line([(hx + 0.6 * s, hy - hry + 0.6), (hx + 0.6 * s, hy - hry * 0.45)], (stripes, 1))

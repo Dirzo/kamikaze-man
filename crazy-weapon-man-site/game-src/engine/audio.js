@@ -235,6 +235,17 @@ const DIE = {
   prowler: () => chip([[N(76), 2], [N(83), 2], [N(71), 5]], { wave: 'p25', vol: 0.04, decay: 0.004 }), // mrrow
   bandit: () => (arp([86, 81, 86, 79], 1, { wave: 'p25', vol: 0.03 }), hiss(4, { vol: 0.04, rate: 0.9, short: true })), // chitter and a puff
   fatcat: () => (chip([[N(64), 4], [N(57), 8]], { wave: 'p50', vol: 0.05, decay: 0.006 }), chip([[N(96), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })), // a purr and a coin
+  // the monkey, goat and yak family: hoots, bleats and a deep yak grunt
+  macaque: () => chip([[N(88), 1], [N(93), 1], [N(86), 2]], { wave: 'p25', vol: 0.035, decay: 0.004 }), // eek
+  vaultmonkey: () => arp([84, 91, 96], 1, { wave: 'p25', vol: 0.035 }),
+  goatmonk: () => chip([[N(76), 2], [N(77), 2], [N(76), 2], [N(74), 4]], { wave: 'p12', vol: 0.04, decay: 0.004 }), // baa-a-a
+  gibbon: () => arp([79, 86, 91, 86, 91, 96], 1, { wave: 'p25', vol: 0.035, decay: 0.003 }), // whoop whoop
+  snowsage: () => chip([[N(67), 4], [N(64), 8]], { wave: 'tri', vol: 0.06, decay: 0.006 }), // a long sigh
+  baboon: () => (chip([[N(72), 2], [N(67), 4]], { wave: 'p50', vol: 0.045, decay: 0.005 }), chip([[N(96), 2]], { wave: 'p12', vol: 0.025, delay: 0.08 })),
+  ibex: () => chip([[N(81), 2], [N(80), 2], [N(79), 4]], { wave: 'p12', vol: 0.04, decay: 0.004 }),
+  langur: () => arp([93, 88, 96, 91], 1, { wave: 'p25', vol: 0.035, decay: 0.003 }),
+  yak: () => (chip([[N(43), 6], [N(38), 10]], { wave: 'p50', vol: 0.06, decay: 0.006 }), chip([[N(31), 8]], { wave: 'tri', vol: 0.08, decay: 0.01 })), // a deep grunt
+  cloudape: () => arp([72, 79, 84, 91, 96, 103], 2, { wave: 'p12', vol: 0.035, decay: 0.003 }), // a gong shimmer
   // the dog and fox family: yips, barks and fox cries
   shibapup: () => chip([[N(91), 1], [N(96), 2]], { wave: 'p25', vol: 0.035, decay: 0.004 }), // yip
   corgi: () => chip([[N(84), 2], [N(88), 2], [N(81), 3]], { wave: 'p25', vol: 0.04, decay: 0.005 }), // borf

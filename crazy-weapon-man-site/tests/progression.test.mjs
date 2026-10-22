@@ -99,6 +99,12 @@ test('the shrine family grows up along zone 5: Shiba Pups on 5-1, the Nine Tail 
   assert.ok(at(1).includes('ninetail') && !at(1).includes('shibapup'));
   assert.ok(pool.every(t => ENEMIES[t].fam === 'shrine'));
 });
+test('the temple family grows up along zone 6: Novice Macaques on 6-1, the Cloud Ape Master at the castle', () => {
+  const pool = ZONES[5].pool, at = t => enemyPool(5, 1, pool, t);
+  assert.deepEqual(at(0), ['macaque', 'vaultmonkey', 'goatmonk']);
+  assert.ok(at(1).includes('cloudape') && !at(1).includes('macaque'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'temple'));
+});
 test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
   const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);
   assert.deepEqual(at(0), ['fuzzlet', 'burrball', 'puffshot']);

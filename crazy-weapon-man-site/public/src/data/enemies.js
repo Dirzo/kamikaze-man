@@ -99,6 +99,18 @@ export const ENEMIES = {
   windfox: { name: 'Wind Fox', kind: 'beast', beh: 'crescent', fam: 'shrine', evo: 7, hp: 1.1, dmg: 1.0, speed: 38, range: 170, wind: 0.5 },
   houndguard: { name: 'Hound Guard', kind: 'beast', beh: 'kunai', fam: 'shrine', evo: 8, hp: 1.3, dmg: 1.0, speed: 36, range: 170, wind: 0.5 },
   tosa: { name: 'Tosa Champion', kind: 'beast', beh: 'champion', fam: 'shrine', evo: 9, heavy: true, hp: 2.8, dmg: 1.4, speed: 22, range: 34, wind: 0.6 },
+  // The monkey, goat and yak family (zone 6, the staff): the monastery's monks, from Novice
+  // Macaques on 6-1 up to the Cloud Ape Master.
+  macaque: { name: 'Novice Macaque', kind: 'beast', beh: 'novice', fam: 'temple', evo: 1, hp: 0.6, dmg: 0.7, speed: 40, range: 26, wind: 0.45 },
+  vaultmonkey: { name: 'Pole Vault Monkey', kind: 'beast', beh: 'vault', fam: 'temple', evo: 2, hp: 0.8, dmg: 0.9, speed: 44, range: 26, wind: 0.4 },
+  goatmonk: { name: 'Mountain Goat Acolyte', kind: 'beast', beh: 'ram', fam: 'temple', evo: 3, hp: 1.0, dmg: 1.0, speed: 36, range: 28, wind: 0.45 },
+  gibbon: { name: 'Spinning Gibbon', kind: 'beast', beh: 'gibbon', fam: 'temple', evo: 4, hp: 1.0, dmg: 0.8, speed: 42, range: 70, wind: 0.5 },
+  snowsage: { name: 'Snow Monkey Sage', kind: 'beast', beh: 'heal', fam: 'temple', evo: 5, hp: 1.1, dmg: 0.8, speed: 32, range: 28, wind: 0.5 },
+  baboon: { name: 'Extending Staff Baboon', kind: 'beast', beh: 'extend', fam: 'temple', evo: 6, hp: 1.3, dmg: 1.1, speed: 30, range: 140, wind: 0.6 },
+  ibex: { name: 'Cliff Ibex', kind: 'beast', beh: 'ibex', fam: 'temple', evo: 7, hp: 1.3, dmg: 1.1, speed: 40, range: 30, wind: 0.42 },
+  langur: { name: 'Golden Langur', kind: 'beast', beh: 'langur', fam: 'temple', evo: 8, hp: 1.3, dmg: 1.0, speed: 50, range: 28, wind: 0.4 },
+  yak: { name: 'Temple Yak', kind: 'beast', beh: 'yak', fam: 'temple', evo: 9, heavy: true, hp: 3.0, dmg: 1.4, speed: 18, range: 36, wind: 0.65 },
+  cloudape: { name: 'Cloud Ape Master', kind: 'beast', beh: 'cloudape', fam: 'temple', evo: 10, heavy: true, hp: 2.8, dmg: 1.4, speed: 32, range: 34, wind: 0.45 },
   ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
@@ -126,7 +138,9 @@ export const DEATHS = {
   alleykit: 'squash', pickpocket: 'spin', cutpurse: 'topple', lanterncat: 'rise', juggler: 'spin', shadowtom: 'rise',
   siamese: 'topple', prowler: 'flip', bandit: 'spin', fatcat: 'topple',
   shibapup: 'squash', corgi: 'flip', akita: 'topple', petalfox: 'rise', husky: 'topple', twininu: 'spin',
-  windfox: 'rise', houndguard: 'topple', tosa: 'topple', ninetail: 'rise'
+  windfox: 'rise', houndguard: 'topple', tosa: 'topple', ninetail: 'rise',
+  macaque: 'squash', vaultmonkey: 'flip', goatmonk: 'topple', gibbon: 'spin', snowsage: 'rise', baboon: 'topple',
+  ibex: 'flip', langur: 'spin', yak: 'topple', cloudape: 'rise'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

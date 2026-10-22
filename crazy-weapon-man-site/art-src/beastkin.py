@@ -1118,6 +1118,7 @@ def cli():
 import beastkin_lagoon  # noqa: E402,F401  zone 3, turtles and frogs (nunchucks)
 import beastkin_bazaar  # noqa: E402,F401  zone 4, cats and raccoons (daggers)
 import beastkin_shrine  # noqa: E402,F401  zone 5, samurai dogs and fox spirits (katanas)
+import beastkin_temple  # noqa: E402,F401  zone 6, monkey monks, goats and a yak (staves)
 
 if __name__ == '__main__':
     import beastkin  # run as the module itself, so the families above register into one DESIGNS

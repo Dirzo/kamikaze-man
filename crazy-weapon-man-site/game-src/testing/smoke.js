@@ -267,13 +267,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose, fuzzball, lagoon, bazaar and shrine families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1,2,3,4]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[0,1,2,3,4].flatMap(z=>ZONES[z].pool);
+  check('the goose, fuzzball, lagoon, bazaar, shrine and temple families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3,4,5]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3,4,5].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -331,6 +331,18 @@ export function runSmoke(game) {
     for(let i=0;i<60*2&&!(hk.openT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(hk,STEP);}ok(hk.openT>0 && hitEnemy(hk,50,{dir:1})>0,'the Husky was not open after its counter');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const ts=spawnEnemy('tosa',h.x+100,FLOOR());ts.spawnT=0;ts.calm=false;
     for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(ts,STEP);updateHero(h,STEP);}ok(h.hp<h.maxHp && h.hurtT>0.2,'the Tosa\'s charge did not daze');
+    // the monastery: a Snow Monkey Sage heals a hurt monk, a Spinning Gibbon sends a shot back, the Yak raises spikes,
+    // the Baboon's staff reaches across the floor, the Cloud Ape's clones come at you
+    reset();h=world.hero;const sg=spawnEnemy('snowsage',h.x+120,FLOOR());sg.spawnT=0;sg.calm=false;const mk=spawnEnemy('macaque',h.x+150,FLOOR());mk.spawnT=0;mk.hp=Math.round(mk.max*0.3);const mh=mk.hp;
+    for(let i=0;i<60*3&&mk.hp===mh;i++){world.t+=STEP;updateEnemy(sg,STEP);}ok(mk.hp>mh,'the Snow Monkey Sage healed nobody');
+    reset();h=world.hero;const gb=spawnEnemy('gibbon',h.x+60,FLOOR());gb.spawnT=0;gb.calm=false;gb.state='attack';gb.move='gibspin';gb.st=1;gb.hp=gb.max=1e6;
+    ok(hitEnemy(gb,50,{dir:1,shot:true})===0 && world.bolts.length>0,'the Spinning Gibbon did not reflect a shot');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const yk=spawnEnemy('yak',h.x+70,FLOOR());yk.spawnT=0;yk.calm=false;yk.face=-1;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='spike');i++){world.t+=STEP;updateEnemy(yk,STEP);}ok(world.bolts.some(b=>b.look==='spike'),'the Temple Yak raised no spikes');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const bb=spawnEnemy('baboon',h.x+110,FLOOR());bb.spawnT=0;bb.calm=false;
+    for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(bb,STEP);}ok(h.hp<h.maxHp && Math.abs(cx(bb)-cx(h))>80,'the Baboon\'s staff did not reach across');
+    reset();h=world.hero;const ca=spawnEnemy('cloudape',h.x+150,FLOOR());ca.spawnT=0;ca.calm=false;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='decoy');i++){world.t+=STEP;updateEnemy(ca,STEP);}ok(world.bolts.filter(b=>b.look==='decoy'&&!b.harmless).length===2,'the Cloud Ape sent no clones');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
     for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
   });

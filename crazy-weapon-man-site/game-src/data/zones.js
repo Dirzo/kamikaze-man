@@ -73,8 +73,8 @@ export const ZONES = [
     id: 'mountain-monastery',
     weapon: 'staff',
     name: 'The Mountain Staff Monastery',
-    sub: 'The monks spin staves and chant battle hymns. The Ogre King is meditating. Loudly.',
-    pool: ['monk', 'kitsune', 'monk', 'roller', 'summoner', 'sniper'],
+    sub: 'Monkey monks spin staves, the goats keep the gates, and the Ogre King is meditating. Loudly.',
+    pool: ['macaque', 'vaultmonkey', 'goatmonk', 'gibbon', 'snowsage', 'baboon', 'ibex', 'langur', 'yak', 'cloudape'],
     platforms: L3,
     boss: 'bossman',
     music: { key: 54, scale: 'penta', bpm: 104, prog: [0, 3, 2, 0], drums: 'chant', lead: 'p50', bass: 'drone', theme: '0 - 0 - 1 - 2 - | 2 - 1 - 0 - - . | 3 - 2 - 1 - 2 - | 0 - - - - - . .' }

@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the monkey, goat and yak family (zone 6)
+  macaque: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'First week at the monastery. The robe is a hand-me-down and the staff is a broom handle.' },
+  vaultmonkey: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Has never once used the stairs.' },
+  goatmonk: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Keeps the mountain gate. Headbutts first, bows politely after.' },
+  gibbon: { stats: { aoeSize: 0.02 }, bonus: 'Area effects reach 2% wider', lore: 'Arms longer than its staff, and its staff is very long.' },
+  snowsage: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Meditates in the hot spring every morning. Every monk it touches feels better.' },
+  baboon: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Its staff grows when it shouts. It shouts a lot.' },
+  ibex: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Lives on a cliff with no paths. Comes down to train, and to land on visitors.' },
+  langur: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Five strikes before you blink, and the fifth sends you to the rafters.' },
+  yak: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'Has stood at the temple door so long the floor remembers its slam.' },
+  cloudape: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Rides a cloud, splits into three, and has never lost a sparring match to any of them.' },
   // the dog and fox family (zone 5)
   shibapup: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Its katana is taller than it is. It has fallen over it four times today.' },
   corgi: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Short legs, a low stance and a sweep that takes out every ankle in the shrine.' },
