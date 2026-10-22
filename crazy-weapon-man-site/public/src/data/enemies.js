@@ -111,6 +111,18 @@ export const ENEMIES = {
   langur: { name: 'Golden Langur', kind: 'beast', beh: 'langur', fam: 'temple', evo: 8, hp: 1.3, dmg: 1.0, speed: 50, range: 28, wind: 0.4 },
   yak: { name: 'Temple Yak', kind: 'beast', beh: 'yak', fam: 'temple', evo: 9, heavy: true, hp: 3.0, dmg: 1.4, speed: 18, range: 36, wind: 0.65 },
   cloudape: { name: 'Cloud Ape Master', kind: 'beast', beh: 'cloudape', fam: 'temple', evo: 10, heavy: true, hp: 2.8, dmg: 1.4, speed: 32, range: 34, wind: 0.45 },
+  // The bear, badger and boar family (zone 7, the hammer): the forge's smiths, from the Cub
+  // Apprentice on 7-1 up to the Iron Polar Bear.
+  cub: { name: 'Cub Apprentice', kind: 'beast', beh: 'cub', fam: 'forge', evo: 1, hp: 0.7, dmg: 0.8, speed: 36, range: 22, wind: 0.5 },
+  badger: { name: 'Badger Tinker', kind: 'beast', beh: 'burrow', fam: 'forge', evo: 2, hp: 0.8, dmg: 0.9, speed: 40, range: 24, wind: 0.4 },
+  boarbellows: { name: 'Boar Bellows', kind: 'beast', beh: 'bellows', fam: 'forge', evo: 3, hp: 1.0, dmg: 1.0, speed: 34, range: 26, wind: 0.45 },
+  bearsmith: { name: 'Brown Bear Smith', kind: 'beast', beh: 'smith', fam: 'forge', evo: 4, hp: 1.5, dmg: 1.2, speed: 26, range: 30, wind: 0.75 },
+  honeybadger: { name: 'Honey Badger Brute', kind: 'beast', beh: 'angry', fam: 'forge', evo: 5, hp: 1.2, dmg: 0.9, speed: 44, range: 24, wind: 0.42 },
+  anviltoss: { name: 'Anvil Tosser', kind: 'beast', beh: 'anvil', fam: 'forge', evo: 6, hp: 1.3, dmg: 1.1, speed: 28, range: 180, wind: 0.65 },
+  wolverine: { name: 'Wolverine Riveter', kind: 'beast', beh: 'tornado', fam: 'forge', evo: 7, hp: 1.3, dmg: 0.9, speed: 40, range: 90, wind: 0.5 },
+  moltenboar: { name: 'Molten Boar', kind: 'beast', beh: 'molten', fam: 'forge', evo: 8, hp: 1.7, dmg: 1.2, speed: 26, range: 30, wind: 0.6 },
+  grizzly: { name: 'Grizzly Foreman', kind: 'beast', beh: 'foreman', fam: 'forge', evo: 9, heavy: true, hp: 2.8, dmg: 1.4, speed: 22, range: 36, wind: 0.6 },
+  polarbear: { name: 'Iron Polar Bear', kind: 'beast', beh: 'ironbear', fam: 'forge', evo: 10, heavy: true, hp: 3.0, dmg: 1.5, speed: 22, range: 38, wind: 0.6 },
   ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
@@ -140,7 +152,9 @@ export const DEATHS = {
   shibapup: 'squash', corgi: 'flip', akita: 'topple', petalfox: 'rise', husky: 'topple', twininu: 'spin',
   windfox: 'rise', houndguard: 'topple', tosa: 'topple', ninetail: 'rise',
   macaque: 'squash', vaultmonkey: 'flip', goatmonk: 'topple', gibbon: 'spin', snowsage: 'rise', baboon: 'topple',
-  ibex: 'flip', langur: 'spin', yak: 'topple', cloudape: 'rise'
+  ibex: 'flip', langur: 'spin', yak: 'topple', cloudape: 'rise',
+  cub: 'squash', badger: 'flip', boarbellows: 'topple', bearsmith: 'topple', honeybadger: 'spin', anviltoss: 'topple',
+  wolverine: 'spin', moltenboar: 'topple', grizzly: 'topple', polarbear: 'topple'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

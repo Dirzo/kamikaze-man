@@ -235,6 +235,17 @@ const DIE = {
   prowler: () => chip([[N(76), 2], [N(83), 2], [N(71), 5]], { wave: 'p25', vol: 0.04, decay: 0.004 }), // mrrow
   bandit: () => (arp([86, 81, 86, 79], 1, { wave: 'p25', vol: 0.03 }), hiss(4, { vol: 0.04, rate: 0.9, short: true })), // chitter and a puff
   fatcat: () => (chip([[N(64), 4], [N(57), 8]], { wave: 'p50', vol: 0.05, decay: 0.006 }), chip([[N(96), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })), // a purr and a coin
+  // the bear, badger and boar family: growls, snorts and the ring of iron
+  cub: () => chip([[N(79), 2], [N(84), 3]], { wave: 'p25', vol: 0.035, decay: 0.004 }), // a little roar
+  badger: () => (chip([[N(83), 1], [N(86), 2]], { wave: 'p12', vol: 0.03 }), hiss(3, { vol: 0.03, rate: 1.0, short: true })),
+  boarbellows: () => chip([[N(60), 2], [N(64), 2], [N(57), 4]], { wave: 'p25', vol: 0.05, decay: 0.005 }), // oink-snort
+  bearsmith: () => (chip([[N(48), 5], [N(43), 8]], { wave: 'p50', vol: 0.06, decay: 0.006 }), chip([[N(96), 2]], { wave: 'p12', vol: 0.03, delay: 0.1 })), // a growl and a clank
+  honeybadger: () => (chip([[N(76), 1], [N(79), 1], [N(74), 3]], { wave: 'p25', vol: 0.045, decay: 0.004 }), hiss(4, { vol: 0.04, rate: 1.1, short: true })),
+  anviltoss: () => (chip([[N(55), 3], [N(50), 6]], { wave: 'p50', vol: 0.05, decay: 0.005 }), chip([[N(91), 2], [N(86), 4]], { wave: 'p12', vol: 0.03, delay: 0.12 })),
+  wolverine: () => chip([[N(67), 2], [N(72), 2], [N(62), 5]], { wave: 'p25', vol: 0.045, decay: 0.004 }),
+  moltenboar: () => (chip([[N(52), 3], [N(48), 6]], { wave: 'p50', vol: 0.05, decay: 0.005 }), hiss(6, { vol: 0.05, rate: 0.7 })), // and a hiss of steam
+  grizzly: () => (chip([[N(41), 6], [N(36), 10]], { wave: 'p50', vol: 0.06, decay: 0.006 }), chip([[N(88), 3], [N(84), 6]], { wave: 'tri', vol: 0.04, delay: 0.14 })), // a roar and the bell
+  polarbear: () => (chip([[N(38), 8], [N(31), 12]], { wave: 'p50', vol: 0.07, decay: 0.007 }), chip([[N(29), 10]], { wave: 'tri', vol: 0.09, decay: 0.01 })),
   // the monkey, goat and yak family: hoots, bleats and a deep yak grunt
   macaque: () => chip([[N(88), 1], [N(93), 1], [N(86), 2]], { wave: 'p25', vol: 0.035, decay: 0.004 }), // eek
   vaultmonkey: () => arp([84, 91, 96], 1, { wave: 'p25', vol: 0.035 }),

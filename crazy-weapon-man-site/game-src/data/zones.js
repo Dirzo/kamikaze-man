@@ -84,7 +84,7 @@ export const ZONES = [
     weapon: 'hammer',
     name: "Dad's Hammer & Anvil Forge",
     sub: 'Runaway anvils and fatherly advice. Sr. is hammering something loud.',
-    pool: ['anvil', 'brute', 'anvil', 'roller', 'bombchicken', 'mimic', 'shieldbro'],
+    pool: ['cub', 'badger', 'boarbellows', 'bearsmith', 'honeybadger', 'anviltoss', 'wolverine', 'moltenboar', 'grizzly', 'polarbear'],
     platforms: L2,
     boss: 'bosssr',
     music: { key: 47, scale: 'minor', bpm: 146, prog: [0, 6, 5, 4], drums: 'forge', oct: 0, theme: '0 0 . 0 2 . 3 . | 0 0 . 0 4 - 3 . | 0 0 . 0 2 . 3 5 | 4 - 3 2 0 - - .' }

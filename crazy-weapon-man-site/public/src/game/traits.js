@@ -9,7 +9,7 @@ import { cx, cy } from './physics.js';
 import { rect, px } from '../engine/gfx.js';
 import { burst, emit, callout } from './fx.js';
 import { sfx } from '../engine/audio.js';
-import { arrowWait, drawArrow, drawQuake, drawSpinSword, drawGrave, drawBubble, drawCroak, drawWave, drawDagger, drawSmoke, drawKunai, drawPetal, drawDecoy, drawSpike } from './beastkin.js';
+import { arrowWait, drawArrow, drawQuake, drawSpinSword, drawGrave, drawBubble, drawCroak, drawWave, drawDagger, drawSmoke, drawKunai, drawPetal, drawDecoy, drawSpike, drawFire, drawAnvil } from './beastkin.js';
 
 const say1 = (e, s, col = C.cream) => callout(s, 0, 0, col, { follow: e, life: 36 });
 
@@ -183,6 +183,9 @@ export function drawTraitBolt(b, t) {
     case 'petal': return drawPetal(b, t);
     case 'decoy': return drawDecoy(b, t);
     case 'spike': return drawSpike(b, t);
+    case 'fire':
+    case 'lava': return drawFire(b, t);
+    case 'anvil': return drawAnvil(b, t);
     case 'sword': o(6, 6);
       if (k % 2) { rect(x, y + 2, 6, 2, b.col === C.gold ? C.gold : C.mist); rect(x + (f > 0 ? 0 : 4), y + 1, 2, 4, C.wood); }
       else { rect(x + 2, y, 2, 6, b.col === C.gold ? C.gold : C.mist); rect(x + 1, y + (k ? 4 : 0), 4, 2, C.wood); }

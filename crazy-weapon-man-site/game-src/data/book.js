@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the bear, badger and boar family (zone 7)
+  cub: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Sweeps the forge floor, fetches the coal, and is not yet allowed near the big hammers.' },
+  badger: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Fixes the pipes under the forge. Prefers to come up through the floor.' },
+  boarbellows: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Works the bellows with its trotters and charges with its head. The fire follows.' },
+  bearsmith: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Forged half the hammers in the world. The floor of its workshop is all cracks.' },
+  honeybadger: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Does not care. Hit it and find out just how much it does not care.' },
+  anviltoss: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Delivers anvils. By air.' },
+  wolverine: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Puts in a thousand rivets a day, two at a time, spinning.' },
+  moltenboar: { stats: { aoeSize: 0.02 }, bonus: 'Area effects reach 2% wider', lore: 'Runs hotter than the furnace. Has to sit in the quench tank twice a shift.' },
+  grizzly: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'One ring of its bell and every smith in the forge picks up the pace.' },
+  polarbear: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'Came down from the ice to work the cold-iron. Wears most of it.' },
   // the monkey, goat and yak family (zone 6)
   macaque: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'First week at the monastery. The robe is a hand-me-down and the staff is a broom handle.' },
   vaultmonkey: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'Has never once used the stairs.' },

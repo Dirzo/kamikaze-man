@@ -65,7 +65,7 @@ def cat_eye(c, x, y, col, hit, glow=False):
 
 def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, stripes=None, tail='cat', points=None,
         back=None, front=None, wear=None, hat=None, hold=None, dual=False, blade='steel', glow=False, scar=False, wide=1.0,
-        snout=0.0, ears='cat', tip=None, tails=1, nose=None, weapon=None, face=None):
+        snout=0.0, ears='cat', tip=None, tails=1, nose=None, weapon=None, face=None, whisk=True):
     """The beastkin cat (or raccoon, racc=True): standing up on two legs, a big head with pointed
     ears (round ones for raccoons), a tail, and a dagger in the near paw. dual puts a second
     dagger in the far paw."""
@@ -140,7 +140,7 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
         elif ears == 'goat':  # a goat's or yak's ear, sticking out sideways
             if lift < 0:
                 c.capsule(hx - 2.0 * s, hy - 0.8 * s, hx - 4.6 * s, hy + 0.2 * s, 1.0 * s, 0.7 * s, pts, lift=-0.2)
-        elif racc:
+        elif racc or ears == 'round':  # a raccoon's or a bear's round ears
             c.ball(ex_ + 0.2 * s, hy - hry * 0.95, 1.3 * s, 1.2 * s, fur, lift=lift)
         elif ears == 'flop':  # a hound's soft ears, folded down
             c.capsule(ex_ - 0.4 * s, hy - hry * 0.7, ex_ - 1.4 * s, hy + 0.6 * s, 1.3 * s, 1.0 * s, pts, lift=lift - 0.2)
@@ -169,7 +169,7 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
     cat_eye(c, hx - 1.3 * s, hy - 0.7 * s, mix(eye, INK, 0.2), p.hit, glow)
     if scar and not p.hit:
         c.line([(hx + 0.8 * s, hy - 2.4 * s), (hx + 2.2 * s, hy + 0.4 * s)], ('pink', 2), flat=True)
-    if s >= 1.1:  # whiskers
+    if s >= 1.1 and whisk:  # whiskers
         for k in (-1, 1):
             c.line([(hx + 3.0 * s, hy + 1.2 * s + k * 0.5), (hx + 4.4 * s, hy + 1.0 * s + k * 1.1)], (170, 166, 160), thin=True, flat=True)
     if hat:

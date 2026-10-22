@@ -84,6 +84,18 @@
 //   langur    Golden Langur: five quick strikes, and the last one launches you
 //   yak       Temple Yak: heavy; its slam raises a line of rock spikes from the floor
 //   cloudape  Cloud Ape Master: sends clones of itself at you and spins its great staff in a ring
+//
+// The bear, badger and boar family (zone 7, the hammer):
+//   cub       Cub Apprentice: a mallet bonk, and the mallet pulls it over every time
+//   burrow    Badger Tinker: tunnels under the floor and pops up beneath you with an uppercut
+//   bellows   Boar Bellows: a charge that leaves a trail of fire behind it
+//   smith     Brown Bear Smith: an overhead slam that cracks the floor both ways
+//   angry     Honey Badger Brute: every hit it takes makes it angrier and faster
+//   anvil     Anvil Tosser: lobs anvils that come down where you stand
+//   tornado   Wolverine Riveter: a spinning tornado of two hammers, back and forth
+//   molten    Molten Boar: slams leave pools of lava, until it overheats and must cool down
+//   foreman   Grizzly Foreman: rings the bell to rally the smiths; its ground pound stuns
+//   ironbear  Iron Polar Bear: heavy and armoured; light hits barely dent it; a giant hammer spin
 import { C } from '../config.js';
 import { world } from './world.js';
 import { cx, cy, overlap } from './physics.js';
@@ -219,6 +231,17 @@ export function beastTick(e, dt) {
     e.speed = e.hidden ? 0 : e.walkSpeed;
     if (e.hidden && e.state !== 'attack') e.pose = 'hide';
     else if (e.pose === 'hide') e.pose = null;
+  }
+  // Badger Tinker: under the floor only its dirt shows
+  if (e.d.beh === 'burrow') {
+    if (e.hidden == null) e.hidden = false;
+    if (e.hidden && e.state !== 'attack') e.pose = 'hide';
+    else if (e.pose === 'hide') e.pose = null;
+  }
+  // Molten Boar: cooling off after it overheats, steaming
+  if (e.coolT > 0) {
+    e.pose = (e.coolT -= dt) > 0 ? 'cool' : null;
+    if (Math.random() < 0.3) emit(cx(e) + rnd(-6, 6), e.y + 2, 'dot', C.mist);
   }
   // Shiba Pup: on its face for a moment after a lunge
   if (e.tripT > 0) e.pose = (e.tripT -= dt) > 0 ? 'trip' : null;
@@ -519,6 +542,55 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
       else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'slash');
       else e.vx = toward * e.speed * slow * (dist < 24 ? 0 : 1);
       break;
+    case 'cub':
+      if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'bonk');
+      else e.vx = toward * e.speed * slow * (dist < 16 ? 0 : 1);
+      break;
+    case 'burrow':
+      if (e.hidden) {
+        e.vx = toward * 75 * slow * (dist < 10 ? 0 : 1);
+        if (Math.random() < 0.4) emit(cx(e) + rnd(-5, 5), e.y + e.h - 1, 'dust', C.sand);
+        if (dist < 22 && sameLevel) wind(e, 0.22, 'hide', 'rise');
+      } else if ((e.diveCool ?? 0) <= 0 && dist > 50 && sameLevel) {
+        e.hidden = true; // down it goes
+        burst(cx(e), e.y + e.h, 8, 'chip', ['sand', 'wood']);
+      } else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'slash');
+      else e.vx = toward * e.speed * slow * (dist < 16 ? 0 : 1);
+      break;
+    case 'bellows':
+      if ((e.chargeCool ?? 0) <= 0 && dist > 30 && dist < 170 && sameLevel) wind(e, 0.5, 'charge', 'firecharge');
+      else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'bonk');
+      else e.vx = toward * e.speed * slow * (dist < 20 ? 0 : 1);
+      break;
+    case 'smith':
+    case 'molten':
+      if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', d.beh === 'molten' ? 'lavaslam' : 'smash');
+      else e.vx = toward * e.speed * slow * (dist < 22 ? 0 : 1);
+      break;
+    case 'angry':
+      if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind / (1 + 0.2 * (e.anger || 0)), 'draw', 'bonk');
+      else e.vx = toward * e.speed * slow * (dist < 16 ? 0 : 1);
+      break;
+    case 'anvil':
+      if (e.cool <= 0 && dist < d.range && dist > 30 && near) wind(e, d.wind, 'throw', 'anvil');
+      else if (e.cool <= 0 && dist <= 30 && sameLevel) wind(e, 0.45, 'draw', 'bonk');
+      else keep(e, 100, dist, toward, slow);
+      break;
+    case 'tornado':
+      if (e.cool <= 0 && dist < d.range && sameLevel) wind(e, d.wind, 'draw', 'hamspin');
+      else keep(e, 70, dist, toward, slow);
+      break;
+    case 'foreman':
+      if ((e.rallyCool ?? 0) <= 0 && dist < 200) wind(e, 0.5, 'rally', 'rally');
+      else if ((e.poundCool ?? 0) <= 0 && dist < 110 && sameLevel) wind(e, 0.7, 'slam', 'pound');
+      else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'cleave');
+      else e.vx = toward * e.speed * slow * (dist < 26 ? 0 : 1);
+      break;
+    case 'ironbear':
+      if ((e.spinCool ?? 0) <= 0 && dist < 70 && sameLevel) wind(e, 0.6, 'draw', 'bearspin');
+      else if (e.cool <= 0 && dist < d.range + 8 && sameLevel) wind(e, d.wind, 'draw', 'cleave');
+      else e.vx = toward * e.speed * slow * (dist < 26 ? 0 : 1);
+      break;
     case 'alpha':
       if (!e.howled || ((e.howlCool ?? 0) <= 0 && dist < 200)) wind(e, 0.55, 'howl', 'howl');
       else if ((e.rainCool ?? 0) <= 0 && dist > 50 && dist < 210 && near) wind(e, 0.7, 'sky', 'rain');
@@ -530,7 +602,7 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
   if (e.howlCool > 0) e.howlCool -= dt;
   if (e.rainCool > 0) e.rainCool -= dt;
   for (const k of ['honkCool', 'guardCool', 'leapCool', 'gravesCool', 'tongueCool', 'shellCool', 'diveCool', 'croakCool', 'slamCool', 'spinCool', 'counterCool',
-    'blinkCool', 'pounceCool', 'smokeCool', 'rallyCool', 'chargeCool', 'tpCool', 'stormCool', 'decoyCool', 'healCool', 'leapCool', 'spikeCool', 'cloneCool'])
+    'blinkCool', 'pounceCool', 'smokeCool', 'rallyCool', 'chargeCool', 'tpCool', 'stormCool', 'decoyCool', 'healCool', 'leapCool', 'spikeCool', 'cloneCool', 'poundCool', 'diveCool'])
     if (e[k] > 0) e[k] -= dt;
 }
 // the melee swings: lunge speed, how long it lasts, extra reach, damage and knockback
@@ -538,7 +610,7 @@ const MELEE = {
   bash: [120, 0.22, 4], claw: [150, 0.22, 4], poke: [140, 0.18, 2], slash: [90, 0.2, 6], sbash: [130, 0.2, 4, 1, 150],
   lunge: [340, 0.24, 4], riposte: [170, 0.22, 10, 1.3, 170], cleave: [60, 0.28, 14, 1.2, 120], flurry: [100, 0.16, 6, 0.8],
   stab: [130, 0.16, 3, 0.9], steal: [150, 0.18, 3, 0.6], dash: [300, 0.32, 0], strike: [320, 0.24, 4, 1.2], backstab: [160, 0.2, 6, 1.5],
-  fang: [110, 0.13, 5, 0.65], flick: [80, 0.16, 3, 0.8], clumsy: [230, 0.26, 6], sweep: [110, 0.22, 12], five: [100, 0.14, 8, 0.6], snap: [210, 0.2, 8, 1.3, 150], chain: [90, 0.15, 6, 0.7], rise: [40, 0.25, 6, 1.1], hay: [120, 0.2, 8, 1.25, 170]
+  fang: [110, 0.13, 5, 0.65], flick: [80, 0.16, 3, 0.8], clumsy: [230, 0.26, 6], sweep: [110, 0.22, 12], five: [100, 0.14, 8, 0.6], bonk: [80, 0.22, 6, 1.0], snap: [210, 0.2, 8, 1.3, 150], chain: [90, 0.15, 6, 0.7], rise: [40, 0.25, 6, 1.1], hay: [120, 0.2, 8, 1.25, 170]
 };
 // the combos: the poses of the follow-up swings (the first is 'loose')
 const COMBO = { five: ['loose2', 'loose', 'loose3', 'launch'], flurry: ['loose2', 'loose3'], chain: ['loose2', 'loose3', 'loose4'], hay: ['loose2'], fang: ['loose2', 'loose', 'loose2'] };
@@ -571,7 +643,7 @@ function pinch(e) {
 }
 // a big ballistic hop onto (about) where the hero stands, and its landing
 const vel = ([vx, vy], ox = 0) => ({ vx: vx + ox, vy });
-const SPIN_SPEED = { whirl: 120, shellspin: 150, ironspin: 55, twinspin: 100, gibspin: 85, apespin: 30 };
+const SPIN_SPEED = { whirl: 120, shellspin: 150, ironspin: 55, twinspin: 100, gibspin: 85, apespin: 30, hamspin: 140, bearspin: 45 };
 function hop(e, h, t = 0.6) {
   const dx = Math.max(-110, Math.min(110, cx(h) - cx(e)));
   e.vx = dx / t;
@@ -675,6 +747,7 @@ export function beastAttack(e, toward) {
     case 'cleave':
     case 'clumsy':
     case 'sweep':
+    case 'bonk':
     case 'flick':
     case 'snap':
     case 'rise':
@@ -702,8 +775,8 @@ export function beastAttack(e, toward) {
         e.launchHit = true;
         e.vy = -120;
         e.onGround = false;
-        burst(cx(e), e.y + e.h, 10, 'dot', ['sky', 'ice', 'paper']);
-        say1(e, 'SPLOOSH!', C.sky);
+        if (e.d.beh === 'burrow') (e.vy = -160), (e.diveCool = 4), burst(cx(e), e.y + e.h, 10, 'chip', ['sand', 'wood']), say1(e, 'SURPRISE!', C.sand);
+        else burst(cx(e), e.y + e.h, 10, 'dot', ['sky', 'ice', 'paper']), say1(e, 'SPLOOSH!', C.sky);
       } else e.launchHit = false;
       if (e.move === 'snap') say1(e, 'SNAP!', C.orange);
       e.vx = e.face * M[0];
@@ -742,13 +815,15 @@ export function beastAttack(e, toward) {
     case 'twinspin': // Twin Blade Inu: both katanas out
     case 'gibspin': // Spinning Gibbon: the staff a blur
     case 'apespin': // Cloud Ape Master: the great staff in a ring
+    case 'hamspin': // Wolverine Riveter: two hammers, one tornado
+    case 'bearspin': // Iron Polar Bear: the giant hammer goes round
       e.pose = 'spin';
       e.spinDir = e.face;
       e.spinX0 = cx(e);
       e.vx = e.face * SPIN_SPEED[e.move];
-      e.st = { shellspin: 1.7, ironspin: 1.4, twinspin: 1.1, gibspin: 1.3, apespin: 1.3 }[e.move] || 1.5;
-      if (e.move === 'ironspin' || e.move === 'apespin') e.spinCool = 5;
-      say1(e, { whirl: 'WHEEE!', shellspin: 'SHELL SPIN!', ironspin: 'IRON WIND!', twinspin: 'TWIN FANG!', gibspin: 'WHOOP WHOOP!', apespin: 'CLOUD WHEEL!' }[e.move], C.paper);
+      e.st = { shellspin: 1.7, ironspin: 1.4, twinspin: 1.1, gibspin: 1.3, apespin: 1.3, hamspin: 1.5, bearspin: 1.4 }[e.move] || 1.5;
+      if (['ironspin', 'apespin', 'bearspin'].includes(e.move)) e.spinCool = 5;
+      say1(e, { whirl: 'WHEEE!', shellspin: 'SHELL SPIN!', ironspin: 'IRON WIND!', twinspin: 'TWIN FANG!', gibspin: 'WHOOP WHOOP!', apespin: 'CLOUD WHEEL!', hamspin: 'RIVET STORM!', bearspin: 'IRON CYCLONE!' }[e.move], C.paper);
       sfx.enemyMelee();
       return;
     case 'tongue': { // Pond Frog: the tongue lashes out; if it sticks, you are reeled in
@@ -917,6 +992,56 @@ export function beastAttack(e, toward) {
         world.bolts.push({ x: x - e.w / 2, y: h.y + h.h - e.h, w: e.w, h: e.h, vx: -side * 120, vy: 0, g: 0, dmg: e.dmg * 0.6, col: C.gold, life: 1.6, look: 'decoy', type: e.type, face: -side, owner: e });
       }
       return;
+    case 'firecharge': // Boar Bellows: head down, and the hammer drags fire behind it
+      e.chargeCool = 4.5;
+      e.attackPose = 'charge';
+      e.vx = e.face * 210;
+      e.st = 0.6;
+      e.fireAt = 0;
+      sfx.enemyMelee();
+      say1(e, 'SNORT!', C.orange);
+      return;
+    case 'smash': // Brown Bear Smith: the overhead slam
+    case 'lavaslam': // Molten Boar: the same, white-hot
+      e.attackPose = 'slam';
+      e.st = 0.45;
+      land(e, h, 0.8);
+      e.hitDone = true;
+      if (e.move === 'lavaslam') {
+        const p = e.platform, foot = e.y + e.h;
+        for (const dx of [-18, 18]) {
+          const x = cx(e) + e.face * 12 + dx;
+          if (!p || (x > p.x + 8 && x < p.x + p.w - 8)) world.bolts.push({ x: x - 8, y: foot - 3, w: 16, h: 3, vx: 0, vy: 0, g: 0, dmg: e.dmg * 0.4, col: C.orange, life: 3, look: 'lava', pool: true, owner: e });
+        }
+        if ((e.heat = (e.heat || 0) + 1) >= 3) {
+          e.heat = 0;
+          e.coolT = 2.2; // overheated: it has to stop and cool off, and it is soft while it does
+          e.stun = Math.max(e.stun, 2.2);
+          say1(e, 'HSSSS...', C.mist);
+        } else say1(e, 'SIZZLE!', C.orange);
+      } else say1(e, 'CLANG!', C.paper);
+      return;
+    case 'anvil': // Anvil Tosser: up goes an anvil
+      e.attackPose = 'throw';
+      e.st = 0.35;
+      sfx.enemyMelee();
+      world.bolts.push({ x: cx(e) - 4, y: e.y - 2, w: 9, h: 7, ...vel(lobbed(e, 0.95, 420)), g: 420, dmg: e.dmg * 1.1, col: C.stone, life: 3, look: 'anvil', owner: e });
+      say1(e, 'CATCH!', C.paper);
+      return;
+    case 'pound': { // Grizzly Foreman: the ground pound; anyone standing on the floor is stunned
+      e.poundCool = 6;
+      e.attackPose = 'slam';
+      e.st = 0.5;
+      land(e, h, 1);
+      e.hitDone = true;
+      if (h.onGround && Math.abs(cx(h) - cx(e)) < 110 && Math.abs(h.y + h.h - (e.y + e.h)) < 10 && !(h.dashT > 0)) {
+        h.hurtT = Math.max(h.hurtT, 0.55);
+        h.vx = 0;
+        callout('STUNNED!', 0, 0, C.gold, { follow: h, life: 40 });
+      }
+      say1(e, 'BACK TO WORK!', C.gold);
+      return;
+    }
     case 'juggle': // Knife Juggler: three daggers up and over
       e.attackPose = 'throw';
       e.st = 0.35;
@@ -959,7 +1084,8 @@ export function beastAttack(e, toward) {
       e.attackPose = 'rally';
       e.st = 0.6;
       sfx.enemyCast();
-      say1(e, 'GET HIM, BOYS!', C.gold);
+      say1(e, e.d.beh === 'foreman' ? 'SHIFT CHANGE!' : 'GET HIM, BOYS!', C.gold);
+      if (e.d.beh === 'foreman') sfx.clang();
       let n = 0;
       for (const o of world.enemies) {
         if (o.dead || o === e || o.d?.fam !== e.d.fam || Math.abs(cx(o) - cx(e)) > 180 || Math.abs(cy(o) - cy(e)) > 90) continue;
@@ -968,7 +1094,7 @@ export function beastAttack(e, toward) {
         n++;
         burst(cx(o), o.y, 4, 'twinkle', ['gold', 'cream']);
       }
-      if (n) callout(`PAYDAY x${n}`, 0, 0, C.gold, { follow: e, life: 50 });
+      if (n) callout(`${e.d.beh === 'foreman' ? 'RALLY' : 'PAYDAY'} x${n}`, 0, 0, C.gold, { follow: e, life: 50 });
       return;
     }
     case 'fan': // Fat Cat Fence: five poisoned daggers in a fan
@@ -1103,10 +1229,12 @@ export function beastAttacking(e, dt, toward) {
     case 'ironspin':
     case 'twinspin':
     case 'gibspin':
-    case 'apespin': {
-      const r = e.move === 'apespin' ? 22 : 8, box = { x: e.x - r, y: e.y, w: e.w + 2 * r, h: e.h };
+    case 'apespin':
+    case 'hamspin':
+    case 'bearspin': {
+      const r = e.move === 'apespin' || e.move === 'bearspin' ? 22 : 8, box = { x: e.x - r, y: e.y, w: e.w + 2 * r, h: e.h };
       if (overlap(box, h)) hurtHero(e.dmg, Math.sign(cx(h) - cx(e)) || e.face);
-      if (['ironspin', 'twinspin', 'gibspin', 'apespin'].includes(e.move)) e.spinDir = toward; // these walk the spin at you
+      if (['ironspin', 'twinspin', 'gibspin', 'apespin', 'bearspin'].includes(e.move)) e.spinDir = toward; // these walk the spin at you
       // bounces off the ledge's edge, or turns back once it has gone a fair way past you
       else if (Math.abs(e.vx) < 5 || e.hitWall || (Math.abs(cx(e) - e.spinX0) > 110 && Math.sign(cx(e) - e.spinX0) === e.spinDir)) (e.spinDir = -e.spinDir), (e.spinX0 = cx(e));
       e.vx = e.spinDir * SPIN_SPEED[e.move];
@@ -1162,6 +1290,9 @@ export function beastAttacking(e, dt, toward) {
     case 'tongue':
       if (e.grabbed) e.face = Math.sign(cx(h) - cx(e)) || e.face;
       break;
+    case 'firecharge':
+      if ((e.fireAt += 1) % 4 === 0) world.bolts.push({ x: cx(e) - e.face * 10 - 3, y: e.y + e.h - 7, w: 6, h: 7, vx: 0, vy: 0, g: 0, dmg: e.dmg * 0.35, col: C.orange, life: 1.3, look: 'fire', pool: true, owner: e });
+    // falls through
     case 'ram':
       if (!e.hitDone && overlap(e, h) && hurtHero(e.dmg * 1.2, e.face)) (e.hitDone = true), (h.vx = e.face * 220), (h.vy = -140);
       if (Math.random() < 0.5) emit(cx(e) - e.face * 8, e.y + e.h, 'dust', C.sand);
@@ -1218,6 +1349,7 @@ export function beastAttacking(e, dt, toward) {
     case 'backstab':
     case 'clumsy':
     case 'sweep':
+    case 'bonk':
       swing(e, h);
       e.vx *= e.move === 'lunge' ? 0.97 : 0.9;
       break;
@@ -1285,7 +1417,9 @@ export function beastAttacking(e, dt, toward) {
   if (e.move === 'ironspin') e.pose = null;
   if (e.move === 'twinspin') (e.pose = null), (e.stun = Math.max(e.stun, 0.6)), say1(e, 'HAH...', C.paper);
   if (e.move === 'poke' && e.d.beh === 'novice' && Math.random() < 0.4) (e.tripT = 0.8), (e.stun = Math.max(e.stun, 0.8)), say1(e, 'WHOOPS!', C.sand); // the hem again
-  if (e.move === 'gibspin' || e.move === 'apespin') e.pose = null;
+  if (['gibspin', 'apespin', 'hamspin', 'bearspin'].includes(e.move)) e.pose = null;
+  if (e.move === 'hamspin') (e.stun = Math.max(e.stun, 0.5)), say1(e, 'WOOZY...', C.paper);
+  if (e.move === 'bonk' && e.d.beh === 'cub') (e.tripT = 0.7), (e.stun = Math.max(e.stun, 0.7)), say1(e, 'WOBBLE!', C.sand); // the mallet wins
   if (e.move === 'clumsy') (e.tripT = 0.8), (e.stun = Math.max(e.stun, 0.8)), say1(e, 'OOPS!', C.sand); // over its own feet
   if (e.move === 'slash' && e.parried) (e.parried = false), (e.openT = 1.4); // the Husky's counter leaves it open
   if (e.move === 'whirl') {
@@ -1297,16 +1431,23 @@ export function beastAttacking(e, dt, toward) {
   e.flipped = false;
   const cool = { hop: 1.3, roll: 1.9, lob: 1.9, twin: 1.6, fan: 1.8, snipe: 2.6, kite: 1.2, frost: 1.6, greatbow: 2.2, alpha: 1.1,
     poke: 1.2, honk: 1.2, shield: 1.3, lunge: 1.9, toss: 1.0, whirl: 2.2, phase: 1.3, flurry: 1.6, parry: 1.2, warlord: 1.4,
+    cub: 1.4, burrow: 1.4, bellows: 1.3, smith: 1.9, angry: 1.4 / (1 + 0.25 * (e.anger || 0)), anvil: 1.9, tornado: 2.0, molten: 1.7, foreman: 1.5, ironbear: 1.7,
     novice: 1.4, vault: 1.3, ram: 1.4, gibbon: 2.0, heal: 1.4, extend: 1.9, ibex: 1.3, langur: 1.7, yak: 1.6, cloudape: 1.4,
     clumsy: 1.3, sweep: 1.4, iaido: 2.2, decoy: 1.3, sentry: 1.2, twinspin: 2.0, crescent: 1.9, kunai: 1.8, champion: 1.5, sage: 1.4,
     skitter: 1.0, steal: 1.2, dashthru: 1.8, dark: 1.6, juggle: 1.8, blink: 1.2, twinfang: 1.6, pounce: 1.3, smoke: 1.0, fence: 1.4,
     flop: 1.1, tongue: 1.3, shell: 1.3, shellspin: 2.0, chain: 1.7, lurk: 1.4, bubble: 2.0, brawler: 1.4, bounce: 1.6, master: 1.3 }[d.beh] || 1.5;
-  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves', 'croak', 'slam', 'ironspin', 'rally', 'smoke', 'pounce', 'charge', 'storm', 'blinkaway', 'vault', 'plunge', 'rockspikes', 'clones', 'heal', 'apespin'].includes(e.move) ? 0.6 : cool);
+  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves', 'croak', 'slam', 'ironspin', 'rally', 'smoke', 'pounce', 'charge', 'storm', 'blinkaway', 'vault', 'plunge', 'rockspikes', 'clones', 'heal', 'apespin', 'firecharge', 'pound', 'bearspin'].includes(e.move) ? 0.6 : cool);
 }
 
 // ---------------------------------------------------------------- hits and deaths (combat.js)
 const inCloud = e => e.cloud && e.cloud.life > 0 && overlap(e, e.cloud);
 export function beastHit(e) {
+  if (e.d.beh === 'angry' && !e.dead && (e.anger || 0) < 5) {
+    e.anger = (e.anger || 0) + 1; // every hit only makes it angrier, and faster
+    e.speed *= 1.12;
+    e.rage = 99;
+    say1(e, ['GRR!', 'GRRR!!', 'RAAGH!', 'FURIOUS!', 'MAXIMUM RAGE!'][e.anger - 1], C.red);
+  }
   if (e.d.beh === 'skitter' && !e.dead) (e.fleeT = 1.0), say1(e, 'MEEP!', C.sand); // hurt, the kitten bolts
   if (e.d.beh === 'lurk' && e.hidden && !e.dead && e.state !== 'wind') wind(e, 0.12, 'hide', 'rise'); // found out: it springs
   if (e.d.beh === 'fan' && (e.hits = (e.hits || 0) + 1) % 4 === 0 && !e.dead) {
@@ -1373,6 +1514,11 @@ export function beastGuard(e, dir, o) {
     if (e.state !== 'wind') (e.parried = true), wind(e, 0.18, 'draw', 'slash');
     return clang(e, dir, o, 'PARRY!');
   }
+  // Badger Tinker: underground, there is nothing to hit
+  if (d.beh === 'burrow' && e.hidden && e.state !== 'attack' && !o.special) {
+    if (!o.chain) say1(e, 'DUG IN', C.sand);
+    return true;
+  }
   // Spinning Gibbon and the Cloud Ape Master: a spinning staff sends shots straight back
   if ((d.beh === 'gibbon' || d.beh === 'cloudape') && o.shot && e.state === 'attack' && (e.move === 'gibspin' || e.move === 'apespin')) {
     arrow(e, ...aimed(e, 200), { look: 'arrow', dmg: e.dmg * 0.5 });
@@ -1417,7 +1563,8 @@ function clang(e, dir, o, word) {
   return true;
 }
 // how hard a hit lands: a Spin Turtle flipped on its back takes double
-export const beastTaken = e => (e.flipT > 0 ? 2 : 1);
+// (and a Molten Boar cooling off takes half again); the Iron Polar Bear's plate turns light hits
+export const beastTaken = e => (e.flipT > 0 ? 2 : 1) * (e.coolT > 0 ? 1.5 : 1) * (e.d.beh === 'ironbear' ? 0.6 : 1);
 // heavy beasts (the Greatbow Yeti) barely budge from light hits
 export const beastPush = (e, push) => (e.d.heavy ? push * 0.3 : push);
 
@@ -1577,6 +1724,34 @@ export function drawSpike(b, t) {
     rect(x + 3 - w, y - i - 1, w * 2 + 1, 1, i % 4 === 1 ? C.mist : C.stone);
     px(x + 3 - w, y - i - 1, C.sand);
   }
+  return true;
+}
+// the forge's floor fire: Boar Bellows' trail of flames and the Molten Boar's lava pools
+export function drawFire(b, t) {
+  const x = Math.round(b.x), y = Math.round(b.y + b.h), k = Math.floor(t * 12 + b.x) % 3, f = Math.min(1, b.life);
+  if (b.look === 'lava') {
+    rect(x, y - 3, b.w, 3, C.ink);
+    rect(x + 1, y - 2, b.w - 2, 2, C.orange);
+    for (let i = 0; i < b.w - 2; i += 3) px(x + 1 + i + ((k + i) % 2), y - 2, i % 2 ? C.gold : C.red);
+    if (Math.random() < 0.15) emit(x + Math.random() * b.w, y - 3, 'dot', C.orange);
+    return true;
+  }
+  const hgt = Math.round((4 + k) * f);
+  rect(x + 1, y - hgt - 1, 4, hgt + 1, C.ink);
+  rect(x + 2, y - hgt, 2, hgt, C.orange);
+  px(x + 2 + (k % 2), y - hgt, C.gold);
+  return true;
+}
+// the Anvil Tosser's anvil
+export function drawAnvil(b, t) {
+  const x = Math.round(b.x), y = Math.round(b.y);
+  rect(x - 1, y - 1, 11, 4, C.ink);
+  rect(x + 2, y + 2, 5, 3, C.ink);
+  rect(x - 1, y + 4, 11, 4, C.ink);
+  rect(x, y, 9, 2, C.stone);
+  rect(x + 3, y + 2, 3, 2, C.slate);
+  rect(x, y + 5, 9, 2, C.slate);
+  px(x + 1, y, C.mist);
   return true;
 }
 // the Petal Kitsune's decoy: its own shape, flickering pink as it falls apart

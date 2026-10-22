@@ -267,13 +267,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose, fuzzball, lagoon, bazaar, shrine and temple families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1,2,3,4,5]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[0,1,2,3,4,5].flatMap(z=>ZONES[z].pool);
+  check('the goose, fuzzball, lagoon, bazaar, shrine, temple and forge families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3,4,5,6]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3,4,5,6].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -343,6 +343,18 @@ export function runSmoke(game) {
     for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(bb,STEP);}ok(h.hp<h.maxHp && Math.abs(cx(bb)-cx(h))>80,'the Baboon\'s staff did not reach across');
     reset();h=world.hero;const ca=spawnEnemy('cloudape',h.x+150,FLOOR());ca.spawnT=0;ca.calm=false;
     for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='decoy');i++){world.t+=STEP;updateEnemy(ca,STEP);}ok(world.bolts.filter(b=>b.look==='decoy'&&!b.harmless).length===2,'the Cloud Ape sent no clones');
+    // the forge: a Honey Badger gets faster with every hit, the Iron Polar Bear's plate halves a light hit, a Badger
+    // underground can't be hit, the Molten Boar overheats on its third slam, the Grizzly's pound stuns
+    reset();h=world.hero;const hb=spawnEnemy('honeybadger',h.x+60,FLOOR());hb.spawnT=0;hb.hp=hb.max=1e6;const sp0=hb.speed;for(let i=0;i<3;i++)hitEnemy(hb,1,{dir:1});
+    ok(hb.anger===3 && hb.speed>sp0*1.3,'the Honey Badger did not get angrier');
+    reset();h=world.hero;const pb=spawnEnemy('polarbear',h.x+60,FLOOR());pb.spawnT=0;pb.hp=pb.max=1e6;const bdg=spawnEnemy('bearsmith',h.x-60,FLOOR());bdg.spawnT=0;bdg.hp=bdg.max=1e6;
+    ok(hitEnemy(pb,100,{dir:1,chip:true})<hitEnemy(bdg,100,{dir:-1,chip:true})*0.7,'the Iron Polar Bear\'s plate did nothing');
+    reset();h=world.hero;const bg=spawnEnemy('badger',h.x+120,FLOOR());bg.spawnT=0;bg.calm=false;bg.hp=bg.max=1e6;
+    for(let i=0;i<30&&!bg.hidden;i++){world.t+=STEP;updateEnemy(bg,STEP);}ok(bg.hidden && hitEnemy(bg,50,{dir:1})===0,'the Badger did not dig in');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const mb=spawnEnemy('moltenboar',h.x+30,FLOOR());mb.spawnT=0;mb.calm=false;
+    for(let i=0;i<60*12&&!(mb.coolT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(mb,STEP);}ok(mb.coolT>0 && world.bolts.some(b=>b.look==='lava'),'the Molten Boar never overheated');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const gz=spawnEnemy('grizzly',h.x+80,FLOOR());gz.spawnT=0;gz.calm=false;gz.rallyCool=99;
+    let stunned=false;for(let i=0;i<60*4&&!stunned;i++){world.t+=STEP;h.inv=0;updateEnemy(gz,STEP);updateHero(h,STEP);stunned=gz.move==='pound'&&h.hurtT>0.3;}ok(stunned,'the Grizzly\'s pound did not stun');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
     for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
   });

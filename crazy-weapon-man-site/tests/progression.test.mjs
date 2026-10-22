@@ -105,6 +105,12 @@ test('the temple family grows up along zone 6: Novice Macaques on 6-1, the Cloud
   assert.ok(at(1).includes('cloudape') && !at(1).includes('macaque'));
   assert.ok(pool.every(t => ENEMIES[t].fam === 'temple'));
 });
+test('the forge family grows up along zone 7: Cub Apprentices on 7-1, the Iron Polar Bear at the castle', () => {
+  const pool = ZONES[6].pool, at = t => enemyPool(6, 1, pool, t);
+  assert.deepEqual(at(0), ['cub', 'badger', 'boarbellows']);
+  assert.ok(at(1).includes('polarbear') && !at(1).includes('cub'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'forge'));
+});
 test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
   const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);
   assert.deepEqual(at(0), ['fuzzlet', 'burrball', 'puffshot']);
