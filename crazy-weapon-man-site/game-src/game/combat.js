@@ -414,8 +414,9 @@ export function explode(x, y, dmg, friendly = false, radius = 34) {
 // castle's are shuriken
 export const shotSrc = () => (world.zone === 7 ? 'magic' : world.zone === 8 ? 'star' : 'shot');
 // src says what hit you, for the trophy perks that soften it: 'shot' (a bolt or something thrown),
-// 'magic' (a spell: also a shot), 'star' (a shuriken: also a shot) or 'lava'
-export function hurtHero(dmg, dir = 1, src = null) {
+// 'magic' (a spell: also a shot), 'star' (a shuriken: also a shot) or 'lava'. Enemy bolts set
+// world.hitBy while they fly (enemy.js updateBolts) instead of passing it.
+export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;

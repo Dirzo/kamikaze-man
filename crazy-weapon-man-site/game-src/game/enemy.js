@@ -493,20 +493,22 @@ export function updateBolts(dt) {
   const hero = world.hero;
   for (let i = world.bolts.length - 1; i >= 0; i--) {
     const b = world.bolts[i];
+    world.hitBy = b.src || shotSrc(); // what this bolt counts as, for the trophy perks (hurtHero)
     b.vy += (b.g || 0) * dt;
     b.x += b.vx * dt;
     b.y += b.vy * dt;
     b.life -= dt;
     const used = traitBolt(b, dt);
-    if (used) { if (used === 'hit') hurtHero(b.dmg, Math.sign(cx(hero) - b.x) || 1, b.src || shotSrc()); world.bolts.splice(i, 1); continue; }
+    if (used) { if (used === 'hit') hurtHero(b.dmg, Math.sign(cx(hero) - b.x) || 1); world.bolts.splice(i, 1); continue; }
     if (world.map?.solids.some(p=>overlap(b,p))) {world.bolts.splice(i,1);continue;}
     if (Math.random() < 0.5) emit(b.x + 2, b.y + 2, 'dot', b.col);
     if (overlap(b, hero) && hero.inv <= 0 && hero.dashT <= 0) {
-      hurtHero(b.dmg, Math.sign(b.vx) || 1, b.src || shotSrc());
+      hurtHero(b.dmg, Math.sign(b.vx) || 1);
       b.life = 0;
     }
     if (b.life <= 0 || b.x < -10 || b.x > worldWidth() + 10 || b.y > worldFloor() + 4 || b.y < -20) world.bolts.splice(i, 1);
   }
+  world.hitBy = null;
 }
 export function drawBolts(t = world.t) {
   for (const b of world.bolts) {
