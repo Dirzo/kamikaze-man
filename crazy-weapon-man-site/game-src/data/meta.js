@@ -11,6 +11,7 @@
 import { TYPE_LIST } from './weapons.js';
 import { proficiency } from './proficiency.js';
 import { bookStats, bookVersion } from './book.js';
+import { ZONES } from './zones.js';
 
 export const META_KEY = 'crazyWeaponMan.meta.v1';
 
@@ -149,19 +150,33 @@ export const rankCost = (n, rank) => n.cost * rank; // rank = the rank being bou
 const TREE_V = 3; // 3: the clusters trace their weapons, and upgrades are about feel
 
 // ---------------------------------------------------------------- world boss perks and trophies
-// region -> the trophy you take off the family head and the perk it gives
+// region -> the trophy you take off the family head and the perk it gives. Each trophy is the head's
+// own keepsake, and its power is made for the NEXT world: it counters that world's residents, boss
+// moves or terrain (`for` names them). The power works everywhere; on top of it, the next world
+// (zone index = region) is your home turf: HOME_TURF more damage and less damage taken there.
+// The last trophy has no next world: it is for the post-game grind instead.
+export const HOME_TURF = { dmg: 0.2, armor: 0.2 };
 export const TROPHIES = {
-  1: { name: "MOTHER GOOSE'S CROWN", perk: 'HONK OF COURAGE', desc: '+10% max health', stats: { hp: 0.1 } },
-  2: { name: 'THE GOLDEN ACORN', perk: 'EAGLE EYE', desc: '+5% critical chance', stats: { crit: 0.05 } },
-  3: { name: "JR.'S SURFBOARD", perk: "SURF'S UP", desc: 'Double jump with every weapon', stats: {}, innate: 'hops' },
-  4: { name: "THE KINGPIN'S MONOCLE", perk: 'STICKY FINGERS', desc: '+25% shards', stats: { shards: 0.25 } },
-  5: { name: 'THE SHOGUN NODACHI', perk: 'PETAL STEP', desc: 'Dashing through foes slices them', stats: {}, innate: 'dashcut' },
-  6: { name: "THE OGRE KING'S BEADS", perk: 'INNER PEACE', desc: 'Heal 0.25% of max health a second', stats: { regen: 0.0025 } },
-  7: { name: "DAD'S HAMMER", perk: "DAD'S TOUGHNESS", desc: 'Take 12% less damage', stats: { armor: 0.12 } },
-  8: { name: "GRANDMA'S CASSEROLE DISH", perk: 'SECOND HELPINGS', desc: 'Hearts heal 50% more and drop more often', stats: { heal: 0.5, hearts: 0.04 } },
-  9: { name: 'THE STOLEN CROWN', perk: "USURPER'S EDGE", desc: '+15% damage to bosses and elites', stats: { bossDmg: 0.15 } },
-  10: { name: 'THE FIRST WEAPON', perk: 'EVERY WEAPON EVER', desc: '+15% damage with everything', stats: { dmg: 0.15 } }
+  1: { name: "MOTHER GOOSE'S DOWN COAT", perk: 'GOOSE-DOWN', for: 'ARCHERS AND SNOW', desc: 'Shots hit 25% softer and you never slip on ice', stats: { shotArmor: 0.25 }, innate: 'grip' },
+  2: { name: "THE ACORN KING'S BROADHEAD", perk: 'SHELL SPLITTER', for: 'SHELLS AND THE LAGOON', desc: 'Your hits crack shields and shells, and you swim 30% faster', stats: {}, innate: 'broadhead' },
+  3: { name: "JR.'S TIKI TORCH", perk: 'BEACH BONFIRE', for: 'THE DARK BAZAAR', desc: 'Your light reaches 70% farther in dark levels and haunted blades creep 40% slower', stats: {}, innate: 'torch' },
+  4: { name: "THE KINGPIN'S MONOCLE", perk: 'SEEN EVERY TRICK', for: 'IAI SLASHES AND TRICKS', desc: 'Every boss tell and floor warning lasts 50% longer', stats: {}, innate: 'monocle' },
+  5: { name: "THE SHOGUN'S GETA", perk: 'ROOTED BLOSSOM', for: 'THE WINDY PEAKS', desc: 'You take 70% less knockback, and dashing through foes slices them', stats: { knockRes: 0.7 }, innate: 'dashcut' },
+  6: { name: "THE OGRE KING'S FROST BEADS", perk: 'MOUNTAIN COLD', for: 'THE LAVA FORGE', desc: 'Lava burns 50% less, and 1 hit in 5 chills a foe to half speed', stats: { lavaArmor: 0.5, chillHit: 0.2 } },
+  7: { name: "SR.'S COLD-IRON ANVIL", perk: 'COLD IRON', for: 'WANDS AND SPELLS', desc: 'Spells, sparkles and cookie rain hit 35% softer', stats: { magicArmor: 0.35 } },
+  8: { name: "GRANDMA'S READING GLASSES", perk: 'NOTHING GETS PAST GRANDMA', for: 'NINJAS AND SHURIKEN', desc: 'Foes that teleport behind you land in front of you, and shuriken hit 30% softer', stats: { starArmor: 0.3 }, innate: 'glasses' },
+  9: { name: 'THE STOLEN CROWN', perk: "USURPER'S CLAIM", for: 'THE HOARD AND ITS GUARDS', desc: '+20% damage to bosses and elites, and your safety after a hit lasts 50% longer', stats: { bossDmg: 0.2, inv: 0.5 } },
+  10: { name: 'THE FIRST WEAPON', perk: 'EVERY WEAPON EVER', for: 'THE POST-GAME', desc: '+15% damage with everything, +25% mastery and +25% shards', stats: { dmg: 0.15, mastery: 0.25, shards: 0.25 } }
 };
+// the world a trophy is made for (a zone index), or null for the last one
+export const trophyZone = r => (+r < 10 ? +r : null);
+const pc = v => Math.round(v * 100) + '%';
+// the home-turf line the trophy screens show (short: without the world's name)
+export function trophyTurf(r, short = false) {
+  const z = trophyZone(r);
+  if (z == null) return 'MADE FOR THE POST-GAME: EVERY WORLD, EVERY REPLAY';
+  return `${short ? 'HOME TURF IN WORLD ' + (z + 1) : `IN WORLD ${z + 1}, ${ZONES[z].name.toUpperCase()}`}: +${pc(HOME_TURF.dmg)} DAMAGE, ${pc(HOME_TURF.armor)} LESS DAMAGE TAKEN`;
+}
 
 // ---------------------------------------------------------------- weapon mastery perks
 // Mastery runs to level 100 (proficiency.js), so the choices are spread all the way along it.
@@ -402,16 +417,18 @@ export const unpicked = type => Array.from({ length: tiersOpen(type) }, (_, i) =
 // ---------------------------------------------------------------- the sum of it all
 const ZERO = { dmg: 0, crit: 0, critDmg: 0, swarmDmg: 0, bossDmg: 0, execute: 0, specialCd: 0, attackSpeed: 0, hp: 0, heal: 0, armor: 0, speed: 0,
   dashCd: 0, inv: 0, regen: 0, shards: 0, xp: 0, combo: 0, hearts: 0, mastery: 0, bossShards: 0, standout: 0, lust: 0, splash: 0, wave: 0, nova: 0,
-  impact: 0, reach: 0, knock: 0, echo: 0, aoeSize: 0, shotSpeed: 0, multishot: 0, pierce: 0, homing: 0, trail: 0 };
+  impact: 0, reach: 0, knock: 0, echo: 0, aoeSize: 0, shotSpeed: 0, multishot: 0, pierce: 0, homing: 0, trail: 0,
+  shotArmor: 0, magicArmor: 0, starArmor: 0, lavaArmor: 0, knockRes: 0, chillHit: 0 };
 let cache = null;
 function add(out, s) {
   for (const k in s) out[k] += s[k];
 }
-// the account-wide part (tree + trophies), and the held weapon type's mastery perks on top
-export function stats(type = null) {
+// the account-wide part (tree + trophies), and the held weapon type's mastery perks on top. In
+// zone `zone` a trophy made for that world adds HOME_TURF.
+export function stats(type = null, zone = null) {
   if (cache && cache.book !== bookVersion()) cache = null; // a Monster Book card went GOLD
   cache ||= { book: bookVersion() };
-  const key = type ? type + tiersOpen(type) : '-'; // a mastery level-up opens a tier: new key
+  const key = (type ? type + tiersOpen(type) : '-') + '@' + zone; // a mastery level-up opens a tier: new key
   if (cache[key]) return cache[key];
   const out = { ...ZERO, innate: new Set(), infuse: {} };
   const cls = type && CLASS_OF[type];
@@ -425,6 +442,7 @@ export function stats(type = null) {
   for (const r of Object.keys(meta().trophies)) {
     add(out, TROPHIES[r].stats);
     if (TROPHIES[r].innate) out.innate.add(TROPHIES[r].innate);
+    if (zone != null && trophyZone(r) === zone) add(out, HOME_TURF);
   }
   if (type)
     for (let t = 0; t < tiersOpen(type); t++) {

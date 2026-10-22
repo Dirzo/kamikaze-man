@@ -33,7 +33,8 @@ import { resetRecords } from '../data/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { ENEMIES } from '../data/enemies.js';
 import { attackBox } from '../game/attack-rules.js';
-import { resetMeta, bankShards, buyRank, setLock } from '../data/meta.js';
+import { resetMeta, bankShards, buyRank, setLock, winTrophy, HOME_TURF } from '../data/meta.js';
+import { heroStats } from '../game/perks.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
@@ -477,6 +478,18 @@ export function runSmoke(game) {
     level('3-3');ok(heroPhysics()?.swim>0,'no swimming underwater');
     level('6-2');ok(heroPhysics()?.friction<1,'ice is not slippery');
     level('1-1');ok(!world.gimmick,'1-1 must stay as it is');
+  });
+  check('each trophy power counters the next world',()=>{
+    const hit=(src,dir=1)=>{const h=world.hero;h.inv=0;h.dashT=0;h.hp=h.maxHp=1e6;return hurtHero(1000,dir,src);};
+    resetMeta();reset();const shot0=hit('shot'),lava0=hit('lava'),spell0=hit('magic'),star0=hit('star');hit(null);const kb0=Math.abs(world.hero.vx);
+    winTrophy(1);winTrophy(5);winTrophy(6);winTrophy(7);winTrophy(8);reset();
+    ok(hit('shot')<shot0,'the down coat did not soften shots');ok(hit('lava')<lava0,'the frost beads did not cool the lava');
+    ok(hit('magic')<hit('shot'),'cold iron did not soften spells');ok(hit('star')<shot0*0.75,'the glasses did not soften shuriken');
+    hit(null);ok(Math.abs(world.hero.vx)<kb0*0.5,'the geta did not root you');
+    level('6-2');ok(heroPhysics()===null,'the down coat still slips on ice');
+    winTrophy(2);level('3-3');ok(heroPhysics().speed>0.8,'the broadhead did not swim faster');
+    reset();world.zone=0;const d0=heroStats().dmg;world.zone=1;ok(Math.abs(heroStats().dmg-d0-HOME_TURF.dmg)<1e-9,'no home turf in world 2 for the goose trophy');
+    world.zone=0;resetMeta();
   });
   check('the loot filter salvages drops below its rarity and always keeps standouts',()=>{
     reset();const was=lootFilter();setLootFilter(3);world.bag=new Array(BAG_SIZE).fill(null);const s0=world.shards;

@@ -29,7 +29,7 @@ import { newRun, tickRun, endRun, drawResults, RESULTS_TIME } from './game/speed
 import { ow, openOverworld, updateOverworld, drawOverworld } from './game/overworld.js';
 import { loadSave, writeSave, clearLevel, FINAL } from './data/overworld.js';
 import { freshUid } from './game/loot.js';
-import { bankShards, winTrophy, TROPHIES } from './data/meta.js';
+import { bankShards, winTrophy, TROPHIES, trophyTurf } from './data/meta.js';
 import { P as powers, openPowers, closePowers } from './game/powers.js';
 import { openFiles, updateFiles, drawFiles } from './game/files-menu.js';
 import { applyLock } from './game/classlock.js';
@@ -139,7 +139,7 @@ function endLevel(result) {
   flushBook();
   let relics = null, temperUp = 0;
   if (result === 'clear') {
-    if (node.kind === 'castle' && winTrophy(node.region)) trophy = TROPHIES[node.region];
+    if (node.kind === 'castle' && winTrophy(node.region)) trophy = { ...TROPHIES[node.region], turf: trophyTurf(node.region, true) };
     fresh = clearLevel(ow.save, node.id, world.levelExit === 'secret' && node.secret.length ? 'secret' : 'next');
     const had = allRelics(ow.save, node.id);
     relics = { taken: relicsTaken(), fresh: keepRelics(ow.save, node.id, world.relicMask), set: !had && allRelics(ow.save, node.id) };
@@ -358,8 +358,9 @@ function drawLevelEnd() {
   if (E.relics) extra.push([E.relics.set ? `ALL ${RELIC_COUNT} RELICS! A STAR FOR ${E.node.id}` : `RELICS ${E.relics.taken}/${RELIC_COUNT} THIS RUN` + (E.relics.fresh ? `  (${E.relics.fresh} NEW)` : ''), E.relics.set ? C.gold : C.cream]);
   if (E.temperUp) extra.push([`TEMPER ${E.temperUp} UNLOCKED: ${MODS[E.temperUp - 1].name}  (T ON THE MAP)`, C.coral]);
   if (E.cards) extra.push([`MONSTER BOOK: ${E.cards} CARD${E.cards > 1 ? 'S' : ''} WENT UP A TIER`, C.sky]);
-  panel('panel', W / 2 - 172, 74, 344, 108 + extra.length * 10);
-  extra.forEach(([s, col], i) => text(s, W / 2, 160 + i * 10, col, { align: 'center' }));
+  const tr = E.trophy ? 30 : 0; // a trophy takes three more lines: its power and the world it is for
+  panel('panel', W / 2 - 172, 74, 344, 108 + tr + extra.length * 10);
+  extra.forEach(([s, col], i) => text(s, W / 2, 160 + tr + i * 10, col, { align: 'center' }));
   text(final ? 'THE ARMORY IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
   text(E.node.id + '  ' + E.node.name.toUpperCase(), W / 2, 112, C.paper, { align: 'center' });
   const line = final ? 'YOU BEAT CRAZY WEAPON MAN. THE CLOSETS STILL HAVE SECRETS.'
@@ -369,9 +370,18 @@ function drawLevelEnd() {
   text(line, W / 2, 128, clear ? C.lime : C.mist, { align: 'center' });
   if (E.trophy) {
     text('TROPHY: ' + E.trophy.name, W / 2, 140, C.gold, { align: 'center' });
-    text(fitText('NEW PERK  ' + E.trophy.perk + ': ' + E.trophy.desc.toUpperCase(), 330), W / 2, 150, C.cream, { align: 'center' });
+    text('NEW POWER: ' + E.trophy.perk, W / 2, 150, C.cream, { align: 'center' });
+    // the power on two lines, split at the word nearest the middle that fits
+    const words = E.trophy.desc.toUpperCase().split(' ');
+    let cut = words.length;
+    while (cut > 1 && textWidth(words.slice(0, cut).join(' ')) > 330) cut--;
+    const half = words.findIndex((_, i) => textWidth(words.slice(0, i + 1).join(' ')) * 2 >= textWidth(words.join(' ')));
+    cut = Math.min(cut, Math.max(1, half + 1));
+    text(words.slice(0, cut).join(' '), W / 2, 160, C.paper, { align: 'center' });
+    text(fitText(words.slice(cut).join(' '), 330), W / 2, 170, C.paper, { align: 'center' });
+    text(fitText(E.trophy.turf, 330), W / 2, 180, C.lime, { align: 'center' });
   } else text(`+${E.shards} SHARDS BANKED FOR THE SHARD TREE`, W / 2, 144, C.ice, { align: 'center' });
-  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164 + extra.length * 10, C.fog, { align: 'center' });
+  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164 + tr + extra.length * 10, C.fog, { align: 'center' });
 }
 
 function render() {

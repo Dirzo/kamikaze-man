@@ -8,7 +8,7 @@ import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { ENEMIES, ELITE_TITLES, LINES, deathOf } from '../data/enemies.js';
 import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
-import { hurtHero, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T } from './combat.js';
+import { hurtHero, shotSrc, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T } from './combat.js';
 import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { drawItem } from './drops.js';
@@ -17,6 +17,7 @@ import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
 import { temper, modOn } from '../data/temper.js';
 import { MOVE } from '../data/feel.js';
+import { innate } from './perks.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
@@ -343,7 +344,8 @@ function think(e, dt, dxh, dist, toward, slow) {
     case 'blink':
       if (dist > 90 && e.cool <= 0) {
         burst(cx(e), cy(e), 8, 'smoke', ['violet', 'pink']);
-        const side = Math.random() < 0.5 ? -1 : 1;
+        // GRANDMA'S READING GLASSES: it never lands behind you
+        const side = innate('glasses') ? world.hero.face || 1 : Math.random() < 0.5 ? -1 : 1;
         e.x = Math.max(4, Math.min(worldWidth() - 4 - e.w, cx(hero) + side * 24 - e.w / 2));
         e.y = Math.min(e.y, hero.y + hero.h - e.h);
         burst(cx(e), cy(e), 8, 'smoke', ['violet', 'pink']);
@@ -496,11 +498,11 @@ export function updateBolts(dt) {
     b.y += b.vy * dt;
     b.life -= dt;
     const used = traitBolt(b, dt);
-    if (used) { if (used === 'hit') hurtHero(b.dmg, Math.sign(cx(hero) - b.x) || 1); world.bolts.splice(i, 1); continue; }
+    if (used) { if (used === 'hit') hurtHero(b.dmg, Math.sign(cx(hero) - b.x) || 1, b.src || shotSrc()); world.bolts.splice(i, 1); continue; }
     if (world.map?.solids.some(p=>overlap(b,p))) {world.bolts.splice(i,1);continue;}
     if (Math.random() < 0.5) emit(b.x + 2, b.y + 2, 'dot', b.col);
     if (overlap(b, hero) && hero.inv <= 0 && hero.dashT <= 0) {
-      hurtHero(b.dmg, Math.sign(b.vx) || 1);
+      hurtHero(b.dmg, Math.sign(b.vx) || 1, b.src || shotSrc());
       b.life = 0;
     }
     if (b.life <= 0 || b.x < -10 || b.x > worldWidth() + 10 || b.y > worldFloor() + 4 || b.y < -20) world.bolts.splice(i, 1);

@@ -13,6 +13,7 @@ import { world } from './world.js';
 import { X, rect, px, dither, screenLayer, worldLayer } from '../engine/gfx.js';
 import { cx, cy, overlap } from './physics.js';
 import { hurtHero } from './combat.js';
+import { innate } from './perks.js';
 import { burst, callout, emit } from './fx.js';
 import { lookOf } from './looks.js';
 import { makeWeapon } from './loot.js';
@@ -36,7 +37,17 @@ export function startGimmick() {
 }
 export const gimmickName = () => (world.gimmick ? GIMMICKS[world.gimmick].name : '');
 // the hero's movement numbers in this level (multipliers on HERO), or null for the usual
-export const heroPhysics = () => (world.gimmick && !world.hidden?.inRoom ? PHYSICS[world.gimmick] || null : null);
+// Two trophies change them: Mother Goose's Down Coat keeps your footing on ice, and the Acorn
+// King's Broadhead makes you swim 30% faster
+const SWIM_FAST = 1.3;
+export function heroPhysics() {
+  const P = world.gimmick && !world.hidden?.inRoom ? PHYSICS[world.gimmick] || null : null;
+  if (P && world.gimmick === 'ice' && innate('grip')) return null;
+  if (P && world.gimmick === 'water' && innate('broadhead')) return { ...P, speed: P.speed * SWIM_FAST, swim: P.swim * 1.15 };
+  return P;
+}
+// Jr.'s Tiki Torch: the light around you in a ghost house, and how fast its haunted blades creep
+const TORCH = { light: 1.7, creep: 0.6 };
 
 export function updateGimmick(dt) {
   const h = world.hero;
@@ -90,8 +101,9 @@ function updateHaunts(dt, h) {
     // you are facing it: it stops dead and shivers
     g.frozen = Math.sign(dx) !== h.face && !h.ladder;
     if (!g.frozen) {
-      g.x += (dx / d) * HAUNT.speed * dt;
-      g.y += (dy / d) * HAUNT.speed * dt;
+      const sp = HAUNT.speed * (innate('torch') ? TORCH.creep : 1);
+      g.x += (dx / d) * sp * dt;
+      g.y += (dy / d) * sp * dt;
       if (Math.random() < dt * 8) emit(g.x, g.y, 'ghost', C.violet);
     }
     if (overlap(h, { x: g.x - 5, y: g.y - 5, w: 10, h: 10 }) && hurtHero(refDmg(world.zone) * HAUNT.dmg * (world.foeScale?.dmg || 1), Math.sign(-dx) || 1)) {
@@ -135,8 +147,9 @@ export function drawGimmickScreen(t) {
     screenLayer();
   } else if (G === 'ghost' && !world.lock) {
     const h = world.hero, hx = Math.round(cx(h) - world.cameraX), hy = Math.round(cy(h) - world.cameraY);
-    darkness(hx, hy, 74, 0.86);
-    darkness(hx, hy, 52, 0.35);
+    const k = innate('torch') ? TORCH.light : 1;
+    darkness(hx, hy, Math.round(74 * k), 0.86);
+    darkness(hx, hy, Math.round(52 * k), 0.35);
   }
 }
 function darkness(x, y, r, a) {

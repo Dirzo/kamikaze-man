@@ -15,7 +15,7 @@ import { comboHit } from './waves.js';
 import { logDamage } from './speedrun.js';
 import { BOSS_TOUGH } from '../data/swarm.js';
 import { abilityKill, abilityBlock, abilityHurt, bigFoeMult } from './abilities.js';
-import { heroStats, foeMult } from './perks.js';
+import { heroStats, foeMult, innate } from './perks.js';
 import { stats } from '../data/meta.js';
 import { convertDrop } from './classlock.js';
 import { buck } from './mount.js';
@@ -48,7 +48,7 @@ export function hitEnemy(e, dmg, o = {}) {
   e.calm = false; // a peaceful resident fights back once hit
   if (e.kind === 'mimic' && e.disguised) reveal(e);
   // shields block from the front unless it's a crit or a special
-  if (e.kind === 'shield' && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack') {
+  if (e.kind === 'shield' && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack' && !innate('broadhead')) {
     dmg *= 0.2;
     if (!o.chain) {
       callout('CLANG', 0, 0, C.ice, { follow: e, life: 40 });
@@ -73,6 +73,8 @@ export function hitEnemy(e, dmg, o = {}) {
   logDamage(Math.min(dmg, Math.max(0, e.hp)));
   e.hp -= dmg;
   e.flash = e.boss ? 0.05 : 0.12;
+  // THE OGRE KING'S FROST BEADS: now and then a hit chills the foe to half speed
+  if (!o.chip && heroStats().chillHit && Math.random() < heroStats().chillHit) e.chill = Math.max(e.chill || 0, 1.6);
   damageNumber(e, dmg, { crit: o.crit, chip: o.chip, col: o.col });
   const F = hitFeel(hero.weapon?.type, { crit: o.crit, big: o.big || o.plunge, chain: o.chain || o.aoe || o.echo });
   o = { ...o, weight: F.w };
@@ -408,20 +410,29 @@ export function explode(x, y, dmg, friendly = false, radius = 34) {
       if (!e.dead && Math.abs(cx(e) - x) < radius && Math.abs(cy(e) - y) < radius) hitEnemy(e, dmg * 2, { dir: Math.sign(cx(e) - x) || 1, knock: 30, hop: true });
 }
 
-export function hurtHero(dmg, dir = 1) {
+// what a bolt counts as when nothing says otherwise: the wand cottage's are spells, the ninja
+// castle's are shuriken
+export const shotSrc = () => (world.zone === 7 ? 'magic' : world.zone === 8 ? 'star' : 'shot');
+// src says what hit you, for the trophy perks that soften it: 'shot' (a bolt or something thrown),
+// 'magic' (a spell: also a shot), 'star' (a shuriken: also a shot) or 'lava'
+export function hurtHero(dmg, dir = 1, src = null) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
   if (h.mount) return buck(h, dir), 0; // the War Goose takes the hit: you are thrown off instead
   const S = heroStats();
+  if (src === 'shot' || src === 'magic' || src === 'star') dmg *= 1 - S.shotArmor;
+  if (src === 'magic') dmg *= 1 - S.magicArmor;
+  if (src === 'star') dmg *= 1 - S.starArmor;
+  if (src === 'lava') dmg *= 1 - S.lavaArmor;
   dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
   h.hp -= dmg;
   h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
   // knocked back 40px or so, unless that would throw you into a pit: then you just hop where you stand
   const land = cx(h) + dir * 40, pits = world.map?.pits?.length;
-  h.vx = dir * (!pits || world.map.platforms.some(p => p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20);
-  h.vy = -120;
+  h.vx = dir * (!pits || world.map.platforms.some(p => p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20) * (1 - S.knockRes);
+  h.vy = -120 * (1 - S.knockRes * 0.5);
   h.onGround = false;
   h.attack = null;
   heroDamageNumber(h, dmg);
