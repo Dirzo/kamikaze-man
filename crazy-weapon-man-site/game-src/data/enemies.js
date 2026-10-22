@@ -162,9 +162,9 @@ export const ENEMIES = {
   ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
-  acornking: { name: 'The Acorn Archer King', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 30, range: 140, wind: 0.6, bolt: 'orange' },
-  kingpin: { name: 'The Raccoon Kingpin', kind: 'melee', style: 'slash', hp: 0.8, dmg: 0.95, speed: 46, range: 40, wind: 0.45 },
-  shogun: { name: 'The Petal Shogun', kind: 'melee', style: 'cleave', hp: 1.6, dmg: 1.5, speed: 28, range: 44, wind: 0.6 },
+  acornking: { name: 'The Yeti King', kind: 'ranged', hp: 0.7, dmg: 0.85, speed: 30, range: 140, wind: 0.6, bolt: 'orange' },
+  kingpin: { name: 'The Fat Cat', kind: 'melee', style: 'slash', hp: 0.8, dmg: 0.95, speed: 46, range: 40, wind: 0.45 },
+  shogun: { name: 'The Tosa Shogun', kind: 'melee', style: 'cleave', hp: 1.6, dmg: 1.5, speed: 28, range: 44, wind: 0.6 },
   ninja: { name: 'Pocket Ninja', kind: 'ranged', hp: 0.78, dmg: 1.05, speed: 44, range: 118, wind: 0.5, bolt: 'violet', alert: { do: 'stars', every: 4.5, dmg: 0.6 } }
 };
 

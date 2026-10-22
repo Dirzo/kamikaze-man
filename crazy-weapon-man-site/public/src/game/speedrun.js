@@ -89,7 +89,7 @@ export function drawResults(won, T, t) {
   if (!R) return;
   dither(0, 0, W, H, C.ink, 12);
   panel('panel', 6, 4, W - 12, H - 8);
-  text(won ? 'THE ARMORY FALLS' : 'YOU DIED', W / 2, 11, won ? C.gold : C.red, { align: 'center', k: 2 });
+  text(won ? 'THE DRAGON FALLS' : 'YOU DIED', W / 2, 11, won ? C.gold : C.red, { align: 'center', k: 2 });
 
   // ---- left: clock, best, splits, stats ----
   const lx = 16,

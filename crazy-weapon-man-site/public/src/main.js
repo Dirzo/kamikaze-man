@@ -360,7 +360,7 @@ function drawLevelEnd() {
   if (E.cards) extra.push([`MONSTER BOOK: ${E.cards} CARD${E.cards > 1 ? 'S' : ''} WENT UP A TIER`, C.sky]);
   panel('panel', W / 2 - 172, 74, 344, 108 + extra.length * 10);
   extra.forEach(([s, col], i) => text(s, W / 2, 160 + i * 10, col, { align: 'center' }));
-  text(final ? 'THE ARMORY IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
+  text(final ? 'THE HOARD IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
   text(E.node.id + '  ' + E.node.name.toUpperCase(), W / 2, 112, C.paper, { align: 'center' });
   const line = final ? 'YOU BEAT CRAZY WEAPON MAN. THE CLOSETS STILL HAVE SECRETS.'
     : E.secret ? 'SECRET EXIT! A HIDDEN PATH OPENS'
