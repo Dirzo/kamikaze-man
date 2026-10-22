@@ -5,7 +5,7 @@
 // level id) for that overworld level's own boss, or ?capture=powers0..3 for the POWERS window tabs (3: an open constellation).
 // The polish pass: ?capture=book (the Monster Book), sheet (the stat sheet), maptemper (relic stars,
 // gimmick badges and a TEMPER tier on the map), ghost, scroll, water, ice (the level gimmicks),
-// room (a golden secret room) and goose (riding the War Goose).
+// room (a golden secret room) and goose (riding the War Goose). ?capture=collection: the unlock tracker.
 import { world } from '../game/world.js';
 import { makeWeapon } from '../game/loot.js';
 import { startZone, updateWaves, startSurvival } from '../game/waves.js';
@@ -30,6 +30,7 @@ import { hitEnemy, DEATH_T } from '../game/combat.js';
 import { updateFx } from '../game/fx.js';
 import { recordKill, recordBoss, PAGES } from '../data/book.js';
 import { keepRelics } from '../data/relics.js';
+import { LEVELS } from '../data/overworld.js';
 import { enterRoom } from '../game/hidden.js';
 import { mount } from '../game/mount.js';
 import { updateGimmick } from '../game/gimmicks.js';
@@ -77,6 +78,21 @@ function polishScene(game, mode) {
     powers.book.sel = 1;
     return;
   }
+  if (mode === 'collection') {
+    // world 1 finished, world 2 half way, a few relics in world 3
+    const s = newSave();
+    for (const n of LEVELS.filter(n => n.region === 1)) { clearLevel(s, n.id, n.secret.length ? 'secret' : 'next'); keepRelics(s, n.id, 31); }
+    for (const id of ['2-1', '2-2', '2-3', '2-4']) clearLevel(s, id), keepRelics(s, id, id === '2-1' ? 31 : 11);
+    clearLevel(s, '3-1'); keepRelics(s, '3-1', 5);
+    s.at = '3-1';
+    try { localStorage.setItem('crazyWeaponMan.secrets.v1', '[0]'); } catch (_) {}
+    winTrophy(1); PAGES[0].kinds.forEach(recordBoss);
+    for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31]]) recordKill(t, n);
+    game.ow.save = s; game.openMap();
+    openPowers(4);
+    powers.coll = 1;
+    return;
+  }
   if (mode === 'maptemper') {
     const s = revealAll(newSave());
     for (const [id, m] of [['1-1', 31], ['1-2', 31], ['1-3', 7], ['1-4', 31], ['1-S', 3], ['2-1', 31]]) keepRelics(s, id, m);
@@ -107,7 +123,7 @@ function polishScene(game, mode) {
   document.documentElement.dataset.capture = 'ready';
 }
 export function captureScene(game, mode) {
-  if(['book','maptemper','ghost','scroll','water','ice','room','goose','sheet'].includes(mode)) return polishScene(game, mode);
+  if(['book','collection','maptemper','ghost','scroll','water','ice','room','goose','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);

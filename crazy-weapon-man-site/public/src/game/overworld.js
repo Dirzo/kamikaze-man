@@ -188,6 +188,7 @@ export function drawOverworld(t) {
   screenLayer();
   drawOverworldHud(t);
   powers.sheetWeapon = s.hero?.weapon || null; // the STATS tab reads the weapon you carry
+  powers.save = s; // the COLLECTION tab counts this file's levels, exits and relics
   drawPowers(t);
 }
 function drawOverworldHud(t) {

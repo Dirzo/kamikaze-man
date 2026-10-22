@@ -107,3 +107,26 @@ test('gimmicks never touch 1-1, name real levels, and eggs sit in real levels', 
   for (const id of EGG_LEVELS) assert.ok(NODES[id], id);
   assert.ok(Object.values(GIMMICK_OF).includes('ghost') && Object.values(GIMMICK_OF).includes('scroll'));
 });
+
+test('the Collection counts each world and the whole game, and names what is still out there', async () => {
+  const { collection, worldRow, rowPct, missing } = await import('../game-src/data/collection.js');
+  const { REGIONS, newSave, clearLevel } = await import('../game-src/data/overworld.js');
+  const empty = collection(newSave());
+  assert.equal(empty.pct, 0);
+  assert.equal(empty.total.levels[1], LEVELS.length);
+  assert.equal(empty.total.relics[1], LEVELS.length * RELIC_COUNT);
+  assert.equal(empty.total.exits[1], LEVELS.filter(n => n.secret.length).length);
+  const s = newSave(), w1 = LEVELS.filter(n => n.region === 1);
+  for (const n of w1) clearLevel(s, n.id);
+  const R = REGIONS[0], open = missing(s, R);
+  assert.ok(open.exits.length > 0, 'cleared levels with an untaken secret exit are named');
+  assert.equal(open.relics.length, w1.length);
+  for (const n of w1) clearLevel(s, n.id, n.secret.length ? 'secret' : 'next'), keepRelics(s, n.id, 31);
+  const row = worldRow(s, R, [R.zone]);
+  assert.deepEqual(row.stars, [w1.length, w1.length]);
+  assert.deepEqual(row.egg, [1, 1]);
+  assert.equal(missing(s, R).exits.length, 0);
+  assert.equal(missing(s, R).relics.length, 0);
+  assert.ok(rowPct(row) < 100, 'the trophy and boss page are still missing');
+  assert.ok(collection(s, [R.zone]).pct > 0);
+});

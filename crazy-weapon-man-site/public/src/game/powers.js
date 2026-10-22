@@ -7,6 +7,8 @@
 //   TROPHIES    the ten family heads' trophies and the perks they gave you
 //   BOOK        the Monster Book (data/book.js): a card per resident, filled in by beating them, and
 //               a page per boss family. Q flips between the cards and the boss pages.
+//   COLLECTION  the unlock tracker (data/collection.js): every world's levels, secret exits, relics,
+//               easter egg, trophy and boss page, and the game's completion percent
 //   STATS       the stat sheet (statsheet.js) for the weapon you carry on the map
 // Arrows move, SHIFT / V (or clicking a tab) changes tab. Mouse and touch click anything. Rules and
 // numbers live in data/meta.js.
@@ -23,13 +25,19 @@ import { A } from '../engine/assets.js';
 import { ENEMIES } from '../data/enemies.js';
 import { CARDS, CARD_LIST, CARD_GOALS, CARD_TIERS, TIER_COL, PAGES, PAGE_BONUS, cardKills, cardTier, toNext, bossBeaten, pageDone, bookProgress } from '../data/book.js';
 import { drawSheet } from './statsheet.js';
+import { SECRETS, foundSecrets } from './secrets.js';
+import { REGIONS } from '../data/overworld.js';
+import { RELIC_COUNT } from '../data/relics.js';
+import { collection, rowPct, missing } from '../data/collection.js';
 import {
   meta, TREE, TREE_BY_ID, TREE_LINKS, BRANCHES, rank, rankCost, cantBuy, buyRank, undoRank, canUndo, respec, linked, TROPHIES, hasTrophy, CLASSES, weaponLock, setLock,
   MASTERY_TIERS, masteryPerk, perkChoice, choosePerk, tiersOpen, unpicked
 } from '../data/meta.js';
 
-const TABS = ['SHARD TREE', 'MASTERY', 'TROPHIES', 'BOOK', 'STATS'];
-export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, book: { sel: 0, pages: false, page: 0 }, sheetWeapon: null, msg: '', msgT: 0, boxes: [], confirm: false };
+const TABS = ['SHARD TREE', 'MASTERY', 'TROPHIES', 'BOOK', 'COLLECTION', 'STATS'];
+const TAB_W = Math.floor(360 / TABS.length);
+const COLL = TABS.indexOf('COLLECTION'), STATS = TABS.indexOf('STATS');
+export const P = { open: false, tab: 0, tree: { sel: 'core' }, mast: { type: 0, open: false, tier: 0, opt: 0 }, troph: 0, book: { sel: 0, pages: false, page: 0 }, coll: 0, sheetWeapon: null, save: null, msg: '', msgT: 0, boxes: [], confirm: false };
 
 export function openPowers(tab = null) {
   P.open = true;
@@ -223,6 +231,8 @@ export function updatePowers(dt) {
     if (input.take('leave')) (B.pages = !B.pages), sfx.ui(true);
     if (B.pages) B.page = Math.max(0, Math.min(9, B.page + dy + dx * 5));
     else B.sel = Math.max(0, Math.min(CARD_LIST.length - 1, B.sel + dx + dy * BOOK_COLS));
+  } else if (P.tab === COLL) {
+    P.coll = Math.max(0, Math.min(REGIONS.length - 1, P.coll + dy + dx));
   }
 }
 
@@ -243,11 +253,11 @@ export function drawPowers(t) {
   dither(0, 0, W, H, C.ink, 12);
   panel('panel', 4, 4, W - 8, H - 8);
   TABS.forEach((name, i) => {
-    const x = 10 + i * 70, on = P.tab === i;
-    rect(x, 10, 67, 13, on ? C.gold : C.slate);
-    rect(x + 1, 11, 65, 11, on ? C.night : C.ink);
-    text(name, x + 33, 13, on ? C.gold : C.fog, { align: 'center' });
-    box(x, 10, 67, 13, () => { P.tab = i; P.confirm = false; sfx.ui(); });
+    const x = 10 + i * TAB_W, on = P.tab === i;
+    rect(x, 10, TAB_W - 3, 13, on ? C.gold : C.slate);
+    rect(x + 1, 11, TAB_W - 5, 11, on ? C.night : C.ink);
+    text(name, x + Math.floor((TAB_W - 3) / 2), 13, on ? C.gold : C.fog, { align: 'center' });
+    box(x, 10, TAB_W - 3, 13, () => { P.tab = i; P.confirm = false; sfx.ui(); });
   });
   rect(W - 21, 10, 13, 13, C.ink);
   text('X', W - 15, 13, C.coral, { align: 'center' });
@@ -257,12 +267,14 @@ export function drawPowers(t) {
   else if (P.tab === 1) drawMastery(t);
   else if (P.tab === 2) drawTrophies(t);
   else if (P.tab === 3) drawBook(t);
+  else if (P.tab === COLL) drawCollection(t);
   else drawSheet(12, 30, W - 24, H - 66, P.sheetWeapon);
   if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
   const hint = P.tab === 0 ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
     : P.tab === 1 ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
     : P.tab === 2 ? 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE'
     : P.tab === 3 ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`
+    : P.tab === COLL ? 'ARROWS: PICK A WORLD   SHIFT: NEXT TAB   E: CLOSE'
     : 'EVERYTHING YOUR POWERS ADD UP TO   SHIFT: NEXT TAB   E: CLOSE';
   text(hint, W / 2, H - 18, C.fog, { align: 'center' });
 }
@@ -753,4 +765,49 @@ function drawPages(t) {
   const Pg = PAGES[P.book.page], names = Pg.kinds.map(k => (bossBeaten(k) ? bossName(k) : '???'));
   text(fitText(names.join(', ').toUpperCase(), W - 24), 12, 200, C.mist);
   text(`A COMPLETE PAGE: ${PAGE_BONUS.bonus.toUpperCase()}, ALWAYS ON`, 12, 210, pageDone(Pg) ? C.lime : C.fog);
+}
+
+// ---------------------------------------------------------------- the Collection
+// one row per world: levels, secret exits, relics (and stars), its easter egg, trophy and boss page
+const COL_X = { levels: 196, exits: 240, relics: 290, stars: 336, egg: 380, trophy: 418, page: 454 };
+const frac = ([a, b]) => `${a}/${b}`;
+const full = ([a, b]) => a >= b;
+function tick(x, y, have) {
+  rect(x - 4, y - 1, 9, 9, C.ink);
+  rect(x - 3, y, 7, 7, have ? C.gold : C.night);
+  if (have) rect(x - 2, y + 1, 2, 2, C.cream);
+}
+function collRow(row, y, sel, all = false) {
+  if (sel) rect(10, y - 2, W - 20, 12, C.night);
+  const done = rowPct(row) >= 100 && !all;
+  text(fitText(all ? row.name : `${row.id} ${row.name}`, 150), 14, y, all ? C.gold : done ? C.gold : sel ? C.paper : C.cream);
+  for (const k of ['levels', 'exits', 'relics', 'stars']) text(frac(row[k]), COL_X[k], y, full(row[k]) ? C.gold : row[k][0] ? C.cream : C.stone, { align: 'center' });
+  for (const k of ['egg', 'trophy', 'page']) all ? text(frac(row[k]), COL_X[k], y, full(row[k]) ? C.gold : C.cream, { align: 'center' }) : tick(COL_X[k], y, full(row[k]));
+}
+function drawCollection(t) {
+  const s = P.save || { cleared: {} }, eggs = foundSecrets(), all = collection(s, eggs), G = bookProgress();
+  text(`COMPLETION ${all.pct}%`, 12, 30, all.pct >= 100 && Math.floor(t * 3) % 2 ? C.paper : C.gold);
+  text(`BOOK CARDS ${G.found}/${G.cards} (${G.gold} GOLD)`, W - 12, 30, C.mist, { align: 'right' });
+  const hy = 42;
+  text('WORLD', 14, hy, C.fog);
+  for (const [k, l] of [['levels', 'LEVELS'], ['exits', 'SECRETS'], ['relics', 'RELICS'], ['stars', 'STARS'], ['egg', 'EGG'], ['trophy', 'TROPHY'], ['page', 'PAGE']]) text(l, COL_X[k], hy, C.fog, { align: 'center' });
+  rect(10, hy + 9, W - 20, 1, C.slate);
+  all.rows.forEach((row, i) => {
+    const y = 54 + i * 13;
+    collRow(row, y, P.coll === i);
+    box(10, y - 2, W - 20, 12, () => { P.coll = i; sfx.ui(); });
+  });
+  rect(10, 184, W - 20, 1, C.slate);
+  collRow(all.total, 187, false, true);
+  // what is still out there in the picked world
+  const R = REGIONS[P.coll], row = all.rows[P.coll], M = missing(s, R), y = 201;
+  text(`${R.name}: ${rowPct(row)}%`, 12, y, C.gold);
+  const ex = M.exits.length ? 'A SECRET EXIT STILL HIDES IN ' + M.exits.map(n => n.name.toUpperCase()).join(', ')
+    : M.hiddenExits ? `${M.hiddenExits} SECRET EXIT${M.hiddenExits > 1 ? 'S' : ''} WAIT IN LEVELS YOU HAVEN'T CLEARED`
+    : row.exits[1] ? 'EVERY SECRET EXIT FOUND' : 'NO SECRET EXITS HERE';
+  text(fitText(ex, W - 24), 12, y + 10, M.exits.length || M.hiddenExits ? C.pink : C.lime);
+  const rl = M.relics.length ? `RELICS LEFT: ` + M.relics.map(m => `${m.n.id} ${m.got}/${RELIC_COUNT}`).join('  ') : 'EVERY RELIC FOUND: A STAR ON EVERY LEVEL';
+  text(fitText(rl, W - 24), 12, y + 20, M.relics.length ? C.cream : C.gold);
+  const egg = full(row.egg) ? 'EGG: ' + SECRETS[R.zone % SECRETS.length].name : 'EGG: ??? (IT HIDES ON THE HIGHEST LEDGE OF A MAP HERE)';
+  text(fitText(egg, W - 24), 12, y + 30, full(row.egg) ? C.lime : C.stone);
 }
