@@ -13,11 +13,11 @@ import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { drawItem } from './drops.js';
 import { makeWeapon } from './loot.js';
+import { innate } from './perks.js';
 import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
 import { temper, modOn } from '../data/temper.js';
 import { MOVE } from '../data/feel.js';
-import { innate } from './perks.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
