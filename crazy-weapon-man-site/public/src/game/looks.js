@@ -349,10 +349,9 @@ export function overlays(L, look, t, u, to) {
     for (const [x, y] of L.marks) if (x + y === ph || x + y === ph - 1) dot(x, y, C.paper);
   }
   if (look.cond === 'Pointy' && Math.floor(t * 2.5) % 3 === 0) {
-    dot(L.tip[0] + 1, L.tip[1], C.paper);
-    dot(L.tip[0] + 2, L.tip[1], C.paper);
-    dot(L.tip[0] + 1, L.tip[1] - 1, C.paper);
-    dot(L.tip[0] + 1, L.tip[1] + 1, C.paper);
+    // a glint on the point itself (a cross off to the side read as a loose extra piece)
+    dot(L.tip[0], L.tip[1], C.paper);
+    dot(L.tip[0] - 1, L.tip[1], C.paper);
   }
   if ((look.adj === 'Suspicious' || look.grand === 'Eldritch') && L.face && Math.floor(t * 1.3) % 5 === 0) {
     const ey = L.face.y0 + (L.face.y1 - L.face.y0 >= 2 ? 1 : 0);

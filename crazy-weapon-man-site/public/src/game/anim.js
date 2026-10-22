@@ -105,8 +105,10 @@ const STYLES = {
   hammer: {
     slide: 6,
     grip2: -6,
-    idle: (t, b) => ({ f: 'wide', fh: [15, 18 + b], ang: 64 + sin(t * 1.2) * 2 }),
-    run: s => ({ fh: [13, 19 + Math.abs(s)], ang: -62 + s * 4 }),
+    // the head rests on the ground at idle and drags along behind him on the walk (ground: the
+    // angle is solved so the head sits on the floor)
+    idle: (t, b) => ({ f: 'wide', fh: [15, 18 + b], ang: 64, ground: 'front' }),
+    run: s => ({ fh: [9, 19], ang: 150, ground: 'back', one: true }),
     air: up => (up ? { f: 'jump', fh: [15, 8], ang: -95 } : { f: 'fall', fh: [14, 15], ang: -40 }),
     dash: { f: 'lean', fh: [11, 19], ang: 160, wb: true },
     moves: {
@@ -253,7 +255,8 @@ export function heroPose(h, t) {
       swing = k => (k > 0.3 ? 'fwd/near' : k < -0.3 ? 'dback/near' : null),
       free = !st.grip2;
     pose = { ...pose, f: 'walk' + fi, fh: [pose.fh[0] + s * 2, pose.fh[1] + dip], bh: pose.bh && [pose.bh[0] - s * 2, pose.bh[1] + dip] };
-    if (free) (pose.armF = swing(s)), (pose.armB = pose.bh && swing(-s));
+    // (the far arm only shows swinging back: forward it would leave a lone fist in front of the chest)
+    if (free) (pose.armF = swing(s)), (pose.armB = pose.bh && s > 0.3 ? 'dback/near' : null);
   } else {
     pose = st.idle(t, b);
     if (pose.f === 'idle' || pose.f === 'idle2') pose.f = br < 0.3 ? 'idle' : br < 0.7 ? 'idle1' : 'idle2';
@@ -455,6 +458,13 @@ export function drawHeroAnimated(h, t) {
   const bowB = pose.bf ? armFor(shB[0], shB[1], want[0] + 1, want[1] + 1, true, face) : null;
   const armF = bowB ? armFor(shF[0], shF[1], ...G2(pose.bh[0], pose.bh[1]).map(v => v + 1), false, face, pose.pull && 'draw') : armFor(shF[0], shF[1], want[0] + 1, want[1] + 1, false, face, pose.armF);
   const fh = bowB ? [bowB.fist[0] - 1, bowB.fist[1] - 1] : [armF.fist[0] - 1, armF.fist[1] - 1];
+  if (pose.ground && !pose.sheath) {
+    // tilt the weapon until its head touches the floor (feet row), in front of him or trailing behind
+    const reach = Math.hypot(L.tip[0] - L.gx, L.tip[1] - L.gy) - (pose.slide ?? st.slide ?? 0) - 2,
+      floor = sy0 + (Hh.feet ?? Hh.h - 1) - 2;
+    const a = (Math.asin(Math.max(-1, Math.min(1, (floor - fh[1] - 1) / reach))) * 180) / Math.PI;
+    pose.ang = pose.ground === 'back' ? 180 - a : a;
+  }
   const angW = face > 0 ? pose.ang : 180 - pose.ang; // world-space angle
   const rad = (angW * Math.PI) / 180;
   // two-handed: the back hand rides the handle grip2 px from the front hand along the weapon
