@@ -20,7 +20,7 @@ import { ZONES } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
 import { enemyPool } from '../data/progression.js';
 import { spawnEnemy } from './enemy.js';
-import { makeWeapon, classType } from './loot.js';
+import { makeWeapon } from './loot.js';
 import { dropWeapon, dropShards } from './combat.js';
 import { drawItem } from './drops.js';
 import { autoLoot } from './inventory.js';
@@ -135,7 +135,7 @@ function fill(R, kind) {
       e.name = 'Golden ' + e.name;
     }
   } else {
-    const w = makeWeapon(z, { standout: true, type: classType(['sword', 'bow', 'hammer', 'katana', 'staff', 'wand'][Math.floor(Math.random() * 6)]) });
+    const w = makeWeapon(z, { standout: true, type: ['sword', 'bow', 'hammer', 'katana', 'staff', 'wand'][Math.floor(Math.random() * 6)] });
     R.shrine = { x: 200, y: f, item: w, taken: false };
   }
 }

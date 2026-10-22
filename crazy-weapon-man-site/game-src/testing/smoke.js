@@ -1,4 +1,6 @@
 // Real browser regression tests. Opt in with ?smoke; never loaded in a normal run.
+import { SPECIALS } from '../data/specials.js';
+import { updateSpecials, clearSpecials } from '../game/specials.js';
 import { input } from '../engine/input.js';
 import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
@@ -34,7 +36,6 @@ import { addProficiency } from '../data/proficiency.js';
 import { ENEMIES } from '../data/enemies.js';
 import { attackBox } from '../game/attack-rules.js';
 import { resetMeta, bankShards, buyRank, setLock, winTrophy, chooseMount, CLASSES } from '../data/meta.js';
-import { keepInClass, applyLock } from '../game/classlock.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
@@ -274,9 +275,18 @@ export function runSmoke(game) {
       reset();const h=world.hero;h.weapon=makeWeapon(5,{type,q:3});const e=spawnEnemy('brute',h.x+24,FLOOR());e.spawnT=0;e.hp=e.max=1e7;
       for(let i=0;i<60;i++){key('KeyZ',i%10<5);poll();world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);}
       key('KeyZ',false);poll();h.specialCd=0;h.attack=null;h.cd=0;
-      key('KeyC',true);poll();for(let i=0;i<60;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);poll();}key('KeyC',false);poll();
+      key('KeyC',true);poll();for(let i=0;i<120;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);updateSpecials(STEP);poll();}key('KeyC',false);poll();
       ok(e.hp<e.max,type+' never hit');ok(!h.special,type+' special never ended');heroPose(h,world.t);
     }
+  });
+  check('every special (three per weapon type) starts, lands a hit and ends',()=>{
+    for(const id of Object.keys(SPECIALS)) {
+      reset();const h=world.hero;h.weapon=makeWeapon(5,{type:SPECIALS[id].type,q:3});h.weapon.sp={id,boons:['aftershock','vamp'],element:'fire'};
+      const e=spawnEnemy('brute',h.x+30,FLOOR());e.spawnT=0;e.hp=e.max=1e7;h.specialCd=0;h.attack=null;h.cd=0;
+      key('KeyC',true);poll();for(let i=0;i<150;i++){world.t+=STEP;updateHero(h,STEP);game.updateShots(STEP);updateSpecials(STEP);poll();if(i===2)key('KeyC',false);}
+      ok(e.hp<e.max,id+' never hit');ok(!h.special,id+' never ended');heroPose(h,world.t);
+    }
+    clearSpecials();
   });
   check('shard tree area augments: splash, finisher shockwave and kill nova reach the neighbours',()=>{
     const fresh=(type,ids,lock)=>{resetMeta();bankShards(1e7);if(lock)setLock(lock);for(const id of ids)buyRank(id);reset();const h=world.hero;h.weapon=makeWeapon(3,{type,q:3});
@@ -480,16 +490,10 @@ export function runSmoke(game) {
     ok(flap(h) && h.vy<0,'no sky flap');ok(!flap(h),'flapped twice');
     resetMeta();
   });
-  check('specialized: an off-class weapon in hand is swapped or reforged, and the bag can never equip one',()=>{
-    resetMeta();setLock('ranged');reset();const h=world.hero;
-    h.weapon=makeWeapon(3,{type:'sword',q:5,standout:false});const pow=powerScore(h.weapon);world.bag.fill(null);
-    keepInClass();ok(CLASSES.ranged.types.includes(h.weapon.type),'still swinging a '+h.weapon.type);
-    ok(powerScore(h.weapon)>=pow*0.99,'the reforged weapon came out weaker');
-    const bow=makeWeapon(3,{type:'bow',q:4,standout:false});world.bag[0]=bow;h.weapon=makeWeapon(3,{type:'katana',q:4,standout:false});
-    keepInClass();ok(h.weapon===bow && world.bag[0]===null,'the bow in the bag did not take the katana\'s place');
-    const axe=makeWeapon(3,{type:'axe',q:4,standout:false});axe.locked=true;world.bag[2]=axe;
-    ok(!equipFromBag(2) && h.weapon===bow,'equipped an axe while a ranged specialist');
-    applyLock();ok(!world.bag.includes(axe),'a locked off-class weapon survived the melt');
+  check('specialized: an off-class weapon still equips and swings, just without the cluster',()=>{
+    resetMeta();setLock('ranged');reset();const h=world.hero;world.bag.fill(null);
+    const axe=makeWeapon(3,{type:'axe',q:4,standout:false});world.bag[2]=axe;
+    ok(equipFromBag(2)!==false && h.weapon===axe,'a ranged specialist could not equip an axe');
     resetMeta();
   });
   check('ghost houses, auto-scrollers, water and ice change how the level plays',()=>{

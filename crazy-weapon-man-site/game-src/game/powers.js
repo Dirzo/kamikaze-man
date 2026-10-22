@@ -129,7 +129,7 @@ function undo() {
     // a specialization change taken back: show the class choice again
     P.tree.sel = 'core';
     const c = weaponLock();
-    return say(c ? `BACK TO ${CLASSES[c].name}` : 'CLASS LOCK OFF. PICK ANY CLASS (G)', true);
+    return say(c ? `BACK TO ${CLASSES[c].name}` : 'NOT SPECIALIZED. PICK ANY CLASS (G)', true);
   }
   P.tree.sel = id;
   say(`${TREE_BY_ID[id].name} BACK TO RANK ${rank(id)}`, true);
@@ -138,8 +138,8 @@ function undo() {
 const LOCKS = [null, 'blades', 'blunt', 'ranged'];
 function pendLock(c) {
   P.lockPend = c;
-  if (c === weaponLock()) say(c ? `ALREADY A ${CLASSES[c].name} SPECIALIST` : 'NO LOCK: EVERY WEAPON DROPS');
-  else say(c ? `ENTER: ONLY ${CLASSES[c].name} DROP. THE REST, AND YOUR BAG'S, MELT INTO SHARDS` : 'ENTER: DROP THE LOCK, EVERY WEAPON DROPS AGAIN');
+  if (c === weaponLock()) say(c ? `ALREADY A ${CLASSES[c].name} SPECIALIST` : 'NOT SPECIALIZED');
+  else say(c ? `ENTER: SPECIALIZE IN ${CLASSES[c].name}. ITS CLUSTER POWERS ${CLASSES[c].name} WEAPONS` : 'ENTER: DROP THE SPECIALIZATION');
 }
 function chooseLock(c) {
   if (P.lockPend !== c) return pendLock(c);
@@ -148,7 +148,7 @@ function chooseLock(c) {
   const was = weaponLock(), before = meta().shards;
   setLock(c);
   const back = meta().shards - before, refunded = back ? ` +${fmt(back)} SHARDS FROM ${CLASSES[was].name}` : '';
-  say((c ? `${CLASSES[c].name} SPECIALIST! ITS CLUSTER IS OPEN` : 'LOCK OFF. EVERY WEAPON DROPS AGAIN') + refunded, true);
+  say((c ? `${CLASSES[c].name} SPECIALIST! ITS CLUSTER IS OPEN` : 'NOT SPECIALIZED') + refunded, true);
 }
 function refundAll() {
   if (!P.confirm) {

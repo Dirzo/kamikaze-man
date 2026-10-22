@@ -13,6 +13,7 @@ import { enemiesLeft, swarmBossUp } from './waves.js';
 import { COMBO, comboMult } from '../data/swarm.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
+import { specialOf } from '../data/specials.js';
 import { clock as clockOf } from '../data/speedrun.js';
 import { drawRelicPips } from './relics.js';
 import { gimmickName } from './gimmicks.js';
@@ -67,7 +68,7 @@ export function drawHud(t) {
   sep(104);
   // SPECIAL
   const T = TYPES[h.weapon.type];
-  label(T.specialName, 110);
+  label(specialOf(h.weapon).name, 110);
   const ready = h.specialCd <= 0;
   bar(110, y + 2, 44, 4, ready ? 1 : 1 - h.specialCd / (h.specialMax || T.cool), ready ? C.lime : C.teal);
   text(ready ? 'READY' : h.specialCd.toFixed(1), 158, y, ready ? C.lime : C.mist);

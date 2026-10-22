@@ -65,7 +65,7 @@ export const MOVE = {
   lungeBig: 8,
   lungeTime: 0.08,
   attackBuffer: 0.3, // a press this long before the swing ends still comes out
-  specialBuffer: 0.45,
+  specialBuffer: 0.6, // long enough to outlast a hammer's wind-up
   touchDmg: 0.25, // walking into a riled-up resident: this share of its hit
   lookAhead: 0.12, // of the screen width, in the direction you face
   lookAheadSprint: 0.16

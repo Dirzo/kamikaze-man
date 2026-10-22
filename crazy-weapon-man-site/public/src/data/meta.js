@@ -17,9 +17,9 @@ import { MOUNTS, STABLE_TROPHIES } from './mounts.js';
 export const META_KEY = 'crazyWeaponMan.meta.v1';
 
 // ---------------------------------------------------------------- specializations
-// The weapon lock: specialize in one class and every weapon of another class that drops is turned
-// into shards (game/classlock.js). Each class has its own cluster of the shard tree, which you can
-// only invest in while specialized in it and which only works with that class in hand.
+// Specialize in one class to open its cluster of the shard tree. Every weapon still drops and
+// works; the cluster only powers that class's weapons, so an off-class weapon (a greatsword in a
+// ranged specialist's hands) fights without it.
 export const CLASSES = {
   blades: { name: 'BLADES', col: 'coral', types: ['sword', 'dagger', 'katana', 'axe', 'scythe'], starter: 'sword' },
   blunt: { name: 'BLUNT', col: 'sand', types: ['hammer', 'nunchucks', 'staff', 'spear'], starter: 'hammer' },
@@ -390,8 +390,8 @@ function refundNode(n) {
   m.shards += n.cost * (rank(n.id) * (rank(n.id) + 1)) / 2;
   delete m.tree[n.id];
 }
-// does a weapon type drop as itself under the current lock?
-export const allowedType = type => !meta().lock || CLASS_OF[type] === meta().lock;
+// is this weapon type powered by your specialization's cluster? (no specialization: none are)
+export const onClass = type => !!meta().lock && CLASS_OF[type] === meta().lock;
 
 // ---- trophies
 export const hasTrophy = region => !!meta().trophies[region];

@@ -259,6 +259,31 @@ export const sfx = {
         hiss(3, { vol: v, rate: type === 'katana' || type === 'dagger' ? 0.95 : 0.6, drop: 0.12 });
     }
   },
+  // the special's stinger under the name banner: a power chord stab and a cymbal crash
+  stinger() {
+    if (!gate('sting', 200)) return;
+    arp([48, 55, 60, 67], 1, { wave: 'p50', vol: 0.05, decay: 0.001 });
+    chip([[N(36), 6]], { wave: 'tri', vol: 0.1, decay: 0.012 });
+    chip([[N(43), 6]], { wave: 'p25', vol: 0.035, decay: 0.004, delay: 0.02 });
+    hiss(22, { vol: 0.06, rate: 1.6, drop: 0.02, delay: 0.03 });
+  },
+  // a huge cut through the air (crescents, cross slashes, shadow steps)
+  slash() {
+    if (!gate('bigslash', 60)) return;
+    hiss(8, { vol: 0.07, rate: 1.4, drop: 0.1 });
+    chip([[N(96), 1], [N(88), 1], [N(81), 2]], { wave: 'p12', vol: 0.035, decay: 0.006 });
+  },
+  // power gathering (SIEGE SHOT): a rising whine
+  charge() {
+    if (!gate('charge', 200)) return;
+    arp([48, 52, 55, 60, 64, 67, 72, 76, 79, 84], 2, { wave: 'p12', vol: 0.03, decay: 0.0008 });
+  },
+  // a lightning strike: crackle and a thunder tail
+  zap() {
+    if (!gate('spzap', 50)) return;
+    chip([[N(90), 1], [N(70), 1], [N(95), 1], [N(66), 1], [N(92), 1]], { wave: 'p12', vol: 0.04 });
+    hiss(14, { vol: 0.06, rate: 0.7, drop: 0.05 });
+  },
   special(type) {
     if (!gate('sp', 150)) return;
     arp([60, 64, 67, 72, 76, 79, 84], 2, { wave: 'p25', vol: 0.05, decay: 0.002 });

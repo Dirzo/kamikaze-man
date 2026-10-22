@@ -1,7 +1,7 @@
 // Weapon drops (looted automatically into the bag; DOWN equips a just-looted upgrade),
 // and pickups (shards fly to you, hearts heal).
 import { C } from '../config.js';
-import { stats, allowedType } from '../data/meta.js';
+import { stats } from '../data/meta.js';
 import { temper } from '../data/temper.js';
 import { X, rect } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
@@ -18,7 +18,6 @@ import { autoLoot, equipFromBag } from './inventory.js';
 export function equip(item) {
   const h = world.hero,
     old = h.weapon;
-  if (!allowedType(item.type)) return null; // specialized: another class can't be wielded
   item.used = true;
   const gain = Math.round((powerScore(item) / Math.max(1, powerScore(old)) - 1) * 100);
   h.weapon = item;
