@@ -1121,6 +1121,7 @@ import beastkin_shrine  # noqa: E402,F401  zone 5, samurai dogs and fox spirits 
 import beastkin_temple  # noqa: E402,F401  zone 6, monkey monks, goats and a yak (staves)
 import beastkin_forge  # noqa: E402,F401  zone 7, blacksmith bears, badgers and boars (hammers)
 import beastkin_cottage  # noqa: E402,F401  zone 8, storybook owls, bunnies and hedgehogs (wands)
+import beastkin_castle  # noqa: E402,F401  zone 9, lizard ninjas (shuriken)
 
 if __name__ == '__main__':
     import beastkin  # run as the module itself, so the families above register into one DESIGNS

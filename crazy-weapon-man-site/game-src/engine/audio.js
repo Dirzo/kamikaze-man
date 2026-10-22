@@ -235,6 +235,17 @@ const DIE = {
   prowler: () => chip([[N(76), 2], [N(83), 2], [N(71), 5]], { wave: 'p25', vol: 0.04, decay: 0.004 }), // mrrow
   bandit: () => (arp([86, 81, 86, 79], 1, { wave: 'p25', vol: 0.03 }), hiss(4, { vol: 0.04, rate: 0.9, short: true })), // chitter and a puff
   fatcat: () => (chip([[N(64), 4], [N(57), 8]], { wave: 'p50', vol: 0.05, decay: 0.006 }), chip([[N(96), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })), // a purr and a coin
+  // the lizard ninja family: chirps, hisses and the ring of steel stars
+  gecko: () => chip([[N(98), 1], [N(98), 1], [N(101), 2]], { wave: 'p12', vol: 0.03, decay: 0.003 }), // gecko chirp
+  draco: () => (hiss(3, { vol: 0.03, rate: 1.4, short: true }), chip([[N(88), 2], [N(84), 3]], { wave: 'p25', vol: 0.03, delay: 0.05 })),
+  wallgecko: () => chip([[N(91), 1], [N(96), 1], [N(91), 2]], { wave: 'p12', vol: 0.03, decay: 0.003 }),
+  chameleon: () => hiss(4, { vol: 0.03, rate: 1.1 }),
+  frilled: () => (hiss(3, { vol: 0.04, rate: 0.9, short: true }), chip([[N(100), 2]], { wave: 'p12', vol: 0.025, delay: 0.08 })),
+  anole: () => (hiss(5, { vol: 0.045, rate: 0.8 }), chip([[N(93), 2]], { wave: 'p25', vol: 0.025 })), // a puff of smoke
+  basilisk: () => arp([88, 91, 93, 96], 1, { wave: 'p25', vol: 0.03, decay: 0.003 }),
+  iguana: () => (chip([[N(64), 3], [N(60), 6]], { wave: 'p50', vol: 0.045 }), chip([[N(103), 2], [N(100), 3]], { wave: 'p12', vol: 0.025, delay: 0.12 })),
+  skink: () => chip([[N(93), 1], [N(89), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }),
+  komodo: () => (hiss(6, { vol: 0.05, rate: 0.6 }), chip([[N(55), 6], [N(52), 10]], { wave: 'p50', vol: 0.06, decay: 0.007 })), // a long hiss and a growl
   // the owl, bunny and hedgehog family: squeaks, hoots and little chimes
   dustbunny: () => chip([[N(96), 1], [N(100), 2]], { wave: 'p12', vol: 0.03, decay: 0.004 }),
   hedgehog: () => (chip([[N(91), 1], [N(88), 2]], { wave: 'p25', vol: 0.03 }), hiss(2, { vol: 0.025, rate: 1.3, short: true })),

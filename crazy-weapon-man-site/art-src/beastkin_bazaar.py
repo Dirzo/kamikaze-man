@@ -95,6 +95,10 @@ def cat(c, p, s, fur, pose=None, *, belly='siam', eye=CAT_EYE, racc=False, strip
             ex, ey = tx0 - 5.2 * s * math.cos(a) - 0.6 * s, ty0 - 3.2 * s + 4.4 * s * math.sin(a) + sw
             c.capsule(tx0, ty0, ex, ey, 1.4 * s, 2.0 * s, fur, lift=-0.15 + 0.05 * k)
             c.ball(ex - 0.6 * s * math.cos(a), ey + 0.3 * s * math.sin(a), 1.5 * s, 1.5 * s, tip or 'siam', lift=0.15)
+    elif tail == 'lizard':  # a long thick tail sweeping down to the ground behind
+        pts_ = [(tx0 + 0.6 * s, ty0 - 0.4 * s), (tx0 - 2.6 * s, ty0 + 1.6 * s), (tx0 - 5.4 * s, base - 1.6 - sw * 0.4), (tx0 - 8.6 * s, base - 1.2 + sw * 0.4)]
+        for i, ((ax, ay), (bx_, by_)) in enumerate(zip(pts_, pts_[1:])):
+            c.capsule(ax, ay, bx_, by_, (1.7 - i * 0.45) * s, (1.3 - i * 0.45) * s, tip if (tip and i == 2) else fur, lift=-0.15)
     elif tail == 'stub':
         c.ball(tx0, ty0 - 0.4 * s, 1.2 * s, 1.0 * s, fur, lift=-0.1)
     else:

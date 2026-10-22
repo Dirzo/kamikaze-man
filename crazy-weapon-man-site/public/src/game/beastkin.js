@@ -108,6 +108,18 @@
 //   mirror    Mirror Owl: whatever you just hit it with, it sends back
 //   broom     Broom Bat Witch: swoops back and forth on its broom, sprinkling star bolts
 //   archmage  Grand Horned Owl: a shield bubble only a combo breaks, and a meteor
+//
+// The lizard ninja family (zone 9, the shuriken), the moonlit castle's clan:
+//   genin     Gecko Genin: one slow throwing star, then a dramatic pose (hit it while it holds it)
+//   glide     Gliding Draco: glides back and forth over you dropping stars
+//   wall      Wall Gecko: sticks up the wall over you and throws three stars from there
+//   shade     Chameleon Shade: all but invisible; you see its stars, and a shimmer
+//   frill     Frilled Spinner: its frill flares and its star ricochets along the floor
+//   puff      Smoke Anole: gone in a smoke puff, and throws from a new angle
+//   runner    Basilisk Runner: sprints across the floor on its hind legs flinging stars
+//   boomer    Boomerang Star Iguana: a giant star that flies out and comes back to its hand
+//   skink     Tail Clone Skink: leaves a tail clone where you hit it; walking clones confuse
+//   jonin     Komodo Jonin: heavy; steps through smoke behind you and fills the sky with stars
 import { C } from '../config.js';
 import { world } from './world.js';
 import { cx, cy, overlap } from './physics.js';
@@ -163,6 +175,9 @@ function loose(e) {
   burst(cx(e) + e.face * e.w * 0.45, e.y + e.h * 0.42, 3, 'dot', ['paper', 'sand']);
 }
 
+// a throwing star from the hand (look 'shuriken', drawn spinning by drawShuriken)
+const star = (e, vx, vy, o = {}) => arrow(e, vx, vy, { x: cx(e) + e.face * e.w * 0.4 - 3, y: e.y + e.h * 0.42 - 3, w: 6, h: 6, col: C.mist, look: 'shuriken', life: 2.5, ...o });
+
 // what an arrow does on top of its damage (enemy.js updateBolts calls this when one hits you)
 export function arrowHit(b) {
   const h = world.hero;
@@ -202,6 +217,13 @@ export function arrowWait(b, dt) {
     else (b.x = cx(e) + Math.cos(b.oa) * b.or - b.w / 2), (b.y = cy(e) - 4 + Math.sin(b.oa) * b.or * 0.6 - b.h / 2), (b.vx = b.vy = 0);
     if (b.orbit <= 0) Object.assign(b, vel(aimed({ x: b.x, w: b.w, y: b.y - 6, h: 14, face: 1 }, 150)));
     return true;
+  }
+  // Frilled Spinner's star: skips off the floor
+  if (b.bounce > 0 && b.vy > 0 && b.y + b.h >= b.floorY) {
+    b.y = b.floorY - b.h;
+    b.vy = -Math.max(140, Math.abs(b.vy) * 0.8);
+    b.bounce--;
+    burst(b.x + 3, b.floorY, 3, 'twinkle', ['paper', 'orange']);
   }
   if (!(b.wait > 0)) return false;
   b.wait -= dt;
@@ -295,6 +317,15 @@ export function beastTick(e, dt) {
     const seen = Math.abs(cx(world.hero) - cx(e)) < 56 || e.state === 'wind' || e.state === 'attack' || world.t - (e.lastHitAt ?? -9) < 1;
     e.alpha = Math.max(0.08, Math.min(1, (e.alpha ?? 0.08) + (seen ? 5 : -1.5) * dt));
   }
+  // Chameleon Shade: the castle walls show through it unless it throws or was just hit
+  if (e.d.beh === 'shade') {
+    const seen = e.state === 'wind' || e.state === 'attack' || world.t - (e.lastHitAt ?? -9) < 1 || e.flash > 0;
+    e.alpha = Math.max(0.06, Math.min(1, (e.alpha ?? 0.06) + (seen ? 5 : -1.2) * dt));
+  }
+  // Gecko Genin: holding its pose
+  if (e.poseT > 0) e.pose = (e.poseT -= dt) > 0 ? 'pose' : null;
+  // Wall Gecko: off the wall once it is not clinging (a hit knocks it down)
+  if (e.d.beh === 'wall' && e.air && !(e.state === 'attack' && e.move === 'cling')) e.air = false;
   // Masked Bandit: hard to see in its own smoke
   if (e.d.beh === 'smoke') e.alpha = Math.max(0.45, Math.min(1, (e.alpha ?? 1) + (inCloud(e) ? -3 : 3) * dt));
   // Moss Stalker: fades into the forest unless it is drawing, shooting or was just hit
@@ -641,9 +672,10 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
       else keep(e, 60, dist, toward, slow);
       break;
     case 'owlet':
+    case 'glide':
     case 'broom': {
-      // up in the air over your head: the owlet hovers just ahead, the bat swoops back and forth
-      e.hoverY = h.y - (d.beh === 'owlet' ? 46 : 38);
+      // up in the air over your head: the owlet hovers just ahead, the bat (and the draco) swoops back and forth
+      e.hoverY = h.y - (d.beh === 'owlet' ? 46 : d.beh === 'glide' ? 50 : 38);
       e.vy = (e.hoverY + Math.sin(e.anim * 2) * 4 - e.y) * 2.5;
       if (d.beh === 'owlet') e.vx = Math.sign(cx(h) + toward * -10 - cx(e)) * e.speed * slow * (Math.abs(cx(h) - cx(e)) > 14 ? 1 : 0);
       else {
@@ -652,9 +684,48 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
         e.vx = e.swoopDir * e.speed * slow;
         e.face = e.swoopDir;
       }
-      if (e.cool <= 0 && Math.abs(cx(h) - cx(e)) < (d.beh === 'owlet' ? 30 : 60)) wind(e, d.wind, d.beh === 'owlet' ? 'draw' : 'cast', d.beh === 'owlet' ? 'orb' : 'stars');
+      if (e.cool <= 0 && Math.abs(cx(h) - cx(e)) < (d.beh === 'owlet' ? 30 : 60)) wind(e, d.wind, d.beh === 'broom' ? 'cast' : 'draw', { owlet: 'orb', broom: 'stars', glide: 'stardrop' }[d.beh]);
       break;
     }
+    case 'genin':
+    case 'shade':
+      if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'star');
+      else keep(e, d.beh === 'genin' ? 80 : 100, dist, toward, slow);
+      break;
+    case 'wall':
+      if ((e.wallCool ?? 0) <= 0 && dist < 170 && sameLevel) wind(e, 0.35, 'draw', 'cling');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'star');
+      else keep(e, 90, dist, toward, slow);
+      break;
+    case 'frill':
+      if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'ricochet');
+      else keep(e, 110, dist, toward, slow);
+      break;
+    case 'puff':
+      if ((e.puffCool ?? 0) <= 0 && dist < 140 && near) wind(e, 0.25, 'draw', 'puff');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'star');
+      else keep(e, 100, dist, toward, slow);
+      break;
+    case 'runner':
+      if ((e.runCool ?? 0) <= 0 && dist < 170 && sameLevel) wind(e, 0.45, 'run', 'dashstar');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'star');
+      else keep(e, 110, dist, toward, slow);
+      break;
+    case 'boomer':
+      if (e.cool <= 0 && dist < d.range && near && !world.bolts.some(b => b.owner === e && b.big)) wind(e, d.wind, 'draw', 'bigstar');
+      else keep(e, 110, dist, toward, slow);
+      break;
+    case 'skink':
+      if ((e.cloneCool ?? 0) <= 0 && dist < 150 && near) wind(e, 0.4, 'draw', 'tailclones');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'star');
+      else keep(e, 90, dist, toward, slow);
+      break;
+    case 'jonin':
+      if ((e.stepCool ?? 0) <= 0 && (dist < 40 || world.t - (e.lastHitAt ?? -9) < 0.5)) wind(e, 0.2, 'cast', 'smokestep');
+      else if ((e.stormCool ?? 0) <= 0 && dist < 230 && near) wind(e, 0.8, 'cast', 'starstorm');
+      else if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'draw', 'star');
+      else keep(e, 110, dist, toward, slow);
+      break;
     case 'hat':
       if (e.cool <= 0 && dist < d.range && near) wind(e, d.wind, 'pull', 'hattrick');
       else keep(e, 90, dist, toward, slow);
@@ -694,7 +765,8 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
   if (e.howlCool > 0) e.howlCool -= dt;
   if (e.rainCool > 0) e.rainCool -= dt;
   for (const k of ['honkCool', 'guardCool', 'leapCool', 'gravesCool', 'tongueCool', 'shellCool', 'diveCool', 'croakCool', 'slamCool', 'spinCool', 'counterCool',
-    'blinkCool', 'pounceCool', 'smokeCool', 'rallyCool', 'chargeCool', 'tpCool', 'stormCool', 'decoyCool', 'healCool', 'leapCool', 'spikeCool', 'cloneCool', 'poundCool', 'diveCool', 'curlCool', 'dustCool', 'teaCool', 'mirrorCool', 'meteorCool'])
+    'blinkCool', 'pounceCool', 'smokeCool', 'rallyCool', 'chargeCool', 'tpCool', 'stormCool', 'decoyCool', 'healCool', 'leapCool', 'spikeCool', 'cloneCool', 'poundCool', 'diveCool', 'curlCool', 'dustCool', 'teaCool', 'mirrorCool', 'meteorCool',
+    'wallCool', 'puffCool', 'runCool', 'stepCool', 'tailCool'])
     if (e[k] > 0) e[k] -= dt;
 }
 // the melee swings: lunge speed, how long it lasts, extra reach, damage and knockback
@@ -1227,6 +1299,109 @@ export function beastAttack(e, toward) {
       for (const o of [-40, 40]) world.bolts.push({ x: cx(h) + o - 3, y: Math.max(-14, foot - 110), w: 6, h: 6, vx: 0, vy: 0, g: 0, fall: 300, wait: 1.1, dmg: e.dmg * 0.7, col: C.orange, life: 3, look: 'meteor', rain: true, markY: foot, owner: e });
       return;
     }
+    case 'star': { // the castle's throwing stars: one from the throwing hand (a fan from the Jonin)
+      e.attackPose = 'throw';
+      e.st = 0.3;
+      sfx.enemyCast();
+      const sp = { genin: 100, jonin: 190 }[d.beh] || 160, fan = d.beh === 'jonin' ? [-0.2, 0, 0.2] : d.beh === 'puff' ? [-0.08, 0.08] : [0];
+      for (const a of fan) star(e, ...aimed(e, sp, a));
+      if (d.beh === 'genin') say1(e, 'HI-YAH!', C.lime);
+      return;
+    }
+    case 'stardrop': // Gliding Draco: two stars down either side of you
+      e.st = 0.25;
+      sfx.enemyCast();
+      for (const sx of [-60, 60]) star(e, sx + e.vx * 0.3, 130, { x: cx(e) - 3, y: e.y + e.h - 4, g: 60 });
+      return;
+    case 'cling': // Wall Gecko: up the wall over you, three stars from there
+      e.wallCool = 5;
+      e.attackPose = 'throw';
+      e.air = true;
+      e.hoverY = e.y - 58;
+      e.vx = 0;
+      e.vy = -280;
+      e.st = 1.6;
+      e.throws = 3;
+      e.throwAt = world.t + 0.45;
+      sfx.enemyMelee();
+      say1(e, 'STICKY FEET!', C.sky);
+      return;
+    case 'ricochet': // Frilled Spinner: frill out, and a star that skips along the floor
+      e.attackPose = 'throw';
+      e.st = 0.3;
+      sfx.enemyCast();
+      star(e, e.face * 150, -60, { g: 320, bounce: 3, floorY: e.y + e.h, life: 3.5 });
+      say1(e, 'FWOOSH!', C.orange);
+      return;
+    case 'puff': { // Smoke Anole: gone in a puff, back on the far side of you, and a throw
+      e.puffCool = 4.5;
+      const p = e.platform, side = Math.sign(cx(e) - cx(h)) || 1;
+      burst(cx(e), cy(e), 12, 'smoke', ['fog', 'mist', 'stone']);
+      let x = cx(h) - side * rnd(80, 110);
+      if (p && (x < p.x + 10 || x > p.x + p.w - 10)) x = cx(h) + side * 90;
+      if (p) x = Math.max(p.x + e.w / 2 + 2, Math.min(p.x + p.w - e.w / 2 - 2, x));
+      e.x = x - e.w / 2;
+      e.face = Math.sign(cx(h) - cx(e)) || 1;
+      burst(cx(e), cy(e), 12, 'smoke', ['fog', 'mist', 'stone']);
+      sfx.boom(0.25);
+      e.st = 0.05;
+      e.next = [0.3, 'draw', 'star'];
+      return;
+    }
+    case 'dashstar': // Basilisk Runner: up on its hind legs and off across the floor
+      e.runCool = 5;
+      e.attackPose = 'run';
+      e.vx = e.face * 230;
+      e.st = 1.0;
+      e.starAt = 0;
+      sfx.enemyMelee();
+      say1(e, 'SPRINT!', C.lime);
+      return;
+    case 'bigstar': // Boomerang Star Iguana: the giant star off its back, out and home again
+      e.attackPose = 'throw';
+      e.st = 0.4;
+      sfx.enemyCast();
+      star(e, e.face * 170, Math.max(-40, Math.min(40, cy(h) - cy(e))), { x: cx(e) + e.face * 8 - 6, y: e.y + e.h * 0.3, w: 12, h: 12, big: true, ret: 0.75, life: 3.5, dmg: e.dmg * 1.2 });
+      say1(e, 'HERE IT COMES!', C.gold);
+      return;
+    case 'tailclones': // Tail Clone Skink: two of itself walk off either way
+      e.cloneCool = 6;
+      e.st = 0.35;
+      sfx.enemyCast();
+      for (const dir of [-1, 1]) world.bolts.push({ x: e.x, y: e.y, w: e.w, h: e.h, vx: dir * 45, vy: 0, g: 0, dmg: 0, harmless: true, solid: true, col: C.sky, life: 2.6, look: 'decoy', type: e.type, face: dir, owner: e });
+      burst(cx(e), cy(e), 10, 'smoke', ['fog', 'sky']);
+      say1(e, 'WHICH ONE?', C.sky);
+      return;
+    case 'smokestep': { // Komodo Jonin: through the smoke, and behind you
+      e.stepCool = 4;
+      const x = cx(h) - h.face * 40, p = h.platform;
+      burst(cx(e), cy(e), 14, 'smoke', ['fog', 'stone', 'red']);
+      e.x = Math.max(p ? p.x : 2, Math.min((p ? p.x + p.w : 1e9) - e.w, x - e.w / 2));
+      e.y = h.y + h.h - e.h;
+      e.vx = e.vy = 0;
+      e.face = Math.sign(cx(h) - cx(e)) || 1;
+      burst(cx(e), cy(e), 14, 'smoke', ['fog', 'stone', 'red']);
+      e.attackPose = 'cast';
+      e.st = 0.05;
+      e.next = [0.35, 'draw', 'star'];
+      sfx.enemyCast();
+      return;
+    }
+    case 'starstorm': { // Komodo Jonin: a ring of stars from him, and a rain of them on marked spots round you
+      e.stormCool = 7;
+      e.attackPose = 'cast';
+      e.st = 0.5;
+      sfx.enemyCast();
+      say1(e, 'THOUSAND STARS!', C.red);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2 + 0.2;
+        star(e, Math.cos(a) * 120, Math.sin(a) * 120, { x: cx(e) - 3, y: cy(e) - 3, life: 1.3, dmg: e.dmg * 0.5 });
+      }
+      const foot = h.y + h.h;
+      [-56, -28, 0, 28, 56].forEach((o, i) => world.bolts.push({ x: cx(h) + o + rnd(-5, 5) - 3, y: Math.max(-8, foot - 100), w: 6, h: 6, vx: 0, vy: 0, g: 0, fall: 320, wait: 0.75 + i * 0.07,
+        dmg: e.dmg * 0.7, col: C.mist, life: 2.4, look: 'shuriken', rain: true, markY: foot, owner: e }));
+      return;
+    }
     case 'juggle': // Knife Juggler: three daggers up and over
       e.attackPose = 'throw';
       e.st = 0.35;
@@ -1475,6 +1650,18 @@ export function beastAttacking(e, dt, toward) {
     case 'tongue':
       if (e.grabbed) e.face = Math.sign(cx(h) - cx(e)) || e.face;
       break;
+    case 'cling':
+      e.vx = 0;
+      e.vy = (e.hoverY - e.y) * 6;
+      e.face = toward;
+      if (e.throws > 0 && world.t >= e.throwAt) (e.throws--), (e.throwAt += 0.4), star(e, ...aimed(e, 170)), sfx.enemyCast();
+      break;
+    case 'dashstar':
+      if (!e.hitDone && overlap(e, h) && hurtHero(e.dmg, e.face)) e.hitDone = true;
+      if ((e.starAt += 1) % 12 === 0) star(e, -e.face * 40, -190, { g: 420, dmg: e.dmg * 0.6 });
+      if (Math.random() < 0.6) emit(cx(e) - e.face * 8, e.y + e.h, 'dust', C.mist);
+      if (e.hitWall || (e.platform && (e.face > 0 ? e.x + e.w > e.platform.x + e.platform.w - 4 : e.x < e.platform.x + 4))) e.st = 0;
+      break;
     case 'firecharge':
       if ((e.fireAt += 1) % 4 === 0) world.bolts.push({ x: cx(e) - e.face * 10 - 3, y: e.y + e.h - 7, w: 6, h: 7, vx: 0, vy: 0, g: 0, dmg: e.dmg * 0.35, col: C.orange, life: 1.3, look: 'fire', pool: true, owner: e });
     // falls through
@@ -1600,6 +1787,9 @@ export function beastAttacking(e, dt, toward) {
     burst(cx(e), e.y - 2, 6, 'twinkle', ['gold', 'paper']);
   }
   if (e.move === 'ironspin') e.pose = null;
+  if (e.move === 'star' && e.d.beh === 'genin') (e.poseT = 0.7), (e.stun = Math.max(e.stun, 0.7)); // ...and holds it
+  if (e.move === 'cling') (e.air = false), (e.vy = 0);
+  if (e.move === 'dashstar') e.vx = 0;
   if (e.move === 'twinspin') (e.pose = null), (e.stun = Math.max(e.stun, 0.6)), say1(e, 'HAH...', C.paper);
   if (e.move === 'poke' && e.d.beh === 'novice' && Math.random() < 0.4) (e.tripT = 0.8), (e.stun = Math.max(e.stun, 0.8)), say1(e, 'WHOOPS!', C.sand); // the hem again
   if (['gibspin', 'apespin', 'hamspin', 'bearspin'].includes(e.move)) e.pose = null;
@@ -1617,12 +1807,13 @@ export function beastAttacking(e, dt, toward) {
   const cool = { hop: 1.3, roll: 1.9, lob: 1.9, twin: 1.6, fan: 1.8, snipe: 2.6, kite: 1.2, frost: 1.6, greatbow: 2.2, alpha: 1.1,
     poke: 1.2, honk: 1.2, shield: 1.3, lunge: 1.9, toss: 1.0, whirl: 2.2, phase: 1.3, flurry: 1.6, parry: 1.2, warlord: 1.4,
     cub: 1.4, burrow: 1.4, bellows: 1.3, smith: 1.9, angry: 1.4 / (1 + 0.25 * (e.anger || 0)), anvil: 1.9, tornado: 2.0, molten: 1.7, foreman: 1.5, ironbear: 1.7,
+    genin: 1.6, glide: 1.4, wall: 1.5, shade: 1.6, frill: 1.7, puff: 1.3, runner: 1.5, boomer: 1.6, skink: 1.4, jonin: 1.4,
     zap: 1.4, curl: 1.6, owlet: 1.8, hat: 2.0, moth: 1.6, poly: 2.4, tea: 1.4, mirror: 1.6, broom: 1.4, archmage: 1.6,
     novice: 1.4, vault: 1.3, ram: 1.4, gibbon: 2.0, heal: 1.4, extend: 1.9, ibex: 1.3, langur: 1.7, yak: 1.6, cloudape: 1.4,
     clumsy: 1.3, sweep: 1.4, iaido: 2.2, decoy: 1.3, sentry: 1.2, twinspin: 2.0, crescent: 1.9, kunai: 1.8, champion: 1.5, sage: 1.4,
     skitter: 1.0, steal: 1.2, dashthru: 1.8, dark: 1.6, juggle: 1.8, blink: 1.2, twinfang: 1.6, pounce: 1.3, smoke: 1.0, fence: 1.4,
     flop: 1.1, tongue: 1.3, shell: 1.3, shellspin: 2.0, chain: 1.7, lurk: 1.4, bubble: 2.0, brawler: 1.4, bounce: 1.6, master: 1.3 }[d.beh] || 1.5;
-  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves', 'croak', 'slam', 'ironspin', 'rally', 'smoke', 'pounce', 'charge', 'storm', 'blinkaway', 'vault', 'plunge', 'rockspikes', 'clones', 'heal', 'apespin', 'firecharge', 'pound', 'bearspin', 'sparkring', 'mothdust', 'teacups', 'mirrorback', 'meteor'].includes(e.move) ? 0.6 : cool);
+  done(e, ['howl', 'rain', 'stomp', 'leap', 'graves', 'croak', 'slam', 'ironspin', 'rally', 'smoke', 'pounce', 'charge', 'storm', 'blinkaway', 'vault', 'plunge', 'rockspikes', 'clones', 'heal', 'apespin', 'firecharge', 'pound', 'bearspin', 'sparkring', 'mothdust', 'teacups', 'mirrorback', 'meteor', 'cling', 'puff', 'dashstar', 'tailclones', 'smokestep', 'starstorm'].includes(e.move) ? 0.6 : cool);
 }
 
 // ---------------------------------------------------------------- hits and deaths (combat.js)
@@ -1715,6 +1906,19 @@ export function beastGuard(e, dir, o) {
       return true;
     }
     return clang(e, dir, o, 'SHIELD!');
+  }
+  // Tail Clone Skink: what you hit was its tail and a clone; the skink is over there
+  if (d.beh === 'skink' && !o.special && !o.chip && (e.tailCool ?? 0) <= 0 && e.state !== 'attack') {
+    const h = world.hero, p = e.platform;
+    e.tailCool = 4;
+    world.bolts.push({ x: e.x, y: e.y, w: e.w, h: e.h, vx: 0, vy: 0, g: 0, dmg: 0, harmless: true, solid: true, col: C.sky, life: 1.0, look: 'decoy', type: e.type, face: e.face, owner: e });
+    burst(cx(e), cy(e), 10, 'smoke', ['fog', 'sky']);
+    let x = cx(e) - Math.sign(cx(h) - cx(e) || dir) * 56;
+    if (p) x = Math.max(p.x + e.w / 2 + 2, Math.min(p.x + p.w - e.w / 2 - 2, x));
+    e.x = x - e.w / 2;
+    e.face = Math.sign(cx(h) - cx(e)) || 1;
+    if (!o.chain) say1(e, 'TAIL CLONE!', C.sky);
+    return true;
   }
   // Mirror Owl: remembers what hit it
   if (d.beh === 'mirror' && !o.chip) (e.mirrorType = world.hero.weapon?.type || 'sword'), (e.mirrorShot = !!o.shot);
@@ -1887,6 +2091,29 @@ export function drawKunai(b, t) {
   return true;
 }
 // the Nine Tail Sage's razor petals: a pink mark on the ground, then the petal falling on it
+// a throwing star: four steel points spinning round a hole (the Iguana's is a big one); a waiting
+// rain star shows only its mark on the ground
+export function drawShuriken(b, t) {
+  if (b.rain && b.wait > 0) {
+    if (Math.floor(t * 12) % 2 || b.wait < 0.25) {
+      const x = Math.round(b.x + 3), y = Math.round(b.markY);
+      rect(x - 3, y - 1, 7, 1, C.red);
+      rect(x, y - 2, 1, 2, C.red);
+    }
+    return true;
+  }
+  const r = b.big ? 7 : 4, x0 = b.x + b.w / 2, y0 = b.y + b.h / 2, a0 = t * 22 + (b.x + b.y) * 0.1;
+  for (let i = 0; i < 4; i++) {
+    const a = a0 + (i * Math.PI) / 2;
+    for (let k = 0; k <= r; k++) {
+      const w = k < r * 0.5 ? 1 : 0, q = a + (k / r) * 0.5;
+      px(Math.round(x0 + Math.cos(q) * k), Math.round(y0 + Math.sin(q) * k), k === r ? C.paper : C.mist);
+      if (w) px(Math.round(x0 + Math.cos(q + 0.5) * k), Math.round(y0 + Math.sin(q + 0.5) * k), C.stone);
+    }
+  }
+  rect(Math.round(x0) - 1, Math.round(y0) - 1, 2, 2, C.ink);
+  return true;
+}
 export function drawPetal(b, t) {
   if (b.wait > 0) {
     if (Math.floor(t * 12) % 2 || b.wait < 0.25) {
@@ -2033,7 +2260,16 @@ export function drawPolyHero(h, t) {
 // the Petal Kitsune's decoy: its own shape, flickering pink as it falls apart
 export function drawDecoy(b, t) {
   const art = A.enemies[b.type];
-  if (!art || Math.floor(t * 16) % 3 === 0) return true;
+  if (!art) return true;
+  // the Tail Clone Skink's clones walk off looking just like it
+  if (b.solid) {
+    const f = Math.max(0, art.frames.indexOf(b.vx ? 'walk' + (Math.floor(t * 9) % 4) : 'hit'));
+    X.globalAlpha = Math.min(1, b.life * 3);
+    frame(art.im, f, art.w, art.h, Math.round(b.x + b.w / 2 - art.w / 2), Math.round(b.y + b.h - (art.h - 1)), b.face < 0);
+    X.globalAlpha = 1;
+    return true;
+  }
+  if (Math.floor(t * 16) % 3 === 0) return true;
   X.globalAlpha = Math.max(0, Math.min(0.75, b.life));
   frame(art.im, 0, art.w, art.h, Math.round(b.x + b.w / 2 - art.w / 2), Math.round(b.y + b.h - (art.h - 1)), b.face < 0);
   X.globalAlpha = 1;
@@ -2092,6 +2328,8 @@ export function drawTell(e, t) {
     px(x - 2, y, C.gold);
     px(x + 1, y, C.gold);
   }
+  // the Chameleon Shade: just a shimmer where it stands
+  if (e.d.beh === 'shade' && (e.alpha ?? 1) < 0.4 && !e.dead && Math.random() < 0.25) emit(e.x + Math.random() * e.w, e.y + Math.random() * e.h, 'dot', C.mist);
   // the Grand Horned Owl's shield bubble; a Moth Weaver's dust all over your view
   if (e.d.beh === 'archmage' && e.shield && !e.dead) ring(Math.round(cx(e)), Math.round(cy(e)), Math.round(e.h * 0.62), t);
   if (e.d.beh === 'moth' && e.haze) {

@@ -135,6 +135,18 @@ export const ENEMIES = {
   mirrorowl: { name: 'Mirror Owl', kind: 'beast', beh: 'mirror', fam: 'cottage', evo: 8, hp: 1.3, dmg: 1.1, speed: 30, range: 150, wind: 0.5 },
   broombat: { name: 'Broom Bat Witch', kind: 'beast', beh: 'broom', fam: 'cottage', evo: 9, hp: 1.6, dmg: 1.1, speed: 70, range: 60, wind: 0.3, air: true },
   hornedowl: { name: 'Grand Horned Owl', kind: 'beast', beh: 'archmage', fam: 'cottage', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 26, range: 180, wind: 0.5 },
+  // The lizard ninja family (zone 9, the shuriken): the moonlit castle's clan, from Gecko Genin on
+  // 9-1 up to the Komodo Jonin.
+  gecko: { name: 'Gecko Genin', kind: 'beast', beh: 'genin', fam: 'castle', evo: 1, hp: 0.55, dmg: 0.7, speed: 38, range: 140, wind: 0.55 },
+  draco: { name: 'Gliding Draco', kind: 'beast', beh: 'glide', fam: 'castle', evo: 2, hp: 0.7, dmg: 0.8, speed: 64, range: 60, wind: 0.35, air: true },
+  wallgecko: { name: 'Wall Gecko', kind: 'beast', beh: 'wall', fam: 'castle', evo: 3, hp: 0.85, dmg: 0.85, speed: 40, range: 150, wind: 0.45 },
+  chameleon: { name: 'Chameleon Shade', kind: 'beast', beh: 'shade', fam: 'castle', evo: 4, hp: 0.9, dmg: 0.9, speed: 34, range: 160, wind: 0.5 },
+  frilled: { name: 'Frilled Spinner', kind: 'beast', beh: 'frill', fam: 'castle', evo: 5, hp: 1.0, dmg: 0.95, speed: 34, range: 170, wind: 0.5 },
+  anole: { name: 'Smoke Anole', kind: 'beast', beh: 'puff', fam: 'castle', evo: 6, hp: 1.0, dmg: 1.0, speed: 38, range: 160, wind: 0.45 },
+  basilisk: { name: 'Basilisk Runner', kind: 'beast', beh: 'runner', fam: 'castle', evo: 7, hp: 1.2, dmg: 1.0, speed: 40, range: 160, wind: 0.45 },
+  iguana: { name: 'Boomerang Star Iguana', kind: 'beast', beh: 'boomer', fam: 'castle', evo: 8, hp: 1.6, dmg: 1.2, speed: 26, range: 180, wind: 0.6 },
+  skink: { name: 'Tail Clone Skink', kind: 'beast', beh: 'skink', fam: 'castle', evo: 9, hp: 1.4, dmg: 1.1, speed: 36, range: 160, wind: 0.45 },
+  komodo: { name: 'Komodo Jonin', kind: 'beast', beh: 'jonin', fam: 'castle', evo: 10, heavy: true, hp: 2.8, dmg: 1.4, speed: 30, range: 180, wind: 0.5 },
   ninetail: { name: 'Nine Tail Sage', kind: 'beast', beh: 'sage', fam: 'shrine', evo: 10, heavy: true, hp: 2.6, dmg: 1.4, speed: 34, range: 30, wind: 0.45 },
   // swarm bosses only (full-size art from art-src/hd_bosses.py)
   mothergoose: { name: 'Mother Goose', kind: 'melee', style: 'leap', hp: 0.85, dmg: 0.95, speed: 40, range: 44, wind: 0.5, honks: true },
@@ -168,7 +180,9 @@ export const DEATHS = {
   cub: 'squash', badger: 'flip', boarbellows: 'topple', bearsmith: 'topple', honeybadger: 'spin', anviltoss: 'topple',
   wolverine: 'spin', moltenboar: 'topple', grizzly: 'topple', polarbear: 'topple',
   dustbunny: 'squash', hedgehog: 'spin', owlet: 'spin', hatrabbit: 'flip', moth: 'rise', polyhare: 'flip', teahog: 'topple',
-  mirrorowl: 'rise', broombat: 'spin', hornedowl: 'rise'
+  mirrorowl: 'rise', broombat: 'spin', hornedowl: 'rise',
+  gecko: 'flip', draco: 'spin', wallgecko: 'flip', chameleon: 'rise', frilled: 'spin', anole: 'squash', basilisk: 'topple',
+  iguana: 'topple', skink: 'flip', komodo: 'topple'
 };
 export const deathOf = type => DEATHS[type] || (ENEMIES[type]?.float || ENEMIES[type]?.air ? 'rise' : 'topple');
 

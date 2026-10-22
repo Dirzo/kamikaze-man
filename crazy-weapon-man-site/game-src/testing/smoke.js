@@ -38,6 +38,7 @@ import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
 import { updateBolts } from '../game/enemy.js';
+import { beastAttack } from '../game/beastkin.js';
 import { updateSecret, SECRETS, SECRET_KEY } from '../game/secrets.js';
 import { updateAbilities, abilityHit } from '../game/abilities.js';
 import { NODES, OVERWORLD_KEY, isOpen } from '../data/overworld.js';
@@ -267,13 +268,13 @@ export function runSmoke(game) {
     for(let i=0;i<600;i++){world.t+=STEP;updateEnemy(e,STEP);updateBolts(STEP);}
     ok(e.calm && world.bolts.length===0,'a calm resident used its trick');
   });
-  check('the goose, fuzzball, lagoon, bazaar, shrine, temple, forge and cottage families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
-    for(const z of [0,1,2,3,4,5,6,7]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
-    const fam=[0,1,2,3,4,5,6,7].flatMap(z=>ZONES[z].pool);
+  check('the goose, fuzzball, lagoon, bazaar, shrine, temple, forge, cottage and castle families: every beast fights its own way, shoots arrows, splits and bristles',()=>{
+    for(const z of [0,1,2,3,4,5,6,7,8]) ok(ZONES[z].pool.length===10 && ZONES[z].pool.every(t=>ENEMIES[t].kind==='beast'),'zone '+(z+1)+' is not a beastkin family');
+    const fam=[0,1,2,3,4,5,6,7,8].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
       reset();const h=world.hero;h.maxHp=h.hp=1e6;
-      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):ENEMIES[type].fam==='cottage'?['curl','tea','owlet','broom'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
+      const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):ENEMIES[type].fam==='cottage'?['curl','tea','owlet','broom'].includes(B):ENEMIES[type].fam==='castle'?false:['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
@@ -369,6 +370,21 @@ export function runSmoke(game) {
     reset();h=world.hero;const th=spawnEnemy('teahog',h.x+100,FLOOR());th.spawnT=0;th.calm=false;
     for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='teacup');i++){world.t+=STEP;updateEnemy(th,STEP);updateBolts(STEP);}const cup=world.bolts.find(b=>b.look==='teacup');
     ok(cup && Math.hypot(cx(cup)-cx(th),cup.y-cy(th))<30,'the teacups did not circle the Tea Kettle Hog');
+    // the castle: a Skink leaves its tail clone, the Chameleon all but vanishes, the Frilled star skips off the floor,
+    // the Iguana's star comes home, the Wall Gecko climbs, the Komodo marks the floor with a rain of stars
+    reset();h=world.hero;const sk=spawnEnemy('skink',h.x+40,FLOOR());sk.spawnT=0;sk.calm=false;const skx=sk.x;
+    ok(hitEnemy(sk,50,{dir:1})===0 && sk.hp===sk.max && Math.abs(sk.x-skx)>30 && world.bolts.some(b=>b.look==='decoy'&&b.solid),'the Skink did not drop a tail clone');
+    reset();h=world.hero;const ch=spawnEnemy('chameleon',h.x+120,FLOOR());ch.spawnT=0;ch.calm=false;ch.cool=99;
+    for(let i=0;i<60;i++){world.t+=STEP;updateEnemy(ch,STEP);}ok(ch.alpha<0.2,'the Chameleon did not fade');
+    reset();h=world.hero;h.y-=200;const fr=spawnEnemy('frilled',h.x+120,FLOOR());fr.spawnT=0;fr.face=-1;fr.state='attack';fr.move='ricochet';beastAttack(fr,-1);
+    let bounced=false;for(let i=0;i<60*2;i++){world.t+=STEP;const b=world.bolts.find(b=>b.bounce!=null);updateBolts(STEP);if(b&&b.bounce<3)bounced=true;}ok(bounced,'the Frilled star never skipped off the floor');
+    reset();h=world.hero;h.y-=200;const ig=spawnEnemy('iguana',h.x+60,FLOOR());ig.spawnT=0;ig.face=-1;ig.state='attack';ig.move='bigstar';beastAttack(ig,-1);
+    const bs=world.bolts.find(b=>b.big);let far=0;for(let i=0;i<60*3&&world.bolts.includes(bs);i++){world.t+=STEP;updateBolts(STEP);far=Math.max(far,Math.abs(cx(bs)-cx(ig)));}
+    ok(far>80 && !world.bolts.includes(bs),'the Iguana\'s star did not come home');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const wg=spawnEnemy('wallgecko',h.x+80,FLOOR());wg.spawnT=0;wg.calm=false;const wy=wg.y;let up=0;
+    for(let i=0;i<60*3;i++){world.t+=STEP;h.inv=0;updateEnemy(wg,STEP);updateBolts(STEP);up=Math.max(up,wy-wg.y);}ok(up>40 && !wg.air,'the Wall Gecko never climbed (or never came down)');
+    reset();h=world.hero;h.maxHp=h.hp=1e6;const kj=spawnEnemy('komodo',h.x+120,FLOOR());kj.spawnT=0;kj.calm=false;
+    for(let i=0;i<60*3&&!world.bolts.some(b=>b.rain&&b.look==='shuriken');i++){world.t+=STEP;updateEnemy(kj,STEP);}ok(world.bolts.some(b=>b.rain&&b.look==='shuriken'),'the Komodo never called a star storm');
     reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
     for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
   });

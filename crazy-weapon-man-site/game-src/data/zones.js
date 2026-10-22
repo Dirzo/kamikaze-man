@@ -104,7 +104,7 @@ export const ZONES = [
     weapon: 'shuriken',
     name: 'The Shuriken Ninja Castle',
     sub: 'A moonlit castle full of throwing stars. The Usurper Ninja Lord took it one star at a time.',
-    pool: ['ninja', 'samurai', 'ninja', 'kitsune', 'shieldbro', 'eyeball'],
+    pool: ['gecko', 'draco', 'wallgecko', 'chameleon', 'frilled', 'anole', 'basilisk', 'iguana', 'skink', 'komodo'],
     platforms: L1,
     boss: 'bossceo',
     music: { key: 50, scale: 'hirajoshi', bpm: 138, prog: [0, 3, 2, 4], drums: 'taiko', lead: 'p12', theme: '0 . 2 . 3 - 2 0 | 1 - 0 -1 0 - - . | 3 . 4 . 5 - 4 3 | 2 - 1 2 0 - - .' }

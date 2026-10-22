@@ -117,6 +117,12 @@ test('the cottage family grows up along zone 8: Dust Bunnies on 8-1, the Grand H
   assert.ok(at(1).includes('hornedowl') && !at(1).includes('dustbunny'));
   assert.ok(pool.every(t => ENEMIES[t].fam === 'cottage'));
 });
+test('the lizard ninja family grows up along zone 9: Gecko Genin on 9-1, the Komodo Jonin at the castle', () => {
+  const pool = ZONES[8].pool, at = t => enemyPool(8, 1, pool, t);
+  assert.deepEqual(at(0), ['gecko', 'draco', 'wallgecko']);
+  assert.ok(at(1).includes('komodo') && !at(1).includes('gecko'));
+  assert.ok(pool.every(t => ENEMIES[t].fam === 'castle'));
+});
 test('the fuzzball family grows up along zone 2: fuzzlets on its first level, werewolves at the castle', () => {
   const pool = ZONES[1].pool, at = t => enemyPool(1, 1, pool, t);
   assert.deepEqual(at(0), ['fuzzlet', 'burrball', 'puffshot']);

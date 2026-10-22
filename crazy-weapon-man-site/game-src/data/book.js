@@ -52,6 +52,17 @@ export const CARDS = {
   berserker: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Two swords, no plan, and a headband that says it all.' },
   swan: { stats: { critDmg: 0.04 }, bonus: 'Crits deal 4% more', lore: 'Duels at dawn, parries at noon, and has never once raised its voice.' },
   gander: { stats: { hp: 0.02 }, bonus: '+2% max health', lore: 'Every sword in the graveyard answers to it. Its claymore answers to nobody.' },
+  // the lizard ninja family (zone 9)
+  gecko: { stats: { speed: 0.02 }, bonus: '+2% move speed', lore: 'Its hood is three sizes too big. Its pose is perfect.' },
+  draco: { stats: { shotSpeed: 0.02 }, bonus: 'Shots fly 2% faster', lore: 'Jumps off the castle roof every night. Has not touched the ground in years.' },
+  wallgecko: { stats: { inv: 0.03 }, bonus: '+3% safety after a hit', lore: 'Sticks to walls, ceilings and, once, the moon.' },
+  chameleon: { stats: { crit: 0.01 }, bonus: '+1% critical chance', lore: 'Nobody has ever seen it. Plenty have seen its stars.' },
+  frilled: { stats: { knock: 0.03 }, bonus: 'Foes fly 3% further', lore: 'The frill is for scaring you. The star is for everything else.' },
+  anole: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Carries nine smoke bombs. Has never once used a door.' },
+  basilisk: { stats: { dashCd: 0.03 }, bonus: 'Dash returns 3% sooner', lore: 'Runs on water, rooftops and its own two feet. Never walks.' },
+  iguana: { stats: { echo: 0.01 }, bonus: '1% of hits echo', lore: 'Its star always comes back. It has never had to fetch it.' },
+  skink: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Drops its tail, grows another, drops that too. Keeps the old ones as decoys.' },
+  komodo: { stats: { dmg: 0.01 }, bonus: '+1% damage', lore: 'Master of the castle clan. A thousand stars, and he knows where every one lands.' },
   // the owl, bunny and hedgehog family (zone 8)
   dustbunny: { stats: { attackSpeed: 0.01 }, bonus: 'Attack 1% faster', lore: 'Lives under the cottage bed. Has learned exactly one spell and uses it a lot.' },
   hedgehog: { stats: { armor: 0.01 }, bonus: 'Take 1% less damage', lore: 'Knitted its own cap. Curls up whenever anyone comments on it.' },
