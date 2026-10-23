@@ -97,6 +97,68 @@ export function frame(im, fi, fw, fh, x, y, flip = false) {
     X.drawImage(f, (n - 1 - fi) * fw, 0, fw, fh, x, y, fw, fh);
   }
 }
+// scale2x (EPX): doubles a pixel buffer, rounding off stair-step diagonals instead of blocking them
+export function scale2x(src, w, h) {
+  const out = new Uint32Array(w * 2 * h * 2),
+    W2 = w * 2;
+  const at = (x, y) => src[Math.max(0, Math.min(h - 1, y)) * w + Math.max(0, Math.min(w - 1, x))];
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const P = src[y * w + x],
+        A_ = at(x, y - 1),
+        B = at(x + 1, y),
+        Cc = at(x - 1, y),
+        D = at(x, y + 1);
+      let e0 = P,
+        e1 = P,
+        e2 = P,
+        e3 = P;
+      if (Cc === A_ && Cc !== D && A_ !== B) e0 = A_;
+      if (A_ === B && A_ !== Cc && B !== D) e1 = B;
+      if (D === Cc && D !== B && Cc !== A_) e2 = Cc;
+      if (B === D && B !== A_ && D !== Cc) e3 = D;
+      const o = y * 2 * W2 + x * 2;
+      out[o] = e0;
+      out[o + 1] = e1;
+      out[o + W2] = e2;
+      out[o + W2 + 1] = e3;
+    }
+  return out;
+}
+// a sprite strip ({ im, w, h, ... }) grown k times, made once: each frame goes up 4x with scale2x
+// (twice) and is sampled back down to k, so a 1.25x sprite keeps clean edges instead of doubling
+// every fourth row and column (and it is drawn at whole pixels, so it doesn't shimmer as it walks)
+const grown = new WeakMap();
+export function upscaled(art, k) {
+  let u = grown.get(art);
+  if (u) return u;
+  const n = Math.round(art.im.width / art.w), w = Math.round(art.w * k), h = Math.round(art.h * k);
+  const src = document.createElement('canvas');
+  src.width = art.im.width;
+  src.height = art.h;
+  const sg = src.getContext('2d');
+  sg.drawImage(art.im, 0, 0);
+  const all = new Uint32Array(sg.getImageData(0, 0, src.width, art.h).data.buffer);
+  const cv = document.createElement('canvas');
+  cv.width = n * w;
+  cv.height = h;
+  const g = cv.getContext('2d'),
+    img = g.createImageData(cv.width, h),
+    d = new Uint32Array(img.data.buffer),
+    W4 = art.w * 4;
+  for (let f = 0; f < n; f++) {
+    const one = new Uint32Array(art.w * art.h);
+    for (let y = 0; y < art.h; y++) one.set(all.subarray(y * src.width + f * art.w, y * src.width + (f + 1) * art.w), y * art.w);
+    const up = scale2x(scale2x(one, art.w, art.h), art.w * 2, art.h * 2);
+    for (let y = 0; y < h; y++) {
+      const y4 = Math.min(art.h * 4 - 1, Math.floor(((y + 0.5) / k) * 4));
+      for (let x = 0; x < w; x++) d[y * cv.width + f * w + x] = up[y4 * W4 + Math.min(W4 - 1, Math.floor(((x + 0.5) / k) * 4))];
+    }
+  }
+  g.putImageData(img, 0, 0);
+  grown.set(art, (u = { ...art, im: cv, w, h }));
+  return u;
+}
 // a one-colour cut-out of a sprite strip (a hit's white flash), made once per image and colour
 const tints = new Map();
 export function tinted(im, col) {

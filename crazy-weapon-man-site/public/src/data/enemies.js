@@ -12,6 +12,9 @@
 // air: true flies (ignores gravity, hovers above the ground).
 // alert: the type's own trick once it has noticed you (game/traits.js): do, every (s), dmg (x its
 //   normal hit, default 0.7), range (px, default 140), wind (s). Calm residents never use it.
+// The beastkin families (kind 'beast') stand a quarter bigger than their sprites, drawn upscaled with
+// their body box to match, and take a quarter more health than the zone curve gives (Cam, 2026-10-23).
+export const BEAST = { size: 1.25, hp: 1.25 };
 export const ENEMIES = {
   stalker: { name: 'Graveyard Bandit', kind: 'melee', style: 'slash', hp: 1, dmg: 1, speed: 40, range: 22, wind: 0.45, alert: { do: 'sword', every: 5 } },
   crawler: { name: 'Pocket Gremlin', kind: 'melee', style: 'leap', hp: 0.7, dmg: 0.8, speed: 56, range: 30, wind: 0.32, alert: { do: 'pebble', every: 4.5, dmg: 0.6 } },
