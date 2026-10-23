@@ -142,7 +142,7 @@ test('residents stand in small groups along the route, a body apart', () => {
   }
 });
 
-test('stacked routes, crumbling bridges and breakable walls', () => {
+test('stacked routes, crumbling bridges and cliffs you smash a tunnel through', () => {
   let high = 0, sky = 0, bridges = 0;
   for (const [z, id] of MAPS) {
     const m = makeMap(z, id), z1 = label(z, id);
@@ -160,12 +160,12 @@ test('stacked routes, crumbling bridges and breakable walls', () => {
     for (const w of m.walls) {
       assert.ok(m.solids.includes(w), 'a wall that does not block in ' + z1);
       assert.ok(m.platforms.some(p => p.ground && p.y === w.y + w.h && w.x >= p.x && w.x + w.w <= p.x + p.w), 'a wall not standing on ground in ' + z1);
-      assert.ok(w.h > 45 + 8, 'a wall you can hop over in ' + z1);
+      assert.ok(m.solids.some(c => c.cliff && c.x === w.x && c.y + c.h === w.y), 'cracked rock that is not a cliff\'s tunnel mouth in ' + z1);
       assert.ok(!m.spawns.some(s => s.x + 6 > w.x && s.x - 6 < w.x + w.w && s.y === w.y + w.h), 'a resident inside a wall in ' + z1);
     }
   }
   assert.ok(high > MAPS.length * 0.9, 'most stages have a high road');
   assert.ok(sky > MAPS.length * 0.3, 'sky roads are rare');
   assert.ok(bridges > MAPS.length * 0.5, 'too few crumbling bridges');
-  assert.ok(MAPS.every(([z, id]) => makeMap(z, id).walls.length >= 1), 'a stage with no breakable wall');
+  assert.ok(MAPS.every(([z, id]) => makeMap(z, id).walls.length >= 1), 'a stage with no cliff to smash through');
 });

@@ -5,9 +5,9 @@
 // flat arena at the end where the boss waits. No ladders: you never have to stop moving. Stages run
 // 13 to 24 screens, with long straightaways to build up speed on (hero.js momentum), and Sonic-style
 // stacked routes: a high road of ledges two hops over the ground for a few screens, now and then a
-// sky road over that, and break-away terrain that pays you for not stopping: bridges and ledges
-// that crumble a moment after you step on them (game/crumble.js) and cracked walls you smash
-// through (game/walls.js). Residents stand along the route in small groups you can cut through at a run; you
+// sky road over that, and break-away terrain: bridges and ledges that crumble a moment after you
+// step on them (game/crumble.js), and cliffs whose cracked foot you can smash open for a low road
+// through a tunnel instead of the climb over the top (game/walls.js). Residents stand along the route in small groups you can cut through at a run; you
 // don't have to clear them to reach the arena, but a full clear pays.
 // Biome art and names still belong to ZONES. Layouts are seeded per level, so a route is the same
 // every run and speedrun splits stay comparable.
@@ -34,18 +34,18 @@ export const CLEAR_BONUS = zone => 12 + zone * 4;
 //   straight  chance of a long flat straightaway to build momentum on (Sonic, Dead Cells)
 //   tiers  chance a stretch gets a high road over it    sky  chance a high road gets a sky road
 //   crumble  share of high-road ledges that break away  bridges  chance a pit has a crumbling bridge
-//   walls  how many breakable walls stand across the route [fewest, most]
+//   cliffs  chance a stretch is a cliff with a cracked tunnel mouth at its foot (game/walls.js)
 export const LAYOUTS = [
-  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 13, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.36, sky: 0.0, crumble: 0, bridges: 0.35, walls: [1, 2], pack: [2, 4] },
-  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 14, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, tiers: 0.48, sky: 0.3, crumble: 0.1, bridges: 0.35, walls: [1, 2], pack: [2, 4] },
-  { title: 'SEA CAVES', label: 'GROTTO', screens: 14, straight: 0.25, cave: true, pits: 0.28, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, tiers: 0.42, sky: 0.0, crumble: 0.15, bridges: 0.4, walls: [2, 3], pack: [2, 5] },
-  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 14, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, tiers: 0.6, sky: 0.52, crumble: 0.2, bridges: 0.4, walls: [2, 3], pack: [2, 5] },
-  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 15, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, tiers: 0.6, sky: 0.6, crumble: 0.2, bridges: 0.35, walls: [2, 3], pack: [2, 5] },
-  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 15, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, tiers: 0.6, sky: 0.6, crumble: 0.25, bridges: 0.4, walls: [2, 4], pack: [3, 5] },
-  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 16, straight: 0.25, pits: 0.42, chasm: 0.45, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.66, sky: 0.52, crumble: 0.3, bridges: 0.5, walls: [3, 4], pack: [3, 5] },
-  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 16, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, tiers: 0.6, sky: 0.3, crumble: 0.3, bridges: 0.45, walls: [3, 4], pack: [3, 6] },
-  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 17, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.75, crumble: 0.35, bridges: 0.5, walls: [3, 5], pack: [3, 6] },
-  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 18, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.6, crumble: 0.35, bridges: 0.5, walls: [3, 5], pack: [3, 6] }
+  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 13, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.36, sky: 0.0, crumble: 0, bridges: 0.35, cliffs: 0.04, pack: [2, 4] },
+  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 14, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, tiers: 0.48, sky: 0.3, crumble: 0.1, bridges: 0.35, cliffs: 0.04, pack: [2, 4] },
+  { title: 'SEA CAVES', label: 'GROTTO', screens: 14, straight: 0.25, cave: true, pits: 0.28, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, tiers: 0.42, sky: 0.0, crumble: 0.15, bridges: 0.4, cliffs: 0.048, pack: [2, 5] },
+  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 14, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, tiers: 0.6, sky: 0.52, crumble: 0.2, bridges: 0.4, cliffs: 0.048, pack: [2, 5] },
+  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 15, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, tiers: 0.6, sky: 0.6, crumble: 0.2, bridges: 0.35, cliffs: 0.048, pack: [2, 5] },
+  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 15, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, tiers: 0.6, sky: 0.6, crumble: 0.25, bridges: 0.4, cliffs: 0.056, pack: [3, 5] },
+  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 16, straight: 0.25, pits: 0.42, chasm: 0.45, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.66, sky: 0.52, crumble: 0.3, bridges: 0.5, cliffs: 0.06, pack: [3, 5] },
+  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 16, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, tiers: 0.6, sky: 0.3, crumble: 0.3, bridges: 0.45, cliffs: 0.06, pack: [3, 6] },
+  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 17, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.75, crumble: 0.35, bridges: 0.5, cliffs: 0.064, pack: [3, 6] },
+  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 18, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.6, crumble: 0.35, bridges: 0.5, cliffs: 0.064, pack: [3, 6] }
 ];
 
 // Every level plays its own stage from its world's recipe: the first level plays the zone's
@@ -146,8 +146,19 @@ function stage(m, lay) {
   const add = (w, dy = 0) => { y += Math.max(-32, Math.min(32, dy)); const g = { x, y, w }; segs.push(g); x += w; return g; };
   const step = () => m.pick(STEPS[lay.hills || 0]) + trend * m.pick([8, 16]);
   add(224); // a runway to get going
+  let cliffs = 0;
   while (x < end - 96) {
     const left = end - x;
+    // a cliff: the route climbs a step and a two-hop rock shelf, or smashes the cracked rock at its
+    // foot and takes the tunnel straight through (every stage gets at least one past the middle)
+    if (left > 900 && x > 600 && cliffs < 3 && (m.rand() < (lay.cliffs || 0) || (!cliffs && x > end / 2))) {
+      const run = add(m.int(20, 26) * 8, step()), tunnel = add(m.int(20, 36) * 8, 0);
+      tunnel.cliff = true;
+      floats.push({ x: tunnel.x - 64, y: run.y - CLIFF.h / 2, w: 48, step: true }); // the step up to the top
+      add(m.int(16, 24) * 8, 0);
+      cliffs++;
+      continue;
+    }
     // a pit (or a wide chasm with a stepping ledge in its middle), then the ground goes on
     if (left > 260 && m.rand() < lay.pits) {
       let gap, chasm = false;
@@ -193,17 +204,19 @@ function stage(m, lay) {
   // shift so the runway is at the usual ground height (GROUND), unless the stage climbs so high
   // that its top surface would come within 100px of the top of the map (the HUD covers the top
   // of the screen, and the camera stops at the map's top edge)
-  const top = Math.min(...segs.map(g => g.y), ...floats.map(f => f.y)), off = Math.max(GROUND - segs[0].y, 100 - top);
+  const top = Math.min(...segs.map(g => g.y - (g.cliff ? CLIFF.h : 0)), ...floats.map(f => f.y)), off = Math.max(GROUND - segs[0].y, 100 - top);
   const arenaY = segs.at(-1).y + off;
   // the route is cut into stretches of about two screens for the HUD's room line
   const stretches = Math.max(1, Math.round(end / (2 * W)));
   const edge = k => (k >= stretches ? end : Math.round((k * end) / stretches / 8) * 8);
   for (let k = 0; k < stretches; k++) room(m, lay.label + ' ' + (k + 1), edge(k), edge(k + 1), 0, Infinity, 0);
   const roomOf = x => Math.min(stretches - 1, Math.floor((x / end) * stretches));
+  m.walls = [];
   for (const g of segs) {
     m.room = roomOf(g.x);
     m.rooms[m.room].floor ||= g.y + off;
     ground(m, g.x, g.y + off, g.w);
+    if (g.cliff) cliff(m, g, off);
   }
   for (const f of floats) {
     const w = Math.min(f.w, end - 8 - f.x);
@@ -236,34 +249,20 @@ function stage(m, lay) {
   m.arena = arenaY;
   const segsAt = segs.map(g => ({ ...g, y: g.y + off })), floatsAt = floats.map(f => ({ ...f, y: f.y + off }));
   m.gadgets = gadgets(m, lay, segsAt, floatsAt, end);
-  walls(m, lay, segsAt, floatsAt, end);
 }
 
-// ---------------------------------------------------------------- breakable walls (game/walls.js)
-// Now and then a cracked wall stands across the ground route: smash it with a few hits (or run into
-// it at a full sprint and burst straight through) and it spills a few shards. Walls sit on wide
-// ground away from the runway, pits, gadgets and the arena, never under a floating ledge (so you
-// can't hop round one), and the last stretch of a straightaway is a favourite spot.
-const WALL = { w: 16, h: 64 };
-function walls(m, lay, segs, floats, end) {
-  m.walls = [];
-  const want = m.int(...(lay.walls || [1, 2])), spots = [];
-  for (const g of segs) {
-    if (g.x < 400 || g.w < 160 || g.x + g.w > end - 64) continue;
-    const xs = g.straight ? [g.x + g.w - 72] : [g.x + m.int(6, Math.floor((g.w - WALL.w) / 8) - 6) * 8];
-    for (const x of xs) {
-      const clear = !floats.some(f => f.x < x + WALL.w + 40 && f.x + f.w > x - 40 && f.y > g.y - WALL.h - 48)
-        && !m.gadgets.some(o => Math.abs((o.x ?? o.x0) - x) < 80 || (o.x1 && x > o.x0 - 24 && x < o.x1 + 24));
-      if (clear) spots.push({ x, g });
-    }
-  }
-  // spread out along the stage: take every k-th spot
-  const step = Math.max(1, Math.floor(spots.length / want));
-  for (let i = Math.floor(step / 2); i < spots.length && m.walls.length < want; i += step) {
-    const { x, g } = spots[i], w = { x, y: g.y - WALL.h, w: WALL.w, h: WALL.h, solid: true, wall: true, hp: 3, max: 3, intro: !m.walls.length && m.zone === 0 };
-    m.walls.push(w);
-    m.solids.push(w);
-  }
+// ---------------------------------------------------------------- cliffs (game/walls.js)
+// A rock shelf two hops (72px) high over the ground. The way over is a step up and across the top;
+// the way through is a tunnel along the ground under it, its mouth stopped by cracked rock that
+// takes a few hits (or one run at a full sprint) to smash open. The tunnel is low (you can't jump in
+// it) and flat, so it's the quick line; its far end is open, so you can always walk back.
+const CLIFF = { h: 72, tunnel: 28, mouth: 16 };
+function cliff(m, g, off) {
+  const y = g.y + off;
+  ground(m, g.x, y - CLIFF.h, g.w, CLIFF.h - CLIFF.tunnel, { cliff: true });
+  const w = { x: g.x, y: y - CLIFF.tunnel, w: CLIFF.mouth, h: CLIFF.tunnel, solid: true, wall: true, hp: 3, max: 3, intro: !m.walls.length && m.zone === 0 };
+  m.walls.push(w);
+  m.solids.push(w);
 }
 
 // ---------------------------------------------------------------- stacked routes (Sonic)
@@ -278,9 +277,10 @@ function tiers(m, lay, segs, floats, end) {
   if (!lay.tiers) return;
   let next = 2 * W;
   for (const g of segs) {
-    if (g.x < next || g.straight || g.w < 136 || g.x > end - 3 * W || m.rand() > lay.tiers) continue;
+    if (g.x < next || g.straight || g.cliff || g.w < 136 || g.x > end - 3 * W || m.rand() > lay.tiers) continue;
     const x1 = Math.min(end - W, g.x + m.int(2, 4) * W);
     const under = segs.filter(s => s.x < x1 && s.x + s.w > g.x);
+    if (under.some(s => s.cliff)) continue; // a cliff's top already is the high line there
     const hi = Math.min(...under.map(s => s.y));
     drop(floats, f => !f.step && f.x < x1 + 24 && f.x + f.w > g.x && f.y <= hi - TIER + HOP);
     const high = highRoad(m, lay, floats, g, x1, hi - TIER, 1);

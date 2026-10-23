@@ -52,6 +52,7 @@ export function ambience() {
     if (!p.ground || p.belt) continue;
     for (let x = p.x + 10 + R() * B.props.gap[0]; x < p.x + p.w - 10; x += B.props.gap[0] + R() * (B.props.gap[1] - B.props.gap[0])) {
       if (Math.abs(x - map.startX) < 34 || Math.abs(x - map.exitX) < 34) continue;
+      if (map.solids.some(s => s.cliff && x > s.x - 8 && x < s.x + s.w + 8 && s.y < p.y && s.y + s.h > p.y - 64)) continue; // no trees in a tunnel
       let k = R() * total, it = list[0];
       for (it of list) if ((k -= it[1]) < 0) break;
       amb.props.push({ s: it[0], x: Math.round(x), y: p.y, fps: it[2], opt: it[3] || {}, ph: R() * 10, v: Math.floor(R() * 8), ice: p.ice });
@@ -499,6 +500,12 @@ export function drawBiomeTerrain() {
         // arrows show which way it runs
         for (let x = p.x + 12; x < p.x + p.w - 12; x += 40) chevron(x + ((t * p.belt) % 40 + 40) % 40 - 20, p.y + 10, Math.sign(p.belt));
       } else runStrip('lip', 0, p.x, p.x + p.w, p.y - 3);
+      // a cliff's tunnel: dark inside, with the rock's ragged underside for its roof (maps.js cliff)
+      if (p.cliff) {
+        const floor = p.y + p.h + 28;
+        dither(left, p.y + p.h, right - left, floor - p.y - p.h, C.ink, 7);
+        runStrip('ceil', 0, p.x, p.x + p.w, p.y + p.h - 2);
+      }
     } else if (p.ceiling) {
       dither(left, top, right - left, bottom - top, C.ink, 3);
       runStrip('ceil', 0, p.x, p.x + p.w, p.y + p.h - 2);

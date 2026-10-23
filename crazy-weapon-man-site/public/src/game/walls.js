@@ -1,7 +1,7 @@
-// Breakable walls, placed by data/maps.js: cracked walls across the ground route. Every swing or
-// shot that lands knocks a chunk off (a big swing knocks two), and running into one at a full
-// sprint or mid-dash bursts straight through without losing a step. A broken wall spills a few
-// shards and leaves rubble behind.
+// Cracked rock at the foot of a cliff (data/maps.js): it stops the mouth of a tunnel through the
+// cliff, the quick low road under the climb over the top. Every swing or shot that lands knocks a
+// chunk off (a big swing knocks two), and running into it at a full sprint or mid-dash bursts
+// straight through without losing a step. Broken, it spills a few shards and leaves rubble.
 import { C } from '../config.js';
 import { rect, text } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
@@ -85,10 +85,10 @@ export function drawWalls(t) {
     }
     // the cracks spread as it takes hits
     const dmg = w.max - w.hp;
-    const crack = (cx0, cy0, len) => { for (let k = 0; k < len; k++) rect(x + cx0 + (k % 3 === 1 ? 1 : 0) - Math.floor(k / 3), w.y + cy0 + k * 3, 1, 3, C.ink); };
-    crack(9, 6, 5);
-    if (dmg >= 1) crack(6, 26, 7), crack(12, 40, 5);
-    if (dmg >= 2) crack(4, 12, 6), crack(10, 48, 5), rect(x + 2, w.y + 30, 4, 3, C.ink);
+    const crack = (cx0, f, len) => { for (let k = 0; k < len && f * w.h + k * 3 < w.h - 2; k++) rect(x + cx0 + (k % 3 === 1 ? 1 : 0) - Math.floor(k / 3), w.y + Math.round(f * w.h) + k * 3, 1, 3, C.ink); };
+    crack(9, 0.1, 5);
+    if (dmg >= 1) crack(6, 0.4, 4), crack(12, 0.55, 4);
+    if (dmg >= 2) crack(4, 0.2, 4), crack(11, 0.7, 3), rect(x + 2, w.y + Math.round(w.h * 0.45), 4, 3, C.ink);
     if (w.intro && Math.floor(t * 3) % 2) text('SMASH IT!', cx({ x: w.x, w: w.w }), w.y - 14, C.gold, { align: 'center' });
   }
 }
