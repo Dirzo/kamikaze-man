@@ -136,14 +136,17 @@
 import { C } from '../config.js';
 import { world } from './world.js';
 import { cx, cy, overlap } from './physics.js';
-import { rect, px, frame, X } from '../engine/gfx.js';
+import { rect, px, frame, X, upscaled } from '../engine/gfx.js';
 import { A } from '../engine/assets.js';
 import { sfx } from '../engine/audio.js';
 import { burst, emit, callout, shake } from './fx.js';
 import { hurtHero } from './combat.js';
 import { spawnEnemy } from './enemy.js';
 import { say } from './bubbles.js';
-import { LINES } from '../data/enemies.js';
+import { LINES, ENEMIES, BEAST } from '../data/enemies.js';
+
+// a beast's sprite at its grown size (BEAST in data/enemies.js); every other enemy draws as it is
+export const artOf = type => (ENEMIES[type]?.kind === 'beast' && BEAST.size !== 1 ? upscaled(A.enemies[type], BEAST.size) : A.enemies[type]);
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 const say1 = (e, s, col = C.cream) => callout(s, 0, 0, col, { follow: e, life: 40 });
@@ -853,7 +856,7 @@ const MELEE = {
 // the combos: the poses of the follow-up swings (the first is 'loose')
 const COMBO = { five: ['loose2', 'loose', 'loose3', 'launch'], flurry: ['loose2', 'loose3'], chain: ['loose2', 'loose3', 'loose4'], hay: ['loose2'], fang: ['loose2', 'loose', 'loose2'] };
 function swing(e, h) {
-  const M = MELEE[e.move], reach = (e.d.reach ?? e.d.range) + M[2], box = { x: e.face > 0 ? cx(e) : cx(e) - reach, y: e.y, w: reach, h: e.h };
+  const M = MELEE[e.move], reach = (e.d.reach ?? e.d.range) + M[2] + (e.grow || 0), box = { x: e.face > 0 ? cx(e) : cx(e) - reach, y: e.y, w: reach, h: e.h };
   if (e.move === 'lunge' || e.move === 'strike') (box.x = e.face > 0 ? cx(e) : cx(e) - 18), (box.w = 18);
   if (e.move === 'dash') Object.assign(box, { x: e.x, w: e.w }); // the Cutpurse cuts on the way through
   if (e.move === 'sweep') (box.y = e.y + e.h - 9), (box.h = 9); // the Corgi's cut stays low: jump it
@@ -2440,7 +2443,7 @@ export function drawPolyHero(h, t) {
 }
 // the Petal Kitsune's decoy: its own shape, flickering pink as it falls apart
 export function drawDecoy(b, t) {
-  const art = A.enemies[b.type];
+  const art = artOf(b.type);
   if (!art) return true;
   // the Tail Clone Skink's clones walk off looking just like it
   if (b.solid) {

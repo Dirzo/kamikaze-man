@@ -19,7 +19,7 @@
 // the pommel, positive = toward the head).
 import { C } from '../config.js';
 import { A } from '../engine/assets.js';
-import { X, frame, rect } from '../engine/gfx.js';
+import { X, frame, rect, scale2x } from '../engine/gfx.js';
 import { lookOf, frameOfLook, overlays, runEmitters, motion } from './looks.js';
 import { world } from './world.js';
 import { view } from '../engine/gfx.js';
@@ -364,33 +364,6 @@ function specialPose(h, st) {
 // RotSprite-lite: upscale 4x with scale2x (twice), sample the rotated image once per output pixel.
 const ROT_STEPS = 32;
 const rotCache = new WeakMap();
-function scale2x(src, w, h) {
-  const out = new Uint32Array(w * 2 * h * 2),
-    W2 = w * 2;
-  const at = (x, y) => src[Math.max(0, Math.min(h - 1, y)) * w + Math.max(0, Math.min(w - 1, x))];
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++) {
-      const P = src[y * w + x],
-        A_ = at(x, y - 1),
-        B = at(x + 1, y),
-        Cc = at(x - 1, y),
-        D = at(x, y + 1);
-      let e0 = P,
-        e1 = P,
-        e2 = P,
-        e3 = P;
-      if (Cc === A_ && Cc !== D && A_ !== B) e0 = A_;
-      if (A_ === B && A_ !== Cc && B !== D) e1 = B;
-      if (D === Cc && D !== B && Cc !== A_) e2 = Cc;
-      if (B === D && B !== A_ && D !== Cc) e3 = D;
-      const o = y * 2 * W2 + x * 2;
-      out[o] = e0;
-      out[o + 1] = e1;
-      out[o + W2] = e2;
-      out[o + W2 + 1] = e3;
-    }
-  return out;
-}
 function rotations(L) {
   let r = rotCache.get(L);
   if (r) return r;

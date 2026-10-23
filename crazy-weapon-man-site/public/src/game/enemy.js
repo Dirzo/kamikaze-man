@@ -6,7 +6,7 @@ import { frame, rect, text, X, px, tinted } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
-import { ENEMIES, ELITE_TITLES, LINES, deathOf } from '../data/enemies.js';
+import { ENEMIES, ELITE_TITLES, LINES, deathOf, BEAST } from '../data/enemies.js';
 import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
 import { hurtHero, shotSrc, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T } from './combat.js';
 import { emit, burst } from './fx.js';
@@ -18,19 +18,20 @@ import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
 import { temper, modOn } from '../data/temper.js';
 import { MOVE } from '../data/feel.js';
-import { beastTick, beastThink, beastAttack, beastAttacking, beastFrame, arrowHit, drawTell } from './beastkin.js';
+import { beastTick, beastThink, beastAttack, beastAttacking, beastFrame, arrowHit, drawTell, artOf } from './beastkin.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 
 export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1 } = {}) {
   const d = ENEMIES[type],
-    art = A.enemies[type];
+    art = artOf(type), // a beast's grown sprite: its body box grows with it
+    beast = d.kind === 'beast';
   const w = Math.max(8, Math.round((art.w - 2) * 0.72)),
     h = art.h - 2;
   const z = world.zone;
   const F = world.foeScale || { hp: 1, dmg: 1 }; // later levels of a world are tougher (waves.js)
   const T = temper(world.temper); // and so is every level at a post-game TEMPER (data/temper.js)
-  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)) * F.hp * T.hp);
+  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)) * F.hp * T.hp * (beast ? BEAST.hp : 1));
   const e = {
     id: newId(),
     type,
@@ -41,6 +42,8 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
     y: d.air ? y : Math.min(y, worldFloor()) - h,
     w,
     h,
+    // how much further its grown body sticks out each side: its ranges count from that edge
+    grow: beast ? (w - Math.max(8, Math.round((A.enemies[type].w - 2) * 0.72))) / 2 : 0,
     vx: 0,
     vy: 0,
     face: world.hero && cx(world.hero) < x ? -1 : 1,
@@ -337,7 +340,7 @@ function think(e, dt, dxh, dist, toward, slow) {
   }
   switch (e.kind) {
     case 'beast':
-      beastThink(e, dt, dist, toward, slow, sameLevel);
+      beastThink(e, dt, dist - e.grow, toward, slow, sameLevel);
       break;
     case 'melee':
     case 'shield':
@@ -539,7 +542,7 @@ export function jitter(e) {
   return Math.floor(age / 34) % 2 ? 1 : -1;
 }
 export function drawEnemy(e, t) {
-  const art = A.enemies[e.type];
+  const art = artOf(e.type);
   const sx = Math.round(cx(e) - art.w / 2) + (e.dead ? 0 : jitter(e)),
     sy = Math.round(e.y + e.h - (art.h - 1));
   if (e.spawnT > 0 && Math.floor(t * 30) % 2) return;
