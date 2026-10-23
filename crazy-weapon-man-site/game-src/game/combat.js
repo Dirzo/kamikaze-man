@@ -3,7 +3,7 @@
 import { C } from '../config.js';
 import { world, newId } from './world.js';
 import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch } from './fx.js';
-import { hitFeel, reaction, killLaunch, rushMult, MOVE } from '../data/feel.js';
+import { hitFeel, reaction, killLaunch, rushMult, MOVE, FIGHT, fightMult } from '../data/feel.js';
 import { sfx, duck } from '../engine/audio.js';
 import { makeWeapon, noWeaker } from './loot.js';
 import { cx, cy } from './physics.js';
@@ -36,6 +36,23 @@ function streak() {
   streakN = t - streakAt < 0.6 ? Math.min(8, streakN + 1) : 0;
   streakAt = t;
   return streakN;
+}
+
+// the field combo: live out on the route (the survival swarm keeps its own, waves.js)
+const fieldCombo = () => (world.director?.phase === 'survive' ? null : world.fight?.n > 0 && world.fight.t > 0 ? world.fight : null);
+function fightHit(o) {
+  if (world.director?.phase === 'survive') return;
+  const f = (world.fight ||= { n: 0, t: 0, best: 0 }), h = world.hero;
+  if (f.t <= 0) f.n = 0;
+  f.n++;
+  f.best = Math.max(f.best, f.n);
+  f.t = FIGHT.window;
+  if (!o.special) h.specialCd = Math.max(0, h.specialCd - FIGHT.cut);
+  if (f.n === 10 || f.n === 20 || f.n === 40) callout(`${f.n} HITS!`, 0, 0, C.gold, { follow: h, life: 40 });
+}
+export function updateFight(dt) {
+  const f = world.fight;
+  if (f && f.t > 0 && (f.t -= dt) <= 0) f.n = 0;
 }
 
 // o: { crit, dir, knock (px), hop, element (family), special, big (a finisher), chain, chip (small/no-feedback
@@ -75,6 +92,9 @@ export function hitEnemy(e, dmg, o = {}) {
     callout('RUSH!', 0, 0, C.sky, { follow: e, life: 30 });
     hero.rushCall = world.t + 0.8;
   }
+  // the field combo (data/feel.js FIGHT): hits strung together land harder, a special cashes it in
+  const fc = fieldCombo();
+  if (fc) dmg *= fightMult(fc.n, !!o.special);
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
@@ -121,7 +141,7 @@ export function hitEnemy(e, dmg, o = {}) {
       else for (let x = -20; x <= 20; x += 2) emit(cx(e) + x, sy + x * 0.25 * -dir, 'streak', x % 4 ? C.paper : o.sparkCol || C.cream);
     }
   }
-  if (!o.chip) comboHit();
+  if (!o.chip) comboHit(), fightHit(o);
   // knockback + reaction (not bosses): light hits flinch, heavy weapons and finishers launch the
   // foe so you can juggle it (data/feel.js reaction)
   if (!e.boss && !e.swarmBoss) {

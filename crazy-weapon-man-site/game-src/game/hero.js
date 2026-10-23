@@ -757,16 +757,6 @@ function updateSpecial(h, dt) {
 // ---------------------------------------------------------------- draw
 export function drawHero(h, t) {
   if (heroHidden(h)) return; // THOUSAND CUTS: he is everywhere at once
-  // running round a loop (gadgets.js): turned about the feet so they stay on the ring
-  if (h.loopAng) {
-    const fx = cx(h), fy = h.y + h.h;
-    X.save();
-    X.translate(fx, fy);
-    X.rotate(-h.loopAng);
-    X.translate(-fx, -fy);
-    drawHeroBody(h, t);
-    return X.restore();
-  }
   // landing squash and take-off stretch, about the feet
   const k = h.squashT > 0 ? [1.14, 0.86] : h.stretchT > 0 ? [0.88, 1.12] : null;
   if (k) {

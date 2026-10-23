@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MOVE, momentumStep, momentumOf, runSpeed, rushMult, camLead } from '../game-src/data/feel.js';
+import { MOVE, momentumStep, momentumOf, runSpeed, rushMult, camLead, FIGHT, fightMult } from '../game-src/data/feel.js';
 import { parTime, completion, gradeOf, timeScore } from '../game-src/data/grade.js';
 import { speedBoon, SPEED_BOONS, specialRoll } from '../game-src/data/specials.js';
 import { TREE_BY_ID, MASTERY_PERKS } from '../game-src/data/meta.js';
@@ -18,9 +18,9 @@ test('momentum builds to full in momentumTime of running, faster with ACCELERATI
   assert.equal(momentumStep(0.9, 0.1, { push: true, back: true }), 0, 'and a full turn loses it');
   assert.equal(momentumOf(runSpeed(100, 0.2, 0.6), 100, 0.2).toFixed(6), '0.600000', 'momentumOf undoes runSpeed');
 });
-test('Sonic pace: full momentum is well over twice walking speed, RUSH fells residents but not tough foes, the camera leads further at speed', () => {
+test('Sonic pace: full momentum is well over twice walking speed, RUSH opens a fight without ending it, the camera leads further at speed', () => {
   assert.ok(MOVE.topSpeed >= 2.2);
-  assert.ok(rushMult(1) >= 8, 'a full-sprint hit lands 8x, so a home-zone resident (about 9 plain sword hits) falls to one running slash');
+  assert.ok(rushMult(1) >= 1.5 && rushMult(1) <= 3, 'a full-sprint hit lands harder, but a resident still takes a few hits');
   assert.equal(rushMult(1, 0, true), 1 + MOVE.rushTough, 'elites and bosses only take the small bonus');
   assert.equal(rushMult(1, 0.1, true), 1 + MOVE.rushTough + 0.1, 'the RUSH stat still adds for them');
   assert.equal(camLead(0, 100), MOVE.lookAhead);
@@ -74,7 +74,7 @@ test('speed gadgets and set pieces come in one new kind per world, the new one e
   }
 });
 
-test('slopes join the ground they run between, with solid ground under them, and loops sit on flat straightaways', () => {
+test('slopes join the ground they run between, with solid ground under them, and there are no loops', () => {
   for (let z = 0; z < 10; z++) {
     const m = makeMap(z);
     assert.ok(m.slopes.length > 3, `zone ${z + 1} has ramps`);
@@ -82,7 +82,33 @@ test('slopes join the ground they run between, with solid ground under them, and
       assert.ok(Math.abs(s.k) <= 1.0001 && s.w >= 8, 'no slope steeper than 45 degrees');
       assert.ok(m.solids.some(q => q.under === s && q.x === s.x && q.w === s.w && q.y === Math.max(s.y0, s.y1) + 1), 'ground under every ramp');
     }
-    for (const g of m.gadgets.filter(g => g.kind === 'loop'))
-      assert.ok(m.platforms.some(p => p.ground && p.y === g.y && p.x <= g.x - g.r - 16 && p.x + p.w >= g.x + g.r + 16), `loop on flat ground in zone ${z + 1}`);
+    assert.ok(!m.gadgets.some(g => g.kind === 'loop'), 'loops are gone');
   }
+});
+
+test('the field combo pays for a string of hits, and a special cashes it in', () => {
+  assert.equal(fightMult(0), 1);
+  assert.ok(fightMult(5) > fightMult(2), 'more hits, more damage');
+  assert.equal(fightMult(100), 1 + FIGHT.max, 'up to a cap');
+  assert.equal(fightMult(5, true) - 1, (fightMult(5) - 1) * FIGHT.cash, 'a special cashes the combo in');
+  assert.ok(FIGHT.cut > 0 && FIGHT.window >= 1, 'each hit brings the special closer, with time to reach the next foe');
+});
+test('every stage runs speed, a fight, a feature, round and round, with relic nooks off the fast line', async () => {
+  const { LEVELS } = await import('../game-src/data/overworld.js');
+  const { relicSpots } = await import('../game-src/data/relics.js');
+  let nooks = 0, relicNooks = 0;
+  for (const [z, id] of [...Array.from({ length: 10 }, (_, z) => [z, null]), ...LEVELS.map(n => [n.zone, n.id])]) {
+    const m = makeMap(z, id), pads = m.platforms.filter(p => p.fight).sort((a, b) => a.x - b.x);
+    assert.ok(pads.length >= 3, `three fights or more in ${id || z}`);
+    // between two fights there's always some running and a feature (a pit, a cliff or a high road)
+    for (let i = 1; i < pads.length; i++) {
+      const a = pads[i - 1].x + pads[i - 1].w, b = pads[i].x;
+      assert.ok(b - a >= 300, `a breather between fights in ${id || z}`);
+    }
+    const ns = m.platforms.filter(p => p.nook);
+    nooks += ns.length;
+    if (id) relicNooks += relicSpots(m).filter(s => ns.some(p => s.x >= p.x && s.x <= p.x + p.w && s.y === p.y - 16)).length;
+  }
+  assert.ok(nooks > 40, 'nooks are common');
+  assert.ok(relicNooks > 30, 'relics wait in the nooks');
 });

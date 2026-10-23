@@ -62,7 +62,7 @@ export const MOVE = {
   topSpeed: 2.3, // run speed at full momentum, times the SPEED stat (about 260 px/s: Sonic pace)
   sprintAt: 0.85, // momentum from here on is a sprint: weapon on the back, hair streaming
   sprintJump: 1.1,
-  rush: 7, // RUSH: extra damage at full momentum (scales up from half momentum): one running slash at a full sprint fells a regular resident
+  rush: 1, // RUSH: extra damage at full momentum (scales up from half momentum): a running slash opens a fight, it doesn't end it
   runSlashAt: 0.5, // from this much momentum (where RUSH starts) a swing is a running slash: no slow, no momentum cost
   rushTough: 0.25, // the most RUSH elites, bosses and castle heads ever take
   hurtKeep: 0.5, // share of momentum a hit leaves you
@@ -120,3 +120,10 @@ export const momentumOf = (v, base, speed = 0) => Math.max(0, Math.min(1, (Math.
 export const rushMult = (mom, rush = 0, tough = false) => 1 + Math.max(0, Math.min(1, (mom - 0.5) / (MOVE.sprintAt - 0.5))) * Math.min(tough ? MOVE.rushTough + rush : Infinity, MOVE.rush + rush);
 // how far the camera leads, as a share of the screen width, at speed v (top = top run speed)
 export const camLead = (v, top) => MOVE.lookAhead + (MOVE.lookAheadTop - MOVE.lookAhead) * Math.max(0, Math.min(1, Math.abs(v) / top));
+
+// The field combo (combat.js): out on the route, every hit that lands within `window` seconds of
+// the last builds the count. Each one adds `step` damage (up to `max`) and takes `cut` seconds off
+// the special's cooldown, and a special's hits cash the combo in at `cash` times its bonus. So a
+// fight goes best as a run in, a string of hits through the pack and a special to finish it.
+export const FIGHT = { window: 1.4, step: 0.06, max: 0.6, cut: 0.25, cash: 2 };
+export const fightMult = (n, special = false) => 1 + Math.min(FIGHT.max, n * FIGHT.step) * (special ? FIGHT.cash : 1);

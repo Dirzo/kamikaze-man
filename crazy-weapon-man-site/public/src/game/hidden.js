@@ -1,6 +1,7 @@
 // Hidden portals (MapleStory's): every map has one you can't see, on a surface somewhere along the
 // route (data/maps.js hiddenSpot). Stand on it and press UP to step into the map's secret room; the
-// return portal is right where you arrive. A secret room is one of three kinds:
+// way out is a big lit door at the room's left wall: walk into it (or press UP at it) to step back
+// out where you came in. A secret room is one of three kinds:
 //   vault   three chests of shards, one with a standout weapon
 //   golden  a golden pack of residents: tougher, worth four times the shards and three book kills
 //   shrine  a standout weapon of your class on a pedestal, and hearts
@@ -43,6 +44,7 @@ export function placeHidden(z) {
   world.hidden = { x: at.x, y: at.y, kind, found: false, inRoom: false, t: 0, room: { map: secretRoom(z, kind), enemies: [], filled: false, chests: [], shrine: null, cleared: false } };
 }
 
+const DOOR = { x: 4, w: 22, h: 34 }; // the way out of a secret room, at its left wall
 const onPortal = (h, x, y) => Math.abs(cx(h) - x) < 9 && Math.abs(h.y + h.h - y) < 3 && h.onGround && !h.ladder;
 export const nearHidden = () => {
   const H = world.hidden, h = world.hero;
@@ -59,7 +61,9 @@ export function updateHidden(dt) {
     return;
   }
   const R = H.room, m = R.map;
-  if (onPortal(h, m.startX, m.floorY) && H.t > 0.4 && input.take('up')) return leaveRoom();
+  // the door out: walk into it, or press UP anywhere near it
+  const atDoor = h.x < DOOR.x + DOOR.w + 2 && h.onGround;
+  if (H.t > 0.6 && (atDoor && (input.axis() < 0 || input.take('up')) || (onPortal(h, m.startX, m.floorY) && input.take('up')))) return leaveRoom();
   for (const c of R.chests) if (!c.open && overlap(h, { x: c.x - 7, y: c.y - 10, w: 14, h: 10 })) openChest(c);
   const S = R.shrine;
   if (S && !S.taken && overlap(h, { x: S.x - 8, y: S.y - 22, w: 16, h: 22 })) {
@@ -169,9 +173,7 @@ export function drawHidden(t) {
     return;
   }
   const R = H.room, m = R.map;
-  swirl(m.startX, m.floorY, t, true);
-  if (onPortal(h, m.startX, m.floorY)) arrow(m.startX, m.floorY - 34, t);
-  text('UP: BACK', m.startX, m.floorY + 6, C.fog, { align: 'center' });
+  door(m.floorY, t, h.x < DOOR.x + DOOR.w + 30);
   for (const c of R.chests) chest(c.x, c.y, c.open);
   if (R.shrine) {
     const S = R.shrine;
@@ -180,6 +182,20 @@ export function drawHidden(t) {
     rect(S.x - 8, S.y - 9, 16, 2, C.mist);
     if (!S.taken) drawItem(S.item, S.x, S.y - 12, t);
   }
+}
+// a big arched door, lit from inside, with an EXIT sign that bobs over it
+function door(f, t, near) {
+  const { x, w, h } = DOOR, y = f - h, glow = Math.floor(t * 4) % 2;
+  rect(x - 2, y - 3, w + 4, h + 3, C.ink);
+  rect(x - 1, y - 2, w + 2, h + 2, C.woodD);
+  rect(x + 2, y + 1, w - 4, h - 1, glow ? C.cream : C.gold);
+  rect(x + 4, y + 3, w - 8, h - 3, C.orange);
+  for (let k = 0; k < 3; k++) rect(x + 4, y + 8 + k * 9, w - 8, 1, C.rust); // planks
+  rect(x + w - 8, y + h / 2 + 2, 2, 2, C.ink); // the handle
+  const b = Math.floor(t * 3) % 2;
+  rect(x - 1, y - 16 + b, w + 2, 10, C.ink);
+  text('EXIT', x + w / 2, y - 15 + b, near ? C.gold : C.cream, { align: 'center' });
+  if (near) text('<  WALK IN', x + w + 30, y - 15 + b, C.gold, { align: 'center' });
 }
 function arrow(x, y, t) {
   const b = Math.floor(t * 4) % 2;

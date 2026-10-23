@@ -41,6 +41,7 @@ export function startZone(z) {
   world.nearDrop=null;
   world.lock=null;
   world.swarmCombo=null;
+  world.fight=null;
   world.zone=z;
   world.wave=1; // encounter tier, retained for summoned-enemy scaling
   world.map=makeMap(z,world.level?.id);

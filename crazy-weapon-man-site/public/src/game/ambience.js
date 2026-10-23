@@ -517,8 +517,31 @@ export function drawBiomeTerrain() {
     }
   }
   for (const s of map.slopes || []) drawSlope(s, g, a, cam);
+  for (const p of map.platforms) if (!p.solid && !p.crumble && visible(p.x, p.y - 4, p.w, 24)) drawLedge(p, g, a, cam);
   drawPits(amb, false);
   return true;
+}
+// a floating ledge: a chunk of the zone's own ground (its tile, its grass or snow or tiles on top)
+// with a tapered underside, so the high road looks like it belongs to the world it floats in
+const LEDGE = [[0, 8], [2, 2], [5, 2]]; // rows: inset from each side, height
+function drawLedge(p, g, a, cam) {
+  let y = p.y;
+  for (const [inset, h] of LEDGE) {
+    const l = Math.max(p.x + inset, cam - 2), r = Math.min(p.x + p.w - inset, cam + W + 2);
+    if (r > l) {
+      for (let x = Math.floor(l / g[2]) * g[2]; x < r; x += g[2]) {
+        const x0 = Math.max(x, l), x1 = Math.min(x + g[2], r), ty = ((y % g[3]) + g[3]) % g[3], n = Math.min(h, g[3] - ty);
+        X.drawImage(a.atlas, g[0] + (x0 - x), g[1] + ty, x1 - x0, n, x0, y, x1 - x0, n);
+        if (n < h) X.drawImage(a.atlas, g[0] + (x0 - x), g[1], x1 - x0, h - n, x0, y + n, x1 - x0, h - n);
+      }
+      if (inset) dither(l, y, r - l, h, C.ink, inset > 3 ? 6 : 4);
+      rect(l, y + h - 1, r - l, 1, C.ink); // its underside, inked
+      rect(p.x + inset, y, 1, h, C.ink);
+      rect(p.x + p.w - inset - 1, y, 1, h, C.ink);
+    }
+    y += h;
+  }
+  runStrip('lip', 0, p.x, p.x + p.w, p.y - 3);
 }
 // a ramp (maps.js slope): the ground tile filled in column by column from its surface line down to
 // the solid under it, and the zone's lip strip following the surface

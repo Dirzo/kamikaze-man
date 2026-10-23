@@ -7,8 +7,9 @@
 // stacked routes: a high road of ledges two hops over the ground for a few screens, now and then a
 // sky road over that, and break-away terrain: bridges and ledges that crumble a moment after you
 // step on them (game/crumble.js), and cliffs whose cracked foot you can smash open for a low road
-// through a tunnel instead of the climb over the top (game/walls.js). Residents stand along the route in small groups you can cut through at a run; you
-// don't have to clear them to reach the arena, but a full clear pays.
+// through a tunnel instead of the climb over the top (game/walls.js). The route runs in beats
+// (stage): a speed run, a fight against a pack on a wide pad, a terrain feature, and round again.
+// You don't have to clear the residents to reach the arena, but a full clear pays.
 // Biome art and names still belong to ZONES. Layouts are seeded per level, so a route is the same
 // every run and speedrun splits stay comparable.
 //
@@ -164,74 +165,111 @@ function stage(m, lay) {
   };
   const step = () => m.pick(STEPS[lay.hills || 0]) + trend * m.pick([8, 16]);
   add(224); // a runway to get going
-  let cliffs = 0;
-  while (x < end - 96) {
-    const left = end - x;
-    // a cliff: the route climbs a step and a two-hop rock shelf, or smashes the cracked rock at its
-    // foot and takes the tunnel straight through (every stage gets at least one past the middle)
-    if (left > 900 && x > 600 && cliffs < 3 && (m.rand() < (lay.cliffs || 0) || (!cliffs && x > end / 2))) {
-      const run = add(m.int(20, 26) * 8, step()), tunnel = add(m.int(20, 36) * 8, 0);
-      tunnel.cliff = true;
-      floats.push({ x: tunnel.x - 64, y: run.y - CLIFF.h / 2, w: 48, step: true }); // the step up to the top
-      add(m.int(16, 24) * 8, 0);
-      cliffs++;
-      continue;
+  // The rhythm of every stage, round and round to the arena: SPEED, a FIGHT, a FEATURE, speed again.
+  //   speed    one to three stretches to run: straightaways (dash panels), rolling ramps, a bowl,
+  //            and now and then a nook: a short staircase that climbs back the way you came, so
+  //            the only way up is to stop and turn round (a relic or the hidden portal waits on top)
+  //   fight    a wide flat pad where a pack stands together (finish): cutting through it at a run
+  //            only starts the job, the field combo (combat.js) pays for keeping the hits coming
+  //   feature  a cliff to smash through, a pit (a bridge, kicker, bumper or zipline over it), a
+  //            chasm (a rope or a stepping ledge), or the foot of a high road
+  // How long the speed runs and the fights last changes from round to round.
+  let cliffs = 0, beat = 0, runs = 0, from = 0;
+  // a stretch of ground; with a nook, its staircase climbs leftward from near its far end
+  const rolling = nook => {
+    const g = ramp(add(nook ? m.int(38, 48) * 8 : m.int(16, 30) * 8, step())), n0 = floats.length;
+    if (nook) {
+      const grp = {}, sx = g.x + g.w - 56 - 64;
+      g.nook = true;
+      floats.push({ x: sx, y: g.y - HOP, w: 64, grp, nook: 1 }, { x: sx - 72, y: g.y - HOP * 2, w: 64, grp, nook: 1 });
+      floats.push({ x: sx - 72 - 96, y: g.y - HOP * 3, w: 88, grp, nook: 2 });
+    } else if (g.w >= 160 && m.rand() < lay.blocks) {
+      // a row of floating ledges over the ground, sometimes with a second, higher one
+      const fw = m.int(12, 20) * 8, fx = g.x + m.int(3, Math.max(3, Math.floor((g.w - fw) / 8) - 3)) * 8;
+      const f = { x: fx, y: g.y - m.pick([36, 40]), w: Math.min(fw, g.x + g.w - fx - 8) };
+      if (f.w >= 64) {
+        floats.push(f);
+        if (m.rand() < 0.5) floats.push({ x: f.x + f.w - 32, y: f.y - 36, w: m.int(10, 16) * 8, grp: f });
+      }
+    } else if (g.w >= 200 && m.rand() < lay.stairs) {
+      // a staircase up to a high run, the long way round with the best view
+      const n = m.int(2, 3);
+      let sx = g.x + 24, grp = {};
+      for (let k = 1; k <= n; k++, sx += 72) floats.push({ x: sx, y: g.y - 36 * k, w: 64, grp });
+      floats.push({ x: sx, y: g.y - 36 * n - 32, w: m.int(14, 24) * 8, grp });
     }
+    // a ledge stops well short of the ground's end, so dropping off it never lands you in the next pit
+    for (const f of floats.slice(n0)) if (!f.nook) f.w = Math.min(f.w, g.x + g.w - 56 - f.x);
+    return g;
+  };
+  const speed = left => {
     // a bowl (a half-pipe dip; the snow chute in the Ranger's woods): a steep ramp down, a short
     // flat bottom and a steep ramp back up, so you pick up speed going down and carry it out
-    if (sets.includes('bowl') && left > 700 && x > 400 && m.rand() < (SET_FIRST.bowl === m.zone && !segs.some(g => g.bowl) ? 0.5 : dense * 0.12)) {
+    if (sets.includes('bowl') && left > 700 && x > 400 && m.rand() < (SET_FIRST.bowl === m.zone && !segs.some(g => g.bowl) ? 0.7 : dense * 0.2)) {
       const d = m.pick([32, 40, 48]), down = add(d + m.int(6, 12) * 8, d, 48);
       down.ramp = d;
       down.bowl = true;
       m.sets.add('bowl');
       const up = add(d + m.int(16, 28) * 8, -d, 48);
       up.ramp = d;
-      continue;
-    }
-    // a pit (or a wide chasm with a stepping ledge in its middle), then the ground goes on
-    if (left > 260 && m.rand() < lay.pits) {
-      // a kicker (rooftop launch): the ground before the pit tips up into a ramp off its edge that
-      // throws a runner over it
-      const before = segs.at(-1);
-      let gap, chasm = false;
-      if (m.rand() < lay.chasm) {
-        gap = m.int(14, 18) * 8;
-        chasm = true;
-        // two clear hops, onto it and off it, and wide enough that one running jump lands on it
-        floats.push({ x: x + 24, y: y - 16, w: gap - 48, step: true });
-      } else gap = m.int(4, 6) * 8 + (m.rand() < 0.3 ? 8 : 0);
-      m.pits.push({ x, w: gap });
-      x += gap;
-      // a chasm's far side is never far below its stepping ledge
-      const after = add(Math.min(end - x, m.int(12, 22) * 8), chasm ? m.pick([-16, 0, 8]) : m.pick([-16, 0, 0, 16]));
-      // (only where the far side isn't lower, so the jump back up onto the kicker stays easy)
-      if (sets.includes('kicker') && after.y <= before.y && before.w >= 128 && !before.ramp && !before.cliff && !before.bowl && m.rand() < (SET_FIRST.kicker === m.zone && !segs.some(g => g.kick) ? 1 : dense * 0.4)) before.kick = m.pick([[24, 12], [32, 16], [40, 20]]);
-      continue;
+      return;
     }
     // a straightaway: a long flat run with nothing overhead, where momentum builds to a full sprint
-    if (left > 720 && m.rand() < lay.straight) {
-      ramp(add(m.int(44, 64) * 8, m.pick([-16, 0, 0, 16]))).straight = true;
-      continue;
+    if (left > 720 && m.rand() < lay.straight * 1.6) return void (ramp(add(m.int(44, 64) * 8, m.pick([-16, 0, 0, 16]))).straight = true);
+    rolling(left > 600 && x > 400 && m.rand() < 0.4);
+    // a hop at a run: a narrow gap to the same height (a bridge, bumper or zipline may hang over it)
+    if (left > 900 && m.rand() < lay.pits) {
+      m.pits.push({ x, w: m.int(4, 6) * 8 });
+      x += m.pits.at(-1).w;
+      add(m.int(16, 24) * 8, 0);
     }
-    const w = left < 360 ? left : m.int(12, 30) * 8;
-    const g = ramp(add(w, step())), n0 = floats.length;
-    // a row of floating ledges over the ground, sometimes with a second, higher one
-    if (g.w >= 136 && m.rand() < lay.blocks) {
-      const fw = m.int(6, 10) * 8, fx = g.x + m.int(3, Math.max(3, Math.floor((g.w - fw) / 8) - 3)) * 8;
-      const f = { x: fx, y: g.y - m.pick([36, 40]), w: Math.min(fw, g.x + g.w - fx - 8) };
-      if (f.w >= 40) {
-        floats.push(f);
-        if (m.rand() < 0.5) floats.push({ x: f.x + f.w - 24, y: f.y - 36, w: m.int(6, 9) * 8, grp: f });
-      }
-    } else if (g.w >= 176 && m.rand() < lay.stairs) {
-      // a staircase up to a high run, the long way round with the best view (and the relics)
-      const n = m.int(2, 4);
-      let sx = g.x + 24, grp = {};
-      for (let k = 1; k <= n; k++, sx += 56) floats.push({ x: sx, y: g.y - 36 * k, w: 48, grp });
-      floats.push({ x: sx, y: g.y - 36 * n - 32, w: m.int(12, 20) * 8, grp });
+  };
+  const fight = () => {
+    // flat, so the pack and the fight have room; now and then a wide ledge over it to fight from
+    const g = add(m.pick([m.int(32, 40), m.int(40, 52), m.int(52, 64)]) * 8, step());
+    g.fight = true;
+    if (g.w >= 360 && m.rand() < lay.blocks * 0.8) floats.push({ x: g.x + 64, y: g.y - 40, w: Math.min(m.int(16, 24) * 8, g.w - 128) });
+  };
+  const feature = left => {
+    // a cliff: the route climbs a step and a two-hop rock shelf, or smashes the cracked rock at its
+    // foot and takes the tunnel straight through (every stage gets at least one past the middle)
+    if (left > 900 && x > 600 && cliffs < 3 && (m.rand() < (lay.cliffs || 0) * 4 || (!cliffs && x > end / 2))) {
+      const run = add(m.int(20, 26) * 8, step()), tunnel = add(m.int(20, 36) * 8, 0);
+      tunnel.cliff = true;
+      floats.push({ x: tunnel.x - 72, y: run.y - CLIFF.h / 2, w: 56, step: true }); // the step up to the top
+      add(m.int(16, 24) * 8, 0);
+      return void cliffs++;
     }
-    // a ledge stops well short of the ground's end, so dropping off it never lands you in the next pit
-    for (const f of floats.slice(n0)) f.w = Math.min(f.w, g.x + g.w - 56 - f.x);
+    // the foot of a high road (tiers): a wide stretch the road's staircase climbs off
+    if (lay.tiers && left > 3 * W + 300 && m.rand() < lay.tiers * 0.6) return void (add(m.int(22, 30) * 8, step()).high = true);
+    // a pit (or a wide chasm with a stepping ledge in its middle), then the ground goes on
+    // a kicker (rooftop launch): the ground before the pit tips up into a ramp off its edge that
+    // throws a runner over it
+    const before = segs.at(-1);
+    let gap, chasm = false;
+    if (m.rand() < lay.chasm || (GADGET_INTRO[m.zone] === 'rope' && !m.pits.some(p => p.w > 56))) {
+      gap = m.int(14, 18) * 8;
+      chasm = true;
+      // two clear hops, onto it and off it, and wide enough that one running jump lands on it
+      floats.push({ x: x + 24, y: y - 16, w: gap - 48, step: true });
+    } else gap = m.int(4, 6) * 8 + (m.rand() < 0.3 ? 8 : 0);
+    m.pits.push({ x, w: gap });
+    x += gap;
+    // a chasm's far side is never far below its stepping ledge
+    const after = add(Math.min(end - x, m.int(12, 22) * 8), chasm ? m.pick([-16, 0, 8]) : m.pick([-16, 0, 0, 16]));
+    // (only where the far side isn't lower, so the jump back up onto the kicker stays easy)
+    if (sets.includes('kicker') && after.y <= before.y && gap <= 48 && before.w >= 128 && !before.ramp && !before.cliff && !before.bowl && !before.nook && m.rand() < (SET_FIRST.kicker === m.zone && !segs.some(g => g.kick) ? 1 : dense * 0.5)) before.kick = m.pick([[24, 12], [32, 16], [40, 20]]);
+  };
+  while (x < end - 96) {
+    const left = end - x;
+    if (left < 360) { ramp(add(left, step())); break; }
+    if (beat === 0) {
+      if (!runs) (runs = m.pick([1, 2, 2, 3])), (from = x);
+      speed(left);
+      if (--runs <= 0 && x - from >= 320) (beat = 1), (runs = 0); // (always a good run of it)
+    } else if (beat === 1) (fight(), (beat = 2));
+    else if (left > 260) (feature(left), (beat = 0));
+    else beat = 0;
   }
   if (x < end) (segs.at(-1).w += end - x), (x = end);
   tiers(m, lay, segs, floats, end);
@@ -253,7 +291,7 @@ function stage(m, lay) {
       const prev = segs[segs.indexOf(g) - 1];
       slope(m, g.x, prev.y + off, g.x + g.ramp, g.y + off);
       ground(m, g.x + g.ramp, g.y + off, g.w - g.ramp);
-    } else ground(m, g.x, g.y + off, g.w - (g.kick ? g.kick[0] : 0));
+    } else ground(m, g.x, g.y + off, g.w - (g.kick ? g.kick[0] : 0), undefined, g.fight ? { fight: true } : undefined);
     if (g.kick) {
       const [L, k] = g.kick, x1 = g.x + g.w;
       m.sets.add('kicker');
@@ -266,7 +304,7 @@ function stage(m, lay) {
     const w = Math.min(f.w, end - 8 - f.x);
     if (w < 32) continue;
     m.room = roomOf(f.x);
-    ledge(m, f.x, f.y + off, w, f.step ? { step: true } : f.crumble ? { crumble: true, hunt: false } : f.tier ? { tier: f.tier } : null);
+    ledge(m, f.x, f.y + off, w, f.step ? { step: true } : f.nook ? { nook: f.nook > 1, hunt: false } : f.crumble ? { crumble: true, hunt: false } : f.tier ? { tier: f.tier } : null);
   }
   bridges(m, lay, segs, off, roomOf);
   room(m, 'ARENA', end, width, 0, Infinity, arenaY);
@@ -320,13 +358,16 @@ const HOP = 36, TIER = 72;
 function tiers(m, lay, segs, floats, end) {
   if (!lay.tiers) return;
   let next = 2 * W;
+  // the world that brings in rope swings or ziplines keeps the sky clear over its first pit that can take one
+  const fresh = GADGET_INTRO[m.zone], keep = fresh === 'rope' ? m.pits.find(p => p.w > 56) : fresh === 'zip' && m.pits[0];
   for (const g of segs) {
-    if (g.x < next || g.straight || g.cliff || g.w < 136 || g.x > end - 3 * W || m.rand() > lay.tiers) continue;
+    if (g.x < next || g.straight || g.cliff || g.nook || g.w < 136 || g.x > end - 3 * W || (!g.high && m.rand() > lay.tiers)) continue;
     const x1 = Math.min(end - W, g.x + m.int(2, 4) * W);
     const under = segs.filter(s => s.x < x1 && s.x + s.w > g.x);
     if (under.some(s => s.cliff)) continue; // a cliff's top already is the high line there
+    if (keep && keep.x < x1 + 96 && keep.x + keep.w > g.x - 96) continue;
     const hi = Math.min(...under.map(s => s.y));
-    drop(floats, f => !f.step && f.x < x1 + 24 && f.x + f.w > g.x && f.y <= hi - TIER + HOP);
+    drop(floats, f => !f.step && (f.nook || f.y <= hi - TIER + HOP) && f.x < x1 + 24 && f.x + f.w > g.x);
     const high = highRoad(m, lay, floats, g, x1, hi - TIER, 1);
     next = x1 + W;
     if (!high.length || m.rand() > lay.sky) continue;
@@ -347,12 +388,12 @@ function highRoad(m, lay, floats, base, x1, y, tier) {
   const k = Math.max(1, Math.ceil((base.y - y) / HOP));
   let x = base.x + 24;
   // the staircase clears its own way up
-  drop(floats, f => !f.step && !f.tier && f.x < x + 56 * k && f.x + f.w > base.x && f.y < base.y);
-  for (let j = 1; j < k; j++, x += 56) floats.push({ x, y: base.y - HOP * j, w: 48 });
+  drop(floats, f => !f.step && !f.tier && f.x < x + 72 * k && f.x + f.w > base.x && f.y < base.y);
+  for (let j = 1; j < k; j++, x += 72) floats.push({ x, y: base.y - HOP * j, w: 64 });
   const out = [];
   for (let first = true; x < x1 - 48; first = false) {
     const crumble = !first && m.rand() < lay.crumble * tier;
-    const w = first ? m.int(10, 16) * 8 : crumble ? 32 : m.int(8, 20) * 8;
+    const w = first ? m.int(14, 20) * 8 : crumble ? 48 : m.int(14, 26) * 8;
     const f = { x, y: first ? y : y + m.pick([0, 0, 0, -16, 8]), w: Math.min(w, x1 - x), tier, crumble };
     out.push(f);
     floats.push(f);
@@ -386,14 +427,12 @@ function bridges(m, lay, segs, off, roomOf) {
 export const GADGET_INTRO = ['spring', 'boost', 'rope', 'zip']; // world 1 brings the first, and so on
 export const gadgetKinds = zone => GADGET_INTRO.slice(0, Math.min(GADGET_INTRO.length, zone + 1));
 // Set pieces, one new per world the same way (and then a mix):
-//   loop    a loop-the-loop on a straightaway: hit it fast enough and you run right round it
 //   bowl    a half-pipe dip in the ground (the snow chute) built from two steep ramps
 //   bumper  a round bumper hanging over a pit (lily pads in the lagoon): it bats you up and onward
 //   kicker  the ground before a pit tips up into a launch ramp off its edge
-export const SET_INTRO = ['loop', 'bowl', 'bumper', 'kicker'];
+export const SET_INTRO = ['kicker', 'bowl', 'bumper'];
 const SET_FIRST = Object.fromEntries(SET_INTRO.map((k, i) => [k, i]));
 export const setKinds = zone => SET_INTRO.slice(0, Math.min(SET_INTRO.length, zone + 1));
-export const LOOP = { r: 44, rim: 10 };
 function gadgets(m, lay, segs, floats, end) {
   const zone = m.zone, kinds = new Set(gadgetKinds(zone)), out = [], fresh = GADGET_INTRO[zone];
   const dense = Math.min(0.85, 0.45 + zone * 0.05); // later worlds use them more
@@ -415,20 +454,14 @@ function gadgets(m, lay, segs, floats, end) {
   }
   // dash panels at the start of every straightaway
   if (kinds.has('boost')) for (const g of segs) if (g.straight && !near(g.x + (g.ramp || 0) + 40)) out.push({ kind: 'boost', x: g.x + (g.ramp || 0) + 40, y: g.y, dir: 1 });
-  // loops on the straightaways, well into the run so you get there fast (after the dash panel)
   const sets = new Set(setKinds(zone)), freshSet = SET_INTRO[zone];
-  if (sets.has('loop')) for (const g of segs) {
-    const x = g.x + (g.ramp || 0) + Math.round(g.w * 0.6 / 8) * 8;
-    if (!g.straight || g.w < 300 || near(x) || (freshSet !== 'loop' && m.rand() > dense * 0.7)) continue;
-    out.push({ kind: 'loop', x, y: g.y, r: LOOP.r, intro: freshSet === 'loop' && !out.some(o => o.kind === 'loop') });
-  }
   // over the pits: ropes on the wide chasms, ziplines on the rest
   for (const p of m.pits) {
     const L = segs.find(g => g.x + g.w === p.x), R = segs.find(g => g.x === p.x + p.w);
     if (!L || !R) continue;
     const roofed = floats.some(f => f.tier && f.x < p.x + p.w + 96 && f.x + f.w > p.x - 96); // a high road over it: no room to swing
     // the world that brings in ropes or ziplines puts them on its first pits that can take one
-    const wide = p.w > 56, zipOk = L.w >= 120 && R.w >= 120, firsts = k => fresh === k && out.filter(o => o.kind === k).length < 3;
+    const wide = p.w > 56, zipOk = L.w >= 112 && R.w >= 104, firsts = k => fresh === k && out.filter(o => o.kind === k).length < 3;
     const r = m.rand(), want = roofed ? null : firsts('rope') && wide ? 'rope' : firsts('zip') && zipOk ? 'zip'
       : wide && kinds.has('rope') && r < dense ? 'rope' : zipOk && kinds.has('zip') && r < dense * 0.5 ? 'zip' : null;
     // a bumper where a running jump off the edge peaks, when nothing else hangs there
@@ -452,9 +485,11 @@ function finish(m, zone, lay) {
   for (const r of m.rooms) { r.end = Math.min(r.end, width); r.w = r.end - r.x; }
   const blocked = (x, y) => m.solids.some(p => x + 8 > p.x && x - 8 < p.x + p.w && y - 24 < p.y + p.h && y - 1 > p.y);
   const roofAbove = (x, y) => Math.max(0, ...m.solids.filter(p => x + 8 > p.x && x - 8 < p.x + p.w && p.y + p.h <= y - 1).map(p => p.y + p.h));
-  // residents gather in small packs spread along the route; members stand a body apart so no two
-  // overlap, and a pack never spills off its platform
-  const GAP = 24;
+  // Residents: most of them stand together in packs on the fight pads (stage), a pack to a pad and
+  // the bigger pads get the bigger packs, so each fight is a crowd you cut into, keep hitting and
+  // finish with a special; the rest wait in twos and threes along the runs. Members stand a body
+  // apart so no two overlap, and a pack never spills off its platform. One pack waits in the arena.
+  const GAP = 24, TIGHT = 18;
   const spans = [];
   for (const p of m.platforms) {
     if (!(p.ground || p.hunt) || p.w < 40) continue;
@@ -463,23 +498,11 @@ function finish(m, zone, lay) {
     if (right - left >= GAP * 3) spans.push({ p, left, right });
   }
   spans.sort((a, b) => a.left - b.left || a.p.y - b.p.y);
-  const total = spans.reduce((s, q) => s + q.right - q.left, 0), count = FOES(zone) + (lay.foes || 0), spawns = [];
-  const packs = [];
-  for (let left = count; left > 0; ) {
-    const n = Math.min(left, m.int(...(lay.pack || [5, 8])));
-    packs.push(n);
-    left -= n;
-  }
-  for (let [k, n] of packs.entries()) {
-    let pos = (k + 0.5) / packs.length * total, q = spans[0];
-    for (q of spans) { if (pos <= q.right - q.left) break; pos -= q.right - q.left; }
-    if (lay.seed && k === packs.length - 1) (q = spans.at(-1)), (pos = (q.right - q.left) / 2); // a level's own map: the last pack waits in the arena
-    // a ledge too short for the whole pack hands the rest on to the next pack
-    const fit = Math.min(n, 1 + Math.floor((q.right - q.left) / 20));
-    if (fit < n && k + 1 < packs.length) packs[k + 1] += n - fit;
-    n = fit;
-    const gap = Math.min(GAP, (q.right - q.left) / Math.max(1, n - 1)), half = (n - 1) * gap / 2;
-    const mid = Math.max(q.left + half, Math.min(q.right - half, q.left + pos));
+  const spawns = [];
+  let count = FOES(zone) + (lay.foes || 0), pack = 0;
+  const place = (q, n, at, gap) => {
+    n = Math.min(n, 1 + Math.floor((q.right - q.left) / gap));
+    const half = (n - 1) * gap / 2, mid = Math.max(q.left + half, Math.min(q.right - half, at));
     for (let j = 0; j < n; j++) {
       let sx = Math.round(mid - half + j * gap);
       // slide off any wall or doorframe standing on the surface
@@ -488,10 +511,32 @@ function finish(m, zone, lay) {
         sx = [x0 + d, x0 - d].find(v => v >= q.left && v <= q.right && free(v)) ?? sx;
       const roof = roofAbove(sx, q.p.y), i = spawns.length;
       spawns.push({
-        x: sx, y: q.p.y, airY: Math.max(roof + 18, q.p.y - 52), section: Math.floor(sx / W), room: q.p.room, pack: k,
+        x: sx, y: q.p.y, airY: Math.max(roof + 18, q.p.y - 52), section: Math.floor(sx / W), room: q.p.room, pack,
         wave: Math.min(4, 1 + Math.floor(q.p.room * 4 / m.rooms.length)), elite: zone > 0 && i > 0 && i % (lay.elite || 9) === 0
       });
     }
+    pack++;
+    count -= n;
+    return n;
+  };
+  const arena = spans.at(-1), pads = spans.filter(q => q.p.fight);
+  place(arena, m.int(...(lay.pack || [5, 8])), (arena.left + arena.right) / 2, GAP);
+  const room = pads.reduce((s, q) => s + q.right - q.left, 0), share = count * 0.72;
+  // (the far end of the pad, so you meet the pack on it, not on the run in)
+  for (const q of pads) {
+    const n = Math.max(3, Math.round((share * (q.right - q.left)) / room)), span = q.right - q.left;
+    // (a big crowd splits in two along the pad)
+    if (n > 11) place(q, n >> 1, q.left + span * 0.3, TIGHT), place(q, n - (n >> 1), q.left + span * 0.8, TIGHT);
+    else place(q, n, q.left + span * 0.6, TIGHT);
+  }
+  // stragglers along the rest of the route, spread evenly
+  const runs = spans.filter(q => !q.p.fight && q !== arena), total = runs.reduce((s, q) => s + q.right - q.left, 0);
+  for (let k = 0, left = count, groups = Math.ceil(count / 2); left > 0 && runs.length; k++) {
+    const n = Math.min(left, m.int(1, 3));
+    let pos = (k + 0.5) / groups * total, q = runs[0];
+    for (q of runs) { if (pos <= q.right - q.left) break; pos -= q.right - q.left; }
+    left -= place(q, n, q.left + pos, GAP);
+    if (k > 4 * groups) break;
   }
   return {
     name: ZONES[zone].name, style: lay.style, title: lay.title, dark: lay.dark || 0, width, height, floorY, rooms: m.rooms,
@@ -514,6 +559,9 @@ export function hiddenSpot(map, avoid = []) {
     for (const x of [p.x + 20, p.x + p.w - 20]) if (x > map.startX + 320 && x < map.bossLeft - 100 && clear(x, p.y)) spots.push({ x: Math.round(x), y: p.y });
   }
   if (!spots.length) return null;
+  // a nook's perch first (stage): a secret is worth stopping for
+  const nooks = spots.filter(s => map.platforms.some(p => p.nook && p.y === s.y && s.x >= p.x && s.x <= p.x + p.w));
+  if (nooks.length) return nooks[Math.round(map.width * 7 + map.height * 13) % nooks.length];
   spots.sort((a, b) => a.x - b.x || a.y - b.y);
   const seed = Math.round(map.width * 7 + map.height * 13 + spots.length * 31);
   return spots[Math.floor(spots.length * 0.35 + (seed % 7) / 7 * spots.length * 0.5) % spots.length];
@@ -535,6 +583,6 @@ export function secretRoom(zone, kind) {
     name: ZONES[zone].name, style: 'room', title: 'SECRET ROOM', own: true, secretRoom: true, kind, dark: 2,
     width, height: floor + 64, floorY: floor, rooms: [{ index: 0, label: kind === 'vault' ? 'VAULT' : kind === 'golden' ? 'GOLDEN DEN' : 'SHRINE', x: 0, end: width, w: width, y0: 0, y1: Infinity, floor }],
     sections: 1, platforms, solids, ladders, spawns: [], ledge,
-    startX: 40, startY: floor, exitX: -999, exitY: floor, bossFloor: floor, bossLeft: width * 9, bossRight: width * 9
+    startX: 52, startY: floor, exitX: -999, exitY: floor, bossFloor: floor, bossLeft: width * 9, bossRight: width * 9
   };
 }
