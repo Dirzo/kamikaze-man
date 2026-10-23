@@ -475,7 +475,7 @@ export function drawBiomeTerrain() {
   worldLayer();
   const g = spr('ground'), cam = world.cameraX || 0, camY = world.cameraY || 0, t = amb.t;
   for (const p of map.solids) {
-    if (!visible(p.x, p.y - 8, p.w, p.h + 24)) continue;
+    if (p.wall || !visible(p.x, p.y - 8, p.w, p.h + 24)) continue; // breakable walls draw themselves (walls.js)
     const left = Math.max(p.x, cam - 2), right = Math.min(p.x + p.w, cam + W + 2);
     const top = Math.max(p.y, camY - 2), bottom = Math.min(p.y + p.h, camY + H + 2);
     // the body: the zone's ground tile, anchored to the world so stretches line up

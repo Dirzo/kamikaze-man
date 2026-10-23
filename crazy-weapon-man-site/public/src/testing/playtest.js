@@ -198,6 +198,13 @@ function newRun(game, skill, from, level = null) {
     else if (target) goal = { x: cx(target), feet: target.y + target.h, e: target };
     if (!goal) return;
     const T = TYPES[h.weapon.type], feet = h.y + h.h, dx = goal.x - cx(h), dir = Math.sign(dx) || h.face;
+    // a breakable wall in the way: smash it (game/walls.js)
+    const wall = (world.map.walls || []).find(w => !w.broken && Math.sign(w.x + w.w / 2 - cx(h)) === dir && Math.abs(w.x + w.w / 2 - cx(h)) < 44 && feet > w.y && feet <= w.y + w.h + 1);
+    if (wall && h.onGround) {
+      if (h.face !== dir) want.add(dir > 0 ? 'right' : 'left');
+      want.add('attack');
+      return;
+    }
     // dodge incoming bolts with a hop
     if (skilled && h.onGround) {
       for (const b of world.bolts) {

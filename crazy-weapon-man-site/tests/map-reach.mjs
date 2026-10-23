@@ -14,7 +14,8 @@ export function surfaceGraph(map) {
   try {
     for (const [i, p] of P.entries()) {
       // only collide with nearby terrain: the same rules, a fraction of the work
-      const near = map.solids.filter(s => s.x < p.x + p.w + 420 && s.x + s.w > p.x - 420 && s.y < p.y + 700 && s.y + s.h > p.y - 260);
+      // breakable walls (game/walls.js) are no barrier: you smash through them
+      const near = map.solids.filter(s => !s.wall && s.x < p.x + p.w + 420 && s.x + s.w > p.x - 420 && s.y < p.y + 700 && s.y + s.h > p.y - 260);
       world.map = { ...map, solids: near };
       const xs = new Set([p.x + 1, p.x + p.w - HERO.w - 1]);
       for (let x = p.x + 12; x < p.x + p.w - HERO.w; x += 24) xs.add(x);
