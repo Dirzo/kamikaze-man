@@ -1,6 +1,5 @@
 // The level-clear grade (Sonic's tally): how fast you were against the stage's par time and how
 // much of it you finished (residents beaten, relics taken, the secret found). Pure, node-testable.
-import { HERO } from '../config.js';
 
 export const GRADES = [
   { g: 'S', at: 0.9, col: 'gold', word: 'SUPREME' },
@@ -9,11 +8,11 @@ export const GRADES = [
   { g: 'C', at: 0.45, col: 'cream', word: 'COOL' },
   { g: 'D', at: 0, col: 'coral', word: 'DONE IT' }
 ];
-// par: a sprint through the stage (about base run speed, with the jumps and stops), a moment per
-// resident and time for the boss. A level fight lasts longer the further along the road it is.
-export const PAR = { perResident: 1.1, boss: 28 };
+// par: a run through the stage at a bit over base run speed, a moment per resident and time for
+// the boss (tuned on the campaign bot, which clears most levels in about 80% of par).
+export const PAR = { speed: 130, perResident: 0.8, boss: 22 };
 export function parTime(width, residents) {
-  return Math.round(width / HERO.speed + residents * PAR.perResident + PAR.boss);
+  return Math.round(width / PAR.speed + residents * PAR.perResident + PAR.boss);
 }
 // completion: residents count most; relics and the secret make up the rest (a level without a
 // secret or relics gives their share to the residents)

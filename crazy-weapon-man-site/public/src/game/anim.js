@@ -186,6 +186,7 @@ const STYLES = {
   },
   // bow: lowered at rest; raise, draw the string back with the back hand, release
   bow: {
+    sheath: { at: [3, 12], ang: 62 }, // slung across the back at a sprint, the limbs showing either side
     idle: (t, b) => ({ f: b ? 'idle2' : 'idle', fh: [14, 19 + b], bh: [5, 20 + b], ang: 35 }),
     run: s => ({ fh: [14 + s * 2, 19], bh: [5 - s * 2, 19], ang: 50 }),
     air: up => (up ? { f: 'jump', fh: [15, 14], bh: [3, 14], ang: 0 } : { f: 'fall', fh: [15, 16], bh: [3, 15], ang: 20 }),
@@ -239,9 +240,10 @@ export function heroPose(h, t) {
     if (st.spin) pose = spinPose(p, mv === 'spinBig' ? 2 : 1, mv === 'spinBig');
     else pose = keys(st.moves[mv] || Object.values(st.moves)[0], p);
   } else if (h.attack && h.attack.ranged && st.ranged) pose = keys(st.ranged, Math.min(1, h.attack.t / h.attack.dur));
+  else if (h.rope || h.zip) pose = { f: 'sjump', fh: [12, 2], bh: [7, 3], armF: 'up/near', armB: 'up/near', at: RUN_SHEATH.at, ang: RUN_SHEATH.ang, sheath: true, wb: true }; // hanging on, weapon on the back
   else if (h.ladder) pose = climbPose(h);
   else if (h.dashT > 0) pose = { ...st.dash };
-  else if (h.stowed) pose = sprintPose(h);
+  else if (h.stowed) pose = sprintPose(h, st);
   else if (h.skidT > 0 && h.onGround) pose = { ...st.idle(t, 0), f: 'lean', dy: 1 }; // braking into the turn
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
@@ -284,8 +286,8 @@ export const DRAW_SNAP = 0.07;
 // the hair and headband streaming (art-src/arcade_hero.py sprint0-3, sjump, sfall) and both arms
 // pump: the near arm drives forward to the chin while the far arm swings back, then they swap.
 export const RUN_SHEATH = { at: [6, 11], ang: 158 };
-function sprintPose(h) {
-  const base = { at: RUN_SHEATH.at, ang: RUN_SHEATH.ang, sheath: true, wb: true, bh: [4, 20] };
+function sprintPose(h, st) {
+  const sh = st.sheath || RUN_SHEATH, base = { at: sh.at, ang: sh.ang, sheath: true, wb: true, bh: [4, 20] };
   if (!h.onGround) return { ...base, f: h.vy < 0 ? 'sjump' : 'sfall', fh: [14, 14], armF: 'pump', armB: 'dback/near' };
   const fi = Math.floor(h.animT * 14) % 4;
   // near leg reaching (0): near arm back, far arm forward; far leg reaching (2): the other way round

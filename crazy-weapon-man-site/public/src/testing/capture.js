@@ -265,9 +265,14 @@ function walk(game,n) {
 function sprint(game,n) {
   game.play(()=>{
     const z=Math.max(0,Math.min(9,n-1)),type=new URLSearchParams(location.search).get('w')||'katana';
-    startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};world.enemies.length=0;
+    startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};
+    const foes=new URLSearchParams(location.search).has('foes');if(!foes)world.enemies.length=0;
     const g=world.map.platforms.filter(p=>p.ground && p.x>0 && p.x<world.map.bossLeft-W).sort((a,b)=>b.w-a.w)[0],h=world.hero;
-    h.x=g.x+8;h.y=g.y-h.h;h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type,q:3,standout:false});h.face=1;
+    h.x=g.x+8;h.y=g.y-h.h;
+    // &at=kind: start a run-up before the first gadget of that kind (springs, ropes, ziplines...)
+    const at=new URLSearchParams(location.search).get('at'),gd=at&&world.map.gadgets.filter(o=>o.kind===at)[+(new URLSearchParams(location.search).get('n')||0)];
+    if(gd){const gx=(gd.x??gd.x0)-(+new URLSearchParams(location.search).get('back')||170),p=world.map.platforms.filter(p=>p.ground && gx>=p.x && gx<p.x+p.w)[0];if(p){h.x=gx;h.y=p.y-h.h;}}h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type,q:3,standout:false});h.face=1;
+    if(foes) {h.maxHp=h.hp=1e6;for(const e of world.enemies) e.spawnT=0;}
     updateCamera(0,true);
     window.cwmWorld=world;
   });

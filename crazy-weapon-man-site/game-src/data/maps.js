@@ -32,11 +32,11 @@ export const CLEAR_BONUS = zone => 12 + zone * 4;
 export const LAYOUTS = [
   { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 11, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, pack: [2, 4] },
   { title: 'ARCHERY GLADE', label: 'GLADE', screens: 12, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, pack: [2, 4] },
-  { title: 'SEA CAVES', label: 'GROTTO', screens: 12, straight: 0.25, cave: true, pits: 0.35, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, pack: [2, 5] },
+  { title: 'SEA CAVES', label: 'GROTTO', screens: 12, straight: 0.25, cave: true, pits: 0.28, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, pack: [2, 5] },
   { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 12, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, pack: [2, 5] },
   { title: 'CHERRY PAGODA', label: 'STOREY', screens: 13, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, pack: [2, 5] },
   { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 13, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, pack: [3, 5] },
-  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 14, straight: 0.25, pits: 0.55, chasm: 0.55, hills: 1, blocks: 0.35, stairs: 0.15, pack: [3, 5] },
+  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 14, straight: 0.25, pits: 0.42, chasm: 0.45, hills: 1, blocks: 0.35, stairs: 0.15, pack: [3, 5] },
   { title: 'ROOT TUNNELS', label: 'BURROW', screens: 14, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, pack: [3, 6] },
   { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 15, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] },
   { title: 'VAULT TUNNELS', label: 'VAULT', screens: 16, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] }
@@ -62,7 +62,7 @@ export function levelLayout(zone, id) {
   return {
     ...lay, title, seed,
     screens: Math.min(20, lay.screens + Math.round(tier * 3) + (big ? 1 : 0)),
-    pits: Math.min(0.65, lay.pits + tier * 0.12),
+    pits: Math.min(0.55, lay.pits + tier * 0.1),
     cave: kind === 'fort' || (i % 4 === 3 ? !lay.cave : !!lay.cave),
     foes: Math.round(tier * 8) + (big ? 3 : 0),
     elite: big ? 6 : 0,
@@ -98,7 +98,7 @@ function seeded(seed) {
 function builder(zone, seed = 0) {
   const rand = seeded(zone * 7919 + 101 + seed);
   return {
-    platforms: [], solids: [], ladders: [], rooms: [], room: 0, width: 0, pits: [],
+    zone, platforms: [], solids: [], ladders: [], rooms: [], room: 0, width: 0, pits: [],
     rand, int: (lo, hi) => lo + Math.floor(rand() * (hi - lo + 1)), pick: a => a[Math.floor(rand() * a.length)]
   };
 }
@@ -159,7 +159,7 @@ function stage(m, lay) {
     }
     // a straightaway: a long flat run with nothing overhead, where momentum builds to a full sprint
     if (left > 720 && m.rand() < lay.straight) {
-      add(m.int(44, 64) * 8, m.pick([-16, 0, 0, 16]));
+      add(m.int(44, 64) * 8, m.pick([-16, 0, 0, 16])).straight = true;
       continue;
     }
     const w = left < 360 ? left : m.int(12, 30) * 8;
@@ -225,6 +225,66 @@ function stage(m, lay) {
   }
   m.start = { x: 48, y: segs[0].y + off };
   m.arena = arenaY;
+  m.gadgets = gadgets(m, lay, segs.map(g => ({ ...g, y: g.y + off })), floats.map(f => ({ ...f, y: f.y + off })), end);
+}
+
+// ---------------------------------------------------------------- speed gadgets (game/gadgets.js)
+// Sonic-style obstacles that pay you for running a stage well. Every one is optional: the route
+// never needs them (tests/map-reach.mjs ignores them), they just make it faster or richer. Each
+// world brings in one new kind (the first one of a new kind sits on flat ground near the start, so
+// you meet it before you need it) and keeps the old ones, a little more often each world.
+//   spring  a bounce pad at the foot of a high route: launches you up past the floating ledges
+//   boost   a dash panel at the start of a straightaway: full momentum and a burst on top
+//   rope    a vine or rope over a chasm: grab it, swing, let go at the bottom for a long fling
+//   zip     a zipline over a pit, sloping down: hang on and slide out the far end at speed
+//   rings   a trail of shard rings along the fastest jump: all of them in one go is a PERFECT
+export const GADGET_INTRO = ['spring', 'boost', 'rope', 'zip', 'rings']; // world 1 brings the first, and so on
+export const gadgetKinds = zone => GADGET_INTRO.slice(0, Math.min(GADGET_INTRO.length, zone + 1));
+function gadgets(m, lay, segs, floats, end) {
+  const zone = m.zone, kinds = new Set(gadgetKinds(zone)), out = [], fresh = GADGET_INTRO[zone];
+  const dense = Math.min(0.85, 0.45 + zone * 0.05); // later worlds use them more
+  const groundAt = x => segs.find(g => x >= g.x + 16 && x <= g.x + g.w - 16);
+  const near = x => out.some(o => Math.abs((o.x ?? o.x0) - x) < 72);
+  // the new kind for this world, first thing after the runway on flat ground
+  if (fresh) {
+    const g = segs.find(g => g.x >= 200 && g.w >= 200);
+    if (g) {
+      const x = g.x + 48;
+      if (fresh === 'spring' || fresh === 'boost') out.push({ kind: fresh, x, y: g.y, dir: 1, intro: true });
+      else if (fresh === 'rings') out.push({ kind: 'rings', intro: true, x, pts: arc(x, g.y, 120, 44, 6) });
+    }
+  }
+  // springs at the foot of the floating rows and staircases
+  if (kinds.has('spring')) for (const f of floats) {
+    if (f.step || m.rand() > dense * 0.6) continue;
+    const x = f.x - 28, g = groundAt(x);
+    if (g && g.y - f.y >= 30 && !near(x) && x < end - 64) out.push({ kind: 'spring', x, y: g.y });
+  }
+  // dash panels at the start of every straightaway
+  if (kinds.has('boost')) for (const g of segs) if (g.straight && !near(g.x + 40)) out.push({ kind: 'boost', x: g.x + 40, y: g.y, dir: 1 });
+  // a line of rings down the middle of a straightaway, at running height: grab them at full tilt
+  if (kinds.has('rings')) for (const g of segs) if (g.straight && m.rand() < dense)
+    out.push({ kind: 'rings', x: g.x + 120, pts: Array.from({ length: 8 }, (_, i) => [g.x + 120 + i * 24, g.y - 12]) });
+  // over the pits: ropes on the wide chasms, ziplines and ring trails on the rest
+  for (const p of m.pits) {
+    const L = segs.find(g => g.x + g.w === p.x), R = segs.find(g => g.x === p.x + p.w);
+    if (!L || !R) continue;
+    // the world that brings in ropes or ziplines puts them on its first pits that can take one
+    const wide = p.w > 56, zipOk = L.w >= 120 && R.w >= 120, firsts = k => fresh === k && out.filter(o => o.kind === k).length < 3;
+    const r = m.rand(), want = firsts('rope') && wide ? 'rope' : firsts('zip') && zipOk ? 'zip'
+      : wide && kinds.has('rope') && r < dense ? 'rope' : zipOk && kinds.has('zip') && r < dense * 0.5 ? 'zip' : !wide && kinds.has('rings') && r < dense ? 'rings' : null;
+    if (want === 'rope') out.push({ kind: 'rope', x: p.x + 36, y: L.y - 118, len: 76 }); // the knot hangs where a running jump off the edge peaks
+    else if (want === 'zip') out.push({ kind: 'zip', x0: p.x - 96, y0: L.y - 52, x1: p.x + p.w + 96, y1: Math.max(L.y - 52 + 16, R.y - 34) });
+    else if (want === 'rings') out.push({ kind: 'rings', x: p.x, pts: arc(p.x - 24, L.y, p.w + 48, 40, 6) });
+  }
+  return out.filter(o => (o.x ?? o.x0) < end - 40).sort((a, b) => (a.x ?? a.x0) - (b.x ?? b.x0));
+}
+// n points along a hop from (x, ground y) over w px, `rise` at the top (the rings' centres)
+function arc(x, y, w, rise, n) {
+  return Array.from({ length: n }, (_, i) => {
+    const u = (i + 0.5) / n;
+    return [Math.round(x + u * w), Math.round(y - 14 - 4 * rise * u * (1 - u))];
+  });
 }
 
 
@@ -281,7 +341,7 @@ function finish(m, zone, lay) {
     name: ZONES[zone].name, style: lay.style, title: lay.title, dark: lay.dark || 0, width, height, floorY, rooms: m.rooms,
     sections: Math.ceil(width / W), platforms: m.platforms, solids: m.solids, ladders: m.ladders, spawns,
     startX: m.start.x, startY: m.start.y, exitX: width - 36, exitY: m.arena,
-    bossFloor: m.arena, bossLeft: width - W + 8, bossRight: width - 8, pits: m.pits
+    bossFloor: m.arena, bossLeft: width - W + 8, bossRight: width - 8, pits: m.pits, gadgets: m.gadgets || []
   };
 }
 

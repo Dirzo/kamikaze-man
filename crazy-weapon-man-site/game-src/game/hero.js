@@ -25,6 +25,7 @@ import { X } from '../engine/gfx.js';
 import { MOVE, windHang, plungeOf, momentumStep, runSpeed } from '../data/feel.js';
 import { beginRun, spHit, startCrazy, updateCrazy, impact, heroHidden } from './specials.js';
 import { specialId } from '../data/specials.js';
+import { updateGadgets, GADGET } from './gadgets.js';
 
 
 export function createHero() {
@@ -103,6 +104,8 @@ export function updateHero(h, dt) {
     if (h.attack) updateAttack(h, dt, T);
     return;
   }
+  // springs, dash panels, rings; a rope swing or a zipline takes over movement (gadgets.js)
+  if (updateGadgets(h, dt)) return;
   const ax = input.axis();
   // the level's gimmick (water, ice) and the mount you ride change how the hero moves
   const G = heroPhysics() || {}, ride = h.mount ? mountDef(h.mount) : null;
@@ -145,7 +148,7 @@ export function updateHero(h, dt) {
   h.sprint = h.mom >= MOVE.sprintAt;
   if (h.hurtT <= 0 && !(h.heldT > 0)) {
     const slowBy = groundSwing ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
-    const target = ax * runSpeed(HERO.speed, S.speed, h.mom) * (G.speed || 1) * (ride ? ride.speed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1);
+    const target = ax * runSpeed(HERO.speed, S.speed, h.mom) * (G.speed || 1) * (ride ? ride.speed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1) * (h.boostT > 0 ? GADGET.boost.burst : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
       h.skidT = 0.16;
