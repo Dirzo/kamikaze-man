@@ -253,7 +253,7 @@ function walls(m, lay, segs, floats, end) {
     const xs = g.straight ? [g.x + g.w - 72] : [g.x + m.int(6, Math.floor((g.w - WALL.w) / 8) - 6) * 8];
     for (const x of xs) {
       const clear = !floats.some(f => f.x < x + WALL.w + 40 && f.x + f.w > x - 40 && f.y > g.y - WALL.h - 48)
-        && !m.gadgets.some(o => Math.abs((o.x ?? o.x0) - x) < 80 || (o.x1 && x > o.x0 - 24 && x < o.x1 + 24) || o.pts?.some(([px]) => Math.abs(px - x) < 32));
+        && !m.gadgets.some(o => Math.abs((o.x ?? o.x0) - x) < 80 || (o.x1 && x > o.x0 - 24 && x < o.x1 + 24));
       if (clear) spots.push({ x, g });
     }
   }
@@ -339,8 +339,7 @@ function bridges(m, lay, segs, off, roomOf) {
 //   boost   a dash panel at the start of a straightaway: full momentum and a burst on top
 //   rope    a vine or rope over a chasm: grab it, swing, let go at the bottom for a long fling
 //   zip     a zipline over a pit, sloping down: hang on and slide out the far end at speed
-//   rings   a trail of shard rings along the fastest jump: all of them in one go is a PERFECT
-export const GADGET_INTRO = ['spring', 'boost', 'rope', 'zip', 'rings']; // world 1 brings the first, and so on
+export const GADGET_INTRO = ['spring', 'boost', 'rope', 'zip']; // world 1 brings the first, and so on
 export const gadgetKinds = zone => GADGET_INTRO.slice(0, Math.min(GADGET_INTRO.length, zone + 1));
 function gadgets(m, lay, segs, floats, end) {
   const zone = m.zone, kinds = new Set(gadgetKinds(zone)), out = [], fresh = GADGET_INTRO[zone];
@@ -353,7 +352,6 @@ function gadgets(m, lay, segs, floats, end) {
     if (g) {
       const x = g.x + 48;
       if (fresh === 'spring' || fresh === 'boost') out.push({ kind: fresh, x, y: g.y, dir: 1, intro: true });
-      else if (fresh === 'rings') out.push({ kind: 'rings', intro: true, x, pts: arc(x, g.y, 120, 44, 6) });
     }
   }
   // springs at the foot of the floating rows and staircases
@@ -364,30 +362,19 @@ function gadgets(m, lay, segs, floats, end) {
   }
   // dash panels at the start of every straightaway
   if (kinds.has('boost')) for (const g of segs) if (g.straight && !near(g.x + 40)) out.push({ kind: 'boost', x: g.x + 40, y: g.y, dir: 1 });
-  // a line of rings down the middle of a straightaway, at running height: grab them at full tilt
-  if (kinds.has('rings')) for (const g of segs) if (g.straight && m.rand() < dense)
-    out.push({ kind: 'rings', x: g.x + 120, pts: Array.from({ length: 8 }, (_, i) => [g.x + 120 + i * 24, g.y - 12]) });
-  // over the pits: ropes on the wide chasms, ziplines and ring trails on the rest
+  // over the pits: ropes on the wide chasms, ziplines on the rest
   for (const p of m.pits) {
     const L = segs.find(g => g.x + g.w === p.x), R = segs.find(g => g.x === p.x + p.w);
     if (!L || !R) continue;
     const roofed = floats.some(f => f.tier && f.x < p.x + p.w + 96 && f.x + f.w > p.x - 96); // a high road over it: no room to swing
     // the world that brings in ropes or ziplines puts them on its first pits that can take one
     const wide = p.w > 56, zipOk = L.w >= 120 && R.w >= 120, firsts = k => fresh === k && out.filter(o => o.kind === k).length < 3;
-    const r = m.rand(), want = roofed ? (!wide && kinds.has('rings') && r < dense ? 'rings' : null) : firsts('rope') && wide ? 'rope' : firsts('zip') && zipOk ? 'zip'
-      : wide && kinds.has('rope') && r < dense ? 'rope' : zipOk && kinds.has('zip') && r < dense * 0.5 ? 'zip' : !wide && kinds.has('rings') && r < dense ? 'rings' : null;
+    const r = m.rand(), want = roofed ? null : firsts('rope') && wide ? 'rope' : firsts('zip') && zipOk ? 'zip'
+      : wide && kinds.has('rope') && r < dense ? 'rope' : zipOk && kinds.has('zip') && r < dense * 0.5 ? 'zip' : null;
     if (want === 'rope') out.push({ kind: 'rope', x: p.x + 36, y: L.y - 118, len: 76 }); // the knot hangs where a running jump off the edge peaks
     else if (want === 'zip') out.push({ kind: 'zip', x0: p.x - 96, y0: L.y - 52, x1: p.x + p.w + 96, y1: Math.max(L.y - 52 + 16, R.y - 34) });
-    else if (want === 'rings') out.push({ kind: 'rings', x: p.x, pts: arc(p.x - 24, L.y, p.w + 48, 40, 6) });
   }
   return out.filter(o => (o.x ?? o.x0) < end - 40).sort((a, b) => (a.x ?? a.x0) - (b.x ?? b.x0));
-}
-// n points along a hop from (x, ground y) over w px, `rise` at the top (the rings' centres)
-function arc(x, y, w, rise, n) {
-  return Array.from({ length: n }, (_, i) => {
-    const u = (i + 0.5) / n;
-    return [Math.round(x + u * w), Math.round(y - 14 - 4 * rise * u * (1 - u))];
-  });
 }
 
 

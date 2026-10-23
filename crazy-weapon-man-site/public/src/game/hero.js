@@ -107,7 +107,7 @@ export function updateHero(h, dt) {
     return;
   }
   updateCrumble(h, dt); // bridges and stepping stones that give way (crumble.js)
-  // springs, dash panels, rings; a rope swing or a zipline takes over movement (gadgets.js)
+  // springs and dash panels; a rope swing or a zipline takes over movement (gadgets.js)
   if (updateGadgets(h, dt)) return;
   const ax = input.axis();
   // the level's gimmick (water, ice) and the mount you ride change how the hero moves
