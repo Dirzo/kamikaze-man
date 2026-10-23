@@ -2,7 +2,9 @@
 // from the shard tree, trophies, gold Monster Book cards, boss pages and the held type's mastery
 // perks (data/meta.js stats). Drawn in the inventory (R) and as the STATS tab of the POWERS window.
 // A row that is still zero is drawn dim, so you can see what there is left to grow.
-import { specialOf, specialRoll, BOONS } from '../data/specials.js';
+import { specialOf, specialRoll, BOONS, speedBoon, SPEED_BOONS } from '../data/specials.js';
+import { withGear } from './perks.js';
+import { MOVE, runSpeed } from '../data/feel.js';
 import { C, HERO } from '../config.js';
 import { rect, text, fitText } from '../engine/gfx.js';
 import { world } from './world.js';
@@ -26,7 +28,7 @@ INNATE.homing = 'SEEKER SHOTS';
 
 // the groups of rows for a weapon in hand (or none, for the account-wide numbers): [label, value, live]
 export function sheetRows(w = null) {
-  const s = stats(w?.type || null), T = w && TYPES[w.type], h = world.hero;
+  const s = withGear(stats(w?.type || null), w), T = w && TYPES[w.type], h = world.hero;
   const row = (label, v, f = pct) => [label, f(v), !!v];
   const some = (...rows) => rows.filter(r => r[2]); // rows only the trophies give: shown once you have them
   const groups = [];
@@ -42,10 +44,21 @@ export function sheetRows(w = null) {
         ['ELEMENT', w.family ? ELEMENTS[w.family].word.toUpperCase() : 'NONE', !!w.family],
         ['MASTERY', `LV ${p.lv} ${profRank(p.lv)}`, true],
         ['SPECIAL', specialOf(w).name, true],
-        ...specialRoll(w).boons.map(b => ['+ ' + BOONS[b].label, 'BOON', true])
+        ...specialRoll(w).boons.map(b => ['+ ' + BOONS[b].label, 'BOON', true]),
+        ...(speedBoon(w) ? [['+ ' + SPEED_BOONS[speedBoon(w)].label, 'SPEED', true]] : [])
       ]
     });
   }
+  // SPEED (hero.js momentum): how fast you start, how fast you get, how hard you hit at full tilt
+  groups.push({
+    name: 'SPEED', col: C.sky, rows: [
+      ['RUN SPEED', `${Math.round(runSpeed(HERO.speed, s.speed, 0))}PX/S`, true],
+      ['TOP SPEED', `${Math.round(runSpeed(HERO.speed, s.speed, 1))}PX/S`, true],
+      row('SPEED', s.speed), row('ACCELERATION', s.accel),
+      ['FULL SPEED IN', (MOVE.momentumTime / (1 + s.accel)).toFixed(2) + 'S', true],
+      ['RUSH DAMAGE', pct(MOVE.rush + s.rush), true]
+    ]
+  });
   groups.push({
     name: 'OFFENSE', col: C.coral, rows: [
       row('DAMAGE', s.dmg), row('ATTACK SPEED', s.attackSpeed), row('CRIT CHANCE', s.crit), row('CRIT DAMAGE', s.critDmg), row('BOSS DAMAGE', s.bossDmg),
@@ -69,7 +82,7 @@ export function sheetRows(w = null) {
   });
   groups.push({
     name: 'MOBILITY', col: C.sky, rows: [
-      ['RUN SPEED', `${Math.round(HERO.speed * (1 + s.speed))}PX/S`, !!s.speed], row('DASH COOLDOWN', -s.dashCd), row('SPECIAL COOLDOWN', -s.specialCd), row('KNOCKBACK', s.knock)
+      row('DASH COOLDOWN', -s.dashCd), row('SPECIAL COOLDOWN', -s.specialCd), row('KNOCKBACK', s.knock)
     ]
   });
   const T2 = world.temper ? temper(world.temper) : null;

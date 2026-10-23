@@ -5,7 +5,8 @@ goggles pushed up on the head, a big grin, a bare muscular chest crossed by a ba
 buckle over a red sash, dark combat trousers and steel-toed boots. The body is armless: the arms are
 separate hand-drawn sprites (arcade_arms.py) that the game picks per pose, see game-src/game/anim.js.
 
-Frames are 22x30 after the 1px outline, facing right, feet on the bottom row (y = 29).
+Frames are 26x30 after the 1px outline (the 20px-wide art plus PAD spare columns each side), facing
+right, feet on the bottom row (y = 29).
 """
 from PIL import Image
 
@@ -267,6 +268,101 @@ FRAMES['run3'] = [r.ljust(W, '.')[:W] for r in FRAMES['run3']]
 # crouch: head and torso drop 2px, knees bent wide
 FRAMES['crouch'] = ['.' * W] * 2 + [r.ljust(W, '.') for r in HEAD + SIDE + CROUCH_LEGS]
 
+# Sprint (full momentum, game-src/game/hero.js): Sonic / Dead Cells style, four frames. The upper body
+# pitches forward (head 2px ahead of the hips, chest 1px), the hair is swept straight back off the
+# goggles with loose locks trailing out behind his head, and the headband's two tails stream back
+# from the knot, fluttering in a different spot each frame. The weapon rides sheathed on his back
+# (anim.js) and the arms pump, so the legs get long strides: reach with the near leg, pass, reach
+# with the far leg, pass. Near leg in the light trouser shades with the steel toe cap, far leg in
+# the dark ones, as on the walk. Sprint frames use the PAD columns on the left for the hair.
+PAD = 2  # every frame gets 2 spare columns each side (the sprint's streaming hair uses them)
+SPRINT_HAIR = [
+    [  # swept back, locks lifted
+        '.........ee...ee........',
+        '...eeedddddeedddde......',
+        'eeddcccccdcccdcccde.....',
+        '.dccebccccccGgLlgLlg....',
+        '..ddabbcccccGLLgLLLGd...',
+    ],
+    [  # swept back, locks dropped and whipping
+        '..........e...ee........',
+        '.eeeedddddeeddde.e......',
+        '..edcccccdcccdcccde.....',
+        'edccebccccccGgLlgLlg....',
+        '.dddabbcccccGLLgLLLGd...',
+    ],
+]
+# the headband's tails out behind the knot (columns 0-4 of rows 5-8), one shape per frame
+SPRINT_TAILS = [
+    ['qrRRR', '..qRR', '.....', '.....'],
+    ['.rRRR', 'qrqRR', '.....', '.....'],
+    ['..RRR', 'qRrRR', 'q....', '.....'],
+    ['q.RRR', '.rqRR', '.....', '.....'],
+]
+SPRINT_LEGS = [
+    [  # 0 reach: near leg out in front on its heel, far leg kicked up behind
+        '.....PppuuPpppuu....',
+        '....PpP....Ppuu.....',
+        '...PpP......Ppuu....',
+        'KkPP.........Ppu....',
+        'KKk...........Ppu...',
+        '.............Kkkjn..',
+        '.............KKKKKK.',
+    ],
+    [  # 1 pass: planted on the near leg, the far knee drives through high
+        '.....PppuuPpppuu....',
+        '......Ppuu.PpPPP....',
+        '.......Ppu....PpP...',
+        '.......Ppu...KkP....',
+        '.......Ppu...KKk....',
+        '.......Kkkjn........',
+        '.......KKKKKK.......',
+    ],
+    [  # 2 reach: far leg out in front, near leg kicked up behind
+        '.....PppuuPpppuu....',
+        '....Ppuu....PpP.....',
+        '...Ppu.......PpP....',
+        'Kkju..........PpP...',
+        'KKK............PpP..',
+        '..............KkkK..',
+        '.............KKKKKK.',
+    ],
+    [  # 3 pass: planted on the far leg, the near knee drives through high
+        '.....PppuuPpppuu....',
+        '......PpP..Ppuuu....',
+        '.......PpP....Ppu...',
+        '.......PpP...Kkkjn..',
+        '.......PpP...KKKK...',
+        '.......KkkK.........',
+        '.......KKKKK........',
+    ],
+]
+
+
+def sprint_head(hair, tails):
+    """the head 2px forward on the padded canvas, hair swept back, tails streaming"""
+    rows = [list('.' * (PAD + 2) + r + '.' * (PAD - 2)) for r in HEAD]
+    for y, r in enumerate(SPRINT_HAIR[hair]):
+        rows[y] = list(r)
+    for y in (6, 7, 8):  # the tails no longer hang down the back of the head
+        rows[y][PAD + 2] = '.'
+    rows[7][PAD + 4] = 'R'
+    for y, r in enumerate(SPRINT_TAILS[tails]):
+        for x, ch in enumerate(r):
+            if ch != '.':
+                rows[5 + y][x] = ch
+    return [''.join(r) for r in rows]
+
+
+SPRINT = {}  # already padded: build() leaves these alone
+pad = lambda rows: ['.' * PAD + r.ljust(W, '.')[:W] + '.' * PAD for r in rows]
+for i, lg in enumerate(SPRINT_LEGS):
+    SPRINT['sprint%d' % i] = sprint_head(i % 2, i) + pad(shift(SIDE, 1) + lg)
+# a jump taken at full speed keeps the streaming hair
+SPRINT['sjump'] = sprint_head(0, 0) + pad(shift(SIDE, 1) + shift(LEGS['jump'], 1))
+SPRINT['sfall'] = sprint_head(1, 2) + pad(shift(SIDE, 1) + shift(LEGS['fall'], 1))
+FRAMES.update(SPRINT)
+
 # Back view for ladders: hair and the band's knot, broad back with the bandolier, both boots.
 BACK_UP = [
     '.....e...e...e......',
@@ -302,12 +398,13 @@ for i, legs in enumerate(BACK_LEGS):
 SH = {'idle': ((5, 13), (7, 13)), 'idle2': ((5, 14), (7, 14)), 'run1': ((6, 13), (8, 13)), 'run2': ((6, 13), (8, 13)),
       'run3': ((6, 13), (8, 13)), 'lean': ((7, 13), (9, 13)), 'back': ((5, 13), (8, 13)), 'hurt': ((5, 13), (8, 13)),
       'crouch': ((5, 15), (7, 15)), 'idle1': ((5, 13), (7, 13)),
-      **{'walk%d' % i: ((6, 14 if i in (1, 4) else 13), (8, 14 if i in (1, 4) else 13)) for i in range(6)}, 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12))}
+      **{'walk%d' % i: ((6, 14 if i in (1, 4) else 13), (8, 14 if i in (1, 4) else 13)) for i in range(6)}, 'climb0': ((5, 12), (14, 12)), 'climb1': ((5, 12), (14, 12)),
+      **{k: ((6, 13), (8, 13)) for k in ('sprint0', 'sprint1', 'sprint2', 'sprint3', 'sjump', 'sfall')}}
 # (both sockets sit under the ear, the near one a step forward of the far one)
 
 
 def frame_image(rows):
-    im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    im = Image.new('RGBA', (max(map(len, rows)), H), (0, 0, 0, 0))
     px = im.load()
     for y, row in enumerate(rows):
         for x, ch in enumerate(row):
@@ -337,13 +434,13 @@ def outline(im):
 def build():
     """-> (strip image, manifest dict) in the format build_next.py writes."""
     names = list(FRAMES)
-    ims = [frame_image(FRAMES[k]) for k in names]
+    ims = [frame_image(FRAMES[k] if k in SPRINT else pad(FRAMES[k])) for k in names]
     fw, fh = ims[0].size
     strip = Image.new('RGBA', (fw * len(ims), fh), (0, 0, 0, 0))
     for i, im in enumerate(ims):
         assert im.size == (fw, fh), names[i]
         strip.alpha_composite(im, (i * fw, 0))
-    sh = {k: [[b[0] + 1, b[1] + 1], [f[0] + 1, f[1] + 1]] for k, (b, f) in ((k, SH.get(k, SH['idle'])) for k in names)}
+    sh = {k: [[b[0] + 1 + PAD, b[1] + 1], [f[0] + 1 + PAD, f[1] + 1]] for k, (b, f) in ((k, SH.get(k, SH['idle'])) for k in names)}
     return strip, {'w': fw, 'h': fh, 'feet': fh - 1, 'frames': names, 'shoulders': sh, 'arcade': True}
 
 

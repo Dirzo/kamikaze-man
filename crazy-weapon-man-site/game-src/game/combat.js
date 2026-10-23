@@ -3,7 +3,7 @@
 import { C } from '../config.js';
 import { world, newId } from './world.js';
 import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch } from './fx.js';
-import { hitFeel, reaction, killLaunch } from '../data/feel.js';
+import { hitFeel, reaction, killLaunch, rushMult, MOVE } from '../data/feel.js';
 import { sfx, duck } from '../engine/audio.js';
 import { makeWeapon, noWeaker } from './loot.js';
 import { cx, cy } from './physics.js';
@@ -68,6 +68,13 @@ export function hitEnemy(e, dmg, o = {}) {
     return 0;
   }
   dmg *= bigFoeMult(e) * foeMult(e) * (e.kind === 'beast' ? beastTaken(e) : 1); // a flipped Spin Turtle takes double
+  // RUSH: hits at speed land harder (data/feel.js); the first one out of a full sprint shouts it
+  const rush = rushMult(hero.mom || 0, heroStats().rush);
+  dmg *= rush;
+  if (rush > 1 && hero.sprint && !o.chip && !o.chain && world.t > (hero.rushCall || 0)) {
+    callout('RUSH!', 0, 0, C.sky, { follow: e, life: 30 });
+    hero.rushCall = world.t + 0.8;
+  }
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
@@ -337,6 +344,8 @@ export function kill(e, o = {}) {
     duck(0.55, 0.45);
   }
   if (e.sleeper) say(e, pickLine(LINES.last), 1.4, true);
+  if (world.run && !e.swarm && !e.boss && !e.swarmBoss) world.run.residentKills++; // the level-clear tally
+  if (world.hero && world.hero.mom > 0.3) world.hero.mom = Math.min(1, world.hero.mom + MOVE.killMomentum); // a kill at speed feeds the run
   const pay = e.swarm ? 1 : KILL_PAY(world.zone); // stages hold fewer residents than they used to, each pays more
   gainXp(Math.round(e.xp * pay));
   gainProficiency(e.elite ? 'elite' : 'normal');

@@ -241,6 +241,7 @@ export function heroPose(h, t) {
   } else if (h.attack && h.attack.ranged && st.ranged) pose = keys(st.ranged, Math.min(1, h.attack.t / h.attack.dur));
   else if (h.ladder) pose = climbPose(h);
   else if (h.dashT > 0) pose = { ...st.dash };
+  else if (h.stowed) pose = sprintPose(h);
   else if (h.skidT > 0 && h.onGround) pose = { ...st.idle(t, 0), f: 'lean', dy: 1 }; // braking into the turn
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
@@ -263,9 +264,10 @@ export function heroPose(h, t) {
     if (pose.f === 'idle' || pose.f === 'idle2') pose.f = br < 0.3 ? 'idle' : br < 0.7 ? 'idle1' : 'idle2';
   }
   if (!pose.f) pose.f = 'idle';
-  // just off a ladder: the hand reaches over the shoulder and draws the weapon back out
-  if (h.drawT > 0 && !h.attack && !h.special && !h.ladder && !h.dead) {
-    const k = Math.min(1, h.drawT / DRAW_TIME);
+  // just off a ladder or out of a sprint: the hand reaches over the shoulder and draws the weapon
+  // back out (a swing out of a sprint snaps it out in DRAW_SNAP)
+  if (h.drawT > 0 && !h.special && !h.ladder && !h.dead && !h.stowed) {
+    const k = Math.min(1, h.drawT / (h.drawMax || DRAW_TIME));
     pose = { ...pose, fh: [pose.fh[0] + (SHEATH.at[0] - pose.fh[0]) * k, pose.fh[1] + (SHEATH.at[1] - pose.fh[1]) * k], ang: pose.ang + (SHEATH.ang - pose.ang) * k };
   }
   return pose;
@@ -277,6 +279,19 @@ export function heroPose(h, t) {
 export const SHEATH = { at: [7, 6], ang: 112 };
 const BACK_SHEATH = { at: [14, 7], ang: 128 };
 export const DRAW_TIME = 0.18;
+export const DRAW_SNAP = 0.07;
+// Sprint (full momentum, hero.js): the weapon is sheathed on the back, the body pitches forward with
+// the hair and headband streaming (art-src/arcade_hero.py sprint0-3, sjump, sfall) and both arms
+// pump: the near arm drives forward to the chin while the far arm swings back, then they swap.
+export const RUN_SHEATH = { at: [6, 11], ang: 158 };
+function sprintPose(h) {
+  const base = { at: RUN_SHEATH.at, ang: RUN_SHEATH.ang, sheath: true, wb: true, bh: [4, 20] };
+  if (!h.onGround) return { ...base, f: h.vy < 0 ? 'sjump' : 'sfall', fh: [14, 14], armF: 'pump', armB: 'dback/near' };
+  const fi = Math.floor(h.animT * 14) % 4;
+  // near leg reaching (0): near arm back, far arm forward; far leg reaching (2): the other way round
+  const nearFwd = fi >= 2;
+  return { ...base, f: 'sprint' + fi, dy: fi % 2 ? -0.6 : 0, fh: nearFwd ? [14, 14] : [3, 21], armF: nearFwd ? 'pump' : 'dback/near', armB: nearFwd ? 'dback/near' : 'pump/near' };
+}
 function climbPose(h) {
   // hand over hand on the rungs in front of his face: from behind, the head and back hide most of
   // both arms (drawn under the body), one fist higher than the other, swapping as the legs swap
@@ -412,7 +427,7 @@ const angIndex = deg => (((Math.round((deg / 360) * ROT_STEPS) % ROT_STEPS) + RO
 // Hand-drawn arms (art-src/arcade_arms.py): eight directions, each bent and straight, front arms
 // plus a darker copy for the far arm. A pose asks for a hand position; we draw the arm whose fist
 // offset from the shoulder is closest and report where its fist really is, so the weapon sits in it.
-const ONLY = new Set(['draw', 'chi', 'clo', 'chiL', 'cloL']); // drawn for one pose: only used when a pose names them
+const ONLY = new Set(['draw', 'chi', 'clo', 'chiL', 'cloL', 'pump']); // drawn for one pose: only used when a pose names them
 function pickArm(dx, dy, far, only) {
   let best = null,
     bd = 1e9;

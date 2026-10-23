@@ -42,6 +42,7 @@ import { updateAmbience, drawAmbienceFront } from './game/ambience.js';
 import { flushBook } from './data/book.js';
 import { temperOf, temperClear, MODS } from './data/temper.js';
 import { relicMask, keepRelics, allRelics, RELIC_COUNT } from './data/relics.js';
+import { tally, openLevelEnd, updateLevelEnd, drawLevelEnd, LEVEL_END_DONE } from './game/levelend.js';
 
 let capture = false;
 let scene = 'loading',
@@ -150,7 +151,8 @@ function endLevel(result) {
   }
   if (result === 'quit') return openMap();
   const stable = !!trophy && trophyCount() === STABLE_TROPHIES; // the third family head just fell
-  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable };
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable, tally: tally() };
+  openLevelEnd();
   scene = 'levelEnd';
   sceneT = 0;
 }
@@ -194,7 +196,9 @@ function update(dt) {
     return;
   }
   if (scene === 'levelEnd') {
-    if (sceneT > 0.6 && (input.take('confirm') | input.take('jump')) || sceneT > (world.levelEnd.trophy ? 8 : 4)) openMap(world.levelEnd.fresh);
+    const go = updateLevelEnd(sceneT, () => (sceneT = LEVEL_END_DONE));
+    if (go === 'retry') enterLevel(world.levelEnd.node);
+    else if (go === 'continue') openMap(world.levelEnd.fresh);
     return;
   }
   if (scene === 'over' || scene === 'won') {
@@ -358,40 +362,6 @@ function drawPause() {
   text(world.level ? 'ESC TO RESUME    Q TO LEAVE THE LEVEL' : 'ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
 }
 
-function drawLevelEnd() {
-  const E = world.levelEnd, clear = E.result === 'clear', final = clear && E.node.id === FINAL;
-  dither(0, 0, W, H, C.ink, 9);
-  const extra = [];
-  if (E.relics) extra.push([E.relics.set ? `ALL ${RELIC_COUNT} RELICS! A STAR FOR ${E.node.id}` : `RELICS ${E.relics.taken}/${RELIC_COUNT} THIS RUN` + (E.relics.fresh ? `  (${E.relics.fresh} NEW)` : ''), E.relics.set ? C.gold : C.cream]);
-  if (E.temperUp) extra.push([`TEMPER ${E.temperUp} UNLOCKED: ${MODS[E.temperUp - 1].name}  (T ON THE MAP)`, C.coral]);
-  if (E.cards) extra.push([`MONSTER BOOK: ${E.cards} CARD${E.cards > 1 ? 'S' : ''} WENT UP A TIER`, C.sky]);
-  const tr = E.trophy ? 30 : 0; // a trophy takes three more lines: its power and the world it is for
-  if (E.stable) extra.push(['THE STABLE IS OPEN! PICK A MOUNT: E (POWERS) > STABLE', C.lime]);
-  panel('panel', W / 2 - 172, 74, 344, 108 + tr + extra.length * 10);
-  extra.forEach(([s, col], i) => text(s, W / 2, 160 + tr + i * 10, col, { align: 'center' }));
-  text(final ? 'THE HOARD IS QUIET' : clear ? 'LEVEL CLEAR!' : 'LEVEL FAILED', W / 2, 88, clear ? C.gold : C.coral, { align: 'center', k: 2 });
-  text(E.node.id + '  ' + E.node.name.toUpperCase(), W / 2, 112, C.paper, { align: 'center' });
-  const line = final ? 'YOU BEAT CRAZY WEAPON MAN. THE CLOSETS STILL HAVE SECRETS.'
-    : E.secret ? 'SECRET EXIT! A HIDDEN PATH OPENS'
-    : clear ? (E.fresh.length > 1 ? 'A FORK IN THE ROAD! ' + E.fresh.length + ' NEW PATHS OPEN' : E.fresh.length ? 'A NEW PATH OPENS' : 'YOUR GEAR IS SAVED')
-    : 'NOTHING LOST BUT THE ATTEMPT. THE MAP IS SAFE.';
-  text(line, W / 2, 128, clear ? C.lime : C.mist, { align: 'center' });
-  if (E.trophy) {
-    text('TROPHY: ' + E.trophy.name, W / 2, 140, C.gold, { align: 'center' });
-    text('NEW POWER: ' + E.trophy.perk, W / 2, 150, C.cream, { align: 'center' });
-    // the power on two lines, split at the word nearest the middle that fits
-    const words = E.trophy.desc.toUpperCase().split(' ');
-    let cut = words.length;
-    while (cut > 1 && textWidth(words.slice(0, cut).join(' ')) > 330) cut--;
-    const half = words.findIndex((_, i) => textWidth(words.slice(0, i + 1).join(' ')) * 2 >= textWidth(words.join(' ')));
-    cut = Math.min(cut, Math.max(1, half + 1));
-    text(words.slice(0, cut).join(' '), W / 2, 160, C.paper, { align: 'center' });
-    text(fitText(words.slice(cut).join(' '), 330), W / 2, 170, C.paper, { align: 'center' });
-    text(fitText(E.trophy.turf, 330), W / 2, 180, C.lime, { align: 'center' });
-  } else text(`+${E.shards} SHARDS BANKED FOR THE SHARD TREE`, W / 2, 144, C.ice, { align: 'center' });
-  text('JUMP / ENTER: BACK TO THE MAP', W / 2, 164 + tr + extra.length * 10, C.fog, { align: 'center' });
-}
-
 function render() {
   screenLayer();
   const t = clock;
@@ -410,7 +380,7 @@ function render() {
   if (scene === 'play') drawSpecialScreen(); // the special's banner and flash go over the HUD too
   drawInventory(clock);
   if (scene === 'pause') drawPause();
-  if (scene === 'levelEnd') drawLevelEnd();
+  if (scene === 'levelEnd') drawLevelEnd(sceneT, clock);
   if (scene === 'over') drawResults(false, sceneT, clock);
   if (scene === 'won') drawResults(true, sceneT, clock);
   document.getElementById('start').hidden = scene !== 'over' && scene !== 'won';

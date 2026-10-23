@@ -3,7 +3,8 @@
 // health and go back to the last ground you stood on), chasms with a stepping ledge in the middle,
 // floating ledge rows and staircases that make a richer high route (the relics sit up there), and a
 // flat arena at the end where the boss waits. No ladders, no stacked storeys: you never have to
-// stop moving. Residents stand along the route in small groups you can cut through at a run; you
+// stop moving. Stages run 11 to 20 screens, with long straightaways to build up speed on (hero.js
+// momentum). Residents stand along the route in small groups you can cut through at a run; you
 // don't have to clear them to reach the arena, but a full clear pays.
 // Biome art and names still belong to ZONES. Layouts are seeded per level, so a route is the same
 // every run and speedrun splits stay comparable.
@@ -17,7 +18,7 @@ import { NODES, REGIONS, isLevel } from './overworld.js';
 
 // residents per map: groups along the route, fewer than the old MapleStory fields (50 + 4z), so
 // each kill pays KILL_PAY times as much (xp, shards, weapon drops) and the economy keeps its pace
-export const FOES = zone => 30 + zone * 3;
+export const FOES = zone => 40 + zone * 4;
 export const KILL_PAY = zone => (50 + zone * 4) / FOES(zone);
 // shards for a full clear (every resident on the map) before you reach the arena
 export const CLEAR_BONUS = zone => 12 + zone * 4;
@@ -27,17 +28,18 @@ export const CLEAR_BONUS = zone => 12 + zone * 4;
 //   hills  how big the steps are (0-3)        climb / descend  the stage trends up or down
 //   blocks floating ledge rows                stairs staircases up to a high run
 //   cave   a rock roof (always high enough to jump under)   pack  residents per group
+//   straight  chance of a long flat straightaway to build momentum on (Sonic, Dead Cells)
 export const LAYOUTS = [
-  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 7, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, pack: [2, 4] },
-  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 8, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, pack: [2, 4] },
-  { title: 'SEA CAVES', label: 'GROTTO', screens: 8, cave: true, pits: 0.35, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, pack: [2, 5] },
-  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 8, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, pack: [2, 5] },
-  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 8, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, pack: [2, 5] },
-  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 9, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, pack: [3, 5] },
-  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 9, pits: 0.55, chasm: 0.55, hills: 1, blocks: 0.35, stairs: 0.15, pack: [3, 5] },
-  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 9, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, pack: [3, 6] },
-  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 10, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] },
-  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 10, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] }
+  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 11, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, pack: [2, 4] },
+  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 12, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, pack: [2, 4] },
+  { title: 'SEA CAVES', label: 'GROTTO', screens: 12, straight: 0.25, cave: true, pits: 0.35, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, pack: [2, 5] },
+  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 12, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, pack: [2, 5] },
+  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 13, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, pack: [2, 5] },
+  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 13, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, pack: [3, 5] },
+  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 14, straight: 0.25, pits: 0.55, chasm: 0.55, hills: 1, blocks: 0.35, stairs: 0.15, pack: [3, 5] },
+  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 14, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, pack: [3, 6] },
+  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 15, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] },
+  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 16, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] }
 ];
 
 // Every level plays its own stage from its world's recipe: the first level plays the zone's
@@ -59,7 +61,7 @@ export function levelLayout(zone, id) {
   const seed = [...id].reduce((h, c) => h * 31 + c.charCodeAt(0), 7);
   return {
     ...lay, title, seed,
-    screens: Math.min(12, lay.screens + Math.round(tier * 2) + (big ? 1 : 0)),
+    screens: Math.min(20, lay.screens + Math.round(tier * 3) + (big ? 1 : 0)),
     pits: Math.min(0.65, lay.pits + tier * 0.12),
     cave: kind === 'fort' || (i % 4 === 3 ? !lay.cave : !!lay.cave),
     foes: Math.round(tier * 8) + (big ? 3 : 0),
@@ -153,6 +155,11 @@ function stage(m, lay) {
       x += gap;
       // a chasm's far side is never far below its stepping ledge
       add(Math.min(end - x, m.int(12, 22) * 8), chasm ? m.pick([-16, 0, 8]) : m.pick([-16, 0, 0, 16]));
+      continue;
+    }
+    // a straightaway: a long flat run with nothing overhead, where momentum builds to a full sprint
+    if (left > 720 && m.rand() < lay.straight) {
+      add(m.int(44, 64) * 8, m.pick([-16, 0, 0, 16]));
       continue;
     }
     const w = left < 360 ? left : m.int(12, 30) * 8;

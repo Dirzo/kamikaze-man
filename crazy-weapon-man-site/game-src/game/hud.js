@@ -65,6 +65,10 @@ export function drawHud(t) {
   heart(8, y + 1);
   bar(16, y + 2, 58, 4, h.hp / h.maxHp, h.hp / h.maxHp < 0.3 && Math.floor(t * 6) % 2 ? C.coral : C.red);
   text(fmt(h.hp), 78, y, C.paper);
+  // SPEED: the momentum gauge under the health bar, flashing at a full sprint (RUSH)
+  const mom = h.mom || 0, rushing = h.sprint && Math.floor(t * 10) % 2;
+  bar(16, y + 10, 58, 2, mom, rushing ? C.paper : h.sprint ? C.sky : C.blue);
+  if (h.sprint) text('RUSH', 78, y + 8, rushing ? C.paper : C.sky);
   sep(104);
   // SPECIAL
   const T = TYPES[h.weapon.type];

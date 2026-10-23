@@ -188,6 +188,16 @@ ARMS = {
         '3444455O44',
         '.33333333',
     ],
+    # sprinting: the arm pumps forward, elbow down and in, forearm up so the fist comes to the chin.
+    # Only picked when the sprint pose asks for it
+    ('pump', 'near'): [
+        '.455....VVv',
+        'O444...vvFv',
+        '3344..54zvz',
+        '.3445544...',
+        '..34444....',
+        '...333.....',
+    ],
     # ladder arms, seen from behind: fists on the rungs straight above the shoulders, elbows just out.
     # 'chi' grips the rung by the top of the head, 'clo' the one at shoulder height; mirrored (L) below
     ('chi', 'near'): [
@@ -215,8 +225,8 @@ ARMS = {
 }
 for _d in ('chi', 'clo'):
     ARMS[(_d + 'L', 'near')] = [r.rjust(max(map(len, ARMS[(_d, 'near')])), '.')[::-1] for r in ARMS[(_d, 'near')]]
-ONLY = ('draw', 'chi', 'clo', 'chiL', 'cloL')  # picked by name only, never as the nearest match
-DIRS = {'chi': -70, 'clo': 0, 'chiL': -110, 'cloL': 180, 'draw': -45, 'fwd': 0, 'dfwd': 45, 'down': 90, 'dback': 135, 'back': 180, 'uback': -135, 'up': -90, 'ufwd': -45}
+ONLY = ('draw', 'chi', 'clo', 'chiL', 'cloL', 'pump')  # picked by name only, never as the nearest match
+DIRS = {'pump': -20, 'chi': -70, 'clo': 0, 'chiL': -110, 'cloL': 180, 'draw': -45, 'fwd': 0, 'dfwd': 45, 'down': 90, 'dback': 135, 'back': 180, 'uback': -135, 'up': -90, 'ufwd': -45}
 # the far arm is the same drawing one shade darker, so it sits back in depth
 DARKER = {'5': '4', '4': '3', '3': '2', '2': '1', 'O': '3', 'V': 'v', 'v': 'z', 'F': 'z', 'z': 'z'}
 

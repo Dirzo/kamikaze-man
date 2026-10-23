@@ -222,9 +222,10 @@ export function runSmoke(game) {
     const h=world.hero;h.lv=3;world.enemies.length=0;world.director.phase='exit';world.director.t=0;
     h.x=world.map.exitX-h.w/2;h.y=world.map.exitY-h.h;game.update(STEP);
     ok(game.scene==='levelEnd' && world.levelEnd.result==='clear','clearing 1-1 did not end the level');
-    for(let i=0;i<260 && game.scene!=='map';i++){poll();game.update(STEP);}
+    ok(world.levelEnd.tally && world.levelEnd.tally.grade.g,'no grade on the level-clear sheet');
+    for(let i=0;i<400 && game.scene!=='map';i++){if(i%40===20)key('Enter',true);if(i%40===22)key('Enter',false);game.update(STEP);}
     const save=JSON.parse(localStorage.getItem(OVERWORLD_KEY));
-    ok(game.scene==='map' && save.cleared['1-1'] && save.hero.lv===3 && isOpen(game.ow.save,'1-2'),'clear was not saved');
+    ok(game.scene==='map' && save.cleared['1-1'] && save.hero.lv===3 && isOpen(game.ow.save,'1-2'),'clear was not saved '+game.scene+' '+game.sceneT()+' '+JSON.stringify(save?.cleared));
     game.enterLevel(NODES['1-2']);ok(world.hero.lv===3,'saved hero not restored');
     world.hero.lv=50;world.hero.dead=true;world.phase='dead';
     for(let i=0;i<120 && game.scene==='play';i++)game.update(STEP);

@@ -57,11 +57,15 @@ const SHARED = [
   ['grace', 46, 40, 1, 'GRACE', 5, 'inv', 0.06, '+{v}% longer safety after a hit'],
   // area-of-effect augments that work with every weapon, one step off the inner ring
   ['nova', -48, -66, 1, 'SHARD NOVA', 5, 'nova', 0.04, 'Kills burst into shards that hit foes nearby for {v}% of the fallen foe\'s health'],
-  ['ripple', 48, -66, 1, 'RIPPLE', 5, 'splash', 0.03, 'Every hit splashes {v}% of its damage onto foes nearby']
+  ['ripple', 48, -66, 1, 'RIPPLE', 5, 'splash', 0.03, 'Every hit splashes {v}% of its damage onto foes nearby'],
+  // SPEED: run faster for longer (hero.js momentum, combat.js RUSH)
+  ['tail', -64, 30, 1, 'TAILWIND', 5, 'accel', 0.12, 'Momentum builds {v}% faster: you hit full speed sooner'],
+  ['slip', 64, 30, 2, 'SLIPSTREAM', 5, 'rush', 0.06, 'Hits at full speed RUSH {v}% harder on top']
 ];
 const SHARED_LINKS = [['core', 'sharp'], ['core', 'skin'], ['core', 'magnet'], ['core', 'learn'], ['core', 'tutor'], ['sharp', 'band'], ['band', 'magnet'],
   ['skin', 'hearts'], ['hearts', 'learn'], ['magnet', 'learn'], ['tutor', 'bounty'], ['tutor', 'lust'], ['bounty', 'stand'], ['lust', 'stand'],
-  ['band', 'combo'], ['hearts', 'grace'], ['sharp', 'bounty'], ['skin', 'lust'], ['sharp', 'nova'], ['bounty', 'nova'], ['skin', 'ripple'], ['lust', 'ripple']];
+  ['band', 'combo'], ['hearts', 'grace'], ['sharp', 'bounty'], ['skin', 'lust'], ['sharp', 'nova'], ['bounty', 'nova'], ['skin', 'ripple'], ['lust', 'ripple'],
+  ['band', 'tail'], ['combo', 'tail'], ['hearts', 'slip'], ['grace', 'slip']];
 // Each class cluster traces the outline of its weapon (the sword, hammer and bow drawn behind it
 // in game/powers.js): nodes sit on the silhouette in the cluster's own frame (u: out from CORE along
 // the branch, v: across it), and the links run along the outline. The upgrades are about how the
@@ -203,7 +207,7 @@ export const SIGNATURE = {
 export const MASTERY_PERKS = [
   [{ name: 'EDGE', desc: '+6% damage', stats: { dmg: 0.06 } }, { name: 'KEEN', desc: '+4% critical chance', stats: { crit: 0.04 } }],
   [{ name: 'QUICK HANDS', desc: 'Attack 6% faster', stats: { attackSpeed: 0.06 } }, { name: 'SECOND WIND', desc: 'Special recharges 15% faster', stats: { specialCd: 0.15 } }],
-  [{ name: 'IRON GRIP', desc: 'Take 6% less damage', stats: { armor: 0.06 } }, { name: 'LONG STRIDE', desc: '+6% move speed', stats: { speed: 0.06 } }],
+  [{ name: 'IRON GRIP', desc: 'Take 6% less damage', stats: { armor: 0.06 } }, { name: 'LONG STRIDE', desc: '+6% speed, momentum builds 25% faster', stats: { speed: 0.06, accel: 0.25 } }],
   [{ name: 'BRUISER', desc: '+12% damage to bosses and elites', stats: { bossDmg: 0.12 } }, { name: 'CROWD CONTROL', desc: '+15% damage in the swarm', stats: { swarmDmg: 0.15 } }],
   [{ name: 'HONED', desc: '+10% damage', stats: { dmg: 0.1 } }, { name: 'LUCKY STREAK', desc: '+6% critical chance', stats: { crit: 0.06 } }],
   [{ sig: 0 }, { sig: 1 }],
@@ -445,7 +449,7 @@ export function choosePerk(type, tier, opt) {
 export const unpicked = type => Array.from({ length: tiersOpen(type) }, (_, i) => i).filter(i => perkChoice(type, i) == null);
 
 // ---------------------------------------------------------------- the sum of it all
-const ZERO = { dmg: 0, crit: 0, critDmg: 0, swarmDmg: 0, bossDmg: 0, execute: 0, specialCd: 0, attackSpeed: 0, hp: 0, heal: 0, armor: 0, speed: 0,
+const ZERO = { dmg: 0, crit: 0, critDmg: 0, swarmDmg: 0, bossDmg: 0, execute: 0, specialCd: 0, attackSpeed: 0, hp: 0, heal: 0, armor: 0, speed: 0, accel: 0, rush: 0,
   dashCd: 0, inv: 0, regen: 0, shards: 0, xp: 0, combo: 0, hearts: 0, mastery: 0, bossShards: 0, standout: 0, lust: 0, splash: 0, wave: 0, nova: 0,
   impact: 0, reach: 0, knock: 0, echo: 0, aoeSize: 0, shotSpeed: 0, multishot: 0, pierce: 0, homing: 0, trail: 0,
   shotArmor: 0, magicArmor: 0, starArmor: 0, lavaArmor: 0, knockRes: 0, chillHit: 0 };

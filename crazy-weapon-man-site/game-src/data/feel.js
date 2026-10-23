@@ -55,9 +55,14 @@ export const MOVE = {
   apexGravity: 0.5, // a short hang at the top while jump is held
   apexBand: 40, // |vy| below this counts as the top of the jump
   maxFall: 360,
-  sprintAfter: 0.8, // seconds of running before the sprint kicks in
-  sprintSpeed: 1.25,
+  momentumTime: 1.1, // seconds of running one way from a standstill to full momentum
+  momentumDecay: 2.2, // momentum lost per second on the ground with no direction held
+  swingDrain: 0.3, // share of momentum a swing on the ground costs
+  killMomentum: 0.12, // a kill at speed feeds the run
+  topSpeed: 1.4, // run speed at full momentum, times the SPEED stat
+  sprintAt: 0.85, // momentum from here on is a sprint: weapon on the back, hair streaming
   sprintJump: 1.1,
+  rush: 0.25, // RUSH: extra damage at full momentum (scales up from half momentum)
   skidSpeed: 80, // turning round faster than this skids
   swingSlow: 0.4, // run speed during a melee swing's active frames
   swingSlowWind: 0.7, // and during the rest of the swing
@@ -82,3 +87,18 @@ export function windHang(type, p, start) {
   const done = a + hold * 0.15; // where the hold left the pose
   return done + ((p - a - hold) / (1 - a - hold)) * (1 - done);
 }
+
+// SPEED (Sonic, Dead Cells): momentum (0..1) builds while you run one way, carries through jumps,
+// bleeds away when you let go on the ground and is gone the moment you turn round, stop dead or
+// get hit. accel is the ACCELERATION stat (builds faster).
+//   push   running the way you're moving     ground  on the ground     swing  a melee swing on the ground
+export function momentumStep(mom, dt, { push, back = false, ground = true, swing = false, accel = 0 }) {
+  if (back) return 0;
+  if (push && !swing) return Math.min(1, mom + (dt / MOVE.momentumTime) * (1 + accel));
+  if (!ground) return mom;
+  return swing ? mom : Math.max(0, mom - dt * MOVE.momentumDecay);
+}
+// how fast you run: the SPEED stat, then momentum on top of it
+export const runSpeed = (base, speed, mom) => base * (1 + speed) * (1 + mom * (MOVE.topSpeed - 1));
+// RUSH: hits at speed land harder, from nothing at half momentum to the full bonus at full speed
+export const rushMult = (mom, rush = 0) => 1 + Math.max(0, Math.min(1, (mom - 0.5) / 0.5)) * (MOVE.rush + rush);

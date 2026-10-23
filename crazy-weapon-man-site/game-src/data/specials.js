@@ -89,3 +89,21 @@ export function specialRoll(w) {
 export const specialOf = w => SPECIALS[specialRoll(w).id];
 export const specialId = w => specialRoll(w).id;
 export const hasBoon = (w, b) => !!w && specialRoll(w).boons.includes(b);
+
+// SPEED boons: Uncommon and better weapons can also roll one of these, a gear stat for how you run
+// (hero.js momentum). Rolled on a stream of its own, so the special boons a weapon already had stay
+// the same; a weapon never changes.
+export const SPEED_BOONS = {
+  fleet: { label: 'FLEET', desc: '+8% speed.', col: 'sky', stats: { speed: 0.08 } },
+  tailwind: { label: 'TAILWIND', desc: 'Momentum builds 35% faster.', col: 'ice', stats: { accel: 0.35 } },
+  slipstream: { label: 'SLIPSTREAM', desc: 'Hits at full speed RUSH 15% harder.', col: 'teal', stats: { rush: 0.15 } }
+};
+const SPEED_LIST = Object.keys(SPEED_BOONS);
+// the weapon's speed boon id, or null (cached on it as w.spd)
+export function speedBoon(w) {
+  if (!w) return null;
+  if (w.spd !== undefined && (w.spd === null || SPEED_BOONS[w.spd])) return w.spd;
+  const r = seeded({ name: w.name + '|speed', type: w.type, q: w.q });
+  const chance = (w.q || 0) < 1 && !w.standout ? 0 : Math.min(0.6, 0.22 + 0.04 * (w.q || 0) + (w.standout ? 0.15 : 0));
+  return (w.spd = r() < chance ? SPEED_LIST[Math.floor(r() * SPEED_LIST.length)] : null);
+}
