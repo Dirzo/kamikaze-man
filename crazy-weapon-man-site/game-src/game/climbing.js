@@ -11,7 +11,7 @@ export function updateClimb(h,dt) {
   const was=h.ladder;
   const on=climb(h,dt);
   if(on && !was){h.climbT=0;sfx.ui();} // shk: sheathed
-  if(was && !h.ladder)h.drawT=DRAW_TIME; // shing: drawn again
+  if(was && !h.ladder)h.drawT=h.drawMax=DRAW_TIME; // shing: drawn again
   return on;
 }
 function climb(h,dt) {

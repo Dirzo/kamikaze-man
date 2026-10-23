@@ -45,6 +45,7 @@ test('every map is a Super Mario World style run: one-way through, no ladders, p
 });
 test('fewer residents than the old fields, and each pays more so the economy keeps pace',()=>{
   for(let z=0;z<10;z++) assert.ok(Math.abs(FOES(z)*KILL_PAY(z)-(50+4*z))<1e-9);
+  for(let z=0;z<10;z++) assert.ok(FOES(z)>=40,'longer stages hold enough residents');
 });
 test('ladders end level with the platform they hang from, so the climb stops there',()=>{
   for(const [z,id] of MAPS) for(const l of makeMap(z,id).ladders) {
@@ -54,7 +55,7 @@ test('ladders end level with the platform they hang from, so the climb stops the
 test('maps are bounded, populated along their whole route and end at the exit',()=>{
   for(const [z,id] of MAPS) {
     const m=makeMap(z,id);
-    assert.ok(m.width>=6*W && m.width<=13*W);
+    assert.ok(m.width>=11*W && m.width<=21*W);
     assert.ok(m.spawns.length>=27+z*2-1);
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
     assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));
@@ -107,7 +108,8 @@ test('every map starts on a floor and the camera can follow every height',()=>{
 test('solid floors, ceilings and side walls stop movement',()=>{
   world.map=makeMap(0);
   try {
-    const p=world.map.solids.find(p=>p.ceiling), h={x:p.x+30,y:p.y+p.h+1,w:16,h:22,vx:0,vy:-200};
+    const S=world.map.solids,free=(x,y,w)=>!S.some(q=>x<q.x+q.w && x+w>q.x && y<q.y+q.h && y+22>q.y);
+    const p=S.find(p=>p.ceiling && p.h>110 && free(p.x-17,p.y+100,17)), h={x:p.x+30,y:p.y+p.h+1,w:16,h:22,vx:0,vy:-200};
     move(h,1/60,[]);assert.equal(h.y,p.y+p.h);assert.equal(h.vy,0);
     h.x=p.x-17;h.y=p.y+100;h.vx=150;h.vy=0;
     move(h,1/60,[]);assert.equal(h.x,p.x-h.w);assert.equal(h.hitWall,1);

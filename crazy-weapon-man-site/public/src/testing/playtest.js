@@ -132,6 +132,7 @@ function newRun(game, skill, from, level = null) {
       report.boss = world.boss?.name || null;
       report.time = Math.round(S.t);
       report.lv = h.lv;
+      if (level && world.levelEnd?.tally) { const Y = world.levelEnd.tally; report.grade = report.won ? Y.grade.g : null; report.par = +(Y.t / Y.par).toFixed(2); report.done = +Y.done.toFixed(2); report.top = Y.top; }
       bot.done = true;
       return;
     }

@@ -23,7 +23,7 @@ import { updateAmbience } from '../game/ambience.js';
 import { MOVES } from '../data/weapons.js';
 import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
-import { GROUND } from '../config.js';
+import { GROUND, W } from '../config.js';
 import { updateCamera } from '../game/camera.js';
 import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
 import { bankShards, buyRank, winTrophy, choosePerk, setLock, chooseMount } from '../data/meta.js';
@@ -149,12 +149,14 @@ export function captureScene(game, mode) {
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);
+  if(/^clear/.test(mode)) return clearSheet(game, mode);
   // the level-clear screen as you take the world 8 trophy (her castle is cleared on the next frame)
   if(mode==='trophy') { mapScene(game, true); game.enterLevel(NODES['8-C']); world.phase='cleared'; return; }
   // Keep weapon names, looks and actor layout stable between captures.
   let seed=1234567; Math.random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   if(/^tour\d+$/.test(mode)) return tour(game,+mode.slice(4));
   if(/^walk\d+$/.test(mode)) return walk(game,+mode.slice(4));
+  if(/^sprint\d+$/.test(mode)) return sprint(game,+mode.slice(6));
   if(/^secret\d+$/.test(mode)) return secret(game,+mode.slice(6));
   if(/^boss\d+$/.test(mode)) return bossFight(game,+mode.slice(4));
   if(/^lv[\dSFC-]+$/.test(mode) && NODES[mode.slice(2)]) return bossFight(game,NODES[mode.slice(2)].zone+1,NODES[mode.slice(2)]);
@@ -258,6 +260,40 @@ function walk(game,n) {
   document.documentElement.dataset.capture='ready';
 }
 
+// ?capture=sprintN&w=type: the zone's longest straightaway cleared of residents, the hero at its
+// start with a weapon of that type, left running (for filming the sprint); window.cwmWorld for the recorder
+function sprint(game,n) {
+  game.play(()=>{
+    const z=Math.max(0,Math.min(9,n-1)),type=new URLSearchParams(location.search).get('w')||'katana';
+    startZone(z);world.director={phase:'fight',toSpawn:0,bossStarted:false};
+    const foes=new URLSearchParams(location.search).has('foes');if(!foes)world.enemies.length=0;
+    const g=world.map.platforms.filter(p=>p.ground && p.x>0 && p.x<world.map.bossLeft-W).sort((a,b)=>b.w-a.w)[0],h=world.hero;
+    h.x=g.x+8;h.y=g.y-h.h;
+    // &at=kind: start a run-up before the first gadget of that kind (springs, ropes, ziplines...)
+    const at=new URLSearchParams(location.search).get('at'),gd=at&&world.map.gadgets.filter(o=>o.kind===at)[+(new URLSearchParams(location.search).get('n')||0)];
+    if(gd){const gx=(gd.x??gd.x0)-(+new URLSearchParams(location.search).get('back')||170),p=world.map.platforms.filter(p=>p.ground && gx>=p.x && gx<p.x+p.w)[0];if(p){h.x=gx;h.y=p.y-h.h;}}h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type,q:3,standout:false});h.face=1;
+    if(foes) {h.maxHp=h.hp=1e6;for(const e of world.enemies) e.spawnT=0;}
+    updateCamera(0,true);
+    window.cwmWorld=world;
+  });
+  document.documentElement.dataset.capture='ready';
+}
+// ?capture=clear (a strong run: a high grade) or clearslow (a slow, partial one): the level-clear
+// stat sheet for 1-2 animating in, left running so the grade can be filmed
+function clearSheet(game, mode) {
+  const slow = mode === 'clearslow';
+  game.openMap();
+  game.enterLevel(NODES['1-2']);
+  const R = world.run, m = world.map;
+  R.t = slow ? 260 : 118; R.residentKills = Math.round(m.spawns.length * (slow ? 0.55 : 1)); R.top = slow ? 141 : 168; R.sprintT = slow ? 12.4 : 41.7;
+  const types = slow ? ['sword', 'bow'] : ['katana', 'hammer', 'bow', 'dagger'];
+  types.forEach((type, i) => logDamage((slow ? 900 : 2600) / (i + 1) + 137 * i, makeWeapon(0, { type, q: 2 + i, standout: i === 1 })));
+  world.shards = slow ? 96 : 318;
+  for (const r of world.relics.slice(0, slow ? 1 : world.relics.length)) r.got = true;
+  if (world.secret && !slow) world.secret.found = true;
+  world.phase = 'cleared';
+  document.documentElement.dataset.capture = 'ready';
+}
 // where each map's easter egg hides (secret1..secret10): the hero a few steps away from it
 function secret(game,n) {
   game.snapshot(()=>{

@@ -16,15 +16,16 @@ import { lookOf } from './looks.js';
 import { attackBox, activeWindow, canAttack } from './attack-rules.js';
 import { attackMutation, impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
-import { drawHeroAnimated, fireAt } from './anim.js';
+import { drawHeroAnimated, fireAt, DRAW_TIME, DRAW_SNAP } from './anim.js';
 import { drawPolyHero } from './beastkin.js';
 import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abilities.js';
 import { heroPhysics } from './gimmicks.js';
 import { charge, drawMount, RIDE, flap, mountDef } from './mount.js';
 import { X } from '../engine/gfx.js';
-import { MOVE, windHang, plungeOf } from '../data/feel.js';
+import { MOVE, windHang, plungeOf, momentumStep, runSpeed } from '../data/feel.js';
 import { beginRun, spHit, startCrazy, updateCrazy, impact, heroHidden } from './specials.js';
 import { specialId } from '../data/specials.js';
+import { updateGadgets, GADGET } from './gadgets.js';
 
 
 export function createHero() {
@@ -103,6 +104,8 @@ export function updateHero(h, dt) {
     if (h.attack) updateAttack(h, dt, T);
     return;
   }
+  // springs, dash panels, rings; a rope swing or a zipline takes over movement (gadgets.js)
+  if (updateGadgets(h, dt)) return;
   const ax = input.axis();
   // the level's gimmick (water, ice) and the mount you ride change how the hero moves
   const G = heroPhysics() || {}, ride = h.mount ? mountDef(h.mount) : null;
@@ -129,16 +132,23 @@ export function updateHero(h, dt) {
     if (ride) charge(h);
     return;
   }
-  // run: after MOVE.sprintAfter seconds of running one way you hit a sprint (SMW's P-meter in
-  // miniature); a melee swing on the ground slows you down and locks which way you face (in the air it
-  // keeps your momentum, so swinging mid-jump never drops you short of a ledge)
+  // run: SPEED. Momentum builds while you run one way (Sonic, Dead Cells), carries through jumps and
+  // dashes, bleeds off when you let go on the ground and is gone when you turn round, run into a wall
+  // or get hit. Full momentum is a sprint (weapon on the back, hair streaming, a higher jump) and
+  // every hit at speed RUSHES (combat.js). A melee swing on the ground costs a share of it, slows you
+  // and locks which way you face (in the air it keeps your momentum, so swinging mid-jump never
+  // drops you short of a ledge)
   const swing = h.attack && !h.attack.ranged ? h.attack : null;
-  if (ax && ax === Math.sign(h.vx) && !swing && h.hurtT <= 0 && !h.ladder) h.runT = (h.runT || 0) + dt;
-  else if (!ax || ax !== Math.sign(h.vx) || swing) h.runT = 0;
-  h.sprint = (h.runT || 0) >= MOVE.sprintAfter && !ride && !G.swim;
+  const groundSwing = swing && h.onGround;
+  if (groundSwing && !swing.drained) (swing.drained = true), (h.mom = (h.mom || 0) * (1 - MOVE.swingDrain));
+  h.mom = ride || G.swim || h.hurtT > 0 || h.ladder ? 0 : momentumStep(h.mom || 0, dt, {
+    push: !!ax && ax === Math.sign(h.vx), back: !!ax && Math.abs(h.vx) > MOVE.skidSpeed && ax === -Math.sign(h.vx),
+    ground: h.onGround, swing: groundSwing, accel: S.accel
+  });
+  h.sprint = h.mom >= MOVE.sprintAt;
   if (h.hurtT <= 0 && !(h.heldT > 0)) {
-    const slowBy = swing && h.onGround ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
-    const target = ax * HERO.speed * (1 + S.speed) * (G.speed || 1) * (ride ? ride.speed : 1) * (h.sprint ? MOVE.sprintSpeed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1);
+    const slowBy = groundSwing ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
+    const target = ax * runSpeed(HERO.speed, S.speed, h.mom) * (G.speed || 1) * (ride ? ride.speed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1) * (h.boostT > 0 ? GADGET.boost.burst : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
       h.skidT = 0.16;
@@ -228,6 +238,17 @@ export function updateHero(h, dt) {
   if (h.lungeT > 0) h.vx -= h.face * h.lungeV;
   if (h.onGround) h.airShot = false;
   pitCheck(h);
+  if (h.hitWall && h.hitWall === ax) h.mom = 0; // ran into a wall
+  // at a sprint the weapon rides on the back; a swing draws it in a flash (anim.js blends it out of
+  // the sheath), letting the sprint go draws it at an easy pace
+  const stow = h.sprint && !h.attack && !h.ladder && h.dashT <= 0;
+  if (h.stowed && !stow) {
+    h.drawT = h.drawMax = h.attack ? DRAW_SNAP : DRAW_TIME;
+    if (h.attack) emit(cx(h) - h.face * 3, h.y + 4, 'twinkle', C.paper); // shing
+  }
+  h.stowed = stow;
+  if (world.run) (world.run.top = Math.max(world.run.top, Math.abs(h.vx))), h.sprint && (world.run.sprintT += dt); // the level-clear tally
+  if (h.sprint && Math.random() < 0.3) emit(cx(h) - h.face * (8 + Math.random() * 6), h.y + 3 + Math.random() * 16, 'streak', C.paper);
   if (landed) {
     h.landT = 0.08;
     if (fallSpeed > 120) h.squashT = 0.07;

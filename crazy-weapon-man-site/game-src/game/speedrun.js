@@ -17,7 +17,7 @@ import { fmt } from '../data/curve.js';
 export function newRun() {
   const prof = {};
   for (const t of TYPE_LIST) prof[t] = { ...proficiency(t) };
-  world.run = { t: 0, zoneT: 0, splits: [], weapons: new Map(), dealt: 0, prof, best: null, prevBest: null, ended: false, ticks: 0 };
+  world.run = { t: 0, zoneT: 0, splits: [], weapons: new Map(), dealt: 0, prof, best: null, prevBest: null, ended: false, ticks: 0, residentKills: 0, top: 0, sprintT: 0 };
 }
 export function tickRun(dt) {
   if (world.run && !world.run.ended) world.run.t += dt;

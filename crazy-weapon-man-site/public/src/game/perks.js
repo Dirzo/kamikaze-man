@@ -3,9 +3,26 @@
 import { world } from './world.js';
 import { stats } from '../data/meta.js';
 import { heroMaxHp } from '../data/curve.js';
+import { speedBoon, SPEED_BOONS } from '../data/specials.js';
 
 // (the zone too: a trophy made for this world adds its home-turf edge)
-export const heroStats = () => stats(world.hero?.weapon?.type || null, world.zone ?? null);
+// plus the held weapon's SPEED boon, if it rolled one (data/specials.js)
+const geared = new WeakMap();
+export const heroStats = () => {
+  const w = world.hero?.weapon, base = stats(w?.type || null, world.zone ?? null);
+  return withGear(base, w);
+};
+export function withGear(base, w) {
+  const b = w && speedBoon(w);
+  if (!b) return base;
+  let g = geared.get(w);
+  if (!g || g.base !== base) {
+    g = { base, s: { ...base } };
+    for (const [k, v] of Object.entries(SPEED_BOONS[b].stats)) g.s[k] += v;
+    geared.set(w, g);
+  }
+  return g.s;
+}
 // max health at a hero level, with the account's health bonuses
 export const heroMax = lv => Math.round(heroMaxHp(lv) * (1 + stats().hp));
 // innate abilities (mastery signatures, world boss perks) work like the weapon's own ability
