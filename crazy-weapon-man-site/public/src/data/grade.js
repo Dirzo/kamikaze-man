@@ -8,9 +8,9 @@ export const GRADES = [
   { g: 'C', at: 0.45, col: 'cream', word: 'COOL' },
   { g: 'D', at: 0, col: 'coral', word: 'DONE IT' }
 ];
-// par: a run through the stage at a bit over base run speed, a moment per resident and time for
+// par: a run through the stage at about two thirds of top run speed (Sonic pace, data/feel.js), a moment per resident and time for
 // the boss (tuned on the campaign bot, which clears most levels in about 80% of par).
-export const PAR = { speed: 130, perResident: 0.8, boss: 22, perWall: 1.5 }; // perWall: smashing a breakable wall (game/walls.js)
+export const PAR = { speed: 175, perResident: 0.8, boss: 22, perWall: 1.5 }; // perWall: smashing a breakable wall (game/walls.js)
 export function parTime(width, residents, walls = 0) {
   return Math.round(width / PAR.speed + residents * PAR.perResident + walls * PAR.perWall + PAR.boss);
 }
