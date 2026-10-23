@@ -59,10 +59,13 @@ export const MOVE = {
   momentumDecay: 2.2, // momentum lost per second on the ground with no direction held
   swingDrain: 0.3, // share of momentum a swing on the ground costs
   killMomentum: 0.12, // a kill at speed feeds the run
-  topSpeed: 1.4, // run speed at full momentum, times the SPEED stat
+  topSpeed: 2.3, // run speed at full momentum, times the SPEED stat (about 260 px/s: Sonic pace)
   sprintAt: 0.85, // momentum from here on is a sprint: weapon on the back, hair streaming
   sprintJump: 1.1,
-  rush: 0.25, // RUSH: extra damage at full momentum (scales up from half momentum)
+  rush: 7, // RUSH: extra damage at full momentum (scales up from half momentum): one running slash at a full sprint fells a regular resident
+  runSlashAt: 0.5, // from this much momentum (where RUSH starts) a swing is a running slash: no slow, no momentum cost
+  rushTough: 0.25, // the most RUSH elites, bosses and castle heads ever take
+  hurtKeep: 0.5, // share of momentum a hit leaves you
   skidSpeed: 80, // turning round faster than this skids
   swingSlow: 0.4, // run speed during a melee swing's active frames
   swingSlowWind: 0.7, // and during the rest of the swing
@@ -72,8 +75,12 @@ export const MOVE = {
   attackBuffer: 0.3, // a press this long before the swing ends still comes out
   specialBuffer: 0.6, // long enough to outlast a hammer's wind-up
   touchDmg: 0.25, // walking into a riled-up resident: this share of its hit
-  lookAhead: 0.12, // of the screen width, in the direction you face
-  lookAheadSprint: 0.16
+  lookAhead: 0.1, // of the screen width ahead of you standing still or walking
+  lookAheadTop: 0.25, // and at top speed (the lead grows with how fast you actually run)
+  // charge dash (Sonic's spin dash): hold DOWN and tap DASH to rev, let go of DOWN to launch
+  revMax: 3, // revs
+  revBurst: 0.15, // extra run speed per rev for revTime after the launch
+  revTime: 0.5
 };
 
 // heavy weapons hang at the top of the swing before coming down: p (0..1 of the swing) is remapped
@@ -89,16 +96,22 @@ export function windHang(type, p, start) {
 }
 
 // SPEED (Sonic, Dead Cells): momentum (0..1) builds while you run one way, carries through jumps,
-// bleeds away when you let go on the ground and is gone the moment you turn round, stop dead or
-// get hit. accel is the ACCELERATION stat (builds faster).
+// bleeds away when you let go on the ground, and when you turn round it drains with the speed you
+// actually still have (a skid, not a dead stop). accel is the ACCELERATION stat (builds faster).
 //   push   running the way you're moving     ground  on the ground     swing  a melee swing on the ground
-export function momentumStep(mom, dt, { push, back = false, ground = true, swing = false, accel = 0 }) {
-  if (back) return 0;
+//   back   pushing against the way you're moving, at `left` share of the speed momentum gave you
+export function momentumStep(mom, dt, { push, back = false, left = 0, ground = true, swing = false, accel = 0 }) {
+  if (back) return Math.min(mom, Math.max(0, left));
   if (push && !swing) return Math.min(1, mom + (dt / MOVE.momentumTime) * (1 + accel));
   if (!ground) return mom;
   return swing ? mom : Math.max(0, mom - dt * MOVE.momentumDecay);
 }
 // how fast you run: the SPEED stat, then momentum on top of it
 export const runSpeed = (base, speed, mom) => base * (1 + speed) * (1 + mom * (MOVE.topSpeed - 1));
-// RUSH: hits at speed land harder, from nothing at half momentum to the full bonus at full speed
-export const rushMult = (mom, rush = 0) => 1 + Math.max(0, Math.min(1, (mom - 0.5) / 0.5)) * (MOVE.rush + rush);
+// the momentum a speed is worth (inverse of runSpeed): how much of the run is left in a skid
+export const momentumOf = (v, base, speed = 0) => Math.max(0, Math.min(1, (Math.abs(v) / (base * (1 + speed)) - 1) / (MOVE.topSpeed - 1)));
+// RUSH: hits at speed land harder, from nothing at half momentum to the full bonus at a sprint.
+// tough foes (elites, bosses, castle heads) only ever take the old small bonus
+export const rushMult = (mom, rush = 0, tough = false) => 1 + Math.max(0, Math.min(1, (mom - 0.5) / (MOVE.sprintAt - 0.5))) * Math.min(tough ? MOVE.rushTough + rush : Infinity, MOVE.rush + rush);
+// how far the camera leads, as a share of the screen width, at speed v (top = top run speed)
+export const camLead = (v, top) => MOVE.lookAhead + (MOVE.lookAheadTop - MOVE.lookAhead) * Math.max(0, Math.min(1, Math.abs(v) / top));

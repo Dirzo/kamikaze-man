@@ -528,6 +528,14 @@ export const sfx = {
     if (!gate('jump', 60)) return;
     chip([[N(60), 1], [N(64), 1], [N(67), 1], [N(72), 2]], { wave: 'p25', vol: 0.035, decay: 0.004 });
   },
+  // charge dash: each rev winds a step higher, the launch is a long whoosh
+  rev(n) {
+    hiss(4, { vol: 0.04, rate: 0.3 + n * 0.25, drop: -0.2 });
+    chip([[N(55 + n * 5), 1], [N(60 + n * 5), 2]], { wave: 'p25', vol: 0.03, decay: 0.004 });
+  },
+  launch() {
+    hiss(9, { vol: 0.06, rate: 0.5, drop: -0.25 });
+  },
   dash() {
     if (!gate('dash', 90)) return;
     hiss(7, { vol: 0.045, rate: 0.4, drop: -0.12 });

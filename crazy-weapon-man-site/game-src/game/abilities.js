@@ -57,13 +57,13 @@ export function abilityHurt(h) {
   say1('BITES BACK!', C.leaf);
 }
 // DASH CUT: everything the dash passes through gets sliced once
+// every dash (and a charge-dash launch) cuts what it passes through; DASH CUT doubles it
 export function dashCut(h) {
-  if (!hasAbility('dashcut')) return;
   h.dashHit = h.dashHit || new Set();
   for (const e of world.enemies) {
     if (e.dead || e.spawnT > 0 || h.dashHit.has(e) || !overlap(h, e)) continue;
     h.dashHit.add(e);
-    hitEnemy(e, hitDamage(h.weapon) * 1.1, { dir: h.face, knock: 14, chain: true, sparkCol: C.paper });
+    hitEnemy(e, hitDamage(h.weapon) * (hasAbility('dashcut') ? 1.4 : 0.7), { dir: h.face, knock: 14, chain: true, sparkCol: C.paper });
   }
 }
 

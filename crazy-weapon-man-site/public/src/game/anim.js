@@ -243,13 +243,14 @@ export function heroPose(h, t) {
   else if (h.rope || h.zip) pose = { f: 'sjump', fh: [12, 2], bh: [7, 3], armF: 'up/near', armB: 'up/near', at: RUN_SHEATH.at, ang: RUN_SHEATH.ang, sheath: true, wb: true }; // hanging on, weapon on the back
   else if (h.ladder) pose = climbPose(h);
   else if (h.dashT > 0) pose = { ...st.dash };
+  else if (h.rev) pose = { ...st.idle(t, 0), f: 'crouch', dy: Math.floor(t * 30) % 2 && h.rev.n > 1 ? 1 : 0 }; // revving a charge dash: crouched, shuddering
   else if (h.stowed) pose = sprintPose(h, st);
   else if (h.skidT > 0 && h.onGround) pose = { ...st.idle(t, 0), f: 'lean', dy: 1 }; // braking into the turn
   else if (!h.onGround) pose = st.air(h.vy < 0);
   else if (Math.abs(h.vx) > 12) {
     // six-frame walk (contact, down, passing per leg); the arms swing against the legs, so the
     // near hand is back while the near leg reaches forward, and the hands dip on the planted step
-    const ph = h.animT * 11;
+    const ph = (h.legPh ?? h.animT) * 11; // (hero.js legPh: faster with the run)
     const fi = Math.floor(ph) % 6;
     const s = -Math.cos((ph / 6) * Math.PI * 2);
     pose = st.run(s);
@@ -289,7 +290,7 @@ export const RUN_SHEATH = { at: [6, 11], ang: 158 };
 function sprintPose(h, st) {
   const sh = st.sheath || RUN_SHEATH, base = { at: sh.at, ang: sh.ang, sheath: true, wb: true, bh: [4, 20] };
   if (!h.onGround) return { ...base, f: h.vy < 0 ? 'sjump' : 'sfall', fh: [14, 14], armF: 'pump', armB: 'dback/near' };
-  const fi = Math.floor(h.animT * 14) % 4;
+  const fi = Math.floor((h.legPh ?? h.animT * 1.4) * 10) % 4; // 14 frames a second at the old top speed, faster above it
   // near leg reaching (0): near arm back, far arm forward; far leg reaching (2): the other way round
   const nearFwd = fi >= 2;
   return { ...base, f: 'sprint' + fi, dy: fi % 2 ? -0.6 : 0, fh: nearFwd ? [14, 14] : [3, 21], armF: nearFwd ? 'pump' : 'dback/near', armB: nearFwd ? 'dback/near' : 'pump/near' };

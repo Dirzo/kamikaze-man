@@ -22,7 +22,7 @@ import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abiliti
 import { heroPhysics } from './gimmicks.js';
 import { charge, drawMount, RIDE, flap, mountDef } from './mount.js';
 import { X } from '../engine/gfx.js';
-import { MOVE, windHang, plungeOf, momentumStep, runSpeed } from '../data/feel.js';
+import { MOVE, windHang, plungeOf, momentumStep, momentumOf, runSpeed } from '../data/feel.js';
 import { beginRun, spHit, startCrazy, updateCrazy, impact, heroHidden } from './specials.js';
 import { specialId } from '../data/specials.js';
 import { updateGadgets, GADGET } from './gadgets.js';
@@ -112,6 +112,13 @@ export function updateHero(h, dt) {
   const ax = input.axis();
   // the level's gimmick (water, ice) and the mount you ride change how the hero moves
   const G = heroPhysics() || {}, ride = h.mount ? mountDef(h.mount) : null;
+  // charge dash (Sonic's spin dash): hold DOWN and tap DASH on the ground to rev up to MOVE.revMax
+  // times, let go of DOWN to launch at full momentum, cutting through whatever is in the way
+  if (h.rev && (!h.onGround || h.hurtT > 0 || ride || G.swim)) h.rev = null;
+  if (!h.rev && h.onGround && !ride && !G.swim && !h.attack && h.hurtT <= 0 && input.held('down') && input.take('dash')) h.rev = { n: 0 };
+  if (h.rev) return updateRev(h, dt, ax, S);
+  h.revT = Math.max(0, (h.revT || 0) - dt);
+  if (h.revT > 0) dashCut(h); // the launch ploughs through residents like a dash
   // dash (riding: a longer WAR CHARGE that bowls foes over)
   if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
     h.dashT = HERO.dashTime * (ride ? ride.chargeTime : 1);
@@ -141,17 +148,22 @@ export function updateHero(h, dt) {
   // every hit at speed RUSHES (combat.js). A melee swing on the ground costs a share of it, slows you
   // and locks which way you face (in the air it keeps your momentum, so swinging mid-jump never
   // drops you short of a ledge)
+  // a swing started at speed (RUSH) is a running slash: it doesn't slow you or cost momentum
   const swing = h.attack && !h.attack.ranged ? h.attack : null;
-  const groundSwing = swing && h.onGround;
+  const groundSwing = swing && h.onGround && !swing.run;
   if (groundSwing && !swing.drained) (swing.drained = true), (h.mom = (h.mom || 0) * (1 - MOVE.swingDrain));
-  h.mom = ride || G.swim || h.hurtT > 0 || h.ladder ? 0 : momentumStep(h.mom || 0, dt, {
-    push: !!ax && ax === Math.sign(h.vx), back: !!ax && Math.abs(h.vx) > MOVE.skidSpeed && ax === -Math.sign(h.vx),
+  // turning round drains momentum with the speed you still have (a skid, not a dead stop); a hit
+  // halves it (combat.js hurtHero) and the knockback doesn't count as turning round
+  const push = !!ax && ax === Math.sign(h.vx);
+  if (push || !h.mom) h.keepMom = false;
+  h.mom = ride || G.swim || h.ladder ? 0 : h.hurtT > 0 || (h.keepMom && ax) ? h.mom || 0 : momentumStep(h.mom || 0, dt, {
+    push, back: !!ax && Math.abs(h.vx) > MOVE.skidSpeed && ax === -Math.sign(h.vx) && !h.keepMom, left: momentumOf(h.vx, HERO.speed, S.speed),
     ground: h.onGround, swing: groundSwing, accel: S.accel
   });
   h.sprint = h.mom >= MOVE.sprintAt;
   if (h.hurtT <= 0 && !(h.heldT > 0)) {
     const slowBy = groundSwing ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
-    const target = ax * runSpeed(HERO.speed, S.speed, h.mom) * (G.speed || 1) * (ride ? ride.speed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1) * (h.boostT > 0 ? GADGET.boost.burst : 1);
+    const target = ax * runSpeed(HERO.speed, S.speed, h.mom) * (G.speed || 1) * (ride ? ride.speed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1) * (h.boostT > 0 ? GADGET.boost.burst : 1) * (h.revT > 0 ? h.revBurst : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
       h.skidT = 0.16;
@@ -251,6 +263,8 @@ export function updateHero(h, dt) {
     if (h.attack) emit(cx(h) - h.face * 3, h.y + 4, 'twinkle', C.paper); // shing
   }
   h.stowed = stow;
+  // the legs keep pace with the ground (anim.js): one unit of legPh per base run speed's worth of ground
+  h.legPh = (h.legPh || 0) + dt * Math.min(2.5, Math.max(1, Math.abs(h.vx) / HERO.speed));
   if (world.run) (world.run.top = Math.max(world.run.top, Math.abs(h.vx))), h.sprint && (world.run.sprintT += dt); // the level-clear tally
   if (h.sprint && Math.random() < 0.3) emit(cx(h) - h.face * (8 + Math.random() * 6), h.y + 3 + Math.random() * 16, 'streak', C.paper);
   if (landed) {
@@ -262,6 +276,42 @@ export function updateHero(h, dt) {
     }
   }
   h.landT = Math.max(0, h.landT - dt);
+}
+
+// ---------------------------------------------------------------- charge dash
+// crouched and revving: each DASH tap winds it up a step (dust and a rising whine); letting go of
+// DOWN launches you at full momentum plus a burst per rev. You can turn round while revving.
+function updateRev(h, dt, ax, S) {
+  const R = h.rev;
+  if (input.held('down')) {
+    if (ax) h.face = ax;
+    if (R.n < MOVE.revMax && (R.n === 0 || input.take('dash'))) {
+      R.n++;
+      sfx.rev(R.n);
+      burst(cx(h) - h.face * 6, h.y + h.h - 1, 3 + R.n * 2, 'dust', ['mist', 'fog', 'paper']);
+    }
+    input.consume('dash');
+    h.attack = null;
+    h.vx -= Math.sign(h.vx) * Math.min(Math.abs(h.vx), HERO.friction * 1.5 * dt);
+    h.mom = 0;
+    if (Math.random() < 0.2 + R.n * 0.15) emit(cx(h) - h.face * (6 + Math.random() * 4), h.y + h.h - 2, 'dust', C.mist);
+    move(h, dt, world.platforms);
+    pitCheck(h);
+    return;
+  }
+  h.rev = null;
+  h.mom = 1;
+  h.sprint = true;
+  h.revBurst = 1 + MOVE.revBurst * R.n;
+  h.revT = MOVE.revTime;
+  h.dashHit = null;
+  h.vx = h.face * runSpeed(HERO.speed, S.speed, 1) * h.revBurst;
+  h.inv = Math.max(h.inv, MOVE.revTime * 0.6);
+  sfx.launch();
+  shake(0.2 + R.n * 0.05);
+  burst(cx(h) - h.face * 8, h.y + h.h - 2, 10, 'dust', ['mist', 'fog', 'paper']);
+  for (let i = 0; i < 8; i++) emit(cx(h) - h.face * i * 3, h.y + h.h - 2 - Math.random() * 18, 'streak', C.paper);
+  move(h, dt, world.platforms);
 }
 
 // ---------------------------------------------------------------- pits
@@ -352,7 +402,7 @@ function startAttack(h, T) {
     return;
   }
   const mv = MOVES[T.combo[h.combo]];
-  h.attack = { move: mv, moveName: T.combo[h.combo], t: 0, dur: T.cd * mv.dur * fast, weapon: w, hit: new Set() };
+  h.attack = { move: mv, moveName: T.combo[h.combo], t: 0, dur: T.cd * mv.dur * fast, weapon: w, hit: new Set(), run: (h.mom || 0) >= MOVE.runSlashAt };
   // a small step into each swing, a bigger one into the finisher
   if (h.onGround) {
     h.lungeT = MOVE.lungeTime;

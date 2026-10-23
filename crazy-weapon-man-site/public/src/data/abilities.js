@@ -6,7 +6,7 @@ export const ABILITIES = {
   vampire: { label: 'THIRSTY', desc: 'Hits sip a little health back for you.', col: 'red', clause: ['the Thirsty', 'Who Drinks Ketchup', 'Sipper of Life'] },
   thorns: { label: 'BITES BACK', desc: 'Getting hit lashes every foe nearby.', col: 'leaf', clause: ['Who Bites Back', 'the Prickly'] },
   hops: { label: 'DOUBLE JUMP', desc: 'Jump again in mid-air.', col: 'sky', clause: ['of Many Hops', 'Who Jumps on Air'] },
-  dashcut: { label: 'DASH CUT', desc: 'Dashing through foes slices them.', col: 'mist', clause: ['Who Cuts While Running', 'the Hasty'] },
+  dashcut: { label: 'DASH CUT', desc: 'Dashing through foes slices them twice as hard.', col: 'mist', clause: ['Who Cuts While Running', 'the Hasty'] },
   frenzy: { label: 'FRENZY', desc: 'Kills make you swing faster for a few seconds.', col: 'coral', clause: ['Who Gets Faster and Faster', 'the Caffeinated'] },
   lucky: { label: 'LUCKY', desc: '+15% critical hit chance.', col: 'lime', clause: ['of Suspicious Luck', 'Who Found a Clover'] },
   bubble: { label: 'BUBBLE GUARD', desc: 'A bubble pops instead of you every 8 seconds.', col: 'ice', clause: ['Who Wears a Bubble', 'the Well-Wrapped'] },

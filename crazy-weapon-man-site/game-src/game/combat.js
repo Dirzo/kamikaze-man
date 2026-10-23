@@ -69,7 +69,7 @@ export function hitEnemy(e, dmg, o = {}) {
   }
   dmg *= bigFoeMult(e) * foeMult(e) * (e.kind === 'beast' ? beastTaken(e) : 1); // a flipped Spin Turtle takes double
   // RUSH: hits at speed land harder (data/feel.js); the first one out of a full sprint shouts it
-  const rush = rushMult(hero.mom || 0, heroStats().rush);
+  const rush = rushMult(hero.mom || 0, heroStats().rush, !!(e.elite || e.boss || e.swarmBoss));
   dmg *= rush;
   if (rush > 1 && hero.sprint && !o.chip && !o.chain && world.t > (hero.rushCall || 0)) {
     callout('RUSH!', 0, 0, C.sky, { follow: e, life: 30 });
@@ -442,6 +442,9 @@ export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   h.hp -= dmg;
   h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
+  // a hit costs half your momentum, not all of it (Sonic): you're back up to speed in a moment
+  h.mom = (h.mom || 0) * MOVE.hurtKeep;
+  h.keepMom = h.mom > 0;
   // knocked back 40px or so, unless that would throw you into a pit: then you just hop where you stand
   const land = cx(h) + dir * 40, pits = world.map?.pits?.length;
   h.vx = dir * (!pits || world.map.platforms.some(p => !p.gone && p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20) * (1 - S.knockRes);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MOVE, momentumStep, runSpeed, rushMult } from '../game-src/data/feel.js';
+import { MOVE, momentumStep, momentumOf, runSpeed, rushMult, camLead } from '../game-src/data/feel.js';
 import { parTime, completion, gradeOf, timeScore } from '../game-src/data/grade.js';
 import { speedBoon, SPEED_BOONS, specialRoll } from '../game-src/data/specials.js';
 import { TREE_BY_ID, MASTERY_PERKS } from '../game-src/data/meta.js';
@@ -14,7 +14,18 @@ test('momentum builds to full in momentumTime of running, faster with ACCELERATI
   assert.ok(Math.abs(fast - 2 * 30 / 60 / MOVE.momentumTime) < 1e-6);
   assert.equal(momentumStep(0.8, 0.5, { push: false, ground: false }), 0.8, 'momentum carries through a jump');
   assert.ok(momentumStep(0.8, 0.1, { push: false }) < 0.8, 'letting go on the ground bleeds it');
-  assert.equal(momentumStep(0.9, 0.1, { push: true, back: true }), 0, 'turning round loses it');
+  assert.equal(momentumStep(0.9, 0.1, { push: true, back: true, left: 0.4 }), 0.4, 'turning round skids it down to the speed you still have');
+  assert.equal(momentumStep(0.9, 0.1, { push: true, back: true }), 0, 'and a full turn loses it');
+  assert.equal(momentumOf(runSpeed(100, 0.2, 0.6), 100, 0.2).toFixed(6), '0.600000', 'momentumOf undoes runSpeed');
+});
+test('Sonic pace: full momentum is well over twice walking speed, RUSH fells residents but not tough foes, the camera leads further at speed', () => {
+  assert.ok(MOVE.topSpeed >= 2.2);
+  assert.ok(rushMult(1) >= 8, 'a full-sprint hit lands 8x, so a home-zone resident (about 9 plain sword hits) falls to one running slash');
+  assert.equal(rushMult(1, 0, true), 1 + MOVE.rushTough, 'elites and bosses only take the small bonus');
+  assert.equal(rushMult(1, 0.1, true), 1 + MOVE.rushTough + 0.1, 'the RUSH stat still adds for them');
+  assert.equal(camLead(0, 100), MOVE.lookAhead);
+  assert.equal(camLead(300, 100), MOVE.lookAheadTop);
+  assert.ok(camLead(50, 100) > MOVE.lookAhead && camLead(50, 100) < MOVE.lookAheadTop);
 });
 test('SPEED and momentum set the run speed, and RUSH only pays from half momentum', () => {
   assert.equal(runSpeed(100, 0, 0), 100);

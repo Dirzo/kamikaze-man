@@ -220,8 +220,9 @@ export function updateEnemy(e, dt) {
   }
   // MapleStory touch damage: walking into a riled-up resident hurts (a dash goes through safely).
   // Calm, staggered, juggled and just-woken residents don't.
-  // Only a resident on the move bumps you (its swing is its own hit), at most once a second.
-  if (!e.calm && !e.swarmBoss && e.state === 'idle' && Math.abs(e.vx) > 4 && e.stun <= 0 && e.kbT <= 0 && !(e.wakeT > 0) && world.t > (e.touchAt ?? -9) + 1) {
+  // Only a resident on the move bumps you (its swing is its own hit), at most once a second, and
+  // never while you cut through at speed with a running slash (hero.js).
+  if (!e.calm && !hero.attack?.run && !e.swarmBoss && e.state === 'idle' && Math.abs(e.vx) > 4 && e.stun <= 0 && e.kbT <= 0 && !(e.wakeT > 0) && world.t > (e.touchAt ?? -9) + 1) {
     const body = { x: e.x + 2, y: e.y + 2, w: e.w - 4, h: e.h - 3 };
     if (overlap(body, hero) && hurtHero(e.dmg * MOVE.touchDmg, Math.sign(cx(hero) - cx(e)) || -hero.face)) e.touchAt = world.t;
   }
