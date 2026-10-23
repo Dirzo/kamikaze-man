@@ -56,13 +56,13 @@ export function sheetRows(w = null) {
       ['TOP SPEED', `${Math.round(runSpeed(HERO.speed, s.speed, 1))}PX/S`, true],
       row('SPEED', s.speed), row('ACCELERATION', s.accel),
       ['FULL SPEED IN', (MOVE.momentumTime / (1 + s.accel)).toFixed(2) + 'S', true],
-      ['RUSH DAMAGE', pct(MOVE.rush + s.rush), true]
+      ['RUSH DAMAGE', pct(MOVE.rush + s.rush), true], row('DASH COOLDOWN', -s.dashCd)
     ]
   });
   groups.push({
     name: 'OFFENSE', col: C.coral, rows: [
       row('DAMAGE', s.dmg), row('ATTACK SPEED', s.attackSpeed), row('CRIT CHANCE', s.crit), row('CRIT DAMAGE', s.critDmg), row('BOSS DAMAGE', s.bossDmg),
-      row('SWARM DAMAGE', s.swarmDmg), row('EXECUTE', s.execute), row('IMPACT', s.impact), row('ECHO HITS', s.echo),
+      row('SWARM DAMAGE', s.swarmDmg), row('EXECUTE', s.execute), row('IMPACT', s.impact), row('ECHO HITS', s.echo), row('SPECIAL COOLDOWN', -s.specialCd), row('KNOCKBACK', s.knock),
       ...some(row('CHILL ON HIT', s.chillHit))
     ]
   });
@@ -78,11 +78,6 @@ export function sheetRows(w = null) {
       ...(h && !h.dead ? [['MAX HEALTH', fmt(h.maxHp), true]] : []),
       row('HEALTH', s.hp), row('ARMOR', s.armor), row('HEART HEALING', s.heal), row('REGEN /S', s.regen), row('SAFETY AFTER HIT', s.inv), row('HEART DROPS', s.hearts),
       ...some(row('SHOT ARMOR', s.shotArmor), row('SPELL ARMOR', s.magicArmor), row('SHURIKEN ARMOR', s.starArmor), row('LAVA ARMOR', s.lavaArmor), row('KNOCKBACK RESIST', s.knockRes))
-    ]
-  });
-  groups.push({
-    name: 'MOBILITY', col: C.sky, rows: [
-      row('DASH COOLDOWN', -s.dashCd), row('SPECIAL COOLDOWN', -s.specialCd), row('KNOCKBACK', s.knock)
     ]
   });
   const T2 = world.temper ? temper(world.temper) : null;
