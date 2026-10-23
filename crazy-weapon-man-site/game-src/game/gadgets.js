@@ -8,13 +8,17 @@ import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
 import { cx } from './physics.js';
-import { burst, emit, shake } from './fx.js';
+import { burst, emit, shake, callout } from './fx.js';
+import { terrainArt } from './ambience.js';
+import { X } from '../engine/gfx.js';
 
 export const GADGET = {
   spring: { up: 430, upHeld: 500 }, // launch speeds (a plain jump is 262)
   boost: { burst: 1.3, time: 0.8 }, // run speed times this for `time` seconds, and full momentum
   rope: { gravity: 760, pump: 1.4, fling: 1.15, hop: 150, hold: 3 }, // pump: rad/s² for pushing with the swing
-  zip: { min: 140, accel: 420, max: 340, hop: 210 }
+  zip: { min: 140, accel: 420, max: 340, hop: 210 },
+  loop: { min: 200, exit: 1.1 }, // run speed you need to go round (slower and you run under it), and the burst out
+  bumper: { out: 260, up: 330 } // it bats you on at least `out` and up at `up`
 };
 const cool = new WeakMap(); // gadget -> world.t it can fire again
 
@@ -27,10 +31,31 @@ export function updateGadgets(h, dt) {
   for (const g of list) if (g.squash) g.squash = Math.max(0, g.squash - dt);
   if (h.rope) return swing(h, dt), true;
   if (h.zip) return slide(h, dt), true;
+  if (h.loop) return runLoop(h, dt), true;
   const feet = h.y + h.h, hx = cx(h), hands = h.y + 2;
   for (const g of list) {
     if ((cool.get(g) || 0) > world.t) continue;
-    if (g.kind === 'spring' && Math.abs(hx - g.x) < 10 && h.vy >= 0 && feet >= g.y - 8 && feet <= g.y + 1) {
+    if (g.kind === 'loop' && h.onGround && Math.abs(hx - g.x) < 6 && Math.abs(feet - g.y) < 2 && Math.abs(h.vx) >= GADGET.loop.min && !h.attack) {
+      // fast enough: up the inside, over the top upside down, and back down
+      h.loop = { g, a: 0, dir: Math.sign(h.vx), v: Math.abs(h.vx) };
+      h.inv = Math.max(h.inv, 0.3);
+      cool.set(g, world.t + 1);
+      sfx.dash();
+    } else if (g.kind === 'bumper' && Math.hypot(hx - g.x, h.y + h.h / 2 - g.y) < g.r + 9) {
+      const dir = Math.sign(h.vx) || h.face;
+      h.vx = dir * Math.max(Math.abs(h.vx), GADGET.bumper.out);
+      h.vy = -GADGET.bumper.up;
+      h.onGround = false;
+      h.coyote = 0;
+      h.jumpHeld = false;
+      h.hopped = false; // the double jump comes back
+      h.mom = Math.max(h.mom || 0, 0.7);
+      g.squash = 0.2;
+      cool.set(g, world.t + 0.25);
+      sfx.jump();
+      shake(0.2);
+      burst(g.x, g.y, 8, 'twinkle', ['paper', 'gold', 'pink']);
+    } else if (g.kind === 'spring' && Math.abs(hx - g.x) < 10 && h.vy >= 0 && feet >= g.y - 8 && feet <= g.y + 1) {
       h.vy = -(input.held('jump') ? GADGET.spring.upHeld : GADGET.spring.up);
       h.y = g.y - 8 - h.h;
       h.onGround = false;
@@ -98,6 +123,35 @@ function swing(h, dt) {
     sfx.jump();
   }
 }
+// round a loop: the feet follow the inside of the ring (gadgets drawn at g.x, g.y is the ground under
+// it, r its inner radius) at the speed you came in with; out the bottom with full momentum
+function runLoop(h, dt) {
+  const L = h.loop, g = L.g;
+  L.a += (Math.max(L.v, GADGET.loop.min) / g.r) * dt;
+  const a = Math.min(L.a, Math.PI * 2), fx = g.x + L.dir * Math.sin(a) * g.r, fy = g.y - g.r + Math.cos(a) * g.r;
+  h.x = fx - h.w / 2;
+  h.y = fy - h.h;
+  h.vx = L.dir * L.v * Math.cos(a);
+  h.vy = -L.v * Math.sin(a);
+  h.face = L.dir;
+  h.onGround = false;
+  h.loopAng = L.dir * a;
+  if (Math.random() < 0.5) emit(fx, fy, 'streak', C.paper);
+  if (L.a >= Math.PI * 2) {
+    h.loop = null;
+    h.loopAng = 0;
+    cool.set(g, world.t + 0.6); // (you come out where you went in)
+    h.y = g.y - h.h;
+    h.vx = L.dir * L.v * GADGET.loop.exit;
+    h.vy = 0;
+    h.onGround = true;
+    h.mom = 1;
+    h.sprint = true;
+    h.boostT = Math.max(h.boostT || 0, 0.4);
+    sfx.dash();
+    if (g.intro && !g.done) (g.done = true), callout('LOOP!', 0, 0, C.gold, { follow: h, life: 40 });
+  }
+}
 // downhill along the cable, faster and faster, flung off the far end with full momentum
 function slide(h, dt) {
   const Z = h.zip, g = Z.g, G = GADGET.zip, len = Math.hypot(g.x1 - g.x0, g.y1 - g.y0), c = (g.x1 - g.x0) / len, s = (g.y1 - g.y0) / len;
@@ -120,6 +174,51 @@ function slide(h, dt) {
 }
 
 // ---------------------------------------------------------------- drawing (world space)
+// bumper colours per world: rim and face (lily pads in the lagoon, a lantern in the bazaar, a
+// blossom at the shrine...)
+const BUMPER = [[C.red, C.coral], [C.blue, C.ice], [C.leaf, C.lime], [C.red, C.orange], [C.coral, C.paper], [C.slate, C.mist], [C.rust, C.orange], [C.violet, C.cream], [C.navy, C.sky], [C.gold, C.cream]];
+function disc(x, y, r, col) {
+  for (let dy = -r; dy <= r; dy++) {
+    const w = Math.floor(Math.sqrt(r * r - dy * dy));
+    rect(Math.round(x) - w, y + dy, w * 2 + 1, 1, col);
+  }
+}
+// a loop's ring, built once per zone and size: the zone's ground tile cut into a ring, its lip
+// strip (grass, snow...) along the inside you run on, inked round the outside
+const RINGS = new Map();
+function loopArt(r, z) {
+  const key = z + ':' + r;
+  if (RINGS.has(key)) return RINGS.get(key);
+  const T = terrainArt();
+  if (!T || typeof document === 'undefined') return null;
+  const rim = 10, size = (r + rim) * 2 + 2, c = document.createElement('canvas');
+  c.width = c.height = size;
+  const k = c.getContext('2d'), [gx, gy, gw, gh] = T.ground;
+  for (let y = 0; y < size; y += gh) for (let x = 0; x < size; x += gw) k.drawImage(T.atlas, gx, gy, gw, gh, x, y, gw, gh);
+  const img = k.getImageData(0, 0, size, size), d = img.data;
+  let lip = null;
+  if (T.lip) {
+    const l = document.createElement('canvas');
+    l.width = T.lip[2];
+    l.height = T.lip[3];
+    l.getContext('2d').drawImage(T.atlas, T.lip[0], T.lip[1], T.lip[2], T.lip[3], 0, 0, T.lip[2], T.lip[3]);
+    lip = l.getContext('2d').getImageData(0, 0, T.lip[2], T.lip[3]);
+  }
+  const ink = [0x1a, 0x14, 0x28], mid = size / 2;
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const i = (y * size + x) * 4, dist = Math.hypot(x + 0.5 - mid, y + 0.5 - mid), depth = dist - r + 3;
+    // the lip, its top rows poking inward over the running surface
+    if (lip && depth >= 0 && depth < lip.height) {
+      const u = Math.floor(((Math.atan2(y + 0.5 - mid, x + 0.5 - mid) + Math.PI) * r) % lip.width), j = (Math.floor(depth) * lip.width + u) * 4;
+      if (lip.data[j + 3]) { d[i] = lip.data[j]; d[i + 1] = lip.data[j + 1]; d[i + 2] = lip.data[j + 2]; d[i + 3] = 255; continue; }
+    }
+    if (dist < r || dist >= r + rim) d[i + 3] = 0;
+    else if (dist >= r + rim - 1) (d[i] = ink[0]), (d[i + 1] = ink[1]), (d[i + 2] = ink[2]);
+  }
+  k.putImageData(img, 0, 0);
+  RINGS.set(key, c);
+  return c;
+}
 const ZONE_ROPE = [C.wood, C.wood, C.leaf, C.red, C.wood, C.sand, C.stone, C.wood, C.wood, C.gold]; // vines in the lagoon, lantern cord in the bazaar
 function line(x0, y0, x1, y1, col) {
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
@@ -132,7 +231,19 @@ export function drawGadgets(t) {
   for (const g of list) {
     const gx = g.x ?? g.x0;
     if (gx < x0 - 120 || gx > x1) continue;
-    if (g.kind === 'spring') {
+    if (g.kind === 'loop') {
+      const ring = loopArt(g.r, z);
+      if (ring) X.drawImage(ring, Math.round(g.x - ring.width / 2), Math.round(g.y - g.r - ring.height / 2));
+      if (g.intro && !g.done && Math.floor(t * 3) % 2) text('LOOP! RUN IN FAST', g.x, g.y - g.r * 2 - 24, C.gold, { align: 'center' });
+    } else if (g.kind === 'bumper') {
+      const col = BUMPER[z], s = g.squash ? 2 : 0, R = g.r + s, y = Math.round(g.y);
+      disc(g.x, y, R + 1, C.ink);
+      disc(g.x, y, R, col[0]);
+      disc(g.x - 1, y - 1, R - 2, col[1]);
+      disc(g.x, y, Math.max(1, R - 4), C.paper);
+      disc(g.x, y, Math.max(1, R - 5), col[0]);
+      rect(g.x - 3, y - R + 1, 2, 1, C.paper); // the shine
+    } else if (g.kind === 'spring') {
       const sq = g.squash ? 3 : 0, top = g.y - 8 + sq;
       rect(g.x - 7, g.y - 3, 14, 3, C.ink);
       rect(g.x - 6, g.y - 2, 12, 1, C.stone);

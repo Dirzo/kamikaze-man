@@ -35,17 +35,20 @@ export const CLEAR_BONUS = zone => 12 + zone * 4;
 //   tiers  chance a stretch gets a high road over it    sky  chance a high road gets a sky road
 //   crumble  share of high-road ledges that break away  bridges  chance a pit has a crumbling bridge
 //   cliffs  chance a stretch is a cliff with a cracked tunnel mouth at its foot (game/walls.js)
+//   slopes  chance a rise or drop in the ground is a ramp instead of a step (physics.js): run
+//           downhill to pick up speed, uphill costs some
+const SLOPES = 0.75;
 export const LAYOUTS = [
-  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 13, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.36, sky: 0.0, crumble: 0, bridges: 0.35, cliffs: 0.04, pack: [2, 4] },
-  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 14, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, tiers: 0.48, sky: 0.3, crumble: 0.1, bridges: 0.35, cliffs: 0.04, pack: [2, 4] },
-  { title: 'SEA CAVES', label: 'GROTTO', screens: 14, straight: 0.25, cave: true, pits: 0.28, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, tiers: 0.42, sky: 0.0, crumble: 0.15, bridges: 0.4, cliffs: 0.048, pack: [2, 5] },
-  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 14, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, tiers: 0.6, sky: 0.52, crumble: 0.2, bridges: 0.4, cliffs: 0.048, pack: [2, 5] },
-  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 15, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, tiers: 0.6, sky: 0.6, crumble: 0.2, bridges: 0.35, cliffs: 0.048, pack: [2, 5] },
-  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 15, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, tiers: 0.6, sky: 0.6, crumble: 0.25, bridges: 0.4, cliffs: 0.056, pack: [3, 5] },
-  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 16, straight: 0.25, pits: 0.42, chasm: 0.45, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.66, sky: 0.52, crumble: 0.3, bridges: 0.5, cliffs: 0.06, pack: [3, 5] },
-  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 16, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, tiers: 0.6, sky: 0.3, crumble: 0.3, bridges: 0.45, cliffs: 0.06, pack: [3, 6] },
-  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 17, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.75, crumble: 0.35, bridges: 0.5, cliffs: 0.064, pack: [3, 6] },
-  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 18, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.6, crumble: 0.35, bridges: 0.5, cliffs: 0.064, pack: [3, 6] }
+  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 13, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.36, sky: 0.0, crumble: 0, bridges: 0.35, cliffs: 0.04, slopes: SLOPES, pack: [2, 4] },
+  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 14, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, tiers: 0.48, sky: 0.3, crumble: 0.1, bridges: 0.35, cliffs: 0.04, slopes: SLOPES, pack: [2, 4] },
+  { title: 'SEA CAVES', label: 'GROTTO', screens: 14, straight: 0.25, cave: true, pits: 0.28, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, tiers: 0.42, sky: 0.0, crumble: 0.15, bridges: 0.4, cliffs: 0.048, slopes: SLOPES, pack: [2, 5] },
+  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 14, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, tiers: 0.6, sky: 0.52, crumble: 0.2, bridges: 0.4, cliffs: 0.048, slopes: SLOPES, pack: [2, 5] },
+  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 15, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, tiers: 0.6, sky: 0.6, crumble: 0.2, bridges: 0.35, cliffs: 0.048, slopes: SLOPES, pack: [2, 5] },
+  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 15, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, tiers: 0.6, sky: 0.6, crumble: 0.25, bridges: 0.4, cliffs: 0.056, slopes: SLOPES, pack: [3, 5] },
+  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 16, straight: 0.25, pits: 0.42, chasm: 0.45, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.66, sky: 0.52, crumble: 0.3, bridges: 0.5, cliffs: 0.06, slopes: SLOPES, pack: [3, 5] },
+  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 16, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, tiers: 0.6, sky: 0.3, crumble: 0.3, bridges: 0.45, cliffs: 0.06, slopes: SLOPES, pack: [3, 6] },
+  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 17, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.75, crumble: 0.35, bridges: 0.5, cliffs: 0.064, slopes: SLOPES, pack: [3, 6] },
+  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 18, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.6, crumble: 0.35, bridges: 0.5, cliffs: 0.064, slopes: SLOPES, pack: [3, 6] }
 ];
 
 // Every level plays its own stage from its world's recipe: the first level plays the zone's
@@ -104,7 +107,7 @@ function seeded(seed) {
 function builder(zone, seed = 0) {
   const rand = seeded(zone * 7919 + 101 + seed);
   return {
-    zone, platforms: [], solids: [], ladders: [], rooms: [], room: 0, width: 0, pits: [],
+    zone, platforms: [], solids: [], ladders: [], rooms: [], room: 0, width: 0, pits: [], slopes: [], sets: new Set(),
     rand, int: (lo, hi) => lo + Math.floor(rand() * (hi - lo + 1)), pick: a => a[Math.floor(rand() * a.length)]
   };
 }
@@ -114,6 +117,14 @@ function ground(m, x, y, w, h, extra) {
   if (h == null) p.fill = true;
   m.platforms.push(p); m.solids.push(p);
   return p;
+}
+// a ramp from (x0, y0) to (x1, y1): a surface line (physics.js), with solid ground filling in a
+// pixel under its lower end so nothing slips under it (and the ground beside it is what you land on)
+function slope(m, x0, y0, x1, y1) {
+  const s = { slope: true, x: x0, w: x1 - x0, y0, y1, y: Math.min(y0, y1), k: (y1 - y0) / (x1 - x0), room: m.room };
+  m.slopes.push(s);
+  m.solids.push({ x: x0, y: Math.max(y0, y1) + 1, w: x1 - x0, h: 0, solid: true, fill: true, under: s });
+  return s;
 }
 // terrain nobody stands on: the cave roof (ceiling draws a jagged underside)
 function rock(m, x, y, w, h, ceiling = true) {
@@ -143,7 +154,14 @@ function stage(m, lay) {
   m.width = width;
   const segs = [], floats = [], trend = lay.climb ? -1 : lay.descend ? 1 : 0;
   let x = 0, y = 0;
-  const add = (w, dy = 0) => { y += Math.max(-32, Math.min(32, dy)); const g = { x, y, w }; segs.push(g); x += w; return g; };
+  const add = (w, dy = 0, most = 32) => { y += Math.max(-most, Math.min(most, dy)); const g = { x, y, w }; segs.push(g); x += w; return g; };
+  const sets = setKinds(m.zone), dense = Math.min(0.85, 0.45 + m.zone * 0.05);
+  // a rise or drop in the ground is often a ramp (45, 27 or 18 degrees) instead of a step
+  const ramp = g => {
+    const prev = segs[segs.indexOf(g) - 1], dy = g.y - prev.y, L = Math.abs(dy) * m.pick([1, 2, 2, 3]);
+    if (dy && prev.x + prev.w === g.x && g.w >= L + 64 && m.rand() < (lay.slopes || 0)) g.ramp = L;
+    return g;
+  };
   const step = () => m.pick(STEPS[lay.hills || 0]) + trend * m.pick([8, 16]);
   add(224); // a runway to get going
   let cliffs = 0;
@@ -159,8 +177,22 @@ function stage(m, lay) {
       cliffs++;
       continue;
     }
+    // a bowl (a half-pipe dip; the snow chute in the Ranger's woods): a steep ramp down, a short
+    // flat bottom and a steep ramp back up, so you pick up speed going down and carry it out
+    if (sets.includes('bowl') && left > 700 && x > 400 && m.rand() < (SET_FIRST.bowl === m.zone && !segs.some(g => g.bowl) ? 0.5 : dense * 0.12)) {
+      const d = m.pick([32, 40, 48]), down = add(d + m.int(6, 12) * 8, d, 48);
+      down.ramp = d;
+      down.bowl = true;
+      m.sets.add('bowl');
+      const up = add(d + m.int(16, 28) * 8, -d, 48);
+      up.ramp = d;
+      continue;
+    }
     // a pit (or a wide chasm with a stepping ledge in its middle), then the ground goes on
     if (left > 260 && m.rand() < lay.pits) {
+      // a kicker (rooftop launch): the ground before the pit tips up into a ramp off its edge that
+      // throws a runner over it
+      const before = segs.at(-1);
       let gap, chasm = false;
       if (m.rand() < lay.chasm) {
         gap = m.int(14, 18) * 8;
@@ -171,16 +203,18 @@ function stage(m, lay) {
       m.pits.push({ x, w: gap });
       x += gap;
       // a chasm's far side is never far below its stepping ledge
-      add(Math.min(end - x, m.int(12, 22) * 8), chasm ? m.pick([-16, 0, 8]) : m.pick([-16, 0, 0, 16]));
+      const after = add(Math.min(end - x, m.int(12, 22) * 8), chasm ? m.pick([-16, 0, 8]) : m.pick([-16, 0, 0, 16]));
+      // (only where the far side isn't lower, so the jump back up onto the kicker stays easy)
+      if (sets.includes('kicker') && after.y <= before.y && before.w >= 128 && !before.ramp && !before.cliff && !before.bowl && m.rand() < (SET_FIRST.kicker === m.zone && !segs.some(g => g.kick) ? 1 : dense * 0.4)) before.kick = m.pick([[24, 12], [32, 16], [40, 20]]);
       continue;
     }
     // a straightaway: a long flat run with nothing overhead, where momentum builds to a full sprint
     if (left > 720 && m.rand() < lay.straight) {
-      add(m.int(44, 64) * 8, m.pick([-16, 0, 0, 16])).straight = true;
+      ramp(add(m.int(44, 64) * 8, m.pick([-16, 0, 0, 16]))).straight = true;
       continue;
     }
     const w = left < 360 ? left : m.int(12, 30) * 8;
-    const g = add(w, step()), n0 = floats.length;
+    const g = ramp(add(w, step())), n0 = floats.length;
     // a row of floating ledges over the ground, sometimes with a second, higher one
     if (g.w >= 136 && m.rand() < lay.blocks) {
       const fw = m.int(6, 10) * 8, fx = g.x + m.int(3, Math.max(3, Math.floor((g.w - fw) / 8) - 3)) * 8;
@@ -215,7 +249,17 @@ function stage(m, lay) {
   for (const g of segs) {
     m.room = roomOf(g.x);
     m.rooms[m.room].floor ||= g.y + off;
-    ground(m, g.x, g.y + off, g.w);
+    if (g.ramp) {
+      const prev = segs[segs.indexOf(g) - 1];
+      slope(m, g.x, prev.y + off, g.x + g.ramp, g.y + off);
+      ground(m, g.x + g.ramp, g.y + off, g.w - g.ramp);
+    } else ground(m, g.x, g.y + off, g.w - (g.kick ? g.kick[0] : 0));
+    if (g.kick) {
+      const [L, k] = g.kick, x1 = g.x + g.w;
+      m.sets.add('kicker');
+      slope(m, x1 - L, g.y + off, x1, g.y + off - k);
+      m.solids.push({ x: x1 - 3, y: g.y + off - k + 8, w: 3, h: k - 7, solid: true, under: true }); // its face over the pit
+    }
     if (g.cliff) cliff(m, g, off);
   }
   for (const f of floats) {
@@ -230,7 +274,7 @@ function stage(m, lay) {
   m.room = 0;
   // the cave roof: 32px columns, always 104px or more over the highest thing you can stand on
   if (lay.cave) {
-    const surf = m.platforms.filter(p => p.x < end);
+    const surf = [...m.platforms, ...m.slopes].filter(p => p.x < end);
     const lowest = x0 => {
       let best = Infinity;
       for (const p of surf) if (p.x < x0 + 56 && p.x + p.w > x0 - 24) best = Math.min(best, p.y);
@@ -322,7 +366,7 @@ function highRoad(m, lay, floats, base, x1, y, tier) {
 function bridges(m, lay, segs, off, roomOf) {
   for (const p of m.pits) {
     const L = segs.find(g => g.x + g.w === p.x), R = segs.find(g => g.x === p.x + p.w);
-    if (!L || !R || L.y !== R.y || p.w > 56 || m.rand() > (lay.bridges || 0)) continue;
+    if (!L || !R || L.y !== R.y || L.kick || p.w > 56 || m.rand() > (lay.bridges || 0)) continue;
     p.bridge = true;
     m.room = roomOf(p.x);
     // 16px planks (the last one takes the odd 8), so each one is the plank under you somewhere
@@ -341,16 +385,25 @@ function bridges(m, lay, segs, off, roomOf) {
 //   zip     a zipline over a pit, sloping down: hang on and slide out the far end at speed
 export const GADGET_INTRO = ['spring', 'boost', 'rope', 'zip']; // world 1 brings the first, and so on
 export const gadgetKinds = zone => GADGET_INTRO.slice(0, Math.min(GADGET_INTRO.length, zone + 1));
+// Set pieces, one new per world the same way (and then a mix):
+//   loop    a loop-the-loop on a straightaway: hit it fast enough and you run right round it
+//   bowl    a half-pipe dip in the ground (the snow chute) built from two steep ramps
+//   bumper  a round bumper hanging over a pit (lily pads in the lagoon): it bats you up and onward
+//   kicker  the ground before a pit tips up into a launch ramp off its edge
+export const SET_INTRO = ['loop', 'bowl', 'bumper', 'kicker'];
+const SET_FIRST = Object.fromEntries(SET_INTRO.map((k, i) => [k, i]));
+export const setKinds = zone => SET_INTRO.slice(0, Math.min(SET_INTRO.length, zone + 1));
+export const LOOP = { r: 44, rim: 10 };
 function gadgets(m, lay, segs, floats, end) {
   const zone = m.zone, kinds = new Set(gadgetKinds(zone)), out = [], fresh = GADGET_INTRO[zone];
   const dense = Math.min(0.85, 0.45 + zone * 0.05); // later worlds use them more
-  const groundAt = x => segs.find(g => x >= g.x + 16 && x <= g.x + g.w - 16);
+  const groundAt = x => segs.find(g => x >= g.x + (g.ramp || 0) + 16 && x <= g.x + g.w - 16);
   const near = x => out.some(o => Math.abs((o.x ?? o.x0) - x) < 72);
   // the new kind for this world, first thing after the runway on flat ground
   if (fresh) {
     const g = segs.find(g => g.x >= 200 && g.w >= 200);
     if (g) {
-      const x = g.x + 48;
+      const x = g.x + (g.ramp || 0) + 48;
       if (fresh === 'spring' || fresh === 'boost') out.push({ kind: fresh, x, y: g.y, dir: 1, intro: true });
     }
   }
@@ -361,7 +414,14 @@ function gadgets(m, lay, segs, floats, end) {
     if (g && g.y - f.y >= 30 && !near(x) && x < end - 64) out.push({ kind: 'spring', x, y: g.y });
   }
   // dash panels at the start of every straightaway
-  if (kinds.has('boost')) for (const g of segs) if (g.straight && !near(g.x + 40)) out.push({ kind: 'boost', x: g.x + 40, y: g.y, dir: 1 });
+  if (kinds.has('boost')) for (const g of segs) if (g.straight && !near(g.x + (g.ramp || 0) + 40)) out.push({ kind: 'boost', x: g.x + (g.ramp || 0) + 40, y: g.y, dir: 1 });
+  // loops on the straightaways, well into the run so you get there fast (after the dash panel)
+  const sets = new Set(setKinds(zone)), freshSet = SET_INTRO[zone];
+  if (sets.has('loop')) for (const g of segs) {
+    const x = g.x + (g.ramp || 0) + Math.round(g.w * 0.6 / 8) * 8;
+    if (!g.straight || g.w < 300 || near(x) || (freshSet !== 'loop' && m.rand() > dense * 0.7)) continue;
+    out.push({ kind: 'loop', x, y: g.y, r: LOOP.r, intro: freshSet === 'loop' && !out.some(o => o.kind === 'loop') });
+  }
   // over the pits: ropes on the wide chasms, ziplines on the rest
   for (const p of m.pits) {
     const L = segs.find(g => g.x + g.w === p.x), R = segs.find(g => g.x === p.x + p.w);
@@ -371,6 +431,11 @@ function gadgets(m, lay, segs, floats, end) {
     const wide = p.w > 56, zipOk = L.w >= 120 && R.w >= 120, firsts = k => fresh === k && out.filter(o => o.kind === k).length < 3;
     const r = m.rand(), want = roofed ? null : firsts('rope') && wide ? 'rope' : firsts('zip') && zipOk ? 'zip'
       : wide && kinds.has('rope') && r < dense ? 'rope' : zipOk && kinds.has('zip') && r < dense * 0.5 ? 'zip' : null;
+    // a bumper where a running jump off the edge peaks, when nothing else hangs there
+    if (!want && !roofed && sets.has('bumper') && !L.kick && m.rand() < (freshSet === 'bumper' && out.filter(o => o.kind === 'bumper').length < 3 ? 0.9 : dense * 0.5)) {
+      out.push({ kind: 'bumper', x: p.x + Math.min(40, Math.round(p.w / 2)), y: L.y - 46, r: 7 });
+      continue;
+    }
     if (want === 'rope') out.push({ kind: 'rope', x: p.x + 36, y: L.y - 118, len: 76 }); // the knot hangs where a running jump off the edge peaks
     else if (want === 'zip') out.push({ kind: 'zip', x0: p.x - 96, y0: L.y - 52, x1: p.x + p.w + 96, y1: Math.max(L.y - 52 + 16, R.y - 34) });
   }
@@ -432,7 +497,8 @@ function finish(m, zone, lay) {
     name: ZONES[zone].name, style: lay.style, title: lay.title, dark: lay.dark || 0, width, height, floorY, rooms: m.rooms,
     sections: Math.ceil(width / W), platforms: m.platforms, solids: m.solids, ladders: m.ladders, spawns,
     startX: m.start.x, startY: m.start.y, exitX: width - 36, exitY: m.arena,
-    bossFloor: m.arena, bossLeft: width - W + 8, bossRight: width - 8, pits: m.pits, gadgets: m.gadgets || [], walls: m.walls || []
+    bossFloor: m.arena, bossLeft: width - W + 8, bossRight: width - 8, pits: m.pits, gadgets: m.gadgets || [], walls: m.walls || [], slopes: m.slopes,
+    sets: [...new Set([...m.sets, ...(m.gadgets || []).map(g => g.kind).filter(k => SET_INTRO.includes(k))])]
   };
 }
 

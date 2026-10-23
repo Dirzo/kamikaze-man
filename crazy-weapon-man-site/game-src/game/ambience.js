@@ -22,6 +22,8 @@ import { callout } from './fx.js';
 
 const art = () => A.biome?.[ZONES[world.zone]?.id];
 export const biome = () => BIOMES[ZONES[world.zone]?.id] || null;
+// the zone's ground tile and lip strip, for terrain drawn elsewhere (a loop, gadgets.js)
+export const terrainArt = () => { const a = art(); return a?.sprites?.ground ? { atlas: a.atlas, ground: a.sprites.ground, lip: a.sprites.lip } : null; };
 const visible = (x, y, w, h) => x + w >= world.cameraX && x <= world.cameraX + W && y + h >= world.cameraY && y <= world.cameraY + H;
 
 // a small seeded random, so a map dresses the same way every time
@@ -485,7 +487,10 @@ export function drawBiomeTerrain() {
         const l = Math.max(x, left), r = Math.min(x + g[2], right), tp = Math.max(y, top), bt = Math.min(y + g[3], bottom);
         if (r > l && bt > tp) X.drawImage(a.atlas, g[0] + (l - x), g[1] + (tp - y), r - l, bt - tp, l, tp, r - l, bt - tp);
       }
-    if (p.ground) {
+    if (p.under) {
+      if (bottom > p.y + 44) dither(left, Math.max(top, p.y + 44), right - left, Math.min(bottom, p.y + 96) - Math.max(top, p.y + 44), C.ink, 3);
+      if (bottom > p.y + 96) dither(left, Math.max(top, p.y + 96), right - left, bottom - Math.max(top, p.y + 96), C.ink, 6);
+    } else if (p.ground) {
       // deeper earth darkens, so the eye stays on the surface you run along
       if (bottom > p.y + 44) dither(left, Math.max(top, p.y + 44), right - left, Math.min(bottom, p.y + 96) - Math.max(top, p.y + 44), C.ink, 3);
       if (bottom > p.y + 96) dither(left, Math.max(top, p.y + 96), right - left, bottom - Math.max(top, p.y + 96), C.ink, 6);
@@ -511,8 +516,24 @@ export function drawBiomeTerrain() {
       runStrip('ceil', 0, p.x, p.x + p.w, p.y + p.h - 2);
     }
   }
+  for (const s of map.slopes || []) drawSlope(s, g, a, cam);
   drawPits(amb, false);
   return true;
+}
+// a ramp (maps.js slope): the ground tile filled in column by column from its surface line down to
+// the solid under it, and the zone's lip strip following the surface
+function drawSlope(s, g, a, cam) {
+  if (!visible(s.x, s.y - 8, s.w, Math.abs(s.y1 - s.y0) + 16)) return;
+  const lip = spr('lip'), base = Math.max(s.y0, s.y1) + 1;
+  for (let x = Math.max(s.x, Math.floor(cam) - 2); x < Math.min(s.x + s.w, cam + W + 2); x++) {
+    const y = Math.round(s.y0 + (x + 0.5 - s.x) * s.k), tx = ((x % g[2]) + g[2]) % g[2];
+    for (let yy = y; yy < base; ) {
+      const ty = (((yy - base) % g[3]) + g[3]) % g[3], n = Math.min(g[3] - ty, base - yy);
+      X.drawImage(a.atlas, g[0] + tx, g[1] + ty, 1, n, x, yy, 1, n);
+      yy += n;
+    }
+    if (lip) X.drawImage(a.atlas, lip[0] + (((x % lip[2]) + lip[2]) % lip[2]), lip[1], 1, lip[3], x, y - 3, 1, lip[3]);
+  }
 }
 function chevron(x, y, dir) {
   x = Math.round(x);

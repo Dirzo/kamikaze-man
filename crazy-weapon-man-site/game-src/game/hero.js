@@ -171,8 +171,11 @@ export function updateHero(h, dt) {
       burst(cx(h) - ax * 4, h.y + h.h - 1, 5, 'dust', ['mist', 'fog', 'paper']);
     }
     // on ice you slide: turning round (pushing against your own slide) grips a little better
-    const a = ax ? HERO.accel * (G.accel || 1) * (G.accel && Math.sign(h.vx) === -ax ? 1.6 : 1) : HERO.friction * (G.friction || 1);
-    h.vx += Math.sign(target - h.vx) * Math.min(Math.abs(target - h.vx), a * dt);
+    let a = ax ? HERO.accel * (G.accel || 1) * (G.accel && Math.sign(h.vx) === -ax ? 1.6 : 1) : HERO.friction * (G.friction || 1), want = target;
+    // on a slope with nothing held you roll down it, picking up speed (Sonic)
+    const sl = h.onGround && h.platform?.slope ? h.platform : null;
+    if (sl && !ax && !swing) (want = Math.sign(sl.k) * runSpeed(HERO.speed, S.speed, h.mom)), (a = MOVE.slopeRoll * Math.abs(sl.k));
+    h.vx += Math.sign(want - h.vx) * Math.min(Math.abs(want - h.vx), a * dt);
     if (ax && !swing) {
       if (h.face !== ax) h.trail = null; // a turn starts a fresh blade trail
       h.face = ax;
@@ -255,6 +258,12 @@ export function updateHero(h, dt) {
   pitCheck(h);
   bumpWalls(h, runV); // a breakable wall at a full sprint: straight through it (walls.js)
   if (h.hitWall && h.hitWall === ax) h.mom = 0; // ran into a wall
+  // slopes: running downhill builds momentum (even with nothing held), uphill costs some
+  if (h.onGround && h.platform?.slope && Math.abs(h.vx) > 20 && !ride && !G.swim) {
+    const k = h.platform.k, down = Math.sign(h.vx) === Math.sign(k);
+    h.mom = Math.max(0, Math.min(1, (h.mom || 0) + dt * Math.abs(k) * (down ? MOVE.slopeGain : -MOVE.slopeDrain)));
+    if (down && h.mom > 0.5 && Math.random() < 0.4) emit(cx(h) - Math.sign(h.vx) * 5, h.y + h.h - 1, 'dust', C.mist);
+  }
   // at a sprint the weapon rides on the back; a swing draws it in a flash (anim.js blends it out of
   // the sheath), letting the sprint go draws it at an easy pace
   const stow = h.sprint && !h.attack && !h.ladder && h.dashT <= 0;
@@ -748,6 +757,16 @@ function updateSpecial(h, dt) {
 // ---------------------------------------------------------------- draw
 export function drawHero(h, t) {
   if (heroHidden(h)) return; // THOUSAND CUTS: he is everywhere at once
+  // running round a loop (gadgets.js): turned about the feet so they stay on the ring
+  if (h.loopAng) {
+    const fx = cx(h), fy = h.y + h.h;
+    X.save();
+    X.translate(fx, fy);
+    X.rotate(-h.loopAng);
+    X.translate(-fx, -fy);
+    drawHeroBody(h, t);
+    return X.restore();
+  }
   // landing squash and take-off stretch, about the feet
   const k = h.squashT > 0 ? [1.14, 0.86] : h.stretchT > 0 ? [0.88, 1.12] : null;
   if (k) {

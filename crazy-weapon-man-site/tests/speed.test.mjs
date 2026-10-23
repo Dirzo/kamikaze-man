@@ -58,16 +58,31 @@ test('the level-clear grade: S for a fast full clear, D for a slow half one', ()
   assert.equal(timeScore(par, par), 1);
   assert.equal(completion({ kills: 0, residents: 0 }), 1);
 });
-import { makeMap, gadgetKinds, GADGET_INTRO } from '../game-src/data/maps.js';
-test('speed gadgets come in one new kind per world, the new one early on, and every one sits inside the stage', () => {
+import { makeMap, gadgetKinds, GADGET_INTRO, setKinds, SET_INTRO } from '../game-src/data/maps.js';
+test('speed gadgets and set pieces come in one new kind per world, the new one early on, and every one sits inside the stage', () => {
   for (let z = 0; z < 10; z++) {
     const m = makeMap(z), kinds = new Set(m.gadgets.map(g => g.kind));
-    for (const k of kinds) assert.ok(gadgetKinds(z).includes(k), `${k} before its world in zone ${z + 1}`);
+    for (const k of kinds) assert.ok(gadgetKinds(z).includes(k) || setKinds(z).includes(k), `${k} before its world in zone ${z + 1}`);
+    for (const k of m.sets) assert.ok(setKinds(z).includes(k), `set piece ${k} before its world in zone ${z + 1}`);
+    if (z < SET_INTRO.length) assert.ok(m.sets.includes(SET_INTRO[z]), `world ${z + 1} never shows its new ${SET_INTRO[z]}`);
     if (z < GADGET_INTRO.length) assert.ok(kinds.has(GADGET_INTRO[z]), `world ${z + 1} never shows its new ${GADGET_INTRO[z]}`);
     for (const g of m.gadgets) {
       const x = g.x ?? g.x0;
       assert.ok(x > 100 && x < m.bossLeft, `${g.kind} outside the route in zone ${z + 1}`);
       if (g.kind === 'boost') assert.equal(Math.abs(g.dir), 1);
     }
+  }
+});
+
+test('slopes join the ground they run between, with solid ground under them, and loops sit on flat straightaways', () => {
+  for (let z = 0; z < 10; z++) {
+    const m = makeMap(z);
+    assert.ok(m.slopes.length > 3, `zone ${z + 1} has ramps`);
+    for (const s of m.slopes) {
+      assert.ok(Math.abs(s.k) <= 1.0001 && s.w >= 8, 'no slope steeper than 45 degrees');
+      assert.ok(m.solids.some(q => q.under === s && q.x === s.x && q.w === s.w && q.y === Math.max(s.y0, s.y1) + 1), 'ground under every ramp');
+    }
+    for (const g of m.gadgets.filter(g => g.kind === 'loop'))
+      assert.ok(m.platforms.some(p => p.ground && p.y === g.y && p.x <= g.x - g.r - 16 && p.x + p.w >= g.x + g.r + 16), `loop on flat ground in zone ${z + 1}`);
   }
 });

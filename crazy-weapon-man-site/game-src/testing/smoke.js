@@ -568,7 +568,7 @@ export function runSmoke(game) {
     ok(world.zone===1,'cleared exit did not advance');
   });
   check('world-space movement, camera and projectiles work beyond the first screen',()=>{
-    reset();const h=world.hero,g=world.map.platforms.find(p=>p.ground && p.x>800 && p.w>=120);h.x=g.x+8;h.y=g.y-h.h;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
+    reset();const h=world.hero,g=world.map.platforms.find(p=>p.ground && p.x>800 && p.w>=120 && !world.map.gadgets.some(o=>Math.abs((o.x??o.x0)-p.x-40)<90));h.x=g.x+8;h.y=g.y-h.h;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
     const e=spawnEnemy('crawler',h.x+55,g.y);e.spawnT=0;e.hp=e.max=10000;
     key('KeyZ',true);poll();updateHero(h,STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);
     for(let i=0;i<50;i++){poll();updateHero(h,STEP);game.updateShots(STEP);}

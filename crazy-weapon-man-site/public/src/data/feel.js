@@ -77,6 +77,11 @@ export const MOVE = {
   touchDmg: 0.25, // walking into a riled-up resident: this share of its hit
   lookAhead: 0.1, // of the screen width ahead of you standing still or walking
   lookAheadTop: 0.25, // and at top speed (the lead grows with how fast you actually run)
+  // slopes (physics.js, Sonic): momentum per second gained running downhill and lost running uphill,
+  // per unit of steepness (1 = 45 degrees), and how hard a slope rolls you down it with nothing held
+  slopeGain: 1.6,
+  slopeDrain: 0.8,
+  slopeRoll: 520,
   // charge dash (Sonic's spin dash): hold DOWN and tap DASH to rev, let go of DOWN to launch
   revMax: 3, // revs
   revBurst: 0.15, // extra run speed per rev for revTime after the launch
