@@ -132,11 +132,14 @@ test('camera tracks the route and never reveals space outside the map',()=>{
   }
 });
 
-test('residents stand in small groups along the route, a body apart', () => {
+test('most residents stand in packs on the fight pads, the rest in small groups along the runs, a body apart', () => {
   for (let z = 0; z < 10; z++) {
-    const m = makeMap(z), packs = new Map();
+    const m = makeMap(z), packs = new Map(), pads = m.platforms.filter(p => p.fight);
     for (const s of m.spawns) packs.set(s.pack, [...(packs.get(s.pack) || []), s]);
-    assert.ok([...packs.values()].every(p => p.length <= LAYOUTS[z].pack[1] + 3), 'zone ' + (z + 1) + ' has a crowd');
+    const onPad = s => pads.some(p => p.y === s.y && s.x >= p.x && s.x <= p.x + p.w);
+    assert.ok(pads.length >= 3, 'zone ' + (z + 1) + ' has too few fights');
+    assert.ok(m.spawns.filter(onPad).length >= m.spawns.length * 0.6, 'zone ' + (z + 1) + ' fights are too thin');
+    for (const p of packs.values()) assert.ok(p.length <= (p.every(onPad) ? 14 : LAYOUTS[z].pack[1] + 3), 'zone ' + (z + 1) + ' has a crowd');
     for (const a of m.spawns) for (const b of m.spawns)
       if (a !== b && a.y === b.y) assert.ok(Math.abs(a.x - b.x) >= 16, 'residents overlap in zone ' + (z + 1));
   }

@@ -19,7 +19,8 @@ export const RELIC_SHARDS = z => 6 + z * 3; // each one
 export const SET_SHARDS = z => 30 + z * 15; // the fifth of a level, on top
 
 // Four spots on the map: the map between the start and the arena is cut into four stretches, and
-// each takes the far end (away from its ladders) of the highest surface in it. Relics float at
+// each takes a nook in it (maps.js: a perch you stop and turn back to climb to, off the fast line)
+// or else the far end (away from its ladders) of the highest surface in it. Relics float at
 // head height, so walking along that surface collects them. `avoid` is a spot to keep clear of
 // (the easter egg).
 export function relicSpots(map, avoid = null) {
@@ -29,7 +30,7 @@ export function relicSpots(map, avoid = null) {
     const a = lo + ((hi - lo) * i) / n, b = lo + ((hi - lo) * (i + 1)) / n;
     const ps = map.platforms.filter(p => !used.has(p) && p.w >= 24 && p.x + p.w > a + 16 && p.x < b - 16);
     if (!ps.length) continue;
-    const top = ps.reduce((m, p) => (p.y < m.y || (p.y === m.y && p.x > m.x) ? p : m));
+    const top = ps.find(p => p.nook) || ps.reduce((m, p) => (p.y < m.y || (p.y === m.y && p.x > m.x) ? p : m));
     used.add(top);
     const x0 = Math.max(top.x + 10, a + 8), x1 = Math.min(top.x + top.w - 10, b - 8);
     const lads = map.ladders.filter(l => l.top === top.y && l.x >= x0 - 30 && l.x <= x1 + 30);

@@ -6,7 +6,6 @@ import { input } from '../engine/input.js';
 import { A } from '../engine/assets.js';
 import { X, rect, text, textWidth, panel, dither, frame, screenLayer } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
-import { ZONES } from '../data/zones.js';
 import { P as powers, openPowers, updatePowers, drawPowers, powersWaiting } from './powers.js';
 import { hasTrophy, chosenMount } from '../data/meta.js';
 import { MOUNTS } from '../data/mounts.js';
@@ -17,6 +16,7 @@ import { relicCount, allRelics, relicTotal, RELIC_COUNT } from '../data/relics.j
 import { temperOf, setTemper, modsOf, rewardText } from '../data/temper.js';
 import { NODES, REGIONS, SLOT_W, SLOT_H, MAP_W, MAP_H, isLevel, isOpen, edges, step, visit, warp, progress, writeSave } from '../data/overworld.js';
 import { drawHeroPlain } from './anim.js';
+import { regionArt } from './owart.js';
 
 const WALK = 110; // px/s along a road
 const DRAW = 0.7; // seconds for a new road to draw in
@@ -103,21 +103,26 @@ function cycleTemper() {
 // ---------------------------------------------------------------- drawing
 const regionOpen = R => Object.values(NODES).some(n => n.region === R.id && isOpen(ow.save, n.id));
 function drawRegion(R) {
-  const x = R.col * SLOT_W + 6, y = R.row * SLOT_H + 6, w = SLOT_W - 12, h = SLOT_H - 12, bg = A.bg[ZONES[R.zone].id];
-  rect(x - 2, y - 2, w + 4, h + 4, C.ink);
-  if (bg) X.drawImage(bg, 0, 0, W, 206, x, y, w, h);
-  else rect(x, y, w, h, C.slate);
-  dither(x, y, w, h, C.ink, regionOpen(R) ? 5 : 12);
+  // the island from above (owart.js), shaded over until you reach it
+  const x = R.col * SLOT_W + 6, y = R.row * SLOT_H + 6, art = regionArt(R);
+  if (art) X.drawImage(art, R.col * SLOT_W, R.row * SLOT_H);
+  if (!regionOpen(R)) dither(R.col * SLOT_W + 8, R.row * SLOT_H + 8, SLOT_W - 16, SLOT_H - 16, C.ink, 10);
   const label = R.id + '  ' + R.name;
   rect(x + 4, y + 4, textWidth(label) + 10, 13, C.ink);
   text(label, x + 9, y + 7, regionOpen(R) ? C.gold : C.fog);
 }
+// a dirt road seen from above: inked edges, packed earth, a worn lighter middle (a secret road is
+// paved in pink), drawn in as far as `frac`
 function road(a, b, frac, col) {
-  const len = Math.hypot(b.x - a.x, b.y - a.y), n = Math.floor(len / 6);
-  for (let i = 0; i <= n * frac; i++) {
-    const p = i / Math.max(1, n);
-    rect(Math.round(a.x + (b.x - a.x) * p) - 2, Math.round(a.y + (b.y - a.y) * p) - 2, 4, 4, C.ink);
-    rect(Math.round(a.x + (b.x - a.x) * p) - 1, Math.round(a.y + (b.y - a.y) * p) - 1, 2, 2, col);
+  const len = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.round(len / 2)), end = Math.floor(n * frac);
+  for (const [r, c] of [[4, C.ink], [3, col === C.pink ? C.wine : C.woodD], [2, col === C.pink ? C.pink : C.sand]])
+    for (let i = 0; i <= end; i++) {
+      const p = i / n;
+      rect(Math.round(a.x + (b.x - a.x) * p) - r, Math.round(a.y + (b.y - a.y) * p) - r + 1, r * 2, r * 2 - 1, c);
+    }
+  for (let i = 0; i <= end; i += 5) {
+    const p = i / n;
+    rect(Math.round(a.x + (b.x - a.x) * p), Math.round(a.y + (b.y - a.y) * p), 1, 1, col === C.pink ? C.paper : C.cream);
   }
 }
 function drawNode(n, t) {
@@ -182,6 +187,7 @@ export function drawOverworld(t) {
   for (const n of Object.values(NODES)) drawNode(n, t);
   // the hero
   const p = ow.walk ? walkPos() : here(), Hh = A.hero;
+  rect(Math.round(p.x) - 5, Math.round(p.y) + 1, 11, 2, 'rgba(26,20,40,0.4)'); // the hero's shadow
   if (Hh) {
     const f = ow.walk ? ['run1', 'run2', 'run3'][Math.floor(t * 10) % 3] : Math.floor(t * 2) % 2 ? 'idle' : 'idle2';
     drawHeroPlain(f, Math.round(p.x - Hh.w / 2), Math.round(p.y - Hh.h + (ow.walk ? 4 : -2)), ow.face < 0 ? -1 : 1);

@@ -85,7 +85,7 @@ const CLUSTERS = {
       ['fire', 108, -11, 'key', 4, 'BLAZING BLADES', 5, 'infuse', 0.06, 'Blades are infused with Fire: {v}% chance to burn', 'fire'],
       ['fleet', 55, 30, 'small', 1, 'FLEET FOOT', 5, 'speed', 0.03, 'Dart around {v}% faster with a blade'],
       ['blink', 64, 12, 'small', 2, 'BLINK STEP', 5, 'dashCd', 0.06, 'Dash comes back {v}% sooner with a blade'],
-      ['dashcut', 79, 12, 'medium', 2, 'DASH CUT', 1, 'innate', 1, 'Dashing slices through every foe you pass', { innate: 'dashcut' }],
+      ['dashcut', 79, 12, 'medium', 2, 'DASH CUT', 1, 'innate', 1, 'Dash cuts slice twice as hard', { innate: 'dashcut' }],
       ['edge', 94, 12, 'small', 3, 'KEEN EDGE', 5, 'crit', 0.02, 'Blade crits pop {v}% more often'],
       ['bolt', 108, 11, 'key', 4, 'THUNDER BLADES', 5, 'infuse', 0.06, 'Blades are infused with Lightning: {v}% chance to chain', 'lightning'],
       ['frenzy', 124, 0, 'medium', 5, 'BLADE FRENZY', 1, 'innate', 1, 'Kills whip your blade into a frenzy of faster swings', { innate: 'frenzy' }]
@@ -175,7 +175,7 @@ export const TROPHIES = {
   2: { name: "THE YETI KING'S BROADHEAD", perk: 'SHELL SPLITTER', for: 'SHELLS AND THE LAGOON', desc: 'Your hits crack shields and shells, and you swim 30% faster', stats: {}, innate: 'broadhead' },
   3: { name: "THE GRAND SNAPPER'S GLOW-LILY", perk: 'LAGOON GLOW', for: 'THE DARK BAZAAR', desc: 'Your light reaches 70% farther in dark levels and haunted blades creep 40% slower', stats: {}, innate: 'torch' },
   4: { name: "THE FAT CAT'S MONOCLE", perk: 'SEEN EVERY TRICK', for: 'IAI SLASHES AND TRICKS', desc: 'Every boss tell and floor warning lasts 50% longer', stats: {}, innate: 'monocle' },
-  5: { name: "THE TOSA SHOGUN'S GETA", perk: 'ROOTED BLOSSOM', for: 'THE WINDY PEAKS', desc: 'You take 70% less knockback, and dashing through foes slices them', stats: { knockRes: 0.7 }, innate: 'dashcut' },
+  5: { name: "THE TOSA SHOGUN'S GETA", perk: 'ROOTED BLOSSOM', for: 'THE WINDY PEAKS', desc: 'You take 70% less knockback, and your dash cuts slice twice as hard', stats: { knockRes: 0.7 }, innate: 'dashcut' },
   6: { name: "THE YAK ABBOT'S FROST BEADS", perk: 'MOUNTAIN COLD', for: 'THE LAVA FORGE', desc: 'Lava burns 50% less, and 1 hit in 5 chills a foe to half speed', stats: { lavaArmor: 0.5, chillHit: 0.2 } },
   7: { name: "THE BEAR SMITH'S COLD-IRON ANVIL", perk: 'COLD IRON', for: 'WANDS AND SPELLS', desc: 'Spells, sparkles and cookie rain hit 35% softer', stats: { magicArmor: 0.35 } },
   8: { name: "THE OWL ARCHMAGE'S SPECTACLES", perk: 'NOTHING GETS PAST AN OWL', for: 'NINJAS AND SHURIKEN', desc: 'Foes that teleport behind you land in front of you, and shuriken hit 30% softer', stats: { starArmor: 0.3 }, innate: 'glasses' },
@@ -217,7 +217,7 @@ export const MASTERY_PERKS = [
   [{ name: 'PERFECT FORM', desc: '+25% damage', stats: { dmg: 0.25 } }, { sig: 'other' }]
 ];
 const ABILITY_NAMES = { meteor: 'METEOR CALLER', vampire: 'THIRSTY', thorns: 'BITES BACK', hops: 'DOUBLE JUMP', dashcut: 'DASH CUT', frenzy: 'FRENZY', lucky: 'LUCKY', bubble: 'BUBBLE GUARD', giantslayer: 'GIANT SLAYER' };
-const ABILITY_DESC = { meteor: 'Finishers call a meteor', vampire: 'Hits heal you a little', thorns: 'Getting hit lashes back', hops: 'Jump again in mid-air', dashcut: 'Dashes slice foes', frenzy: 'Kills speed up swings', lucky: '+15% critical chance', bubble: 'A bubble blocks a hit every 8s', giantslayer: '+25% damage to big foes' };
+const ABILITY_DESC = { meteor: 'Finishers call a meteor', vampire: 'Hits heal you a little', thorns: 'Getting hit lashes back', hops: 'Jump again in mid-air', dashcut: 'Dash cuts hit twice as hard', frenzy: 'Kills speed up swings', lucky: '+15% critical chance', bubble: 'A bubble blocks a hit every 8s', giantslayer: '+25% damage to big foes' };
 // the perk at (type, tier, option) with its name and description filled in
 export function masteryPerk(type, tier, opt) {
   const p = MASTERY_PERKS[tier][opt];

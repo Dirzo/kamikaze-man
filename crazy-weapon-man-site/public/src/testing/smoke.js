@@ -194,7 +194,7 @@ export function runSmoke(game) {
     resetRecords();reset();const h=world.hero,R=world.run;ok(R && R.t===0 && R.weapons.size===0,'no fresh run record');
     tickRun(1.5);ok(Math.abs(R.t-1.5)<1e-9,'clock did not run');
     const e=spawnEnemy('brute',h.x+30,FLOOR());e.spawnT=0;e.hp=e.max=1e6;
-    const w1=h.weapon;hitEnemy(e,100,{dir:1});const w2=makeWeapon(1,{type:'bow',q:2});h.weapon=w2;hitEnemy(e,40,{dir:1});hitEnemy(e,40,{dir:1});
+    const w1=h.weapon;hitEnemy(e,100,{dir:1});const w2=makeWeapon(1,{type:'bow',q:2});h.weapon=w2;world.fight=null;hitEnemy(e,40,{dir:1});world.fight=null;hitEnemy(e,40,{dir:1});world.fight=null; // (no field combo)
     ok(R.weapons.get(w1).dmg===100 && R.weapons.get(w2).dmg===80 && R.dealt===180,'damage was not credited per weapon');
     e.hp=5;hitEnemy(e,500,{dir:1});ok(R.weapons.get(w2).dmg===85,'overkill counted as damage dealt');
     world.zone=0;splitZone();ok(R.splits.length===1 && Math.abs(R.splits[0].t-1.5)<1e-9 && R.splits[0].prev==null,'first split wrong');
@@ -523,7 +523,7 @@ export function runSmoke(game) {
     }
   });
   check('a pit costs 15% of your health and puts you back on the last safe ground; foes knocked in are gone',()=>{
-    reset();startZone(1);world.enemies=[];const h=world.hero,m=world.map,q=m.pits[0];
+    reset();startZone(1);world.enemies=[];const h=world.hero,m=world.map,q=m.pits.find(q=>!q.bridge&&m.platforms.some(p=>p.ground&&p.x+p.w===q.x));
     ok(q,'stage has no pit');
     const lip=m.platforms.find(p=>p.ground && p.x+p.w===q.x);
     h.x=lip.x+lip.w-h.w-20;h.y=lip.y-h.h;h.vx=0;h.vy=0;h.onGround=true;h.platform=lip;h.inv=0;
@@ -568,7 +568,7 @@ export function runSmoke(game) {
     ok(world.zone===1,'cleared exit did not advance');
   });
   check('world-space movement, camera and projectiles work beyond the first screen',()=>{
-    reset();const h=world.hero,g=world.map.platforms.find(p=>p.ground && p.x>800 && p.w>=120);h.x=g.x+8;h.y=g.y-h.h;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
+    reset();const h=world.hero,g=world.map.platforms.find(p=>p.ground && p.x>800 && p.w>=120 && !world.map.gadgets.some(o=>Math.abs((o.x??o.x0)-p.x-40)<90));h.x=g.x+8;h.y=g.y-h.h;h.inv=100;h.weapon=makeWeapon(1,{type:'bow',q:1,standout:false});
     const e=spawnEnemy('crawler',h.x+55,g.y);e.spawnT=0;e.hp=e.max=10000;
     key('KeyZ',true);poll();updateHero(h,STEP);key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);
     for(let i=0;i<50;i++){poll();updateHero(h,STEP);game.updateShots(STEP);}

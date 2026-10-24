@@ -3,7 +3,7 @@
 import { C } from '../config.js';
 import { world, newId } from './world.js';
 import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch } from './fx.js';
-import { hitFeel, reaction, killLaunch, rushMult, MOVE } from '../data/feel.js';
+import { hitFeel, reaction, killLaunch, rushMult, MOVE, FIGHT, fightMult } from '../data/feel.js';
 import { sfx, duck } from '../engine/audio.js';
 import { makeWeapon, noWeaker } from './loot.js';
 import { cx, cy } from './physics.js';
@@ -38,6 +38,23 @@ function streak() {
   return streakN;
 }
 
+// the field combo: live out on the route (the survival swarm keeps its own, waves.js)
+const fieldCombo = () => (world.director?.phase === 'survive' ? null : world.fight?.n > 0 && world.fight.t > 0 ? world.fight : null);
+function fightHit(o) {
+  if (world.director?.phase === 'survive') return;
+  const f = (world.fight ||= { n: 0, t: 0, best: 0 }), h = world.hero;
+  if (f.t <= 0) f.n = 0;
+  f.n++;
+  f.best = Math.max(f.best, f.n);
+  f.t = FIGHT.window;
+  if (!o.special) h.specialCd = Math.max(0, h.specialCd - FIGHT.cut);
+  if (f.n === 10 || f.n === 20 || f.n === 40) callout(`${f.n} HITS!`, 0, 0, C.gold, { follow: h, life: 40 });
+}
+export function updateFight(dt) {
+  const f = world.fight;
+  if (f && f.t > 0 && (f.t -= dt) <= 0) f.n = 0;
+}
+
 // o: { crit, dir, knock (px), hop, element (family), special, big (a finisher), chain, chip (small/no-feedback
 // hit), aoe (an area augment's hit: starts no more area hits), nova, col }
 export function hitEnemy(e, dmg, o = {}) {
@@ -69,12 +86,15 @@ export function hitEnemy(e, dmg, o = {}) {
   }
   dmg *= bigFoeMult(e) * foeMult(e) * (e.kind === 'beast' ? beastTaken(e) : 1); // a flipped Spin Turtle takes double
   // RUSH: hits at speed land harder (data/feel.js); the first one out of a full sprint shouts it
-  const rush = rushMult(hero.mom || 0, heroStats().rush);
+  const rush = rushMult(hero.mom || 0, heroStats().rush, !!(e.elite || e.boss || e.swarmBoss));
   dmg *= rush;
   if (rush > 1 && hero.sprint && !o.chip && !o.chain && world.t > (hero.rushCall || 0)) {
     callout('RUSH!', 0, 0, C.sky, { follow: e, life: 30 });
     hero.rushCall = world.t + 0.8;
   }
+  // the field combo (data/feel.js FIGHT): hits strung together land harder, a special cashes it in
+  const fc = fieldCombo();
+  if (fc) dmg *= fightMult(fc.n, !!o.special);
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
@@ -121,7 +141,7 @@ export function hitEnemy(e, dmg, o = {}) {
       else for (let x = -20; x <= 20; x += 2) emit(cx(e) + x, sy + x * 0.25 * -dir, 'streak', x % 4 ? C.paper : o.sparkCol || C.cream);
     }
   }
-  if (!o.chip) comboHit();
+  if (!o.chip) comboHit(), fightHit(o);
   // knockback + reaction (not bosses): light hits flinch, heavy weapons and finishers launch the
   // foe so you can juggle it (data/feel.js reaction)
   if (!e.boss && !e.swarmBoss) {
@@ -440,8 +460,12 @@ export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   if (src === 'lava') dmg *= 1 - S.lavaArmor;
   dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
   h.hp -= dmg;
+  if (world.run) world.run.hits = (world.run.hits || 0) + 1; // the level-clear grade counts them (data/grade.js)
   h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
+  // a hit costs half your momentum, not all of it (Sonic): you're back up to speed in a moment
+  h.mom = (h.mom || 0) * MOVE.hurtKeep;
+  h.keepMom = h.mom > 0;
   // knocked back 40px or so, unless that would throw you into a pit: then you just hop where you stand
   const land = cx(h) + dir * 40, pits = world.map?.pits?.length;
   h.vx = dir * (!pits || world.map.platforms.some(p => !p.gone && p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20) * (1 - S.knockRes);

@@ -26,7 +26,8 @@ export function tally() {
     t, par, done, kills, residents, relics: relicsTaken(), relicMax, secret: world.secret ? (world.secret.found ? 'FOUND' : 'MISSED') : null,
     top: Math.round(R.top || 0), sprintT: R.sprintT || 0, dealt: R.dealt || 0,
     weapons: [...(R.weapons?.values() || [])].sort((a, b) => b.dmg - a.dmg).slice(0, 5),
-    grade: gradeOf({ t, par, done })
+    hits: R.hits || 0, falls: R.falls || 0, combo: world.fight?.best || 0,
+    grade: gradeOf({ t, par, done, hits: R.hits || 0, falls: R.falls || 0, combo: world.fight?.best || 0 })
   };
 }
 
@@ -86,10 +87,12 @@ export function drawLevelEnd(T, t) {
   rows.push(['TOP SPEED', k => Math.round(Y.top * k) + 'PX/S', C.sky]);
   rows.push(['AT FULL SPRINT', k => clock(Y.sprintT * k), C.sky]);
   rows.push(['DAMAGE', k => fmt(Math.round(Y.dealt * k)), C.coral]);
+  rows.push(['HITS TAKEN', k => `${Math.round(Y.hits * k)}` + (Y.falls ? `  FALLS ${Y.falls}` : ''), Y.hits + Y.falls ? C.coral : C.gold]);
+  rows.push(['BEST COMBO', k => Math.round(Y.combo * k) + ' HITS', C.gold]);
   rows.forEach(([label, val, col], i) => {
     const at = ROWS_AT + i * ROW * 0.6;
     if (T < at) return;
-    const y = 36 + i * 13, k = ease((T - at) / 0.5);
+    const y = 34 + i * 12, k = ease((T - at) / 0.5);
     text(label, lx, y, C.mist);
     text(val(k), lx + lw, y, k < 1 ? C.cream : col, { align: 'right' });
     rect(lx, y + 9, lw, 1, C.night);

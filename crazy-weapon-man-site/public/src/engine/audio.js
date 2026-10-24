@@ -528,6 +528,14 @@ export const sfx = {
     if (!gate('jump', 60)) return;
     chip([[N(60), 1], [N(64), 1], [N(67), 1], [N(72), 2]], { wave: 'p25', vol: 0.035, decay: 0.004 });
   },
+  // charge dash: each rev winds a step higher, the launch is a long whoosh
+  rev(n) {
+    hiss(4, { vol: 0.04, rate: 0.3 + n * 0.25, drop: -0.2 });
+    chip([[N(55 + n * 5), 1], [N(60 + n * 5), 2]], { wave: 'p25', vol: 0.03, decay: 0.004 });
+  },
+  launch() {
+    hiss(9, { vol: 0.06, rate: 0.5, drop: -0.25 });
+  },
   dash() {
     if (!gate('dash', 90)) return;
     hiss(7, { vol: 0.045, rate: 0.4, drop: -0.12 });
@@ -610,6 +618,7 @@ const SCALES = {
   dorian: [0, 2, 3, 5, 7, 9, 10],
   phrygian: [0, 1, 3, 5, 7, 8, 10],
   major: [0, 2, 4, 5, 7, 9, 11],
+  mixolydian: [0, 2, 4, 5, 7, 9, 10], // the racing-game major: a flat seventh
   harmonic: [0, 2, 3, 5, 7, 8, 11],
   // five-note scales: the shrine's in-sen, the ninja castle's hirajoshi, the mountain's pentatonic
   insen: [0, 1, 5, 7, 10],
@@ -633,7 +642,9 @@ const DRUMS = {
   chant: 'G...h...T...h.h.',
   waltz: 'K...h...h...',
   taiko: 'T.hTS.hTT.hTS.TS',
-  vault: 'KCh.SCh.KCKCS.CS'
+  vault: 'KCh.SCh.KCKCS.CS',
+  // the overworld: a racing beat, the snare on two and four and a kick that pushes ahead
+  race: 'K.hSK.hKK.hSKhSh'
 };
 function rng(seed) {
   let s = seed >>> 0 || 1;
@@ -645,7 +656,8 @@ const songCache = new Map();
 //                   a scale degree from the key (negative is lower), '-' holds, '.' rests
 //   bar             steps per bar (16, or 12 for a waltz)   lead  the melody's wave
 //   arp             'roll' (default), 'tremolo' (every step, surf style), 'waltz' (on the beats), 'off'
-//   bass            'pulse' (default), 'drone' (one long root a bar) or 'gallop' (boss rock)
+//   bass            'pulse' (default), 'drone' (one long root a bar), 'gallop' (boss rock) or
+//                   'drive' (octave-jumping eighth notes, the racing-game bass)
 //   oct             the melody's octave
 // Without a theme the melody is a seeded random motif, as it always was.
 const tokens = s => (s || '').trim().split(/\s+/).filter(t => t !== '|');
@@ -712,6 +724,7 @@ export function buildSong(id, spec) {
       if (spec.bass === 'drone' || (breakdown && spec.bass !== 'gallop')) { if (i === 0) steps[s].push(['b', deg(chord, lo), bar]); }
       // the boss gallop: da-da-DUM on every beat
       else if (spec.bass === 'gallop') { if (i % 4 !== 1) steps[s].push(['b', deg(chord, i % 4 === 0 ? lo : lo + 1), 1]); }
+      else if (spec.bass === 'drive') { if (i % 2 === 0) steps[s].push(['b', deg(chord, i % 4 === 0 ? lo : lo + 1), 2]); }
       else if (i % beat === 0) steps[s].push(['b', deg(chord, lo), 3]);
       else if (i % beat === beat / 2) steps[s].push(['b', deg(chord + (L > 5 ? 4 : 3), lo), 1]);
       if (breakdown) continue;

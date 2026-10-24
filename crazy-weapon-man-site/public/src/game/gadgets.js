@@ -14,7 +14,8 @@ export const GADGET = {
   spring: { up: 430, upHeld: 500 }, // launch speeds (a plain jump is 262)
   boost: { burst: 1.3, time: 0.8 }, // run speed times this for `time` seconds, and full momentum
   rope: { gravity: 760, pump: 1.4, fling: 1.15, hop: 150, hold: 3 }, // pump: rad/s² for pushing with the swing
-  zip: { min: 140, accel: 420, max: 340, hop: 210 }
+  zip: { min: 140, accel: 420, max: 340, hop: 210 },
+  bumper: { out: 260, up: 330 } // it bats you on at least `out` and up at `up`
 };
 const cool = new WeakMap(); // gadget -> world.t it can fire again
 
@@ -30,7 +31,21 @@ export function updateGadgets(h, dt) {
   const feet = h.y + h.h, hx = cx(h), hands = h.y + 2;
   for (const g of list) {
     if ((cool.get(g) || 0) > world.t) continue;
-    if (g.kind === 'spring' && Math.abs(hx - g.x) < 10 && h.vy >= 0 && feet >= g.y - 8 && feet <= g.y + 1) {
+    if (g.kind === 'bumper' && Math.hypot(hx - g.x, h.y + h.h / 2 - g.y) < g.r + 9) {
+      const dir = Math.sign(h.vx) || h.face;
+      h.vx = dir * Math.max(Math.abs(h.vx), GADGET.bumper.out);
+      h.vy = -GADGET.bumper.up;
+      h.onGround = false;
+      h.coyote = 0;
+      h.jumpHeld = false;
+      h.hopped = false; // the double jump comes back
+      h.mom = Math.max(h.mom || 0, 0.7);
+      g.squash = 0.2;
+      cool.set(g, world.t + 0.25);
+      sfx.jump();
+      shake(0.2);
+      burst(g.x, g.y, 8, 'twinkle', ['paper', 'gold', 'pink']);
+    } else if (g.kind === 'spring' && Math.abs(hx - g.x) < 10 && h.vy >= 0 && feet >= g.y - 8 && feet <= g.y + 1) {
       h.vy = -(input.held('jump') ? GADGET.spring.upHeld : GADGET.spring.up);
       h.y = g.y - 8 - h.h;
       h.onGround = false;
@@ -120,6 +135,15 @@ function slide(h, dt) {
 }
 
 // ---------------------------------------------------------------- drawing (world space)
+// bumper colours per world: rim and face (lily pads in the lagoon, a lantern in the bazaar, a
+// blossom at the shrine...)
+const BUMPER = [[C.red, C.coral], [C.blue, C.ice], [C.leaf, C.lime], [C.red, C.orange], [C.coral, C.paper], [C.slate, C.mist], [C.rust, C.orange], [C.violet, C.cream], [C.navy, C.sky], [C.gold, C.cream]];
+function disc(x, y, r, col) {
+  for (let dy = -r; dy <= r; dy++) {
+    const w = Math.floor(Math.sqrt(r * r - dy * dy));
+    rect(Math.round(x) - w, y + dy, w * 2 + 1, 1, col);
+  }
+}
 const ZONE_ROPE = [C.wood, C.wood, C.leaf, C.red, C.wood, C.sand, C.stone, C.wood, C.wood, C.gold]; // vines in the lagoon, lantern cord in the bazaar
 function line(x0, y0, x1, y1, col) {
   const n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
@@ -132,7 +156,15 @@ export function drawGadgets(t) {
   for (const g of list) {
     const gx = g.x ?? g.x0;
     if (gx < x0 - 120 || gx > x1) continue;
-    if (g.kind === 'spring') {
+    if (g.kind === 'bumper') {
+      const col = BUMPER[z], s = g.squash ? 2 : 0, R = g.r + s, y = Math.round(g.y);
+      disc(g.x, y, R + 1, C.ink);
+      disc(g.x, y, R, col[0]);
+      disc(g.x - 1, y - 1, R - 2, col[1]);
+      disc(g.x, y, Math.max(1, R - 4), C.paper);
+      disc(g.x, y, Math.max(1, R - 5), col[0]);
+      rect(g.x - 3, y - R + 1, 2, 1, C.paper); // the shine
+    } else if (g.kind === 'spring') {
       const sq = g.squash ? 3 : 0, top = g.y - 8 + sq;
       rect(g.x - 7, g.y - 3, 14, 3, C.ink);
       rect(g.x - 6, g.y - 2, 12, 1, C.stone);

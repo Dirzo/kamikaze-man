@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { TYPE_LIST, ELEMENTS, ELEMENT_LIST } from '../game-src/data/weapons.js';
 import { QUIRK_LIST } from '../game-src/data/quirks.js';
 import { buildSong } from '../game-src/engine/audio.js';
-import { ZONES, TITLE_MUSIC, BOSS_MUSIC, bossSong, zoneSong } from '../game-src/data/zones.js';
+import { ZONES, TITLE_MUSIC, MAP_MUSIC, BOSS_MUSIC, bossSong, zoneSong } from '../game-src/data/zones.js';
 
 const notes = sg => sg.steps.flat().filter(e => e[0] !== 'd');
 const ok = (id, spec) => {
@@ -67,4 +67,12 @@ test('every weapon type, element and quirk has its own sound', async () => {
   has(table('const ELEMENT_SFX', 'const QUIRK_SFX'), ELEMENT_LIST.map(e => ELEMENTS[e].effect), 'element');
   // the honk quirk already honks (sfx.honk)
   has(table('const QUIRK_SFX', 'export const sfx'), QUIRK_LIST.filter(q => q !== 'honk'), 'quirk');
+});
+
+test('the overworld drives like a racing game: fast, octave-jumping eighth-note bass', () => {
+  const sg = ok('map', MAP_MUSIC);
+  assert.ok(MAP_MUSIC.bpm >= 150, 'fast');
+  const bass = sg.steps.slice(0, 16).flat().filter(e => e[0] === 'b');
+  assert.equal(bass.length, 8, 'a bass note every eighth');
+  assert.ok(new Set(bass.map(e => e[1])).size >= 2, 'jumping octaves');
 });

@@ -11,6 +11,7 @@ import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { mutationLabel, MUTATIONS } from '../data/progression.js';
 import { enemiesLeft, swarmBossUp } from './waves.js';
 import { COMBO, comboMult } from '../data/swarm.js';
+import { FIGHT, fightMult } from '../data/feel.js';
 import { PROF_DMG } from '../data/proficiency.js';
 import { QUIRKS } from '../data/quirks.js';
 import { specialOf } from '../data/specials.js';
@@ -118,7 +119,7 @@ export function drawHud(t) {
   text(Z.name, 6, 5, C.paper);
   const D = world.director;
   let sub = '';
-  if (world.hidden?.inRoom) sub = 'SECRET ROOM   STAND ON THE PORTAL AND PRESS UP TO GO BACK';
+  if (world.hidden?.inRoom) sub = 'SECRET ROOM   WALK OUT THE EXIT DOOR ON THE LEFT TO GO BACK';
   else if (D) {
     if (D.phase === 'fight' || D.phase === 'intro') sub = `RUN TO THE ARENA >   ${enemiesLeft()} LEFT FOR A FULL CLEAR`;
     else if (D.phase === 'arena') sub = 'FULL CLEAR! - THE ARENA IS AT THE END >';
@@ -170,6 +171,14 @@ export function drawHud(t) {
     const bonus = Math.round((comboMult(cb) - 1) * 100);
     if (bonus > 0) text(`+${bonus}% DMG`, x, 79, C.lime);
     else if (!on && cb.lost >= 10) text(`LOST x${cb.lost}`, x, 79, C.coral);
+  }
+  // ---- field combo (combat.js): hits strung together out on the route ----
+  const fc = world.fight;
+  if (fc && fc.n >= 2 && fc.t > 0 && !(D && D.phase === 'survive')) {
+    const x = W - 8, y = 64, bonus = Math.round((fightMult(fc.n) - 1) * 100);
+    text(fc.n + ' HITS', x, y, fc.n >= 10 ? C.gold : C.cream, { align: 'right', k: 2 });
+    bar(x - 70, y + 17, 70, 3, fc.t / FIGHT.window, fc.t < 0.4 && Math.floor(t * 10) % 2 ? C.coral : C.gold);
+    text(`+${bonus}% DMG  SPECIAL x${FIGHT.cash}`, x, y + 23, C.lime, { align: 'right' });
   }
   // ---- boss bar ----
   const b = world.boss;

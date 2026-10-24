@@ -61,7 +61,7 @@ function report(all) {
   }
   const lost = L.filter(x => !x.won && x.kind === 'castle');
   const won = L.filter(x => x.grade), cnt = won.reduce((m, x) => ((m[x.grade] = (m[x.grade] || 0) + 1), m), {});
-  if (won.length) console.log(`\nlevel-clear grades: ${'SABCD'.split('').map(g => `${g} ${Math.round(((cnt[g] || 0) / won.length) * 100)}%`).join('  ')}   time/par median ${med(won.map(x => x.par)).toFixed(2)}, completion median ${med(won.map(x => x.done)).toFixed(2)}, top speed median ${med(won.map(x => x.top))}`);
+  if (won.length) console.log(`\nlevel-clear grades: ${'SABCDF'.split('').map(g => `${g} ${Math.round(((cnt[g] || 0) / won.length) * 100)}%`).join('  ')}   time/par median ${med(won.map(x => x.par)).toFixed(2)}, completion median ${med(won.map(x => x.done)).toFixed(2)}, top speed median ${med(won.map(x => x.top))}`);
   if (lost.length) console.log('\ncastle losses: boss health left (median) ' + med(lost.map(x => x.bossHp ?? 1)).toFixed(2) + ', died in ' + JSON.stringify(lost.reduce((m, x) => ((m[x.diedIn || 'timeout'] = (m[x.diedIn || 'timeout'] || 0) + 1), m), {})));
   if (process.env.PLAYTEST_OUT) writeFileSync(process.env.PLAYTEST_OUT, JSON.stringify(all, null, 1));
 }

@@ -1,18 +1,20 @@
 // Camera changes rendering only. All actor positions, collision, drops and projectiles stay world-space.
-// SMW style: the view slides ahead of the way you face (further while sprinting), and only follows
+// SMW style: the view slides ahead of the way you run, further the faster you go, and only follows
 // you up or down once you land on a new floor (or climb/fall well out of the band), so a jump
 // doesn't bob the whole screen.
-import { W } from '../config.js';
+import { W, HERO } from '../config.js';
 import { world } from './world.js';
 import { cameraTarget, cameraTargetY } from '../data/maps.js';
-import { MOVE } from '../data/feel.js';
+import { MOVE, camLead } from '../data/feel.js';
 
 export function updateCamera(dt, snap=false) {
   if(world.lock) {world.cameraX=world.lock.x0;world.cameraY=world.lock.y0;return;} // survival arena
   const width=world.map?.width||W, h=world.hero;
-  // look-ahead: eases over to the side you face; cameraTarget keeps the hero 42% from the left,
-  // so the lead is measured from the screen's middle
-  const want=h?h.face*W*(h.sprint?MOVE.lookAheadSprint:MOVE.lookAhead):0;
+  // look-ahead: eases over to the side you're running (or facing, when slow), growing with your
+  // speed up to MOVE.lookAheadTop at top speed; cameraTarget keeps the hero 42% from the left, so
+  // the lead is measured from the screen's middle
+  const dir=h?(Math.abs(h.vx)>MOVE.skidSpeed&&h.hurtT<=0?Math.sign(h.vx):h.face):0; // (a knockback doesn't swing it round)
+  const want=h?dir*W*camLead(h.vx,HERO.speed*MOVE.topSpeed):0;
   world.camLead=snap||world.camLead==null?want:world.camLead+(want-world.camLead)*(1-Math.exp(-3*dt));
   const lead=world.camLead-W*0.08;
   const target=cameraTarget(h?h.x+h.w/2+lead:0,width);

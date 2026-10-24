@@ -8,6 +8,7 @@ import { world, resetWorld } from './game/world.js';
 import { createHero, updateHero, drawHero } from './game/hero.js';
 import { updateEnemy, drawEnemy, updateBolts, drawBolts } from './game/enemy.js';
 import { updateShots, drawShots } from './game/shots.js';
+import { updateFight } from './game/combat.js';
 import { updateAbilities, drawAbilities } from './game/abilities.js';
 import { updateSecret, drawSecret } from './game/secrets.js';
 import { updateDrops, drawDrops } from './game/drops.js';
@@ -18,7 +19,7 @@ import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSp
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
 import { updateInventory, drawInventory, toggleInventory, closeInventory, openInventory, newBag } from './game/inventory.js';
-import { ZONES, TITLE_MUSIC } from './data/zones.js';
+import { ZONES, TITLE_MUSIC, MAP_MUSIC } from './data/zones.js';
 import { rarityColour } from './game/looks.js';
 import { updateCamera } from './game/camera.js';
 import { drawMapBackdrop, drawMapExit, drawRouteHud } from './game/map-view.js';
@@ -83,7 +84,7 @@ function openMap(fresh = []) {
   world.level = null;
   if (!ow.save) ow.save = loadSave();
   openOverworld(ow.save, fresh);
-  music.play('title', TITLE_MUSIC);
+  music.play('map', MAP_MUSIC);
   scene = 'map';
   sceneT = 0;
 }
@@ -244,6 +245,7 @@ function update(dt) {
   updateEvolution(dt);
   updateShots(dt);
   updateAbilities(dt);
+  updateFight(dt);
   updateSpecials(dt);
   updateSecret(dt);
   updateBolts(dt);
@@ -281,7 +283,7 @@ function update(dt) {
 // ---------------------------------------------------------------- drawing
 function drawSlab(zone, p) {
   const sl = A.slabs[zone];
-  if (p.ground && A.biome[zone]) return; // a living zone draws its own ground top (ambience.js)
+  if ((p.ground || !p.solid) && A.biome[zone]) return; // a living zone draws its own ground and ledges (ambience.js)
   if (!sl) return rect(p.x, p.y, p.w, 6, C.stone);
   const cap = sl.cap,
     y0 = p.y - 2;

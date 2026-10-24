@@ -270,8 +270,9 @@ function sprint(game,n) {
     const g=world.map.platforms.filter(p=>p.ground && p.x>0 && p.x<world.map.bossLeft-W).sort((a,b)=>b.w-a.w)[0],h=world.hero;
     h.x=g.x+8;h.y=g.y-h.h;
     // &at=kind: start a run-up before the first gadget of that kind (springs, ropes, ziplines...)
-    // (or wall, bridge, high, sky: a breakable wall, a crumbling bridge, a high road or sky road ledge)
-    const at=new URLSearchParams(location.search).get('at'),M=world.map,list=at==='wall'?M.walls:at==='bridge'?M.pits.filter(p=>p.bridge):at==='high'?M.platforms.filter(p=>p.tier===1):at==='sky'?M.platforms.filter(p=>p.tier===2):M.gadgets.filter(o=>o.kind===at),gd=at&&list[+(new URLSearchParams(location.search).get('n')||0)];
+    // (or wall, bridge, high, sky: a breakable wall, a crumbling bridge, a high road or sky road ledge;
+    // slope, downhill, uphill: a ramp; fight: a fight pad; nook: a nook's perch)
+    const at=new URLSearchParams(location.search).get('at'),M=world.map,list=at==='fight'?M.platforms.filter(p=>p.fight):at==='nook'?M.platforms.filter(p=>p.nook):at==='wall'?M.walls:at==='bridge'?M.pits.filter(p=>p.bridge):at==='high'?M.platforms.filter(p=>p.tier===1):at==='sky'?M.platforms.filter(p=>p.tier===2):at==='slope'?M.slopes.filter(q=>q.w>=48):at==='downhill'?M.slopes.filter(q=>q.k>0&&q.w>=48):at==='uphill'?M.slopes.filter(q=>q.k<0&&q.w>=48):M.gadgets.filter(o=>o.kind===at),gd=at&&list[+(new URLSearchParams(location.search).get('n')||0)];
     if(gd){const gx=(gd.x??gd.x0)-(+new URLSearchParams(location.search).get('back')||170),p=new URLSearchParams(location.search).has('on')?gd:world.map.platforms.filter(p=>p.ground && gx>=p.x && gx<p.x+p.w)[0];if(p){h.x=p===gd?gd.x+8:gx;h.y=p.y-h.h;}}h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type,q:3,standout:false});h.face=1;
     if(foes) {h.maxHp=h.hp=1e6;for(const e of world.enemies) e.spawnT=0;}
     updateCamera(0,true);
