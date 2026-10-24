@@ -22,7 +22,7 @@ export function drawMapBackdrop() {
   const slab=A.slabs[ZONES[world.zone].id];
   // Terrain uses the biome's existing earth texture, never a replacement cave palette.
   if(!living)for(const p of map.solids) {
-    if(!visible(p.x,p.y,p.w,p.h))continue;
+    if(p.wall||!visible(p.x,p.y,p.w,p.h))continue;
     const left=Math.max(p.x,Math.floor(camera/32)*32),right=Math.min(p.x+p.w,camera+W+32);
     const top=Math.max(p.y,Math.floor(cameraY/32)*32),bottom=Math.min(p.y+p.h,cameraY+H+32);
     for(let y=top;y<bottom;y+=32)for(let x=left;x<right;x+=32) {

@@ -43,6 +43,8 @@ import { flushBook } from './data/book.js';
 import { temperOf, temperClear, MODS } from './data/temper.js';
 import { relicMask, keepRelics, allRelics, RELIC_COUNT } from './data/relics.js';
 import { drawGadgets } from './game/gadgets.js';
+import { drawCrumble } from './game/crumble.js';
+import { drawWalls } from './game/walls.js';
 import { tally, openLevelEnd, updateLevelEnd, drawLevelEnd, LEVEL_END_DONE } from './game/levelend.js';
 
 let capture = false;
@@ -295,7 +297,9 @@ function drawSlab(zone, p) {
 function drawWorld(t) {
   const Z = ZONES[world.zone];
   drawMapBackdrop();
-  for (const p of world.platforms) if(p.x+p.w>=world.cameraX && p.x<=world.cameraX+W && p.y>=world.cameraY-32 && p.y<=world.cameraY+H) drawSlab(Z.id, p);
+  for (const p of world.platforms) if(p.x+p.w>=world.cameraX && p.x<=world.cameraX+W && p.y>=world.cameraY-32 && p.y<=world.cameraY+H && !p.crumble) drawSlab(Z.id, p);
+  drawCrumble(t);
+  drawWalls(t);
   drawGadgets(t);
   drawMapExit(t);
   drawSecret(t);

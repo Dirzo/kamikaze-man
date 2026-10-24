@@ -26,6 +26,8 @@ import { MOVE, windHang, plungeOf, momentumStep, runSpeed } from '../data/feel.j
 import { beginRun, spHit, startCrazy, updateCrazy, impact, heroHidden } from './specials.js';
 import { specialId } from '../data/specials.js';
 import { updateGadgets, GADGET } from './gadgets.js';
+import { updateCrumble } from './crumble.js';
+import { swingWalls, bumpWalls } from './walls.js';
 
 
 export function createHero() {
@@ -104,7 +106,8 @@ export function updateHero(h, dt) {
     if (h.attack) updateAttack(h, dt, T);
     return;
   }
-  // springs, dash panels, rings; a rope swing or a zipline takes over movement (gadgets.js)
+  updateCrumble(h, dt); // bridges and stepping stones that give way (crumble.js)
+  // springs and dash panels; a rope swing or a zipline takes over movement (gadgets.js)
   if (updateGadgets(h, dt)) return;
   const ax = input.axis();
   // the level's gimmick (water, ice) and the mount you ride change how the hero moves
@@ -232,12 +235,13 @@ export function updateHero(h, dt) {
   // (water levels keep their own floaty physics)
   const hang = h.jumpHeld && input.held('jump') && Math.abs(h.vy) < MOVE.apexBand;
   const gk = G.swim ? 1 : h.vy > 0 && !hang ? MOVE.fallGravity : hang ? MOVE.apexGravity : 1;
-  const fallSpeed = h.vy;
+  const fallSpeed = h.vy, runV = h.vx;
   if (h.lungeT > 0) h.vx += h.face * h.lungeV;
   const landed = move(h, dt, world.platforms, { gravity: HERO.gravity * (G.gravity || 1) * gk, maxFall: (G.swim ? HERO.maxFall : MOVE.maxFall) * (G.maxFall || 1), dropThrough: h.dropT > 0 });
   if (h.lungeT > 0) h.vx -= h.face * h.lungeV;
   if (h.onGround) h.airShot = false;
   pitCheck(h);
+  bumpWalls(h, runV); // a breakable wall at a full sprint: straight through it (walls.js)
   if (h.hitWall && h.hitWall === ax) h.mom = 0; // ran into a wall
   // at a sprint the weapon rides on the back; a swing draws it in a flash (anim.js blends it out of
   // the sheath), letting the sprint go draws it at an easy pace
@@ -395,6 +399,7 @@ function updateAttack(h, dt, T) {
       quirkHit(h, e, dmg, h.face);
       abilityHit(h, e, dmg, a.move.big);
     }
+    swingWalls(box, a); // breakable walls (walls.js)
   }
   if (a.t >= a.dur) h.attack = null;
 }

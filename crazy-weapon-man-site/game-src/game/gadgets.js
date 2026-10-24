@@ -1,23 +1,20 @@
-// Speed gadgets (Sonic): springs, dash panels, rope swings, ziplines and shard ring trails, placed by
+// Speed gadgets (Sonic): springs, dash panels, rope swings and ziplines, placed by
 // data/maps.js. None of them is ever needed to finish a stage; they pay you for running it well:
 // a spring throws you up onto the high route, a dash panel fills your momentum, a rope swing flings
-// you over a chasm faster than the stepping ledge, a zipline slides you over a pit at speed, and a
-// trail of rings taken in one go is a PERFECT (shards and a full sprint).
+// you over a chasm faster than the stepping ledge, and a zipline slides you over a pit at speed.
 import { C } from '../config.js';
 import { rect, text } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
 import { cx } from './physics.js';
-import { burst, emit, callout, shake } from './fx.js';
-import { stats } from '../data/meta.js';
+import { burst, emit, shake } from './fx.js';
 
 export const GADGET = {
   spring: { up: 430, upHeld: 500 }, // launch speeds (a plain jump is 262)
   boost: { burst: 1.3, time: 0.8 }, // run speed times this for `time` seconds, and full momentum
   rope: { gravity: 760, pump: 1.4, fling: 1.15, hop: 150, hold: 3 }, // pump: rad/s² for pushing with the swing
-  zip: { min: 140, accel: 420, max: 340, hop: 210 },
-  rings: { shard: 1 } // shards a ring; a PERFECT trail pays the same again
+  zip: { min: 140, accel: 420, max: 340, hop: 210 }
 };
 const cool = new WeakMap(); // gadget -> world.t it can fire again
 
@@ -65,22 +62,6 @@ export function updateGadgets(h, dt) {
         h.zip = { g, s: Math.max(GADGET.zip.min, Math.abs(h.vx)) };
         h.attack = null;
         sfx.ui();
-      }
-    } else if (g.kind === 'rings') {
-      for (const p of g.pts) {
-        if (p.got) continue;
-        if (Math.abs(p[0] - hx) < 8 && p[1] > h.y - 4 && p[1] < feet + 4) {
-          p.got = true;
-          world.shards += Math.round(GADGET.rings.shard * (1 + stats().shards));
-          sfx.shardTick(g.pts.filter(q => q.got).length);
-          burst(p[0], p[1], 3, 'twinkle', ['gold', 'cream']);
-          if (g.pts.every(q => q.got)) {
-            world.shards += g.pts.length * GADGET.rings.shard;
-            h.mom = 1;
-            callout('PERFECT!', 0, 0, C.gold, { follow: h, life: 40 });
-            sfx.clear();
-          }
-        }
       }
     }
   }
@@ -187,16 +168,6 @@ export function drawGadgets(t) {
       line(g.x0, g.y0 - 1, g.x1, g.y1 - 1, z === 3 ? C.gold : C.mist);
       if (z === 3) for (let k = 1; k < 8; k++) { const lx = g.x0 + (g.x1 - g.x0) * k / 8, ly = g.y0 + (g.y1 - g.y0) * k / 8; rect(Math.round(lx) - 1, Math.round(ly) + 1, 3, 3, k % 2 ? C.red : C.orange); } // lanterns on the bazaar's cable
       if (!world.hero?.zip) rect(g.x0 + 6, g.y0, 4, 3, C.slate); // the trolley waits at the top
-    } else if (g.kind === 'rings') {
-      g.pts.forEach((p, i) => {
-        if (p.got) return;
-        const w = Math.round(Math.abs(Math.cos(t * 4 + i * 0.5)) * 3) + 1;
-        rect(p[0] - w, p[1] - 4, w * 2 + 1, 9, C.ink);
-        rect(p[0] - w + 1, p[1] - 3, Math.max(1, w * 2 - 1), 7, C.gold);
-        if (w > 1) rect(p[0] - w + 2, p[1] - 2, w * 2 - 3, 5, C.ink);
-        rect(p[0] - w + 1, p[1] - 3, 1, 2, C.cream);
-      });
-      if (g.intro && Math.floor(t * 3) % 2) text('GRAB EVERY RING!', g.pts[2][0], g.pts[2][1] - 28, C.gold, { align: 'center' });
     }
   }
 }

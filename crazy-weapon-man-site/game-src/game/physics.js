@@ -23,7 +23,7 @@ export function move(b,dt,platforms,{gravity=760,maxFall=330,dropThrough=false,a
     if(b.vy<0 && oldTop>=p.y+p.h-0.5 && b.y<p.y+p.h)ceiling=Math.max(ceiling,p.y+p.h);
   }
   if(!air && b.vy>=0 && !dropThrough) for(const p of platforms||[]) {
-    if(p.solid)continue;
+    if(p.solid||p.gone)continue; // a crumbled ledge (crumble.js)
     if(prevBottom<=p.y+0.5 && b.y+b.h>=p.y && b.x+b.w>p.x+2 && b.x<p.x+p.w-2 && p.y<floor){floor=p.y;support=p;}
   }
   if(b.vy<0 && ceiling>-Infinity){b.y=ceiling;b.vy=0;}

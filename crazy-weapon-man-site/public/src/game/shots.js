@@ -9,6 +9,7 @@ import { impactMutation } from './evolution.js';
 import { quirkHit } from './quirks.js';
 import { abilityHit } from './abilities.js';
 import { emit } from './fx.js';
+import { shotWall } from './walls.js';
 
 export function updateShots(dt) {
   for (let i = world.shots.length - 1; i >= 0; i--) {
@@ -55,7 +56,8 @@ export function updateShots(dt) {
     }
     s.x += s.vx * dt;
     s.y += s.vy * dt;
-    if (world.map?.solids.some(p=>overlap(s,p))) {world.shots.splice(i,1);continue;}
+    const rock = world.map?.solids.find(p=>overlap(s,p));
+    if (rock) {shotWall(rock);world.shots.splice(i,1);continue;} // a breakable wall takes the hit (walls.js)
     s.spin += dt * 20;
     runEmitters(s.emitters, () => ({ x: s.x + 3, y: s.y + 2 }), 1.2);
     if (s.type === 'wand' && Math.random() < 0.6) emit(s.x + 2, s.y + 2, 'dot', s.light);

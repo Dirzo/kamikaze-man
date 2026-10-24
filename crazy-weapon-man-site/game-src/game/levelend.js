@@ -21,7 +21,7 @@ export function tally() {
   const R = world.run || {}, m = world.map, relicMax = world.relics?.length || 0;
   const residents = m?.spawns?.length || 0, kills = Math.min(residents, R.residentKills || 0);
   const done = completion({ kills, residents, relics: relicsTaken(), relicMax, secret: !!world.secret?.found, hasSecret: !!world.secret });
-  const par = parTime(m?.width || W, residents), t = R.t || 0;
+  const par = parTime(m?.width || W, residents, m?.walls?.length || 0), t = R.t || 0;
   return {
     t, par, done, kills, residents, relics: relicsTaken(), relicMax, secret: world.secret ? (world.secret.found ? 'FOUND' : 'MISSED') : null,
     top: Math.round(R.top || 0), sprintT: R.sprintT || 0, dealt: R.dealt || 0,

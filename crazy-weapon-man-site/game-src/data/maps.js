@@ -2,9 +2,12 @@
 // to right: rolling ground with steps you can hop, pits to jump (fall in and you lose a chunk of
 // health and go back to the last ground you stood on), chasms with a stepping ledge in the middle,
 // floating ledge rows and staircases that make a richer high route (the relics sit up there), and a
-// flat arena at the end where the boss waits. No ladders, no stacked storeys: you never have to
-// stop moving. Stages run 11 to 20 screens, with long straightaways to build up speed on (hero.js
-// momentum). Residents stand along the route in small groups you can cut through at a run; you
+// flat arena at the end where the boss waits. No ladders: you never have to stop moving. Stages run
+// 13 to 24 screens, with long straightaways to build up speed on (hero.js momentum), and Sonic-style
+// stacked routes: a high road of ledges two hops over the ground for a few screens, now and then a
+// sky road over that, and break-away terrain: bridges and ledges that crumble a moment after you
+// step on them (game/crumble.js), and cliffs whose cracked foot you can smash open for a low road
+// through a tunnel instead of the climb over the top (game/walls.js). Residents stand along the route in small groups you can cut through at a run; you
 // don't have to clear them to reach the arena, but a full clear pays.
 // Biome art and names still belong to ZONES. Layouts are seeded per level, so a route is the same
 // every run and speedrun splits stay comparable.
@@ -29,17 +32,20 @@ export const CLEAR_BONUS = zone => 12 + zone * 4;
 //   blocks floating ledge rows                stairs staircases up to a high run
 //   cave   a rock roof (always high enough to jump under)   pack  residents per group
 //   straight  chance of a long flat straightaway to build momentum on (Sonic, Dead Cells)
+//   tiers  chance a stretch gets a high road over it    sky  chance a high road gets a sky road
+//   crumble  share of high-road ledges that break away  bridges  chance a pit has a crumbling bridge
+//   cliffs  chance a stretch is a cliff with a cracked tunnel mouth at its foot (game/walls.js)
 export const LAYOUTS = [
-  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 11, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, pack: [2, 4] },
-  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 12, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, pack: [2, 4] },
-  { title: 'SEA CAVES', label: 'GROTTO', screens: 12, straight: 0.25, cave: true, pits: 0.28, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, pack: [2, 5] },
-  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 12, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, pack: [2, 5] },
-  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 13, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, pack: [2, 5] },
-  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 13, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, pack: [3, 5] },
-  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 14, straight: 0.25, pits: 0.42, chasm: 0.45, hills: 1, blocks: 0.35, stairs: 0.15, pack: [3, 5] },
-  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 14, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, pack: [3, 6] },
-  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 15, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] },
-  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 16, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, pack: [3, 6] }
+  { title: 'ANT TUNNEL', label: 'TUNNEL', screens: 13, straight: 0.3, cave: true, pits: 0.18, chasm: 0.2, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.36, sky: 0.0, crumble: 0, bridges: 0.35, cliffs: 0.04, pack: [2, 4] },
+  { title: 'ARCHERY GLADE', label: 'GLADE', screens: 14, straight: 0.35, pits: 0.22, chasm: 0.25, hills: 2, blocks: 0.4, stairs: 0.25, tiers: 0.48, sky: 0.3, crumble: 0.1, bridges: 0.35, cliffs: 0.04, pack: [2, 4] },
+  { title: 'SEA CAVES', label: 'GROTTO', screens: 14, straight: 0.25, cave: true, pits: 0.28, chasm: 0.35, hills: 1, descend: true, blocks: 0.3, stairs: 0.1, tiers: 0.42, sky: 0.0, crumble: 0.15, bridges: 0.4, cliffs: 0.048, pack: [2, 5] },
+  { title: 'MARKET ROOFTOPS', label: 'ROOFTOP', screens: 14, straight: 0.3, pits: 0.45, chasm: 0.3, hills: 2, blocks: 0.45, stairs: 0.2, tiers: 0.6, sky: 0.52, crumble: 0.2, bridges: 0.4, cliffs: 0.048, pack: [2, 5] },
+  { title: 'CHERRY PAGODA', label: 'STOREY', screens: 15, straight: 0.3, pits: 0.25, chasm: 0.3, hills: 1, climb: true, blocks: 0.3, stairs: 0.45, tiers: 0.6, sky: 0.6, crumble: 0.2, bridges: 0.35, cliffs: 0.048, pack: [2, 5] },
+  { title: 'MONASTERY STEPS', label: 'TERRACE', screens: 15, straight: 0.25, pits: 0.2, chasm: 0.2, hills: 3, blocks: 0.3, stairs: 0.4, tiers: 0.6, sky: 0.6, crumble: 0.25, bridges: 0.4, cliffs: 0.056, pack: [3, 5] },
+  { title: 'FORGE CATWALKS', label: 'CATWALK', screens: 16, straight: 0.25, pits: 0.42, chasm: 0.45, hills: 1, blocks: 0.35, stairs: 0.15, tiers: 0.66, sky: 0.52, crumble: 0.3, bridges: 0.5, cliffs: 0.06, pack: [3, 5] },
+  { title: 'ROOT TUNNELS', label: 'BURROW', screens: 16, straight: 0.3, cave: true, pits: 0.3, chasm: 0.3, hills: 2, descend: true, blocks: 0.35, stairs: 0.2, tiers: 0.6, sky: 0.3, crumble: 0.3, bridges: 0.45, cliffs: 0.06, pack: [3, 6] },
+  { title: 'CASTLE RAMPARTS', label: 'RAMPART', screens: 17, straight: 0.3, pits: 0.45, chasm: 0.35, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.75, crumble: 0.35, bridges: 0.5, cliffs: 0.064, pack: [3, 6] },
+  { title: 'VAULT TUNNELS', label: 'VAULT', screens: 18, straight: 0.3, cave: true, pits: 0.5, chasm: 0.4, hills: 2, blocks: 0.4, stairs: 0.3, tiers: 0.75, sky: 0.6, crumble: 0.35, bridges: 0.5, cliffs: 0.064, pack: [3, 6] }
 ];
 
 // Every level plays its own stage from its world's recipe: the first level plays the zone's
@@ -61,7 +67,7 @@ export function levelLayout(zone, id) {
   const seed = [...id].reduce((h, c) => h * 31 + c.charCodeAt(0), 7);
   return {
     ...lay, title, seed,
-    screens: Math.min(20, lay.screens + Math.round(tier * 3) + (big ? 1 : 0)),
+    screens: Math.min(24, lay.screens + Math.round(tier * 3) + (big ? 1 : 0)),
     pits: Math.min(0.55, lay.pits + tier * 0.1),
     cave: kind === 'fort' || (i % 4 === 3 ? !lay.cave : !!lay.cave),
     foes: Math.round(tier * 8) + (big ? 3 : 0),
@@ -140,8 +146,19 @@ function stage(m, lay) {
   const add = (w, dy = 0) => { y += Math.max(-32, Math.min(32, dy)); const g = { x, y, w }; segs.push(g); x += w; return g; };
   const step = () => m.pick(STEPS[lay.hills || 0]) + trend * m.pick([8, 16]);
   add(224); // a runway to get going
+  let cliffs = 0;
   while (x < end - 96) {
     const left = end - x;
+    // a cliff: the route climbs a step and a two-hop rock shelf, or smashes the cracked rock at its
+    // foot and takes the tunnel straight through (every stage gets at least one past the middle)
+    if (left > 900 && x > 600 && cliffs < 3 && (m.rand() < (lay.cliffs || 0) || (!cliffs && x > end / 2))) {
+      const run = add(m.int(20, 26) * 8, step()), tunnel = add(m.int(20, 36) * 8, 0);
+      tunnel.cliff = true;
+      floats.push({ x: tunnel.x - 64, y: run.y - CLIFF.h / 2, w: 48, step: true }); // the step up to the top
+      add(m.int(16, 24) * 8, 0);
+      cliffs++;
+      continue;
+    }
     // a pit (or a wide chasm with a stepping ledge in its middle), then the ground goes on
     if (left > 260 && m.rand() < lay.pits) {
       let gap, chasm = false;
@@ -170,39 +187,44 @@ function stage(m, lay) {
       const f = { x: fx, y: g.y - m.pick([36, 40]), w: Math.min(fw, g.x + g.w - fx - 8) };
       if (f.w >= 40) {
         floats.push(f);
-        if (m.rand() < 0.5) floats.push({ x: f.x + f.w - 24, y: f.y - 36, w: m.int(6, 9) * 8 });
+        if (m.rand() < 0.5) floats.push({ x: f.x + f.w - 24, y: f.y - 36, w: m.int(6, 9) * 8, grp: f });
       }
     } else if (g.w >= 176 && m.rand() < lay.stairs) {
       // a staircase up to a high run, the long way round with the best view (and the relics)
       const n = m.int(2, 4);
-      let sx = g.x + 24;
-      for (let k = 1; k <= n; k++, sx += 56) floats.push({ x: sx, y: g.y - 36 * k, w: 48 });
-      floats.push({ x: sx, y: g.y - 36 * n - 32, w: m.int(12, 20) * 8 });
+      let sx = g.x + 24, grp = {};
+      for (let k = 1; k <= n; k++, sx += 56) floats.push({ x: sx, y: g.y - 36 * k, w: 48, grp });
+      floats.push({ x: sx, y: g.y - 36 * n - 32, w: m.int(12, 20) * 8, grp });
     }
     // a ledge stops well short of the ground's end, so dropping off it never lands you in the next pit
     for (const f of floats.slice(n0)) f.w = Math.min(f.w, g.x + g.w - 56 - f.x);
   }
   if (x < end) (segs.at(-1).w += end - x), (x = end);
+  tiers(m, lay, segs, floats, end);
   // shift so the runway is at the usual ground height (GROUND), unless the stage climbs so high
-  // that its top surface would come within 48px of the top of the map
-  const top = Math.min(...segs.map(g => g.y), ...floats.map(f => f.y)), off = Math.max(GROUND - segs[0].y, 48 - top);
+  // that its top surface would come within 100px of the top of the map (the HUD covers the top
+  // of the screen, and the camera stops at the map's top edge)
+  const top = Math.min(...segs.map(g => g.y - (g.cliff ? CLIFF.h : 0)), ...floats.map(f => f.y)), off = Math.max(GROUND - segs[0].y, 100 - top);
   const arenaY = segs.at(-1).y + off;
   // the route is cut into stretches of about two screens for the HUD's room line
   const stretches = Math.max(1, Math.round(end / (2 * W)));
   const edge = k => (k >= stretches ? end : Math.round((k * end) / stretches / 8) * 8);
   for (let k = 0; k < stretches; k++) room(m, lay.label + ' ' + (k + 1), edge(k), edge(k + 1), 0, Infinity, 0);
   const roomOf = x => Math.min(stretches - 1, Math.floor((x / end) * stretches));
+  m.walls = [];
   for (const g of segs) {
     m.room = roomOf(g.x);
     m.rooms[m.room].floor ||= g.y + off;
     ground(m, g.x, g.y + off, g.w);
+    if (g.cliff) cliff(m, g, off);
   }
   for (const f of floats) {
     const w = Math.min(f.w, end - 8 - f.x);
     if (w < 32) continue;
     m.room = roomOf(f.x);
-    ledge(m, f.x, f.y + off, w, f.step ? { step: true } : null);
+    ledge(m, f.x, f.y + off, w, f.step ? { step: true } : f.crumble ? { crumble: true, hunt: false } : f.tier ? { tier: f.tier } : null);
   }
+  bridges(m, lay, segs, off, roomOf);
   room(m, 'ARENA', end, width, 0, Infinity, arenaY);
   ground(m, end, arenaY, W);
   m.room = 0;
@@ -225,7 +247,87 @@ function stage(m, lay) {
   }
   m.start = { x: 48, y: segs[0].y + off };
   m.arena = arenaY;
-  m.gadgets = gadgets(m, lay, segs.map(g => ({ ...g, y: g.y + off })), floats.map(f => ({ ...f, y: f.y + off })), end);
+  const segsAt = segs.map(g => ({ ...g, y: g.y + off })), floatsAt = floats.map(f => ({ ...f, y: f.y + off }));
+  m.gadgets = gadgets(m, lay, segsAt, floatsAt, end);
+}
+
+// ---------------------------------------------------------------- cliffs (game/walls.js)
+// A rock shelf two hops (72px) high over the ground. The way over is a step up and across the top;
+// the way through is a tunnel along the ground under it, its mouth stopped by cracked rock that
+// takes a few hits (or one run at a full sprint) to smash open. The tunnel is low (you can't jump in
+// it) and flat, so it's the quick line; its far end is open, so you can always walk back.
+const CLIFF = { h: 72, tunnel: 28, mouth: 16 };
+function cliff(m, g, off) {
+  const y = g.y + off;
+  ground(m, g.x, y - CLIFF.h, g.w, CLIFF.h - CLIFF.tunnel, { cliff: true });
+  const w = { x: g.x, y: y - CLIFF.tunnel, w: CLIFF.mouth, h: CLIFF.tunnel, solid: true, wall: true, hp: 3, max: 3, intro: !m.walls.length && m.zone === 0 };
+  m.walls.push(w);
+  m.solids.push(w);
+}
+
+// ---------------------------------------------------------------- stacked routes (Sonic)
+// A high road: a staircase off a wide stretch of ground climbs two hops (72px) over the highest
+// ground for the next two to four screens, then a chain of ledges runs along up there, over the
+// pits and residents below. It is the faster, riskier line: fall off it over a pit and you're in
+// the pit. Now and then a second staircase on the high road climbs to a sky road two hops higher.
+// Some ledges up there are short crumbling stepping stones that give way if you stop on them.
+// Floating rows under a road keep a hop of headroom or go; the chasms' stepping ledges stay.
+const HOP = 36, TIER = 72;
+function tiers(m, lay, segs, floats, end) {
+  if (!lay.tiers) return;
+  let next = 2 * W;
+  for (const g of segs) {
+    if (g.x < next || g.straight || g.cliff || g.w < 136 || g.x > end - 3 * W || m.rand() > lay.tiers) continue;
+    const x1 = Math.min(end - W, g.x + m.int(2, 4) * W);
+    const under = segs.filter(s => s.x < x1 && s.x + s.w > g.x);
+    if (under.some(s => s.cliff)) continue; // a cliff's top already is the high line there
+    const hi = Math.min(...under.map(s => s.y));
+    drop(floats, f => !f.step && f.x < x1 + 24 && f.x + f.w > g.x && f.y <= hi - TIER + HOP);
+    const high = highRoad(m, lay, floats, g, x1, hi - TIER, 1);
+    next = x1 + W;
+    if (!high.length || m.rand() > lay.sky) continue;
+    const base = high.find(p => !p.crumble && p.w >= 136 && p.x > g.x + W / 2 && p.x < x1 - W);
+    if (!base) continue;
+    const sx1 = Math.min(x1 - 48, base.x + m.int(1, 2) * W), over = high.filter(p => p.x < sx1 && p.x + p.w > base.x);
+    highRoad(m, lay, floats, base, sx1, Math.min(...over.map(p => p.y)) - TIER, 2);
+  }
+}
+// takes floating ledges out, and the rest of any staircase or row they belong to with them (half a
+// staircase is a ledge nobody can reach)
+function drop(floats, out) {
+  const gone = new Set(floats.filter(out).map(f => f.grp || f));
+  for (let i = floats.length - 1; i >= 0; i--) if (gone.has(floats[i]) || gone.has(floats[i].grp)) floats.splice(i, 1);
+}
+// stairs up off `base` to height y, then ledges to x1; returns the ledges up there
+function highRoad(m, lay, floats, base, x1, y, tier) {
+  const k = Math.max(1, Math.ceil((base.y - y) / HOP));
+  let x = base.x + 24;
+  // the staircase clears its own way up
+  drop(floats, f => !f.step && !f.tier && f.x < x + 56 * k && f.x + f.w > base.x && f.y < base.y);
+  for (let j = 1; j < k; j++, x += 56) floats.push({ x, y: base.y - HOP * j, w: 48 });
+  const out = [];
+  for (let first = true; x < x1 - 48; first = false) {
+    const crumble = !first && m.rand() < lay.crumble * tier;
+    const w = first ? m.int(10, 16) * 8 : crumble ? 32 : m.int(8, 20) * 8;
+    const f = { x, y: first ? y : y + m.pick([0, 0, 0, -16, 8]), w: Math.min(w, x1 - x), tier, crumble };
+    out.push(f);
+    floats.push(f);
+    x += f.w + m.int(3, 5) * 8;
+  }
+  return out;
+}
+// Break-away bridges: a narrow pit between two grounds at the same height gets a bridge of
+// planks. Each plank drops a moment after you step on it, so at a run you're across before it goes,
+// and if you stop on it you're in the pit. The pit is still an easy jump without it.
+function bridges(m, lay, segs, off, roomOf) {
+  for (const p of m.pits) {
+    const L = segs.find(g => g.x + g.w === p.x), R = segs.find(g => g.x === p.x + p.w);
+    if (!L || !R || L.y !== R.y || p.w > 56 || m.rand() > (lay.bridges || 0)) continue;
+    p.bridge = true;
+    m.room = roomOf(p.x);
+    // 16px planks (the last one takes the odd 8), so each one is the plank under you somewhere
+    for (let x = p.x, w; x < p.x + p.w; x += w) ledge(m, x, L.y + off, (w = p.x + p.w - x < 32 ? p.x + p.w - x : 16), { crumble: true, plank: true, hunt: false });
+  }
 }
 
 // ---------------------------------------------------------------- speed gadgets (game/gadgets.js)
@@ -237,8 +339,7 @@ function stage(m, lay) {
 //   boost   a dash panel at the start of a straightaway: full momentum and a burst on top
 //   rope    a vine or rope over a chasm: grab it, swing, let go at the bottom for a long fling
 //   zip     a zipline over a pit, sloping down: hang on and slide out the far end at speed
-//   rings   a trail of shard rings along the fastest jump: all of them in one go is a PERFECT
-export const GADGET_INTRO = ['spring', 'boost', 'rope', 'zip', 'rings']; // world 1 brings the first, and so on
+export const GADGET_INTRO = ['spring', 'boost', 'rope', 'zip']; // world 1 brings the first, and so on
 export const gadgetKinds = zone => GADGET_INTRO.slice(0, Math.min(GADGET_INTRO.length, zone + 1));
 function gadgets(m, lay, segs, floats, end) {
   const zone = m.zone, kinds = new Set(gadgetKinds(zone)), out = [], fresh = GADGET_INTRO[zone];
@@ -251,40 +352,29 @@ function gadgets(m, lay, segs, floats, end) {
     if (g) {
       const x = g.x + 48;
       if (fresh === 'spring' || fresh === 'boost') out.push({ kind: fresh, x, y: g.y, dir: 1, intro: true });
-      else if (fresh === 'rings') out.push({ kind: 'rings', intro: true, x, pts: arc(x, g.y, 120, 44, 6) });
     }
   }
   // springs at the foot of the floating rows and staircases
   if (kinds.has('spring')) for (const f of floats) {
-    if (f.step || m.rand() > dense * 0.6) continue;
+    if (f.step || f.crumble || f.tier > 1 || m.rand() > dense * 0.6) continue;
     const x = f.x - 28, g = groundAt(x);
     if (g && g.y - f.y >= 30 && !near(x) && x < end - 64) out.push({ kind: 'spring', x, y: g.y });
   }
   // dash panels at the start of every straightaway
   if (kinds.has('boost')) for (const g of segs) if (g.straight && !near(g.x + 40)) out.push({ kind: 'boost', x: g.x + 40, y: g.y, dir: 1 });
-  // a line of rings down the middle of a straightaway, at running height: grab them at full tilt
-  if (kinds.has('rings')) for (const g of segs) if (g.straight && m.rand() < dense)
-    out.push({ kind: 'rings', x: g.x + 120, pts: Array.from({ length: 8 }, (_, i) => [g.x + 120 + i * 24, g.y - 12]) });
-  // over the pits: ropes on the wide chasms, ziplines and ring trails on the rest
+  // over the pits: ropes on the wide chasms, ziplines on the rest
   for (const p of m.pits) {
     const L = segs.find(g => g.x + g.w === p.x), R = segs.find(g => g.x === p.x + p.w);
     if (!L || !R) continue;
+    const roofed = floats.some(f => f.tier && f.x < p.x + p.w + 96 && f.x + f.w > p.x - 96); // a high road over it: no room to swing
     // the world that brings in ropes or ziplines puts them on its first pits that can take one
     const wide = p.w > 56, zipOk = L.w >= 120 && R.w >= 120, firsts = k => fresh === k && out.filter(o => o.kind === k).length < 3;
-    const r = m.rand(), want = firsts('rope') && wide ? 'rope' : firsts('zip') && zipOk ? 'zip'
-      : wide && kinds.has('rope') && r < dense ? 'rope' : zipOk && kinds.has('zip') && r < dense * 0.5 ? 'zip' : !wide && kinds.has('rings') && r < dense ? 'rings' : null;
+    const r = m.rand(), want = roofed ? null : firsts('rope') && wide ? 'rope' : firsts('zip') && zipOk ? 'zip'
+      : wide && kinds.has('rope') && r < dense ? 'rope' : zipOk && kinds.has('zip') && r < dense * 0.5 ? 'zip' : null;
     if (want === 'rope') out.push({ kind: 'rope', x: p.x + 36, y: L.y - 118, len: 76 }); // the knot hangs where a running jump off the edge peaks
     else if (want === 'zip') out.push({ kind: 'zip', x0: p.x - 96, y0: L.y - 52, x1: p.x + p.w + 96, y1: Math.max(L.y - 52 + 16, R.y - 34) });
-    else if (want === 'rings') out.push({ kind: 'rings', x: p.x, pts: arc(p.x - 24, L.y, p.w + 48, 40, 6) });
   }
   return out.filter(o => (o.x ?? o.x0) < end - 40).sort((a, b) => (a.x ?? a.x0) - (b.x ?? b.x0));
-}
-// n points along a hop from (x, ground y) over w px, `rise` at the top (the rings' centres)
-function arc(x, y, w, rise, n) {
-  return Array.from({ length: n }, (_, i) => {
-    const u = (i + 0.5) / n;
-    return [Math.round(x + u * w), Math.round(y - 14 - 4 * rise * u * (1 - u))];
-  });
 }
 
 
@@ -328,8 +418,9 @@ function finish(m, zone, lay) {
     for (let j = 0; j < n; j++) {
       let sx = Math.round(mid - half + j * gap);
       // slide off any wall or doorframe standing on the surface
-      for (let d = 8, x0 = sx; blocked(sx, q.p.y) && d < q.right - q.left; d += 8)
-        sx = [x0 + d, x0 - d].find(v => v >= q.left && v <= q.right && !blocked(v, q.p.y)) ?? sx;
+      const free = v => !blocked(v, q.p.y) && !spawns.some(o => o.y === q.p.y && Math.abs(o.x - v) < 16);
+      for (let d = 8, x0 = sx; !free(sx) && d < q.right - q.left; d += 8)
+        sx = [x0 + d, x0 - d].find(v => v >= q.left && v <= q.right && free(v)) ?? sx;
       const roof = roofAbove(sx, q.p.y), i = spawns.length;
       spawns.push({
         x: sx, y: q.p.y, airY: Math.max(roof + 18, q.p.y - 52), section: Math.floor(sx / W), room: q.p.room, pack: k,
@@ -341,7 +432,7 @@ function finish(m, zone, lay) {
     name: ZONES[zone].name, style: lay.style, title: lay.title, dark: lay.dark || 0, width, height, floorY, rooms: m.rooms,
     sections: Math.ceil(width / W), platforms: m.platforms, solids: m.solids, ladders: m.ladders, spawns,
     startX: m.start.x, startY: m.start.y, exitX: width - 36, exitY: m.arena,
-    bossFloor: m.arena, bossLeft: width - W + 8, bossRight: width - 8, pits: m.pits, gadgets: m.gadgets || []
+    bossFloor: m.arena, bossLeft: width - W + 8, bossRight: width - 8, pits: m.pits, gadgets: m.gadgets || [], walls: m.walls || []
   };
 }
 

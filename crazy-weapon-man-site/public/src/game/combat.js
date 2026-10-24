@@ -444,7 +444,7 @@ export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   h.hurtT = 0.25;
   // knocked back 40px or so, unless that would throw you into a pit: then you just hop where you stand
   const land = cx(h) + dir * 40, pits = world.map?.pits?.length;
-  h.vx = dir * (!pits || world.map.platforms.some(p => p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20) * (1 - S.knockRes);
+  h.vx = dir * (!pits || world.map.platforms.some(p => !p.gone && p.y >= h.y + h.h - 2 && land >= p.x && land < p.x + p.w) ? 130 : 20) * (1 - S.knockRes);
   h.vy = -120 * (1 - S.knockRes * 0.5);
   h.onGround = false;
   h.attack = null;
