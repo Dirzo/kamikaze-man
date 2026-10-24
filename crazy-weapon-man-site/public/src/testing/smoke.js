@@ -514,7 +514,7 @@ export function runSmoke(game) {
       ok(z===9?world.phase==='won':world.zone===z+1,'zone '+z+' stalled');
     }
   });
-  check('a pit cracks your weapon and puts you back on the last safe ground; foes knocked in are gone',()=>{
+  check('a pit never cracks your weapon, just puts you back on the last safe ground; foes knocked in are gone',()=>{
     reset();startZone(1);world.enemies=[];const h=world.hero,m=world.map,q=m.pits.find(q=>!q.bridge&&m.platforms.some(p=>p.ground&&p.x+p.w===q.x));
     ok(q,'stage has no pit');
     const lip=m.platforms.find(p=>p.ground && p.x+p.w===q.x);
@@ -522,7 +522,7 @@ export function runSmoke(game) {
     updateHero(h,STEP);const safe={...h.safe};ok(safe && safe.y===lip.y-h.h,'safe ground not remembered');
     h.x=q.x+q.w/2-h.w/2;h.y=lip.y-h.h+4;h.onGround=false;h.platform=null;
     for(let i=0;i<120 && !h.hits;i++){poll();updateHero(h,STEP);}
-    ok(h.hits===1,'the fall did not count as a hit');
+    ok(h.hits===1 && !h.cracked,'the fall did not count, or it cracked the weapon');
     ok(Math.abs(h.x-safe.x)<1 && Math.abs(h.y-safe.y)<1 && h.inv>0,'not put back on safe ground');
     const e=spawnEnemy('crawler',q.x+q.w/2,lip.y);e.spawnT=0;e.x=q.x+q.w/2-e.w/2;e.y=m.floorY-e.h;e.onGround=false;
     for(let i=0;i<30 && !e.dead;i++)updateEnemy(e,STEP);ok(e.dead,'a foe in the pit lived');

@@ -322,8 +322,8 @@ function updateRev(h, dt, ax, S) {
 
 // ---------------------------------------------------------------- pits
 // Standing on solid ground well clear of its edges remembers the spot; falling to the bottom of a
-// pit costs PIT_DMG of your health and puts you back there (Super Mario World would take a life).
-export const PIT_DMG = 0.15;
+// pit puts you back there. It never cracks your weapon (the bot's playtests: a crack per fall made
+// pits a quarter of all deaths); it costs your momentum, the mount, and counts as a hit for the grade.
 function pitCheck(h) {
   const m = world.map;
   if (!m?.pits?.length || h.dead) return;
@@ -336,8 +336,10 @@ function pitCheck(h) {
   h.inv = 0;
   h.dashT = 0;
   h.mount = null;
-  hurtHero(Math.ceil(h.maxHp * PIT_DMG), 1);
-  if (h.dead) return;
+  h.mom = 0;
+  h.hits = (h.hits || 0) + 1;
+  if (world.run) world.run.hits = (world.run.hits || 0) + 1; // (the level-clear grade, data/grade.js)
+  sfx.hurt();
   h.x = back.x;
   h.y = back.y;
   h.vx = h.vy = 0;
