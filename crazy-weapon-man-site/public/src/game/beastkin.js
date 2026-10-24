@@ -136,7 +136,7 @@
 import { C } from '../config.js';
 import { world } from './world.js';
 import { cx, cy, overlap } from './physics.js';
-import { rect, px, frame, X, upscaled } from '../engine/gfx.js';
+import { rect, px, frame, X, upscaled, text } from '../engine/gfx.js';
 import { A } from '../engine/assets.js';
 import { sfx } from '../engine/audio.js';
 import { burst, emit, callout, shake } from './fx.js';
@@ -353,6 +353,15 @@ export function beastTick(e, dt) {
   }
 }
 
+// nothing solid on the straight line between a caster and you (sampled every 8 px)
+function clearSight(e, h) {
+  const x0 = cx(e), y0 = cy(e), x1 = cx(h), y1 = cy(h), n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 8);
+  for (let i = 1; i < n; i++) {
+    const x = x0 + ((x1 - x0) * i) / n, y = y0 + ((y1 - y0) * i) / n;
+    if (world.map.solids.some(p => x > p.x && x < p.x + p.w && y > p.y && (p.fill || y < p.y + p.h))) return false; // (filled ground runs to the bottom)
+  }
+  return true;
+}
 export function beastThink(e, dt, dist, toward, slow, sameLevel) {
   const d = e.d, h = world.hero, near = Math.abs(cy(h) - cy(e)) < 70;
   const ready = e.cool <= 0 && dist < d.range && near;
@@ -692,8 +701,12 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
     case 'owlet':
     case 'glide':
     case 'broom': {
-      // up in the air over your head: the owlet hovers just ahead, the bat (and the draco) swoops back and forth
-      e.hoverY = h.y - (d.beh === 'owlet' ? 46 : d.beh === 'glide' ? 50 : 38);
+      // up in the air over your head: the owlet hovers just ahead, the bat (and the draco) swoops back and forth.
+      // It hangs a jump-swing above you, and every few seconds (and as it attacks) dips to head height,
+      // where a standing swing catches it, so a flier never stalls the run out of reach
+      e.dipT = Math.max(0, (e.dipT || 0) - dt);
+      const dip = e.dipT > 0 || Math.sin(e.anim * 1.3 + e.id) > 0.55;
+      e.hoverY = h.y + (dip ? 8 : -12) - e.h;
       e.vy = (e.hoverY + Math.sin(e.anim * 2) * 4 - e.y) * 2.5;
       if (d.beh === 'owlet') e.vx = Math.sign(cx(h) + toward * -10 - cx(e)) * e.speed * slow * (Math.abs(cx(h) - cx(e)) > 14 ? 1 : 0);
       else {
@@ -702,7 +715,7 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
         e.vx = e.swoopDir * e.speed * slow;
         e.face = e.swoopDir;
       }
-      if (e.cool <= 0 && Math.abs(cx(h) - cx(e)) < (d.beh === 'owlet' ? 30 : 60)) wind(e, d.wind, d.beh === 'broom' ? 'cast' : 'draw', { owlet: 'orb', broom: 'stars', glide: 'stardrop' }[d.beh]);
+      if (e.cool <= 0 && Math.abs(cx(h) - cx(e)) < (d.beh === 'owlet' ? 30 : 60)) wind(e, d.wind, d.beh === 'broom' ? 'cast' : 'draw', { owlet: 'orb', broom: 'stars', glide: 'stardrop' }[d.beh]), (e.dipT = d.wind + 0.4);
       break;
     }
     case 'squire':
@@ -809,7 +822,7 @@ export function beastThink(e, dt, dist, toward, slow, sameLevel) {
       else keep(e, 90, dist, toward, slow);
       break;
     case 'poly':
-      if (e.cool <= 0 && dist < d.range && near && !(h.polyT > 0)) wind(e, d.wind, 'draw', 'polyspell');
+      if (e.cool <= 0 && dist < d.range && near && !(h.polyT > 0) && clearSight(e, h)) wind(e, d.wind, 'draw', 'polyspell'); // (never through a wall or a ledge)
       else keep(e, 110, dist, toward, slow);
       break;
     case 'tea':
@@ -2506,6 +2519,9 @@ export function drawTell(e, t) {
     const y = Math.round(e.y + e.h - 1), x0 = Math.round(cx(e) + e.face * 8);
     for (let i = 0; i < 80; i += 4) px(x0 + e.face * i, y, C.red);
   }
+  // an Armadillo Duelist shelled up (or spinning its blades) turns every swing but a special: say so
+  if (e.d.beh === 'dillo' && !e.dead && (e.shellT > 0 || (e.state === 'attack' && e.move === 'dillospin')) && Math.floor(t * 6) % 2)
+    text(world.hero.specialCd <= 0 ? 'SPECIAL!' : 'SHELL', Math.round(cx(e)), Math.round(e.y) - 18, world.hero.specialCd <= 0 ? C.gold : C.mist, { align: 'center' });
   // the Lantern Cat in the dark: just its eyes
   if (e.d.beh === 'dark' && (e.alpha ?? 1) < 0.5 && !e.dead && Math.floor(t * 3 + e.id) % 7) {
     const x = Math.round(cx(e) + e.face * 3), y = Math.round(e.y + e.h * 0.22);

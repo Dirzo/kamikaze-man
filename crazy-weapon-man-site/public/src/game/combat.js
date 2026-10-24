@@ -65,7 +65,12 @@ export function hitEnemy(e, dmg, o = {}) {
   e.calm = false; // a peaceful resident fights back once hit
   if (e.kind === 'mimic' && e.disguised) reveal(e);
   // shields block from the front unless it's a crit or a special
-  if (e.kind === 'beast' && beastGuard(e, dir, o)) return 0; // a phasing ghost, a parrying swan
+  // a phasing ghost, a parrying swan: no damage, but the swing still keeps the field combo going
+  // and charges the special, which is what cracks a shell or a guard
+  if (e.kind === 'beast' && beastGuard(e, dir, o)) {
+    if (!o.chip && !e.hidden) fightHit(o);
+    return 0;
+  }
   if ((e.kind === 'shield' || e.d?.block) && !o.crit && !o.special && !o.chip && e.face === -dir && e.state !== 'attack' && !innate('broadhead')) {
     dmg *= 0.2;
     if (!o.chain) {
