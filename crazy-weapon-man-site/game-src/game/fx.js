@@ -270,6 +270,8 @@ function critStar(x, y, r, age) {
   }
 }
 
+// how much is in flight (the playtest's ?perf probe)
+export const fxCounts = () => ({ parts: parts.length, sparks: sparks.length, numbers: numbers.length, callouts: callouts.length, splats: splats.length });
 export function clearFx() {
   parts.length = sparks.length = numbers.length = callouts.length = splats.length = 0;
   feel.trauma = feel.stop = feel.kx = feel.ky = feel.zoom = 0;

@@ -1,4 +1,6 @@
 // Bot playtests in headless Chrome: node tools/playtest.mjs [runs=40] [bot=skilled|casual] [workers=4] [from=0]
+// PERF=1: time updates and frames and log stalls per level (testing/perf.js; summary: tools/perf-report.mjs)
+// PROFILE_FROM=<world>: CPU profile of worker 0 from that world on. PLAYTEST_OUT also saves progress every 30s
 // Serves public/, runs game-src/testing/playtest.js in parallel tabs and prints win rates, where
 // runs end and per-zone health/damage. Needs CHROME (or chromium on PATH); run `node build.mjs` first.
 import { spawn, execSync } from 'node:child_process';
@@ -20,7 +22,7 @@ await delay(800);
 
 async function worker(w, count) {
   const debugPort = port + 1 + w, profile = mkdtempSync(join(tmpdir(), 'cwm-play-'));
-  procs.push(spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--mute-audio', '--disable-background-timer-throttling',
+  procs.push(spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--mute-audio', '--enable-precise-memory-info', '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding', `--remote-debugging-port=${debugPort}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' }));
   let tabs;
   for (let i = 0; i < 100 && !tabs; i++) { try { tabs = await (await fetch(`http://127.0.0.1:${debugPort}/json`)).json(); } catch { await delay(100); } }
@@ -30,13 +32,24 @@ async function worker(w, count) {
   socket.onmessage = e => { const m = JSON.parse(e.data); if (m.id) { pending.get(m.id)(m.result); pending.delete(m.id); } };
   const send = (method, params = {}) => new Promise(res => { const n = ++id; pending.set(n, res); socket.send(JSON.stringify({ id: n, method, params })); });
   const evaluate = async expr => (await send('Runtime.evaluate', { expression: expr, returnByValue: true })).result?.value;
-  await send('Page.navigate', { url: `http://127.0.0.1:${port}/?playtest=${count}&bot=${bot}&from=${from}${campaign ? '&campaign' : ''}${process.env.TRACE ? '&trace' : ''}` });
+  await send('Page.navigate', { url: `http://127.0.0.1:${port}/?playtest=${count}&bot=${bot}&from=${from}${campaign ? '&campaign' : ''}${process.env.TRACE ? '&trace' : ''}${process.env.PERF ? '&perf' : ''}` });
+  let polls = 0, profiling = false;
   for (;;) {
     await delay(1000);
     const done = await evaluate('document.documentElement.dataset.playtest');
     const n = await evaluate('window.CWM_PLAYTEST?.runs.length');
-    process.stderr.write(`\rworker ${w}: ${n || 0}/${count}   `);
-    if (done) return await evaluate('window.CWM_PLAYTEST.runs');
+    const at = campaign ? await evaluate('(l => l ? `level ${l.id} (${window.CWM_PLAYTEST.runs.at(-1).levels.length} tries)` : "")(window.CWM_PLAYTEST?.runs.at(-1)?.levels.at(-1))') : '';
+    process.stderr.write(`\rworker ${w}: ${n || 0}/${count} ${at}   `);
+    // a long campaign: keep what has been played so far (PLAYTEST_OUT.w<n>.json)
+    if (process.env.PLAYTEST_OUT && ++polls % 30 === 0) writeFileSync(`${process.env.PLAYTEST_OUT}.w${w}.json`, JSON.stringify(await evaluate('window.CWM_PLAYTEST?.runs')));
+    // PROFILE_FROM=<world>: a CPU profile of worker 0 from that world on (PLAYTEST_OUT.cpuprofile)
+    if (process.env.PROFILE_FROM && !w && !profiling && (await evaluate('window.CWM_PLAYTEST?.runs.at(-1)?.levels.at(-1)?.region || 0')) >= +process.env.PROFILE_FROM) {
+      profiling = true; await send('Profiler.enable'); await send('Profiler.setSamplingInterval', { interval: 1000 }); await send('Profiler.start');
+    }
+    if (done) {
+      if (profiling) writeFileSync(`${process.env.PLAYTEST_OUT}.cpuprofile`, JSON.stringify((await send('Profiler.stop')).profile));
+      return await evaluate('window.CWM_PLAYTEST.runs');
+    }
   }
 }
 const per = Math.ceil(runs / workers);

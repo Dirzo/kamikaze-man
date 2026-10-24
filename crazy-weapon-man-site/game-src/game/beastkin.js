@@ -2501,7 +2501,7 @@ export function drawWave(b, t) {
 export function drawTell(e, t) {
   // a hero caught in a Bubble Newt's bubble floats inside it
   const h = world.hero;
-  if (h.bubbled && e.d.beh === 'bubble' && e === world.enemies.find(o => o.d.beh === 'bubble' && !o.dead)) ring(Math.round(cx(h)), Math.round(cy(h)), 12, t);
+  if (h.bubbled && e.d.beh === 'bubble' && e === world.enemies.find(o => o.d?.beh === 'bubble' && !o.dead)) ring(Math.round(cx(h)), Math.round(cy(h)), 12, t);
   if (e.state === 'wind' && e.move === 'lunge' && Math.floor(t * 16) % 2) {
     const y = Math.round(e.y + e.h - 1), x0 = Math.round(cx(e) + e.face * 8);
     for (let i = 0; i < 80; i += 4) px(x0 + e.face * i, y, C.red);
