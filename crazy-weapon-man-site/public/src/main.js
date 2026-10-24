@@ -19,7 +19,7 @@ import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSp
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
 import { updateInventory, drawInventory, toggleInventory, closeInventory, openInventory, newBag } from './game/inventory.js';
-import { ZONES, TITLE_MUSIC } from './data/zones.js';
+import { ZONES, TITLE_MUSIC, MAP_MUSIC } from './data/zones.js';
 import { rarityColour } from './game/looks.js';
 import { updateCamera } from './game/camera.js';
 import { drawMapBackdrop, drawMapExit, drawRouteHud } from './game/map-view.js';
@@ -84,7 +84,7 @@ function openMap(fresh = []) {
   world.level = null;
   if (!ow.save) ow.save = loadSave();
   openOverworld(ow.save, fresh);
-  music.play('title', TITLE_MUSIC);
+  music.play('map', MAP_MUSIC);
   scene = 'map';
   sceneT = 0;
 }

@@ -46,16 +46,24 @@ test('speed comes from the shard tree, mastery and gear boons, and a weapon\'s o
   speedBoon(w);
   assert.equal(JSON.stringify(specialRoll({ ...w })), before);
 });
-test('the level-clear grade: S for a fast full clear, D for a slow half one', () => {
+test('the level-clear grade runs S (truly awesome) through F (really messed up)', () => {
   const par = parTime(12 * 480, 40);
   assert.ok(par > 60 && par < 200, 'par ' + par);
   const full = completion({ kills: 40, residents: 40, relics: 5, relicMax: 5, secret: true, hasSecret: true });
   assert.equal(full, 1);
-  assert.equal(gradeOf({ t: par * 0.9, par, done: full }).g, 'S');
   const half = completion({ kills: 20, residents: 40, relics: 1, relicMax: 5, secret: false, hasSecret: true });
   assert.ok(half > 0.3 && half < 0.5);
-  assert.equal(gradeOf({ t: par * 2, par, done: half }).g, 'D');
-  assert.equal(timeScore(par, par), 1);
+  const g = (r, done, hits = 0, falls = 0, combo = 0) => gradeOf({ t: par * r, par, done, hits, falls, combo }).g;
+  assert.equal(g(0.6, 1, 2, 0, 30), 'S', 'well under par, everything done, barely touched');
+  assert.notEqual(g(1, 1, 3), 'S', 'just making par is not an S');
+  assert.notEqual(g(0.6, 0.8, 2), 'S', 'skipping a fifth of the stage is not an S');
+  assert.equal(g(0.85, 0.9, 6), 'A', 'a good run');
+  assert.equal(g(1, 0.75, 8), 'B', 'an average run');
+  assert.equal(g(1.2, 0.65, 10), 'C', 'below average');
+  assert.equal(g(1.5, 0.5, 12, 2), 'D', 'messed up');
+  assert.equal(g(2, half, 20, 4), 'F', 'really messed up');
+  assert.equal(timeScore(par * 0.6, par), 1);
+  assert.ok(timeScore(par, par) < 0.7, 'par is a pass, not full marks');
   assert.equal(completion({ kills: 0, residents: 0 }), 1);
 });
 import { makeMap, gadgetKinds, GADGET_INTRO, setKinds, SET_INTRO } from '../game-src/data/maps.js';

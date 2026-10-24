@@ -335,6 +335,7 @@ function pitCheck(h) {
   if (h.onGround && p?.ground && p.w >= 40) h.safe = { x: p.w >= 80 ? Math.max(p.x + 24, Math.min(p.x + p.w - h.w - 24, h.x)) : p.x + (p.w - h.w) / 2, y: p.y - h.h };
   if (h.y + h.h < worldFloor() - 1) return;
   const back = h.safe || { x: m.startX, y: m.startY - h.h };
+  if (world.run) world.run.falls = (world.run.falls || 0) + 1;
   h.inv = 0;
   h.dashT = 0;
   h.mount = null;

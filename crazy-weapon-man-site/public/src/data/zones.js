@@ -129,6 +129,13 @@ export const TITLE_MUSIC = {
   key: 52, scale: 'dorian', bpm: 112, prog: [0, 3, 5, 4], drums: 'title', lead: 'p50',
   theme: MOTIF, themeB: '7 - - 9 7 - 4 - | 5 - 6 - 7 - - . | 4 - 5 - 7 - 9 - | 11 - - - 7 - - .'
 };
+// The overworld: a driving racing-game anthem (F-Zero, Sonic) instead of a stroll: fast, the
+// bass jumping octaves in eighths, a bright flat-seventh major, and the shared motif for its answer
+export const MAP_MUSIC = {
+  key: 50, scale: 'mixolydian', bpm: 156, prog: [0, 6, 3, 4], progB: [5, 3, 6, 4], drums: 'race', lead: 'p25', bass: 'drive', arp: 'tremolo',
+  theme: '4 - 4 . 4 5 7 - | 9 - 7 - 5 4 2 - | 4 - 4 . 4 5 7 - | 11 - - 9 7 - - .',
+  themeB: MOTIF
+};
 // Each level kind gets its own arrangement of its zone's theme, the way Mario's overworld tune
 // comes back slow and hollow underground, heavy in a fort and bright in a bonus room:
 //   cave    dark maps (deep tunnels and grottos): slower, a droning bass, no arpeggio

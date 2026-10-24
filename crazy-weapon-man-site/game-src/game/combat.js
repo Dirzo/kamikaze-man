@@ -460,6 +460,7 @@ export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   if (src === 'lava') dmg *= 1 - S.lavaArmor;
   dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
   h.hp -= dmg;
+  if (world.run) world.run.hits = (world.run.hits || 0) + 1; // the level-clear grade counts them (data/grade.js)
   h.inv = 0.8 * (1 + S.inv);
   h.hurtT = 0.25;
   // a hit costs half your momentum, not all of it (Sonic): you're back up to speed in a moment
