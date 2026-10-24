@@ -7,7 +7,7 @@ import { C, W, H, HERO } from '../config.js';
 import { world } from './world.js';
 import { emit, burst, spark, shake, hitstop, callout, zoomPunch, kick } from './fx.js';
 import { sfx, duck } from '../engine/audio.js';
-import { hitEnemy } from './combat.js';
+import { hitEnemy, mend } from './combat.js';
 import { cx, cy, overlap } from './physics.js';
 import { lookOf } from './looks.js';
 import { hitDamage } from './loot.js';
@@ -88,9 +88,8 @@ export function spHit(run, e, mult, o = {}) {
     e.onGround = false;
   }
   if (dealt && run.B.has('vamp') && run.healed < VAMP_CAP) {
-    const n = Math.max(1, Math.round(h.maxHp * 0.015));
-    run.healed += n / h.maxHp;
-    h.hp = Math.min(h.maxHp, h.hp + n);
+    run.healed += 0.015;
+    mend(0.015);
     if (Math.random() < 0.4) emit(cx(e), cy(e), 'suck', C.red);
   }
   if (e.dead) {
@@ -509,7 +508,7 @@ export function updateCrazy(h, dt, s) {
         sfx.boom(1);
       }
       if (s.heal && T > 0.45) {
-        h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * s.heal));
+        mend(s.heal);
         burst(cx(h), cy(h), 10, 'twinkle', ['violet', 'pink', 'paper']);
         s.heal = 0;
       }

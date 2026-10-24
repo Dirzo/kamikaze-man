@@ -24,8 +24,7 @@ import { levelTier } from '../data/families.js';
 import { spawnEnemy } from './enemy.js';
 import { makeWeapon } from './loot.js';
 import { dropWeapon, dropShards } from './combat.js';
-import { drawItem } from './drops.js';
-import { autoLoot } from './inventory.js';
+import { drawItem, pickUp } from './drops.js';
 import { updateCamera } from './camera.js';
 import { stats } from '../data/meta.js';
 
@@ -105,7 +104,7 @@ export function enterRoom() {
 function leaveRoom() {
   const H = world.hidden, h = world.hero, S = H.saved;
   // anything still on its way to you comes along
-  for (const d of world.drops) autoLoot(d.item);
+  for (const d of world.drops) pickUp(d.item);
   for (const p of world.pickups) if (p.kind === 'shard') world.shards += Math.round(p.value * (1 + stats().shards));
   H.inRoom = false;
   H.t = 0;

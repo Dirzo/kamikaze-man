@@ -69,7 +69,7 @@ function startRun() {
 }
 
 // ---------------------------------------------------------------- overworld + levels
-// The overworld run: the hero (level, weapon, bag) carries from level to level and is saved with
+// The overworld run: the hero (level, weapon, weapon log) carries from level to level and is saved with
 // the map. A level is played on its region's zone map. Dying or leaving only loses that attempt:
 // the hero goes back to how they walked in and the map keeps everything cleared.
 function showFiles() {
@@ -95,13 +95,15 @@ function loadHero() {
   const h = (world.hero = createHero()), snap = ow.save.hero;
   if (snap) {
     const copy = JSON.parse(JSON.stringify(snap));
+    const held = JSON.stringify(copy.weapon);
     Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMax(copy.lv), weapon: freshUid(copy.weapon) });
-    world.bag = copy.bag.map(w => w && freshUid(w));
+    // the weapon log (inventory.js); its entry for the weapon in hand stays that same weapon
+    world.bag = copy.bag.map(w => w && (JSON.stringify(w) === held ? h.weapon : freshUid(w)));
     if (copy.mount && chosenMount()) h.mount = saddle(chosenMount()); // your mount rides along (the stable's pick: swap it there)
   }
   return h;
 }
-// the bag on the map (B / Tab): the saved hero's kit, written back to the save when it closes
+// the weapon log on the map (B / Tab): the saved hero's kit, written back to the save when it closes
 function openMapBag() {
   world.bag = newBag();
   world.shards = 0;
@@ -116,7 +118,7 @@ bagLink.open = openMapBag;
 bagLink.close = () => world.inv && scene === 'map' && (closeInventory(), closeMapBag(), true);
 function closeMapBag() {
   ow.save.hero = heroSnapshot();
-  bankShards(world.shards); // salvaged on the map: straight into the shard tree
+  bankShards(world.shards);
   world.shards = 0;
   writeSave(ow.save);
 }
@@ -131,7 +133,9 @@ function enterLevel(node) {
   world.relicsOwned = relicMask(ow.save, node.id);
   newRun();
   startZone(node.zone);
-  h.hp = h.maxHp; // every level starts at full health
+  h.hp = h.maxHp; // every level starts with the weapon in hand whole
+  h.cracked = false;
+  h.mendAcc = h.crackT = 0;
   scene = 'play';
   sceneT = 0;
 }
@@ -218,7 +222,7 @@ function update(dt) {
   // ---- play ----
   tickRun(dt); // the speedrun clock only stops for the pause menu
   if (world.inv) {
-    updateInventory(dt); // the bag pauses the fight
+    updateInventory(dt); // the weapon log pauses the fight
     return;
   }
   if (input.take('pause')) {
@@ -482,7 +486,10 @@ loadAssets(f => (loadFrac = f))
     scene = 'title';
     music.play('title', TITLE_MUSIC);
     const captureName = new URLSearchParams(location.search).get('capture');
-    if (captureName) import('./testing/capture.js').then(m => m.captureScene(debug, captureName));
+    if (captureName) import('./testing/capture.js').then(m => {
+      m.captureScene(debug, captureName);
+      if (new URLSearchParams(location.search).has('cracked') && world.hero) (world.hero.cracked = true), (world.hero.crackT = 2); // &cracked: show the armor HUD cracked
+    });
     if (new URLSearchParams(location.search).has('smoke')) import('./testing/smoke.js').then(m => m.runSmoke(debug));
     if (new URLSearchParams(location.search).has('playtest')) import('./testing/playtest.js').then(m => m.runPlaytest(debug));
   })

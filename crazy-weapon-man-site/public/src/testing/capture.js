@@ -16,7 +16,7 @@ import { updateEnemy, updateBolts } from '../game/enemy.js';
 import { fireTrait } from '../game/traits.js';
 import { ENEMIES } from '../data/enemies.js';
 import { spawnEnemy } from '../game/enemy.js';
-import { openInventory, stash } from '../game/inventory.js';
+import { openInventory, logWeapon } from '../game/inventory.js';
 import { startBoss, updateBoss, updateHazards, castMove } from '../game/bosses.js';
 import { ZONES } from '../data/zones.js';
 import { updateAmbience } from '../game/ambience.js';
@@ -77,7 +77,7 @@ function filesScene(game) {
 // the polish pass scenes
 function polishScene(game, mode) {
   if (mode === 'book') {
-    for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31], ['bombchicken', 12], ['brute', 4], ['wraith', 1], ['maw', 22], ['wizard', 81], ['eyeball', 3]]) recordKill(t, n);
+    for (const [t, n] of [['gosling', 260], ['honker', 95], ['gsquire', 31], ['fencer', 12], ['gtoss', 4], ['whirl', 1], ['ggrave', 22], ['berserker', 81], ['swan', 3]]) recordKill(t, n);
     PAGES[0].kinds.forEach(recordBoss); PAGES[1].kinds.slice(0, 3).forEach(recordBoss);
     mapScene(game, false);
     openPowers(TAB.BOOK);
@@ -101,14 +101,15 @@ function polishScene(game, mode) {
     s.at = '3-1';
     try { localStorage.setItem('crazyWeaponMan.secrets.v1', '[0]'); } catch (_) {}
     winTrophy(1); PAGES[0].kinds.forEach(recordBoss);
-    for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31]]) recordKill(t, n);
+    for (const [t, n] of [['gosling', 260], ['honker', 95], ['gsquire', 31]]) recordKill(t, n);
     game.ow.save = s; game.openMap();
     openPowers(mode === 'anvil' ? TAB.BAG : TAB.COLL);
     powers.coll = 1;
     if (mode === 'anvil') {
-      // a katana struck to +3 in the bag, asking for its fourth strike
+      // the katana in hand struck to +3, asking for its fourth strike
       const w = makeWeapon(1, { type: 'katana', q: 3, standout: false });
-      stash(w); stash(makeWeapon(2, { type: 'bow', q: 2 })); stash(makeWeapon(0, { type: 'hammer', q: 1 }));
+      world.hero.weapon = w;
+      logWeapon(w); logWeapon(makeWeapon(2, { type: 'bow', q: 2 })); logWeapon(makeWeapon(0, { type: 'hammer', q: 1 }));
       world.inv.sel = world.bag.indexOf(w);
       for (let i = 0; i < 3; i++) { world.inv.anvilAsk = true; anvilStrike(); }
       world.inv.anvilAsk = false; anvilStrike();
@@ -227,8 +228,8 @@ export function captureScene(game, mode) {
     }
     if(mode==='bag') {
       h.attack=null;h.weapon=makeWeapon(z,{type:'scythe',q:6,standout:true});
-      for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['spear',4,false],['axe',2,false],['boomerang',3,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) stash(makeWeapon(z,{type,q,standout}));
-      world.bag[1].locked=true;openInventory();world.inv.sel=1;
+      for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['spear',4,false],['axe',2,false],['boomerang',3,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) logWeapon(makeWeapon(z,{type,q,standout}));
+      logWeapon(h.weapon);openInventory();world.inv.sel=1;
     }
   });
   document.documentElement.dataset.capture='ready';
@@ -274,7 +275,7 @@ function sprint(game,n) {
     // slope, downhill, uphill: a ramp; fight: a fight pad; nook: a nook's perch)
     const at=new URLSearchParams(location.search).get('at'),M=world.map,list=at==='fight'?M.platforms.filter(p=>p.fight):at==='nook'?M.platforms.filter(p=>p.nook):at==='wall'?M.walls:at==='bridge'?M.pits.filter(p=>p.bridge):at==='high'?M.platforms.filter(p=>p.tier===1):at==='sky'?M.platforms.filter(p=>p.tier===2):at==='slope'?M.slopes.filter(q=>q.w>=48):at==='downhill'?M.slopes.filter(q=>q.k>0&&q.w>=48):at==='uphill'?M.slopes.filter(q=>q.k<0&&q.w>=48):M.gadgets.filter(o=>o.kind===at),gd=at&&list[+(new URLSearchParams(location.search).get('n')||0)];
     if(gd){const gx=(gd.x??gd.x0)-(+new URLSearchParams(location.search).get('back')||170),p=new URLSearchParams(location.search).has('on')?gd:world.map.platforms.filter(p=>p.ground && gx>=p.x && gx<p.x+p.w)[0];if(p){h.x=p===gd?gd.x+8:gx;h.y=p.y-h.h;}}h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type,q:3,standout:false});h.face=1;
-    if(foes) {h.maxHp=h.hp=1e6;for(const e of world.enemies) e.spawnT=0;}
+    if(foes) {h.god=true;for(const e of world.enemies) e.spawnT=0;}
     updateCamera(0,true);
     window.cwmWorld=world;
   });

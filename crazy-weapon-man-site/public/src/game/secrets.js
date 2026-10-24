@@ -10,7 +10,7 @@ import { burst, callout, shake } from './fx.js';
 import { sfx } from '../engine/audio.js';
 import { say } from './bubbles.js';
 import { makeWeapon } from './loot.js';
-import { dropWeapon, dropShards } from './combat.js';
+import { dropWeapon, dropShards, mend } from './combat.js';
 import { gainXp } from './progress.js';
 import { xpToLevel } from '../data/curve.js';
 import { nameWeapon } from '../data/names.js';
@@ -83,7 +83,7 @@ function gift(h, o, name) {
   return w;
 }
 function treat(z, h) {
-  const heal = f => (h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * f)));
+  const heal = f => mend(f); // (healing mends a cracked weapon: combat.js)
   switch (z) {
     case 0: gift(h, { type: 'sword', q: 1 }, 'Excalibur? (Just Some Guy\'s Sword)'); break;
     case 1: h.oneUp = true; heal(1); callout('1UP!', 0, 0, C.lime, { follow: h, life: 60 }); break; // a spare life

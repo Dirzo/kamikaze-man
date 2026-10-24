@@ -2,8 +2,8 @@
 // hurtHero(). Knockback is a fixed push (arcade style): a short free slide then friction.
 import { C } from '../config.js';
 import { world, newId } from './world.js';
-import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch } from './fx.js';
-import { hitFeel, reaction, killLaunch, rushMult, MOVE, FIGHT, fightMult } from '../data/feel.js';
+import { spark, damageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch } from './fx.js';
+import { hitFeel, reaction, killLaunch, rushMult, MOVE, FIGHT, fightMult, ARMOR } from '../data/feel.js';
 import { sfx, duck } from '../engine/audio.js';
 import { makeWeapon, noWeaker } from './loot.js';
 import { cx, cy } from './physics.js';
@@ -288,7 +288,7 @@ function applyElement(e, dmg, o) {
       }
       break;
     case 'holy':
-      if (o.crit) world.hero.hp = Math.min(world.hero.maxHp, world.hero.hp + Math.ceil(world.hero.maxHp * 0.02));
+      if (o.crit) mend(0.02);
       break;
     case 'pull':
       for (const n of world.enemies)
@@ -381,8 +381,10 @@ export function kill(e, o = {}) {
   const zone = world.zone;
   e.shardLoot = Math.round((e.elite ? 6 : 1 + (Math.random() < 0.4 ? 1 : 0)) * (e.golden ? 4 : 1) * pay); // a secret room's golden pack pays four times
   world.killsSinceDrop = (world.killsSinceDrop || 0) + 1;
-  // (10 kills / 7%: was 7 / 10% before maps held 40+ residents, so weapons keep the same pace)
-  if (world.killsSinceDrop >= Math.round(10 / pay) || Math.random() < (e.elite ? 0.65 : 0.07 * pay)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
+  // weapons are your armor (hurtHero), so they come often: one every ARMOR.every kills at least,
+  // and a cracked hero's next kill always pays one out unless one is already on its way
+  const rescue = world.hero?.cracked && !world.drops.length;
+  if (rescue || world.killsSinceDrop >= Math.max(2, Math.round(ARMOR.every / pay)) || Math.random() < (e.elite ? 0.65 : 0.12 * pay)) dropWeapon(cx(e), e.y, makeWeapon(zone, { elite: e.elite }));
   if (Math.random() < ((e.elite ? 0.4 : 0.035) + stats().hearts) * temper(world.temper).hearts) world.pickups.push({ kind: 'heart', x: cx(e) - 3, y: cy(e), vx: (Math.random() - 0.5) * 40, vy: -120, life: 14 });
   if (e.kind === 'bomb') explode(cx(e), cy(e), e.dmg, true);
   if (e.kind === 'beast') beastDeath(e);
@@ -453,20 +455,21 @@ export const shotSrc = () => (world.zone === 7 ? 'magic' : world.zone === 8 ? 's
 // src says what hit you, for the trophy perks that soften it: 'shot' (a bolt or something thrown),
 // 'magic' (a spell: also a shot), 'star' (a shuriken: also a shot) or 'lava'. Enemy bolts set
 // world.hitBy while they fly (enemy.js updateBolts) instead of passing it.
+//
+// WEAPON ARMOR (Sonic's rings): there is no health bar. The weapon in your hand takes the first hit
+// and cracks; a second hit before you pick up a new weapon shatters it, and you with it. Every new
+// weapon arrives whole (drops.js pickUp). What used to soften a hit (armor, shot armor, more max
+// health...) is now the chance that a hit glances off and cracks nothing. dmg only feeds the
+// glance maths' callers; the hit itself is all or nothing. Returns truthy when the hit landed.
 export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   const h = world.hero;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
   if (h.mount) return buck(h, dir), 0; // the War Goose takes the hit: you are thrown off instead
-  const S = heroStats();
-  if (src === 'shot' || src === 'magic' || src === 'star') dmg *= 1 - S.shotArmor;
-  if (src === 'magic') dmg *= 1 - S.magicArmor;
-  if (src === 'star') dmg *= 1 - S.starArmor;
-  if (src === 'lava') dmg *= 1 - S.lavaArmor;
-  dmg = Math.max(1, Math.round(dmg * (1 - S.armor)));
-  h.hp -= dmg;
+  const S = heroStats(), glance = glanceChance(S, src);
+  h.hits = (h.hits || 0) + 1; // every hit that lands, glanced or not (the tests and the bot count them)
   if (world.run) world.run.hits = (world.run.hits || 0) + 1; // the level-clear grade counts them (data/grade.js)
-  h.inv = 0.8 * (1 + S.inv);
+  h.inv = 0.8 * (1 + S.inv) * (h.cracked ? 1 : ARMOR.crackInv);
   h.hurtT = 0.25;
   // a hit costs half your momentum, not all of it (Sonic): you're back up to speed in a moment
   h.mom = (h.mom || 0) * MOVE.hurtKeep;
@@ -477,24 +480,68 @@ export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   h.vy = -120 * (1 - S.knockRes * 0.5);
   h.onGround = false;
   h.attack = null;
-  heroDamageNumber(h, dmg);
-  sfx.hurt();
   shake(0.4);
   hitstop(0.05);
-  burst(cx(h), cy(h), 6, 'chip', ['red', 'paper']);
-  if (h.hp <= 0 && h.oneUp) {
-    // the golden mushroom's spare life (secrets.js)
+  if (Math.random() < glance) {
+    sfx.clang();
+    spark(cx(h), cy(h), { col: C.paper });
+    callout('GLANCED OFF!', 0, 0, C.ice, { follow: h, life: 45 });
+    abilityHurt(h);
+    return 1;
+  }
+  sfx.hurt();
+  if (!h.cracked) {
+    // first hit: the weapon cracks and you are one hit from the end
+    h.cracked = true;
+    h.crackT = 0;
+    h.mendAcc = 0;
+    if (world.run) world.run.cracks = (world.run.cracks || 0) + 1;
+    burst(cx(h), cy(h), 10, 'chip', ['paper', 'mist', 'red']);
+    callout('WEAPON CRACKED!', 0, 0, C.coral, { follow: h, life: 70 });
+    abilityHurt(h);
+    return 1;
+  }
+  // second hit: the cracked weapon shatters
+  burst(cx(h), cy(h), 18, 'chip', ['paper', 'mist', 'red', 'gold']);
+  sfx.shatter(true);
+  if (h.god) return 1; // the tests and captures: hits land, nothing ends
+  if (h.oneUp) {
+    // the golden mushroom's spare life (secrets.js): a whole new start, weapon mended
     h.oneUp = false;
-    h.hp = Math.round(h.maxHp / 2);
+    h.cracked = false;
     h.inv = 2;
     callout('1UP!', 0, 0, C.lime, { follow: h, life: 70 });
     burst(cx(h), cy(h), 16, 'twinkle', ['lime', 'gold', 'paper']);
+    return 1;
   }
-  if (h.hp <= 0) {
-    h.hp = 0;
-    h.dead = true;
-    world.phase = 'dead';
-  }
-  abilityHurt(h);
-  return dmg;
+  h.hp = 0;
+  h.dead = true;
+  world.phase = 'dead';
+  callout('SHATTERED!', 0, 0, C.red, { follow: h, life: 90 });
+  return 1;
+}
+// the chance a hit glances off: every "take less damage" stat turns into odds of no crack at all
+export function glanceChance(S, src) {
+  let k = 1 - S.armor;
+  if (src === 'shot' || src === 'magic' || src === 'star') k *= 1 - S.shotArmor;
+  if (src === 'magic') k *= 1 - S.magicArmor;
+  if (src === 'star') k *= 1 - S.starArmor;
+  if (src === 'lava') k *= 1 - S.lavaArmor;
+  k /= 1 + S.hp; // MAX HEALTH perks: a sturdier hero shrugs more off
+  return Math.min(ARMOR.glanceMax, Math.max(0, 1 - k));
+}
+// healing mends a cracked weapon: hearts, a new map and a level-up mend it outright, and the small
+// trickles (regeneration, vampire hits, healing specials) add up to ARMOR.mend of a full heal.
+// frac is the share of a full heal the old health bar would have got.
+export function mend(frac) {
+  const h = world.hero;
+  if (!h || h.dead || !h.cracked) return false;
+  h.mendAcc = (h.mendAcc || 0) + frac * (1 + heroStats().heal); // (BANDAGES and the like: mends sooner)
+  if (h.mendAcc < ARMOR.mend) return false;
+  h.cracked = false;
+  h.mendAcc = 0;
+  sfx.ui(true);
+  burst(cx(h), h.y + 4, 8, 'twinkle', ['lime', 'paper']);
+  callout('WEAPON MENDED!', 0, 0, C.lime, { follow: h, life: 55 });
+  return true;
 }

@@ -1,4 +1,4 @@
-// HUD: framed bottom bar (HP | SPECIAL | WEAPON | SHARDS + LV), zone/wave line, kills, boss bar,
+// HUD: framed bottom bar (ARMOR | SPECIAL | WEAPON | SHARDS + LV), zone/wave line, kills, boss bar,
 // toasts. Drawn in screen space (no screenshake).
 import { C, W, H } from '../config.js';
 import { X, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
@@ -20,6 +20,7 @@ import { drawRelicPips } from './relics.js';
 import { gimmickName } from './gimmicks.js';
 import { GIMMICKS } from '../data/gimmicks.js';
 import { mountDef } from './mount.js';
+import { ARMOR } from '../data/feel.js';
 
 const BAR_Y = H - 28;
 
@@ -29,13 +30,26 @@ function bar(x, y, w, h, frac, col, back = C.night) {
   rect(x, y, Math.round(w * Math.max(0, Math.min(1, frac))), h, col);
   if (h >= 3) rect(x, y, Math.round(w * Math.max(0, Math.min(1, frac))), 1, C.paper);
 }
-function heart(x, y) {
-  rect(x, y, 2, 2, C.red);
-  rect(x + 3, y, 2, 2, C.red);
-  rect(x, y + 1, 5, 2, C.red);
-  rect(x + 1, y + 3, 3, 1, C.red);
-  rect(x + 2, y + 4, 1, 1, C.red);
-  rect(x + 1, y, 1, 1, C.coral);
+// the armor shield: whole (the weapon in hand takes the next hit) or split down the middle (cracked)
+function shield(x, y, cracked, t) {
+  const blink = cracked && Math.floor(t * 6) % 2;
+  const face = cracked ? (blink ? C.paper : C.red) : C.sky, rim = cracked ? C.wine : C.ink, hi = cracked ? C.coral : C.ice;
+  rect(x, y, 9, 1, rim);
+  rect(x - 1, y + 1, 11, 6, rim);
+  rect(x, y + 7, 9, 2, rim);
+  rect(x + 2, y + 9, 5, 1, rim);
+  rect(x + 3, y + 10, 3, 1, rim);
+  rect(x, y + 1, 9, 6, face);
+  rect(x + 1, y + 7, 7, 2, face);
+  rect(x + 3, y + 9, 3, 1, face);
+  rect(x + 1, y + 2, 2, 3, hi);
+  if (cracked) {
+    // the crack: a zigzag top to tip
+    rect(x + 4, y, 1, 3, C.ink);
+    rect(x + 5, y + 3, 1, 2, C.ink);
+    rect(x + 3, y + 5, 1, 3, C.ink);
+    rect(x + 4, y + 8, 1, 3, C.ink);
+  }
 }
 function gem(x, y) {
   rect(x, y + 1, 4, 2, C.sky);
@@ -43,10 +57,9 @@ function gem(x, y) {
   rect(x + 1, y + 1, 1, 1, C.paper);
 }
 
-// low health: the screen edge pulses red in time with the heartbeat (hero.js plays it)
-export const LOW_HP = 0.25;
+// a cracked weapon: the screen edge pulses red in time with the heartbeat (hero.js plays it)
 function lowHealth(h, t) {
-  if (h.dead || h.hp / h.maxHp >= LOW_HP) return;
+  if (h.dead || !h.cracked) return;
   const beat = (Math.sin(t * Math.PI * 2 * 1.25) + 1) / 2, lv = 3 + beat * 6, d = 3 + Math.round(beat * 3);
   dither(0, 0, W, d, C.red, lv);
   dither(0, BAR_Y - d, W, d, C.red, lv);
@@ -61,11 +74,17 @@ export function drawHud(t) {
   panel('panel', 0, BAR_Y, W, 28);
   const y = BAR_Y + 10;
   const label = (s, x) => text(s, x, BAR_Y + 2, C.gold);
-  // HP
-  label('HP', 8);
-  heart(8, y + 1);
-  bar(16, y + 2, 58, 4, h.hp / h.maxHp, h.hp / h.maxHp < 0.3 && Math.floor(t * 6) % 2 ? C.coral : C.red);
-  text(fmt(h.hp), 78, y, C.paper);
+  // ARMOR: the weapon in hand is it (combat.js hurtHero). Two pips: hits it can still take
+  const cracked = !!h.cracked, blink = Math.floor(t * 6) % 2;
+  label('ARMOR', 8);
+  shield(9, y - 2, cracked, t);
+  for (let i = 0; i < 2; i++) {
+    const on = i === 0 || !cracked, px = 22 + i * 12;
+    rect(px - 1, y - 1, 11, 7, C.ink);
+    rect(px, y, 9, 5, on ? (cracked ? (blink ? C.paper : C.red) : C.lime) : C.night);
+    if (on) rect(px, y, 9, 1, C.paper);
+  }
+  text(cracked ? '1 HIT!' : 'WHOLE', 48, y, cracked ? (blink ? C.paper : C.coral) : C.lime);
   // SPEED: the momentum gauge under the health bar, flashing at a full sprint (RUSH)
   const mom = h.mom || 0, rushing = h.sprint && Math.floor(t * 10) % 2;
   bar(16, y + 10, 58, 2, mom, rushing ? C.paper : h.sprint ? C.sky : C.blue);
@@ -86,6 +105,7 @@ export function drawHud(t) {
   const iw = Math.max(1, Math.round(L.crop.w * k)),
     ih = Math.max(1, Math.round(L.crop.h * k));
   X.drawImage(L.cv, L.crop.x, L.crop.y, L.crop.w, L.crop.h, 196, y + 4 - Math.floor(ih / 2), iw, ih);
+  if (h.cracked) for (let i = 0; i < 4; i++) rect(196 + Math.round(iw * (0.25 + i * 0.17)), y + (i % 2 ? 1 : 4), 1, 4, C.red); // the cracks
   const dpsText = fmt(dps(w)) + ' DPS',
     dpsW = textWidth(dpsText);
   const nx = 196 + iw + 4,
@@ -131,8 +151,7 @@ export function drawHud(t) {
   if (world.run) text(clockOf(world.run.t), W / 2, 5, C.cream, { align: 'center' });
   const kills = `${world.kills} KILLS`;
   text(kills, W - 6, 5, C.paper, { align: 'right' });
-  const bagN = world.bag.filter(Boolean).length;
-  text(`E BAG ${bagN}/${world.bag.length}${world.bagNew ? ' NEW!' : ''}`, W - 14 - textWidth(kills), 5, world.bagNew ? C.lime : C.ice, { align: 'right' });
+  text(`E LOG${world.bagNew ? ' NEW BEST!' : ''}`, W - 14 - textWidth(kills), 5, world.bagNew ? C.lime : C.ice, { align: 'right' });
   const qk = QUIRKS[h.weapon.quirk];
   if (qk) text(qk.label, W - 12 - textWidth(mutationLabel(h.weapon)), 16, C.fog, { align: 'right' });
 
@@ -160,6 +179,17 @@ export function drawHud(t) {
   // ---- survival countdown ----
   // no countdown: the boss's arrival is meant to be a surprise
   if (D && D.phase === 'survive' && !swarmBossUp()) text('SURVIVE!', W / 2, 50, Math.floor(t * 3) % 2 ? C.coral : C.cream, { align: 'center', k: 2 });
+  // ---- cracked: the one thing you must know right now ----
+  if (h.cracked && !h.dead) {
+    const coming = world.drops.length > 0,
+      l1 = 'WEAPON CRACKED!  NEXT HIT SHATTERS IT',
+      l2 = coming ? 'A NEW WEAPON IS ON ITS WAY: GRAB IT!' : `KILL SOMETHING FOR A NEW WEAPON  (SPARE IN ${Math.max(1, Math.ceil(ARMOR.spare - (h.crackT || 0)))})`,
+      tw = Math.max(textWidth(l1), textWidth(l2)) + 16, by = BAR_Y - 60; // (above the map's name line)
+    panel('card', W / 2 - tw / 2, by, tw, 24);
+    rect(W / 2 - tw / 2 + 3, by + 3, tw - 6, 9, blink ? C.red : C.wine);
+    text(l1, W / 2, by + 4, C.paper, { align: 'center' });
+    text(l2, W / 2, by + 14, coming ? C.lime : C.gold, { align: 'center' });
+  }
   // ---- swarm combo meter: drains while you're not hitting anything ----
   const cb = world.swarmCombo;
   if (D && D.phase === 'survive' && cb) {
@@ -208,7 +238,7 @@ export function drawHud(t) {
   for (let i = world.toasts.length - 1; i >= 0; i--) {
     const to = world.toasts[i];
     if (to.kind === 'weapon') {
-      const l1 = (to.standout ? 'STANDOUT WEAPON!  +' : 'NEW WEAPON  +') + to.gain + '% POWER';
+      const l1 = (to.standout ? 'STANDOUT WEAPON!  +' : 'NEW WEAPON, FRESH ARMOR  +') + to.gain + '% POWER';
       const l2 = fitText(to.name, 300);
       const tw = Math.max(textWidth(l1), textWidth(l2)) + 14;
       panel('card', W / 2 - tw / 2, ty, tw, 24);
@@ -220,14 +250,6 @@ export function drawHud(t) {
       text(to.label + ' UNLOCKED', W / 2, ty + 5, C.gold, {align:'center'});
       text(to.desc, W / 2, ty + 18, C.paper, {align:'center'});
       ty += 36;
-    } else if (to.kind === 'bag') {
-      const l1 = to.head || 'INTO THE BAG   E: OPEN',
-        l2 = fitText(to.name, 300),
-        tw = Math.max(textWidth(l1), textWidth(l2)) + 14;
-      panel('card', W / 2 - tw / 2, ty, tw, 24);
-      text(l1, W / 2, ty + 4, to.hot ? (Math.floor(t * 6) % 2 ? C.lime : C.gold) : C.ice, { align: 'center' });
-      text(l2, W / 2, ty + 13, to.col, { align: 'center' });
-      ty += 28;
     } else if (to.kind === 'mastery') {
       const l1 = `${to.type.toUpperCase()} MASTERY LV ${to.lv}`,
         l2 = `${to.rank}   +${Math.round(to.lv * PROF_DMG * 1000) / 10}% ${to.type.toUpperCase()} DAMAGE`,
@@ -255,7 +277,7 @@ export function drawHud(t) {
     } else if (to.kind === 'level') {
       panel('card', W / 2 - 60, ty, 120, 32);
       text('LEVEL UP!', W / 2, ty + 5, C.gold, { align: 'center', k: 2 });
-      text(`LV ${to.lv}  MAX HP UP`, W / 2, ty + 21, C.paper, { align: 'center' });
+      text(`LV ${to.lv}`, W / 2, ty + 21, C.paper, { align: 'center' });
       ty += 36;
     }
   }

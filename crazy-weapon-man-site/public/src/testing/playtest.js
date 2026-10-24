@@ -1,10 +1,10 @@
 // Bot playtester (?playtest). Plays whole runs headlessly with real key presses through the real
-// update loop, so every number (damage, health, loot) is the live game's. Only the
+// update loop, so every number (damage, armor, loot) is the live game's. Only the
 // route is helped: when the bot cannot find a way to its target for a few seconds it is moved next
 // to it (counted as a "warp"), so the results measure the fights rather than the bot's platforming.
 //   ?playtest=20&bot=skilled|casual&from=0
-//   casual: walks in and holds attack, takes DOWN upgrades
-//   skilled: also dodges bolts, uses specials, keeps the best weapon in the bag equipped
+//   casual: walks in and holds attack (every pickup is equipped on its own)
+//   skilled: also dodges bolts and uses specials
 //   ?playtest=4&campaign: plays the overworld instead, level by level from a fresh account until the
 //   final castle falls. Shards are banked and spent on the tree, mastery perks are picked, and a
 //   failed level is simply tried again (each attempt banks its shards, so the account grows).
@@ -13,8 +13,7 @@ import { world } from '../game/world.js';
 import { STEP } from '../config.js';
 import { TYPES } from '../data/weapons.js';
 import { ZONES } from '../data/zones.js';
-import { equipFromBag } from '../game/inventory.js';
-import { powerScore, hitDamage } from '../game/loot.js';
+import { hitDamage } from '../game/loot.js';
 import { refHP } from '../data/curve.js';
 import { resetProficiency } from '../data/proficiency.js';
 import { cx, cy } from '../game/physics.js';
@@ -116,7 +115,7 @@ function steps(bot) {
 function newRun(game, skill, from, level = null) {
   const skilled = skill === 'skilled';
   if (!level) from ? game.jump(from) : game.startRun();
-  const S = { t: 0, target: null, targetT: 0, best: Infinity, bestT: 0, jumpT: 0, lastHp: world.hero.hp, zone: -1, zt: 0 };
+  const S = { t: 0, target: null, targetT: 0, best: Infinity, bestT: 0, jumpT: 0, lastHits: world.hero.hits || 0, zone: -1, zt: 0 };
   const trace = new URLSearchParams(location.search).has('trace');
   const report = { won: false, zone: from, zones: [], warps: 0, skips: 0, trace: [] };
   let Z = null;
@@ -124,11 +123,12 @@ function newRun(game, skill, from, level = null) {
   const probe = level && new URLSearchParams(location.search).has('perf') ? perfProbe() : null;
   const startZoneLog = () => {
     const h = world.hero;
-    Z = { zone: world.zone, hpIn: Math.round(h.hp / h.maxHp * 100), lv: h.lv, power: +(hitDamage(h.weapon) / refHP(world.zone)).toFixed(2), weapon: h.weapon.type, q: h.weapon.q,
+    // armor (combat.js): 100 = the weapon in hand is whole, 50 = cracked, 0 = shattered
+    const armor = () => (h.dead ? 0 : h.cracked ? 50 : 100);
+    Z = { zone: world.zone, hpIn: armor(), lv: h.lv, power: +(hitDamage(h.weapon) / refHP(world.zone)).toFixed(2), weapon: h.weapon.type, q: h.weapon.q,
       time: 0, fightT: 0, swarmT: 0, bossT: 0, dmg: { fight: 0, swarm: 0, boss: 0 }, warps: 0, minHp: 100, src: {} };
     report.zones.push(Z);
     S.zone = world.zone;
-    equipBest();
   };
   const phaseKey = () => { const D = world.director; return D?.phase === 'survive' ? (D.sboss ? 'boss' : 'swarm') : 'fight'; };
   const bot = { report, done: false };
@@ -165,28 +165,22 @@ function newRun(game, skill, from, level = null) {
       const p = phaseKey();
       Z.time += STEP;
       Z[p === 'fight' ? 'fightT' : p === 'swarm' ? 'swarmT' : 'bossT'] += STEP;
-      if (h.hp < S.lastHp) {
-        const lost = Math.round((S.lastHp - h.hp) / h.maxHp * 100);
+      if ((h.hits || 0) > S.lastHits) {
+        const lost = (h.hits || 0) - S.lastHits; // hits taken (a glance counts too)
         Z.dmg[p] += lost;
         // blame the closest thing: an enemy body or one of its bolts
-        let src = 'other', bd = 70;
+        let src = (world.run?.falls || 0) > (S.falls || 0) ? 'pit' : 'other', bd = src === 'pit' ? -1 : 70;
         for (const e of world.enemies) { const d = Math.hypot(cx(e) - cx(h), cy(e) - cy(h)) - e.w / 2; if (!e.dead && d < bd) { bd = d; src = e.type; } }
         for (const b of world.bolts) { const d = Math.hypot(b.x - cx(h), b.y - cy(h)); if (d < Math.min(bd, 30)) { bd = d; src = (b.owner?.type || 'bolt') + ':bolt'; } }
         Z.src[src] = (Z.src[src] || 0) + lost;
       }
-      Z.minHp = Math.min(Z.minHp, Math.round(h.hp / h.maxHp * 100));
+      Z.minHp = Math.min(Z.minHp, h.dead ? 0 : h.cracked ? 50 : 100);
     }
-    S.lastHp = h.hp;
-    if (trace && (S.t * 60) % 300 < 1) report.trace.push([Math.round(S.t), world.zone, D?.phase, Math.round(h.x), Math.round(h.y + h.h), Math.round(h.hp),
+    S.lastHits = h.hits || 0;
+    S.falls = world.run?.falls || 0;
+    if (trace && (S.t * 60) % 300 < 1) report.trace.push([Math.round(S.t), world.zone, D?.phase, Math.round(h.x), Math.round(h.y + h.h), h.cracked ? 'cracked' : 'whole',
       S.target ? `${S.target.type}@${Math.round(cx(S.target))},${Math.round(S.target.y + S.target.h)}` : '-', world.enemies.filter(e => !e.dead).length, [...held].join('+')]);
   };
-
-  function equipBest() {
-    const h = world.hero;
-    let bi = -1, bs = powerScore(h.weapon);
-    world.bag.forEach((w, i) => { if (w && powerScore(w) > bs * 1.02) { bs = powerScore(w); bi = i; } });
-    if (bi >= 0) equipFromBag(bi);
-  }
 
   function pickTarget(h, D) {
     const alive = world.enemies.filter(e => !e.dead && !(e.spawnT > 0.3));
@@ -206,7 +200,6 @@ function newRun(game, skill, from, level = null) {
   function play(want, h, D) {
     if (!D || h.dead) return;
     if (world.quick && !h.attack && !h.special && h.dashT <= 0 && !h.ladder && (S.t * 60) % 6 < 1) { want.add('down'); return; }
-    if (skilled && (S.t * 60) % 120 < 1) equipBest();
     let goal = null;
     const target = pickTarget(h, D);
     if (target !== S.target) { S.target = target; S.best = Infinity; S.bestT = S.t; S.hp = target ? target.hp : 0; S.hitT = S.t; }

@@ -10,7 +10,7 @@ import { TYPES, MOVES, RECOVERY } from '../data/weapons.js';
 import { CRIT } from '../data/curve.js';
 import { heroMax, heroStats } from './perks.js';
 import { hitDamage, trainingSword } from './loot.js';
-import { hitEnemy, hurtHero } from './combat.js';
+import { hitEnemy, hurtHero, mend } from './combat.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { lookOf } from './looks.js';
 import { attackBox, activeWindow, canAttack } from './attack-rules.js';
@@ -52,10 +52,10 @@ export function updateHero(h, dt) {
   h.inv = Math.max(0, h.inv - dt);
   // a Frost Cub's arrow (beastkin.js): slower for a moment, frost flaking off
   if (h.chillT > 0 && (h.chillT -= dt) > 0 && Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
-  // a Fat Cat Fence's poisoned dagger (beastkin.js): a little health ebbs away, never the last of it
+  // a Fat Cat Fence's poisoned dagger (beastkin.js): it stops a cracked weapon mending meanwhile
   if (h.poisonT > 0) {
     h.poisonT -= dt;
-    h.hp = Math.max(1, h.hp - h.poisonDps * dt);
+    h.mendAcc = 0;
     if (Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.lime);
   }
   // a Polymorph Hare's spell (beastkin.js): a bunny for a moment, and bunnies can't swing
@@ -83,17 +83,14 @@ export function updateHero(h, dt) {
   h.lungeT = Math.max(0, (h.lungeT || 0) - dt);
   h.animT += dt;
   const S = heroStats();
-  // low health: a heartbeat (the HUD pulses the screen edge with it)
-  if (h.hp / h.maxHp < 0.25 && (h.beatT = (h.beatT || 0) - dt) <= 0) {
+  // a cracked weapon: a heartbeat (the HUD pulses the screen edge with it), and the cracks spark
+  if (h.cracked && Math.random() < dt * 8) emit(cx(h) + h.face * 8, cy(h) - 2, 'dot', Math.random() < 0.5 ? C.red : C.paper);
+  if (h.cracked && (h.beatT = (h.beatT || 0) - dt) <= 0) {
     h.beatT = 0.8;
     sfx.heartbeat();
   }
-  if (S.regen && h.hp < h.maxHp) {
-    // REGENERATION / INNER PEACE: whole points only, the remainder carries over
-    h.regenAcc = (h.regenAcc || 0) + h.maxHp * S.regen * dt;
-    const n = Math.floor(h.regenAcc);
-    if (n) { h.regenAcc -= n; h.hp = Math.min(h.maxHp, h.hp + n); }
-  }
+  // REGENERATION / INNER PEACE: slowly mends a cracked weapon
+  if (S.regen && h.cracked) mend(S.regen * dt);
 
   // special moves take over movement while they run
   if (h.special) {
@@ -698,7 +695,7 @@ function updateSpecial(h, dt) {
           spHit(s.run, e, 1.7, { dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 18 });
           n++;
         }
-        if (n) h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * 0.025 * Math.min(5, n)));
+        if (n) mend(0.025 * Math.min(5, n));
         ringBurst(cx(h), cy(h), 36, light);
         impact(cx(h), cy(h), 1.5, C.violet, s.run);
       }

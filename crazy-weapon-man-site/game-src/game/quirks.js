@@ -3,7 +3,7 @@
 import { C } from '../config.js';
 import { world, newId } from './world.js';
 import { QUIRKS, quirkChance, quirkPower } from '../data/quirks.js';
-import { hitEnemy, dropShards } from './combat.js';
+import { hitEnemy, dropShards, mend } from './combat.js';
 import { callout, emit, burst, spark, shake } from './fx.js';
 import { sfx } from '../engine/audio.js';
 import { say } from './bubbles.js';
@@ -113,7 +113,7 @@ export function quirkHit(h, e, dmg, dir) {
       break;
     }
     case 'warm':
-      h.hp = Math.min(h.maxHp, h.hp + Math.max(1, Math.round(h.maxHp * 0.02)));
+      mend(0.02);
       burst(cx(h), h.y + 4, 4, 'twinkle', ['red', 'coral']);
       say1(h, 'STILL WARM', col);
       break;
