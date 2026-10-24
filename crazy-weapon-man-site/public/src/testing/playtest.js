@@ -23,6 +23,7 @@ import { NODES, LEVELS, newSave, isOpen } from '../data/overworld.js';
 import { resetMeta, meta, TREE, cantBuy, buyRank, rank, choosePerk, unpicked, metaPower, stats, setLock, treeSpent } from '../data/meta.js';
 import { TYPE_LIST } from '../data/weapons.js';
 import { proficiency } from '../data/proficiency.js';
+import { perfProbe } from './perf.js';
 
 const CODES = { left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', jump: 'KeyX', attack: 'KeyZ', special: 'KeyC', dash: 'KeyV' };
 const held = new Set();
@@ -47,7 +48,7 @@ export function runPlaytest(game) {
     if (!q.has('keep')) resetProficiency(); // a fresh player every run (?keep: carry mastery over)
     const bot = newRun(game, skill, from);
     const chunk = () => {
-      for (let i = 0; i < 4000 && !bot.done; i++) bot.step();
+      steps(bot);
       if (bot.done) { out.runs.push(bot.report); setTimeout(next, 0); } else setTimeout(chunk, 0);
     };
     chunk();
@@ -89,7 +90,7 @@ function runCampaign(game, campaigns, skill, out) {
       return true;
     };
     const chunk = () => {
-      for (let i = 0; i < 4000 && !bot.done; i++) bot.step();
+      steps(bot);
       if (!bot.done) return setTimeout(chunk, 0);
       const r = bot.report, h = world.hero;
       r.mastery = proficiency(h.weapon.type).lv; r.weapon = h.weapon.type;
@@ -103,6 +104,15 @@ function runCampaign(game, campaigns, skill, out) {
   next();
 }
 
+// a crash in the game ends the attempt (logged as report.error) instead of hanging the playtest
+function steps(bot) {
+  try { for (let i = 0; i < 4000 && !bot.done; i++) bot.step(); } catch (err) {
+    bot.report.error = String(err.stack || err).split('\n').slice(0, 3).join(' | ');
+    bot.report.zone = world.zone;
+    bot.done = true;
+  }
+}
+
 function newRun(game, skill, from, level = null) {
   const skilled = skill === 'skilled';
   if (!level) from ? game.jump(from) : game.startRun();
@@ -110,6 +120,8 @@ function newRun(game, skill, from, level = null) {
   const trace = new URLSearchParams(location.search).has('trace');
   const report = { won: false, zone: from, zones: [], warps: 0, skips: 0, trace: [] };
   let Z = null;
+  // ?perf: time every update and every other frame drawn, and log where the run slows (perf.js)
+  const probe = level && new URLSearchParams(location.search).has('perf') ? perfProbe() : null;
   const startZoneLog = () => {
     const h = world.hero;
     Z = { zone: world.zone, hpIn: Math.round(h.hp / h.maxHp * 100), lv: h.lv, power: +(hitDamage(h.weapon) / refHP(world.zone)).toFixed(2), weapon: h.weapon.type, q: h.weapon.q,
@@ -132,6 +144,7 @@ function newRun(game, skill, from, level = null) {
       report.boss = world.boss?.name || null;
       report.time = Math.round(S.t);
       report.lv = h.lv;
+      if (probe) probe.finish(report);
       if (level && world.levelEnd?.tally) { const Y = world.levelEnd.tally; report.grade = report.won ? Y.grade.g : null; report.par = +(Y.t / Y.par).toFixed(2); report.done = +Y.done.toFixed(2); report.top = Y.top; }
       bot.done = true;
       return;
@@ -142,7 +155,11 @@ function newRun(game, skill, from, level = null) {
     const want = new Set();
     if (!world.inv) play(want, h, D);
     press(want);
-    game.update(STEP);
+    if (probe) {
+      probe.update(() => game.update(STEP));
+      probe.sample();
+      if (probe && (S.t * 60) % 4 < 1) probe.draw(() => game.render());
+    } else game.update(STEP);
     // bookkeeping
     if (Z) {
       const p = phaseKey();
@@ -224,7 +241,7 @@ function newRun(game, skill, from, level = null) {
       }
       if (e.hp < S.hp) { S.hp = e.hp; S.bestT = S.hitT = S.t; } // landing hits is progress
       // a resident the bot can't land a hit on for 30s (a hover it can't reach) is written off
-      if (!e.boss && !e.swarmBoss && S.t - S.hitT > 30) { kill(e); report.skips = (report.skips || 0) + 1; return; }
+      if (!e.boss && !e.swarmBoss && S.t - S.hitT > 30) { kill(e); report.skips = (report.skips || 0) + 1; (report.skipAt ||= {})[e.type] = (report.skipAt[e.type] || 0) + 1; return; }
       if (inReach && !h.ladder) {
         want.add('attack');
         // over a pit mid-jump: keep carrying on toward the far side while swinging
@@ -315,6 +332,8 @@ function newRun(game, skill, from, level = null) {
       break;
     }
     report.warps++;
+    const k = goal.e ? goal.e.type + (goal.e.air ? '^' : '') : world.director?.phase || '-';
+    (report.warpAt ||= {})[k] = (report.warpAt[k] || 0) + 1;
     if (Z) Z.warps++;
     S.best = Infinity; S.bestT = S.t;
   }

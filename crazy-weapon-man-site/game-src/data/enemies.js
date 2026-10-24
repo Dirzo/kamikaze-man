@@ -133,7 +133,7 @@ export const ENEMIES = {
   owlet: { name: 'Barn Owlet', kind: 'beast', beh: 'owlet', fam: 'cottage', evo: 3, hp: 0.75, dmg: 0.9, speed: 46, range: 30, wind: 0.4, air: true },
   hatrabbit: { name: 'Hat Rabbit', kind: 'beast', beh: 'hat', fam: 'cottage', evo: 4, hp: 1.0, dmg: 0.9, speed: 32, range: 150, wind: 0.55 },
   moth: { name: 'Moth Weaver', kind: 'beast', beh: 'moth', fam: 'cottage', evo: 5, hp: 1.0, dmg: 0.9, speed: 34, range: 140, wind: 0.5 },
-  polyhare: { name: 'Polymorph Hare', kind: 'beast', beh: 'poly', fam: 'cottage', evo: 6, hp: 1.1, dmg: 1.0, speed: 32, range: 170, wind: 0.7 },
+  polyhare: { name: 'Polymorph Hare', kind: 'beast', beh: 'poly', fam: 'cottage', evo: 6, hp: 1.1, dmg: 1.0, speed: 32, range: 120, wind: 0.7 },
   teahog: { name: 'Tea Kettle Hog', kind: 'beast', beh: 'tea', fam: 'cottage', evo: 7, hp: 1.6, dmg: 1.0, speed: 24, range: 30, wind: 0.5 },
   mirrorowl: { name: 'Mirror Owl', kind: 'beast', beh: 'mirror', fam: 'cottage', evo: 8, hp: 1.3, dmg: 1.1, speed: 30, range: 150, wind: 0.5 },
   broombat: { name: 'Broom Bat Witch', kind: 'beast', beh: 'broom', fam: 'cottage', evo: 9, hp: 1.6, dmg: 1.1, speed: 70, range: 60, wind: 0.3, air: true },

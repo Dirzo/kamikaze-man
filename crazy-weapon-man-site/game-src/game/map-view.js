@@ -65,6 +65,21 @@ export function drawMapExit(t) {
   const label=open?'NEXT MAP >':'BEAT THE ARENA TO OPEN',half=textWidth(label)/2,cam=world.cameraX||0;
   text(label,Math.max(cam+half+6,Math.min(cam+W-half-6,x)),ground-55,open?C.lime:C.mist,{align:'center'});
 }
+// the minimap's ground, ledges and ladders, painted once per map (hundreds of tiny rects a frame
+// otherwise, the most expensive thing on screen); repainted when a cracked wall comes down
+let mini=null;
+function minimapOf(map,w,mh,k){
+  if(mini&&mini.map===map&&mini.n===map.solids.length)return mini.cv;
+  const cv=mini?.cv||document.createElement('canvas');
+  cv.width=w;cv.height=mh;
+  const g=cv.getContext('2d'),r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));};
+  r(0,0,w,mh,C.night);
+  for(const p of map.solids)r(p.x*k,p.y*k,Math.max(2,p.w*k),Math.max(1,p.h*k),C.slate);
+  for(const p of map.platforms)r(p.x*k,p.y*k,Math.max(2,p.w*k),1,C.fog);
+  for(const l of map.ladders)r(l.x*k,l.top*k,1,(l.bottom-l.top)*k,C.wood);
+  mini={map,n:map.solids.length,cv};
+  return cv;
+}
 export function drawRouteHud() {
   const map=world.map;if(!map)return;
   const h=world.hero, room=roomAt(map,h.x+h.w/2,h.y+h.h)||world.lastRoom;
@@ -75,10 +90,7 @@ export function drawRouteHud() {
   const k=Math.min(120/map.width,58/map.height),w=Math.round(map.width*k),mh=Math.round(map.height*k);
   const x=W-8-w,y=44,sx=k,sy=k;
   rect(x-3,y-3,w+6,mh+6,C.ink);rect(x-2,y-2,w+4,mh+4,C.stone);rect(x-1,y-1,w+2,mh+2,C.ink);
-  rect(x,y,w,mh,C.night);
-  for(const p of map.solids)rect(x+p.x*sx,y+p.y*sy,Math.max(2,p.w*sx),Math.max(1,p.h*sy),C.slate);
-  for(const p of map.platforms)rect(x+p.x*sx,y+p.y*sy,Math.max(2,p.w*sx),1,C.fog);
-  for(const l of map.ladders)rect(x+l.x*sx,y+l.top*sy,1,(l.bottom-l.top)*sy,C.wood);
+  X.drawImage(minimapOf(map,w,mh,k),x,y);
   const vx=x+(world.cameraX||0)*sx,vy=y+(world.cameraY||0)*sy,vw=W*sx,vh=GROUND*sy;
   rect(vx,vy,vw,1,C.paper);rect(vx,vy+vh,vw,1,C.paper);rect(vx,vy,1,vh,C.paper);rect(vx+vw,vy,1,vh,C.paper);
   for(const e of world.enemies)if(!e.dead)rect(x+(e.x+e.w/2)*sx,y+(e.y+e.h/2)*sy,2,2,e.boss?C.orange:C.coral);

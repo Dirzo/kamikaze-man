@@ -90,6 +90,8 @@ export function updateDrops(dt) {
       p.vy += ((cy(h) - p.y) / Math.max(1, dist)) * 900 * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+    } else if (p.onGround && p.platform && !p.platform.gone && !p.platform.broken && Math.abs(p.vx) < 2) {
+      p.vx = 0; // settled: no physics until something moves it (a late map can have 150 lying about)
     } else {
       p.vx *= Math.pow(0.2, dt);
       move(p, dt, world.platforms, { gravity: 600 });
