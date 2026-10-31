@@ -397,7 +397,7 @@ function drawTitle(t) {
   text('CLEAR THE MAP. CLAIM THE NEXT.', W / 2, 123, C.mist, { align: 'center' });
   const lines = [
     'MOVE  ARROWS / A D        JUMP  ALT / X        ATTACK  CTRL / Z',
-    'SPECIAL  SPACE / C    DASH  SHIFT / V    PICK UP  DOWN    BAG  E',
+    'SPECIAL  SPACE / C    DASH  SHIFT / V    BAG 1   MASTERY 2   DEN 3',
     'GAMEPAD: A JUMP  X ATTACK  Y SPECIAL  B DASH  START PAUSE'
   ];
   lines.forEach((l, i) => text(l, W / 2, 222 + i * 11, C.mist, { align: 'center' }));
@@ -420,8 +420,8 @@ function drawPause() {
     ['ATTACK', 'CTRL / Z'],
     ['SPECIAL', 'SPACE / C'],
     ['DASH', 'SHIFT / V'],
-    ['PICK UP WEAPON', 'DOWN ON A DROP'],
-    ['BAG / EQUIPMENT', 'E / B / TAB'],
+    ['NEW WEAPONS', 'EQUIPPED AS YOU GRAB THEM'],
+    ['WEAPON LOG', '1 / E / B / TAB'],
     ['MUSIC / SOUND', `M ${audioSettings.music ? 'ON' : 'OFF'} / N ${audioSettings.sound ? 'ON' : 'OFF'}`]
   ];
   rows.forEach(([a, b], i) => {

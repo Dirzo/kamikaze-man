@@ -42,6 +42,7 @@ export function openDen(weapon) {
   D.pops = [];
   const h = (D.hero = createHero());
   if (weapon) h.weapon = weapon;
+  h.inv = 0; // a fresh hero spawns with a second of hit safety (a blink) that nothing in the den ever ticks down
   h.x = NEST_X + 60;
   h.y = GY - h.h;
   D.cam = 0;
