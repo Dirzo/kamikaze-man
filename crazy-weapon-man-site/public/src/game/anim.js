@@ -599,6 +599,7 @@ export function drawHeroAnimated(h, t) {
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'fill');
   // swing smear: connect recent blade-tip positions while attacking
   const swinging = (h.attack && !h.attack.ranged) || (h.special && ['whirl', 'cyclone', 'iai', 'quake', 'vault', 'flurry', 'tornado', 'berserk', 'dragon', 'crossslash', 'moon', 'deathmoon', 'harvest', 'skysplit', 'gavel', 'splitter', 'meteor', 'dragoon', 'knives', 'shadowstep'].includes(h.special.kind));
+  if (h.ghostDraw) return; // an afterimage (hero.js) leaves the trail alone
   if (swinging && tip) {
     h.trail = h.trail || [];
     h.trail.push([tip.x, tip.y, tip.px, tip.py]);
