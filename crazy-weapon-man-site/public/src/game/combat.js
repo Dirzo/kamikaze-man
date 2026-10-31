@@ -25,6 +25,7 @@ import { alertPack } from './enemy.js';
 import { beastHit, beastDeath, beastPush, beastGuard, beastTaken } from './beastkin.js';
 import { modOn, temper } from '../data/temper.js';
 import { KILL_PAY } from '../data/maps.js';
+import { emote } from './faces.js';
 
 const KB_SLIDE = 0.1;
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -448,6 +449,7 @@ export function kill(e, o = {}) {
   if (!e.air) (e.vy = L.vy), (e.onGround = false);
   if (!e.d?.bloodless) bleed(cx(e), cy(e), e.fallDir, e.elite ? 16 : 10, floorY);
   world.kills++;
+  emote(world.hero, 'smirk', e.elite ? 0.9 : 0.5); // got him
   sfx.die(e.type, e.elite);
   sfx.crunch(o.weight ?? 1);
   burst(cx(e), cy(e), e.elite ? 14 : 8, 'chip', ['paper', 'mist', 'fog']);
@@ -566,7 +568,7 @@ export const shotSrc = () => (world.zone === 7 ? 'magic' : world.zone === 8 ? 's
 export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   const h = world.hero;
   if (h && !h.dead && dodging(h)) return src !== 'touch' && src !== 'lava' && perfectDodge(h), 0;
-  if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
+  if (!h || h.dead || h.cheer || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
   if (h.mount) return buck(h, dir), 0; // the War Goose takes the hit: you are thrown off instead
   const S = heroStats();

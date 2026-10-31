@@ -25,6 +25,7 @@ import { world } from './world.js';
 import { view } from '../engine/gfx.js';
 import { STYLE_OF } from '../data/weapons.js';
 import { heroStats } from './perks.js';
+import { faceOf, drawFace, LOW_HP } from './faces.js';
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = {
@@ -231,7 +232,10 @@ export function heroPose(h, t) {
   const br = (1 - Math.cos((t / 1.6) * Math.PI * 2)) / 2,
     b = br;
   let pose;
-  if (h.dead || h.hurtT > 0) pose = { ...st.idle(t, 0), f: 'hurt', fh: [17, 15], bh: [0, 14], ang: st.idle(t, 0).ang - 40 };
+  const calm = !h.dead && !h.cheer && h.hurtT <= 0 && !h.special && !h.attack && !(h.castT > 0) && h.dashT <= 0 && !h.ladder && !h.rope && !h.zip && !h.rev && !h.stowed;
+  if (h.dead && h.deadAt != null && t - h.deadAt > 0.3) pose = { f: 'fall', fh: [14, 23], bh: [1, 18], ang: 92 }; // flat on his back, the weapon lying beside him (drawHeroAnimated tips him over)
+  else if (h.dead || h.hurtT > 0) pose = { ...st.idle(t, 0), f: 'hurt', fh: [17, 15], bh: [0, 14], ang: st.idle(t, 0).ang - 40, dy: h.hurtT > 0.18 ? -0.6 : 0 }; // (a jolt as the hit lands)
+  else if (h.cheer) pose = cheerPose(h, t, st);
   else if (h.special) pose = specialPose(h, st);
   else if (h.castT > 0 && st.ranged) pose = keys(st.ranged, 0.45 + (1 - h.castT / 0.3) * 0.5);
   else if (h.attack && !h.attack.ranged) {
@@ -246,7 +250,14 @@ export function heroPose(h, t) {
   else if (h.rev) pose = { ...st.idle(t, 0), f: 'crouch', dy: Math.floor(t * 30) % 2 && h.rev.n > 1 ? 1 : 0 }; // revving a charge dash: crouched, shuddering
   else if (h.stowed) pose = sprintPose(h, st);
   else if (h.skidT > 0 && h.onGround) pose = { ...st.idle(t, 0), f: 'lean', dy: 1 }; // braking into the turn
-  else if (!h.onGround) pose = st.air(h.vy < 0);
+  else if (!h.onGround) {
+    pose = st.air(h.vy < 0);
+    // falling hard: the free arms fly out for balance and windmill
+    if (h.vy > 300 && !st.grip2 && !h.attack) {
+      const w = Math.sin(t * 26) * 1.5;
+      pose = { ...pose, fh: [21, 13 + w], bh: [-2, 10 - w], armF: 'fwd', armB: 'uback', ang: -35 + w * 12 };
+    }
+  }
   else if (Math.abs(h.vx) > 12) {
     // six-frame walk (contact, down, passing per leg); the arms swing against the legs, so the
     // near hand is back while the near leg reaches forward, and the hands dip on the planted step
@@ -263,9 +274,32 @@ export function heroPose(h, t) {
     // (the far arm only shows swinging back: forward it would leave a lone fist in front of the chest)
     if (free) (pose.armF = swing(s)), (pose.armB = pose.bh && s > 0.3 ? 'dback/near' : null);
   } else {
-    pose = st.idle(t, b);
-    if (pose.f === 'idle' || pose.f === 'idle2') pose.f = br < 0.3 ? 'idle' : br < 0.7 ? 'idle1' : 'idle2';
+    const low = h.hp / h.maxHp < LOW_HP;
+    if (low) {
+      // hurting: quick heavy breaths, shoulders slumped, hands hanging lower
+      const fb = (1 - Math.cos(t * 7)) / 2;
+      pose = st.idle(t, 1);
+      if (pose.f === 'idle' || pose.f === 'idle2') pose.f = fb < 0.5 ? 'idle1' : 'idle2';
+      pose.fh = [pose.fh[0], pose.fh[1] + 1];
+      if (pose.bh) pose.bh = [pose.bh[0], pose.bh[1] + 1];
+    } else {
+      pose = st.idle(t, b);
+      if (pose.f === 'idle' || pose.f === 'idle2') pose.f = br < 0.3 ? 'idle' : br < 0.7 ? 'idle1' : 'idle2';
+    }
+    // standing still a while: a fidget every few seconds; a new weapon gets held up for a look
+    if (h.idleAt == null) h.idleAt = t;
+    pose.idleFor = t - h.idleAt;
+    if (h.mood === 'wow') pose = { ...pose, fh: [16, 12], bh: pose.bh && [4, 18], ang: -55, dy: -0.5 };
+    else if (!low && pose.idleFor > 3) {
+      const q = (pose.idleFor - 3) % 7;
+      if (q < FIDGET) pose = fidget(st, pose, q / FIDGET);
+    }
   }
+  if (!(h.onGround && calm && Math.abs(h.vx) <= 12 && !h.skidT)) h.idleAt = null;
+  // landing hard: knees give for a moment; turning round: the shoulders lead the turn
+  const plain = /^(idle|walk)/.test(pose.f);
+  if (calm && plain && h.onGround && h.squashT > 0) pose = { ...pose, f: 'crouch', fh: [pose.fh[0], pose.fh[1] + 2], bh: pose.bh && [pose.bh[0], pose.bh[1] + 2] };
+  else if (calm && plain && h.onGround && h.turnAt != null && t - h.turnAt < 0.07) pose = { ...pose, f: 'back' };
   if (!pose.f) pose.f = 'idle';
   // just off a ladder or out of a sprint: the hand reaches over the shoulder and draws the weapon
   // back out (a swing out of a sprint snaps it out in DRAW_SNAP)
@@ -274,6 +308,34 @@ export function heroPose(h, t) {
     pose = { ...pose, fh: [pose.fh[0] + (SHEATH.at[0] - pose.fh[0]) * k, pose.fh[1] + (SHEATH.at[1] - pose.fh[1]) * k], ang: pose.ang + (SHEATH.ang - pose.ang) * k };
   }
   return pose;
+}
+
+// Idle fidgets: one-handed weapons get tossed up spinning and caught; two-handed ones get hefted up
+// onto the shoulder and set back down. (The hammer rests on the ground and the bow stays lowered.)
+const FIDGET = 1.3;
+function fidget(st, idle, p) {
+  if (st === STYLES.sword || st === STYLES.dagger || st === STYLES.nunchucks || st === STYLES.wand || st === STYLES.shuriken) {
+    if (p < 0.12) return { ...idle, f: 'idle2', fh: [idle.fh[0], idle.fh[1] + 1] }; // dip
+    if (p > 0.82) return { ...idle, f: p < 0.9 ? 'idle2' : idle.f }; // caught: the knees take it
+    const k = (p - 0.12) / 0.7, // in the air
+      up = Math.sin(k * Math.PI);
+    return { ...idle, f: 'idle', fh: [15, 15 - up * 2], at: [16, 15 - up * 13], ang: idle.ang + k * 720, sheath: true, toss: true };
+  }
+  if (st.grip2 && st !== STYLES.hammer) {
+    const k = p < 0.25 ? p / 0.25 : p > 0.75 ? (1 - p) / 0.25 : 1,
+      e = ease.io(Math.max(0, Math.min(1, k)));
+    return { ...idle, f: e > 0.5 && p > 0.3 && p < 0.7 && Math.floor(p * 8) % 2 ? 'idle1' : idle.f, fh: [lerp(idle.fh[0], 14, e), lerp(idle.fh[1], 16, e)], ang: lerp(idle.ang, -118, e), wb: e > 0.5 };
+  }
+  return idle;
+}
+// Level clear: weapon thrust up over his head, bouncing on his toes
+function cheerPose(h, t, st) {
+  if (h.cheerAt == null) h.cheerAt = t;
+  const q = t - h.cheerAt,
+    hop = Math.abs(Math.sin(q * 7.5)),
+    air = hop > 0.45 && q > 0.15;
+  const up = q < 0.15 ? q / 0.15 : 1;
+  return { f: air ? 'jump' : 'idle', fh: [lerp(14, 15, up), lerp(19, 3, up)], bh: [3, air ? 12 : 16], ang: lerp(st.idle(t, 0).ang, st.grip2 ? -100 : -90, up), dy: -hop * 3 };
 }
 
 // Ladders: we see the hero from behind (the climb0/climb1 frames). The weapon rides sheathed across the back
@@ -475,6 +537,23 @@ function toSprite(Hh, x, y) {
 }
 
 export function drawHeroAnimated(h, t) {
+  if (h.face !== h.lastFace) (h.lastFace != null && h.onGround && (h.turnAt = t)), (h.lastFace = h.face);
+  if (!h.dead) h.deadAt = null;
+  else if (h.deadAt == null) h.deadAt = t;
+  if (!h.cheer) h.cheerAt = null;
+  const k = h.dead ? t - h.deadAt : 0;
+  if (k <= 0.3) return drawHeroBody(h, t);
+  // knocked out: he topples over backwards (a 45 degree frame, then flat), bounces once and lies there
+  const fx = Math.round(h.x + h.w / 2),
+    fy = Math.round(h.y + h.h - 5 - (k > 0.38 && k < 0.5 ? 2 : 0));
+  X.save();
+  X.translate(fx, fy);
+  X.rotate(-h.face * (k < 0.38 ? Math.PI / 4 : Math.PI / 2));
+  X.translate(-fx, -fy);
+  drawHeroBody(h, t);
+  X.restore();
+}
+function drawHeroBody(h, t) {
   const Hh = A.hero;
   const pose = heroPose(h, t);
   const face = pose.back != null ? 1 : pose.flip ? -h.face : h.face; // the back view is drawn as is
@@ -593,7 +672,7 @@ export function drawHeroAnimated(h, t) {
   if (pose.ab && !flashing) drawArm(armF);
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'line'); // outline tucked under the body
   if (backView && !flashing) drawArm(armB), drawArm(armF); // reaching in front of him, behind the head
-  if (!flashing) frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0);
+  if (!flashing) frame(Hh.im, Hh.frames[pose.f] ?? 0, Hh.w, Hh.h, sx0, sy0, face < 0), drawFace(pose.f, faceOf(h, t, pose), sx0, sy0, face);
   if (!pose.wb) tip = drawWeapon();
   drawString();
   if (!pose.ab && !flashing && !backView) drawArm(armF, 'fill');
