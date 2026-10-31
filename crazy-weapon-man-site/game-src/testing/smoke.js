@@ -214,6 +214,18 @@ export function runSmoke(game) {
   check('overworld: walk the map, clear a level to open the fork, fail one and keep everything',()=>{
     localStorage.removeItem(OVERWORLD_KEY);game.ow.save=null;game.openMap();
     ok(game.scene==='map' && game.ow.save.at==='home','map did not open at the crash site');
+    // a fresh file opens on the fly-over of world 1; a button skips it, and it never comes back
+    ok(game.ow.fly && game.ow.fly.R.id===1,'no fly-over of world 1');
+    for(let i=0;i<30;i++){poll();game.update(STEP);}
+    key('KeyX',true);poll();game.update(STEP);key('KeyX',false);poll();game.update(STEP);
+    ok(!game.ow.fly && game.ow.save.seen.includes(1),'the fly-over did not skip');
+    // SHIFT pulls back to the world view and back again
+    key('ShiftLeft',true);poll();game.update(STEP);key('ShiftLeft',false);poll();
+    for(let i=0;i<40;i++){poll();game.update(STEP);}
+    ok(game.ow.zoomOn && game.ow.zoom===1,'no world view');game.render();
+    key('ShiftLeft',true);poll();game.update(STEP);key('ShiftLeft',false);poll();
+    for(let i=0;i<40;i++){poll();game.update(STEP);}
+    ok(!game.ow.zoomOn && game.ow.zoom===0,'the world view did not close');
     key('ArrowRight',true);for(let i=0;i<120 && game.ow.save.at!=='1-1';i++){poll();game.update(STEP);}key('ArrowRight',false);
     ok(game.ow.save.at==='1-1','could not walk to 1-1');
     for(let i=0;i<5;i++){poll();game.update(STEP);}

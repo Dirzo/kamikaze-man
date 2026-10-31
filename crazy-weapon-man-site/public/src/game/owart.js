@@ -5,7 +5,7 @@
 // hammers in the forge. One giant weapon stands in each region as its landmark. Each island is
 // painted once into its own canvas (seeded, so it never changes) and the scene just blits it.
 import { C } from '../config.js';
-import { NODES, REGIONS, SLOT_W, SLOT_H } from '../data/overworld.js';
+import { NODES, REGIONS, SLOT_W, SLOT_H, SCALE, slotX, slotY, roadPath } from '../data/overworld.js';
 
 // ground: [base, light, dark], rim: the shore, props: what grows there, weapon: what's stuck in it
 //   pond: share of the island under water (the lagoon)   lava: lava rivers (the forge)
@@ -30,31 +30,57 @@ function rng(seed) {
 }
 // smooth value noise in 0..1, for the coast, the ground's light and dark patches, ponds and lava
 function noise(seed) {
-  const r = rng(seed), G = 24, grid = Array.from({ length: (G + 2) * (G + 2) }, r);
-  const at = (i, j) => grid[(j % (G + 1)) * (G + 2) + (i % (G + 1))];
+  const r = rng(seed), G = 24, S = G + 2, grid = new Float32Array(S * S);
+  for (let i = 0; i < grid.length; i++) grid[i] = r();
   return (x, y, cell) => {
-    const fx = x / cell, fy = y / cell, i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j;
-    const s = t => t * t * (3 - 2 * t), a = at(i, j) + (at(i + 1, j) - at(i, j)) * s(u), b = at(i, j + 1) + (at(i + 1, j + 1) - at(i, j + 1)) * s(u);
-    return a + (b - a) * s(v);
+    const fx = x / cell, fy = y / cell, i = Math.floor(fx), j = Math.floor(fy);
+    let u = fx - i, v = fy - j;
+    u = u * u * (3 - 2 * u);
+    v = v * v * (3 - 2 * v);
+    const i0 = i % (G + 1), i1 = (i + 1) % (G + 1), j0 = (j % (G + 1)) * S, j1 = ((j + 1) % (G + 1)) * S;
+    const a = grid[j0 + i0] + (grid[j0 + i1] - grid[j0 + i0]) * u, b = grid[j1 + i0] + (grid[j1 + i1] - grid[j1 + i0]) * u;
+    return a + (b - a) * v;
   };
 }
 const hex = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
-// every road on the map, in a region's own pixels (props keep off them)
-function roadsIn(R) {
-  const ox = R.col * SLOT_W, oy = R.row * SLOT_H, out = [];
+// how far every pixel of a region is from the nearest road or node (capped at 40), in its own
+// pixels: ponds, lava and props keep off the roads, and the landmark stands well away from them
+const DISC = [];
+for (let y = -40; y <= 40; y++) for (let x = -40; x <= 40; x++) { const d = Math.hypot(x, y); if (d < 40) DISC.push(x, y, d); }
+function roadField(R, w, h) {
+  const ox = slotX(R), oy = slotY(R), F = new Uint8Array(w * h).fill(40);
+  const stamp = (cx, cy) => {
+    cx = Math.round(cx - ox); cy = Math.round(cy - oy);
+    if (cx < -40 || cy < -40 || cx > w + 40 || cy > h + 40) return;
+    for (let k = 0; k < DISC.length; k += 3) {
+      const x = cx + DISC[k], y = cy + DISC[k + 1];
+      if (x < 0 || y < 0 || x >= w || y >= h) continue;
+      const i = y * w + x;
+      if (DISC[k + 2] < F[i]) F[i] = DISC[k + 2];
+    }
+  };
   for (const n of Object.values(NODES)) {
+    if (n.region === R.id) stamp(n.x, n.y);
     for (const to of [...(n.next || []), ...(n.secret || [])]) {
       const m = NODES[to];
-      if (m && (n.region === R.id || m.region === R.id)) out.push([n.x - ox, n.y - oy, m.x - ox, m.y - oy]);
+      if (!m || (n.region !== R.id && m.region !== R.id)) continue;
+      const P = roadPath(n, m);
+      for (let i = 0; i < P.length; i += 2) stamp(P[i].x, P[i].y);
     }
-    if (n.region === R.id) out.push([n.x - ox, n.y - oy, n.x - ox, n.y - oy]);
   }
-  return out;
+  return F;
 }
-function segDist(x, y, [x0, y0, x1, y1]) {
-  const dx = x1 - x0, dy = y1 - y0, L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / L)) : 0;
-  return Math.hypot(x - x0 - dx * t, y - y0 - dy * t);
+// where the land is: each island's mask, for bridges over the sea and critters that stay ashore
+const lands = new Map();
+export function landAt(x, y) {
+  for (const R of REGIONS) {
+    const lx = Math.floor(x - slotX(R)), ly = Math.floor(y - slotY(R));
+    if (lx < 0 || ly < 0 || lx >= SLOT_W || ly >= SLOT_H) continue;
+    const L = lands.get(R.id);
+    return L ? L[ly * SLOT_W + lx] : 0; // 0 sea, 1 land, 2 inland water or lava
+  }
+  return 0;
 }
 
 // ---------------------------------------------------------------- the weapons, stuck in the ground
@@ -210,6 +236,13 @@ function prop(k, kind, x, y, r) {
 
 // ---------------------------------------------------------------- one island
 const cache = new Map();
+// paint one island that hasn't been painted yet (the scene calls this every frame, so the whole map
+// is ready a moment after it opens without one long stall)
+export function paintAhead() {
+  const R = REGIONS.find(R => !cache.has(R.id));
+  if (R) regionArt(R);
+}
+export const painted = R => cache.has(R.id);
 export function regionArt(R) {
   if (cache.has(R.id)) return cache.get(R.id);
   if (typeof document === 'undefined') return null;
@@ -220,20 +253,37 @@ export function regionArt(R) {
   const n1 = noise(R.id * 101), n2 = noise(R.id * 211 + 7), n3 = noise(R.id * 307 + 3), r = rng(R.id * 977);
   const [base, light, dark] = B.g.map(hex), rim = hex(B.rim), water = hex('#2f5fbf'), shallow = hex('#5aa6f0'), lava = hex('#f08a2c'), lavaD = hex('#c4501f'), ink = hex(C.ink);
   const tile = B.tiles && hex(B.tiles);
-  const roads = roadsIn(R);
+  const F = roadField(R, w, h), L = new Uint8Array(w * h), n4 = noise(R.id * 401 + 11), E = new Uint8Array(w * h);
+  lands.set(R.id, L);
+  for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) { // (smooth enough to sample every other pixel)
+    const b = Math.floor(n4(x, y, 70) * 7);
+    E[y * w + x] = E[y * w + x + 1] = E[(y + 1) * w + x] = E[(y + 1) * w + x + 1] = b;
+  }
+  const band = (x, y) => E[Math.max(0, Math.min(h - 1, y)) * w + Math.max(0, Math.min(w - 1, x))];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const i = (y * w + x) * 4, edge = Math.min(x, y, w - 1 - x, h - 1 - y), coast = 8 + n1(x, y, 18) * 14;
+    const i = (y * w + x) * 4, ex = Math.min(x, w - 1 - x), ey = Math.min(y, h - 1 - y);
+    // distance in from the slot's edge, its corners rounded off, and a ragged coast with bays and
+    // capes (the land always reaches the roads, which run out on piers to their bridges)
+    const edge = ex < 90 && ey < 90 ? 90 - Math.hypot(90 - ex, 90 - ey) : Math.min(ex, ey);
+    const coast = F[y * w + x] < 11 ? 8 : edge > 84 ? 0 : 12 + n1(x, y, 44) * 56 + n3(x, y, 13) * 8; // (the coast never reaches further in than 84)
     if (edge < coast) continue; // the sea
+    L[y * w + x] = 1;
     let col = base;
-    const v = n2(x, y, 14) + ((x + y) % 2 ? 0.04 : -0.04); // (a checker dither on the patch edges)
+    const v = n2(x, y, 22) + ((x + y) % 2 ? 0.04 : -0.04); // (a checker dither on the patch edges)
     if (v > 0.7) col = light;
     else if (v < 0.3) col = dark;
     else if (((x * 7 + y * 13) ^ (x * y)) % 23 === 0) col = (x + y) % 3 ? light : dark; // a fleck of texture
     if (tile && (y % 8 === 0 || (x + (Math.floor(y / 8) % 2) * 6) % 12 === 0)) col = col.map((c, j) => Math.round((c + tile[j]) / 2)); // cobbles / roof tiles, faint
-    const nearRoad = roads.some(s => segDist(x, y, s) < 12);
-    if (B.pond && !nearRoad && n3(x, y, 26) < B.pond) col = n3(x, y, 26) > B.pond - 0.04 ? shallow : water;
-    if (B.lava && !nearRoad && Math.abs(n3(x, y, 30) - 0.5) < 0.035) col = Math.abs(n3(x, y, 30) - 0.5) < 0.015 ? lava : lavaD;
-    if (edge < coast + 3) col = rim; // the shore
+    // rolling hills: contour lines on the high ground, a lit side and a shadowed side
+    const b = E[y * w + x];
+    if (b >= 4) {
+      if (band(x - 2, y - 2) < b) col = col.map(c => Math.min(255, c + 22)); // the lit lip of a rise
+      else if (band(x + 2, y + 2) < b) col = col.map(c => Math.round(c * 0.72)); // its shaded face
+    }
+    const nearRoad = F[y * w + x] < 14;
+    if (B.pond && !nearRoad && n3(x, y, 46) < B.pond) { col = n3(x, y, 46) > B.pond - 0.03 ? shallow : water; L[y * w + x] = 2; }
+    if (B.lava && !nearRoad && Math.abs(n3(x, y, 52) - 0.5) < 0.03) { col = Math.abs(n3(x, y, 52) - 0.5) < 0.012 ? lava : lavaD; L[y * w + x] = 2; }
+    if (edge < coast + 5) { col = rim; L[y * w + x] = 1; } // the shore
     if (edge < coast + 1) col = ink; // inked
     d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255;
   }
@@ -244,11 +294,11 @@ export function regionArt(R) {
       const i = ((y + dy) * w + (x + dx)) * 4;
       if (!d[i + 3] || (d[i] === water[0] && d[i + 1] === water[1] && d[i + 2] === water[2]) || (d[i] === lava[0] && d[i + 1] === lava[1])) return false;
     }
-    return !roads.some(s => segDist(x, y, s) < room) && y > 22; // (clear of the region's name tag)
+    return F[y * w + x] >= room && y > 30; // (clear of the region's name tag)
   };
   // things get drawn top to bottom, so nearer ones overlap the ones behind
   const things = [];
-  for (let n = 0; n < 1600 && things.length < 120; n++) {
+  for (let n = 0; n < 7000 && things.length < 520; n++) {
     const x = 8 + Math.floor(r() * (w - 16)), y = 8 + Math.floor(r() * (h - 16));
     if (!free(x, y, 14) || things.some(t => Math.abs(t.x - x) < 9 && Math.abs(t.y - y) < 7)) continue;
     // the weapons come in little clusters, the rest is the world's own stuff
@@ -258,9 +308,9 @@ export function regionArt(R) {
   // the landmark: the giant weapon, where it's furthest from every road
   let best = null;
   for (let n = 0; n < 400; n++) {
-    const x = 30 + Math.floor(r() * (w - 60)), y = 60 + Math.floor(r() * (h - 90));
+    const x = 50 + Math.floor(r() * (w - 100)), y = 90 + Math.floor(r() * (h - 140));
     if (!free(x, y, 0)) continue;
-    const dist = Math.min(...roads.map(s => segDist(x, y, s)));
+    const dist = F[y * w + x] + r();
     if (dist > 34 && (!best || dist > best.dist)) best = { x, y, dist };
   }
   things.sort((a, b) => a.y - b.y);
@@ -268,7 +318,7 @@ export function regionArt(R) {
   if (best) {
     k.save();
     k.translate(best.x, best.y);
-    k.scale(3, 3);
+    k.scale(5, 5);
     stuck(k, B.weapon === 'arrow' ? 'arrow' : B.weapon, 0, 0, 1, () => 0);
     k.restore();
   }

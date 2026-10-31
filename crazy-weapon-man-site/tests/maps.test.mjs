@@ -55,7 +55,7 @@ test('ladders end level with the platform they hang from, so the climb stops the
 test('maps are bounded, populated along their whole route and end at the exit',()=>{
   for(const [z,id] of MAPS) {
     const m=makeMap(z,id);
-    assert.ok(m.width>=13*W && m.width<=25*W);
+    assert.ok(m.width>=17*W && m.width<=32*W);
     assert.ok(m.spawns.length>=27+z*2-1);
     assert.ok(m.spawns.some(e=>e.x>m.width-W));
     assert.ok(m.spawns.every(e=>e.x>=70 && e.x<m.width-70));

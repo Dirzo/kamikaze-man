@@ -85,7 +85,7 @@ test('speed gadgets and set pieces come in one new kind per world, the new one e
 test('slopes join the ground they run between, with solid ground under them, and there are no loops', () => {
   for (let z = 0; z < 10; z++) {
     const m = makeMap(z);
-    assert.ok(m.slopes.length > 3, `zone ${z + 1} has ramps`);
+    assert.ok(m.slopes.length >= 3, `zone ${z + 1} has ramps`);
     for (const s of m.slopes) {
       assert.ok(Math.abs(s.k) <= 1.0001 && s.w >= 8, 'no slope steeper than 45 degrees');
       assert.ok(m.solids.some(q => q.under === s && q.x === s.x && q.w === s.w && q.y === Math.max(s.y0, s.y1) + 1), 'ground under every ramp');

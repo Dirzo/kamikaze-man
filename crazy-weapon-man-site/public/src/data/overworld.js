@@ -9,7 +9,12 @@
 // secret (only reached through a secret exit) and warp (a cannon to its `to` partner).
 // Exits: `next` is the normal exit, `secret` the secret exit. Positions are local to the region's
 // 360x270 slot, authored left-to-right; regions with flip:true run right-to-left (x mirrored).
-export const SLOT_W = 360, SLOT_H = 270;
+// The map is drawn SCALE times that: each island is 720x540 (a few screens of ground to walk, so
+// you never see a whole world at once), with open sea (SEA px) between the islands.
+export const SCALE = 2, SEA = 72;
+export const SLOT_W = 360 * SCALE, SLOT_H = 270 * SCALE;
+// a region's island, top-left corner in map pixels
+export const slotX = R => SEA + R.col * (SLOT_W + SEA), slotY = R => SEA + R.row * (SLOT_H + SEA);
 export const OVERWORLD_KEY = 'crazyWeaponMan.overworld.v1';
 
 // zone = index into ZONES; col/row = slot on the 5x2 map grid (top row left to right, then the
@@ -133,20 +138,68 @@ for (const [id, region, kind, name, x, y, next, secret, extra] of N) {
   const R = REGIONS[region - 1];
   NODES[id] = {
     id, region, zone: R.zone, kind, name,
-    x: R.col * SLOT_W + (R.flip ? SLOT_W - x : x),
-    y: R.row * SLOT_H + y,
+    x: slotX(R) + (R.flip ? 360 - x : x) * SCALE,
+    y: slotY(R) + y * SCALE,
     next, secret: secret || [], ...extra
   };
 }
 export const START = 'home';
 export const FINAL = '10-C';
-export const MAP_W = 5 * SLOT_W, MAP_H = 2 * SLOT_H;
+export const MAP_W = SEA + 5 * (SLOT_W + SEA), MAP_H = SEA + 2 * (SLOT_H + SEA);
+
+// ---------------------------------------------------------------- winding roads
+// A road between two nodes is a gentle seeded curve (a bow, or an S-bend on longer stretches), never a
+// ruler line, so the islands read as land you travel across. Points every 3px with their running
+// length; the hero walks along them and owart.js keeps props off them. The same pair of nodes always
+// gets the same road, whichever way you walk it.
+const paths = new Map();
+const hashOf = str => [...str].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 2166136261);
+export function roadPath(a, b) {
+  const key = a.id < b.id ? a.id + '>' + b.id : b.id + '>' + a.id;
+  let P = paths.get(key);
+  if (!P) {
+    const [p, q] = a.id < b.id ? [a, b] : [b, a], h = hashOf(key);
+    const dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+    const bow = ((h % 1000) / 1000 - 0.5) * 0.32 * len, s = (h >>> 10) % 3 === 0 && len > 120, wob = 1.5 + ((h >>> 14) % 3);
+    const n = Math.max(2, Math.round(len / 3));
+    P = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, env = Math.sin(Math.PI * t);
+      const off = (s ? Math.sin(2 * Math.PI * t) * 0.6 : env) * bow + Math.sin(t * len / 19 + h) * wob * env;
+      P.push({ x: p.x + dx * t + nx * off, y: p.y + dy * t + ny * off });
+    }
+    let d = 0;
+    P[0].d = 0;
+    for (let i = 1; i < P.length; i++) P[i].d = d += Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+    P.len = d;
+    paths.set(key, P);
+  }
+  if (a.id < b.id) return P;
+  const R = P.map(pt => ({ x: pt.x, y: pt.y, d: P.len - pt.d })).reverse();
+  R.len = P.len;
+  return R;
+}
+// the point `d` px along a road
+export function alongRoad(P, d) {
+  if (d <= 0) return P[0];
+  if (d >= P.len) return P[P.length - 1];
+  let lo = 0, hi = P.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (P[m].d <= d) lo = m; else hi = m; }
+  const a = P[lo], b = P[hi], k = (d - a.d) / ((b.d - a.d) || 1);
+  return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+}
 export const isLevel = n => n.kind !== 'start' && n.kind !== 'warp';
 export const LEVELS = Object.values(NODES).filter(isLevel);
 
 // ---------------------------------------------------------------- progress
 // save = { at: node id, cleared: { id: ['next'] | ['next','secret'] }, hero?: snapshot }
-export const newSave = () => ({ v: 1, at: START, cleared: { [START]: ['next'] } });
+export const newSave = () => ({ v: 1, at: START, cleared: { [START]: ['next'] }, seen: [] });
+// the worlds whose fly-over you have had (a save from before the big map counts every world it has a
+// cleared level in as seen, so returning players aren't toured round worlds they already know)
+export function seenRegions(save) {
+  if (!Array.isArray(save.seen)) save.seen = [...new Set(LEVELS.filter(n => save.cleared[n.id]).map(n => n.region))];
+  return save.seen;
+}
 
 // a revealed path: an exit that was taken out of a cleared node
 export function edges(save) {
