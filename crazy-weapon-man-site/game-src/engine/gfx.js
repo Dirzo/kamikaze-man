@@ -10,22 +10,21 @@ canvas.height = H;
 export const X = canvas.getContext('2d', { alpha: false });
 X.imageSmoothingEnabled = false;
 
-// Integer CSS scaling to fit the window.
+// CSS scaling to fit the window: whole steps on a desktop; on a phone (html.touch, touch-controls.js)
+// the playfield fills the screen edge to edge in landscape with the controls floating over it, and
+// sits on top with the controls below it in portrait.
 function fit() {
-  const coarse = matchMedia('(any-pointer: coarse)').matches;
+  const touch = document.documentElement.classList.contains('touch');
   const vw = window.visualViewport?.width || innerWidth, vh = window.visualViewport?.height || innerHeight;
   const landscape = vw > vh;
-  const bodyStyle=getComputedStyle(document.body),safeX=(parseFloat(bodyStyle.paddingLeft)||0)+(parseFloat(bodyStyle.paddingRight)||0);
-  // Landscape leaves thumb gutters on both sides; portrait leaves the controls below the map.
-  const room = Math.min((vw - safeX - (coarse && landscape ? 296 : 8)) / W,
-    (vh - (coarse ? landscape ? 48 : 218 : 80)) / H);
-  const k = coarse ? Math.max(0.2, room) : room >= 1 ? Math.floor(room) : Math.max(0.25, room);
+  const room = touch ? (landscape ? Math.min(vw / W, vh / H) : Math.min(vw / W, (vh - 300) / H))
+    : Math.min((vw - 8) / W, (vh - 80) / H);
+  const k = touch ? Math.max(0.2, room) : room >= 1 ? Math.floor(room) : Math.max(0.25, room);
   canvas.style.width = W * k + 'px';
   canvas.style.height = H * k + 'px';
 }
 addEventListener('resize', fit);
-window.visualViewport?.addEventListener('resize',fit);
-matchMedia('(any-pointer: coarse)').addEventListener('change',fit);
+window.visualViewport?.addEventListener('resize', fit);
 fit();
 
 // ---- world offset (screenshake) ----
@@ -253,11 +252,51 @@ function textCanvas(s, col, k, outline) {
 export function text(s, x, y, col = C.paper, { k = 1, align = 'left', outline = true } = {}) {
   s = norm(s);
   if (!s) return 0;
+  // text with numbers in it (the run clock, damage numbers, counters) changes every frame: building a
+  // canvas for each new string is what costs on a phone, so it is stamped glyph by glyph from one
+  // sheet per colour instead. The glyphs' outlines only ever overlap in the gap between letters,
+  // ink on ink, so it looks exactly the same.
+  if (/[0-9]/.test(s)) {
+    const sheet = glyphSheet(col, k, outline), w = textWidth(s, k);
+    let gx = Math.round(align === 'center' ? x - Math.floor(w / 2) : align === 'right' ? x - w : x) - 1;
+    const gy = Math.round(y) - 1;
+    for (const ch of s) {
+      const g = sheet.at[ch];
+      if (ch !== ' ') X.drawImage(sheet.cv, g.x, 0, g.w, sheet.cv.height, gx, gy, g.w, sheet.cv.height);
+      gx += g.w - 2 + k;
+    }
+    return w;
+  }
   const cv = textCanvas(s, col, k, outline),
     w = cv.width - 2;
   const dx = align === 'center' ? x - Math.floor(w / 2) : align === 'right' ? x - w : x;
   X.drawImage(cv, Math.round(dx) - 1, Math.round(y) - 1);
   return w;
+}
+// every glyph of the font in one colour, side by side (each with its outline margin) for text() above
+const sheets = new Map();
+function glyphSheet(col, k, outline) {
+  const key = col + '|' + k + '|' + outline;
+  let sh = sheets.get(key);
+  if (sh) return sh;
+  const chars = Object.keys(A.glyphs).filter(c => c !== ' ');
+  const at = {}, parts = [];
+  let x = 0;
+  for (const ch of chars) {
+    const cv = textCanvas(ch, col, k, outline); // (one glyph, with its outline, from the same maker)
+    at[ch] = { x, w: cv.width };
+    parts.push([cv, x]);
+    x += cv.width + 1;
+  }
+  if (A.glyphs[' ']) at[' '] = { x: 0, w: A.glyphs[' '][0].length * k + 2 };
+  const cv = document.createElement('canvas');
+  cv.width = Math.max(1, x);
+  cv.height = 7 * k + 3;
+  const g = cv.getContext('2d');
+  for (const [p, px] of parts) g.drawImage(p, px, 0);
+  sh = { cv, at };
+  sheets.set(key, sh);
+  return sh;
 }
 // shorten to fit a width (adds '..')
 export function fitText(s, maxW, k = 1) {

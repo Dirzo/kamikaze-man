@@ -86,11 +86,13 @@ export const input = {
   anyKey: () => down.size > 0 || touch.size > 0
 };
 
-bindTouchControls((actions,reset) => {
-  if(reset)touchFresh.clear();
-  if(actions.has('attack'))actions.add('confirm');
+// the phone controls (touch-controls.js) hold actions like keys do; HIT also confirms in menus
+export const touchPad = bindTouchControls((actions, reset) => {
+  if (reset) touchFresh.clear();
+  if (actions.has('attack')) actions.add('confirm');
   for (const a of actions) if (!touch.has(a)) touchFresh.add(a);
-  touch.clear();for (const a of actions) touch.add(a);
+  touch.clear();
+  for (const a of actions) touch.add(a);
 });
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){down.clear();fresh.clear();touch.clear();touchFresh.clear();}

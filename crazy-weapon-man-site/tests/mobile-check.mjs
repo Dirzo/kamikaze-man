@@ -35,7 +35,7 @@ try {
   // Rotation and browser-bar resize must also refit without reloading the run.
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true,screenOrientation:{type:'portraitPrimary',angle:0}});
   await delay(300);
-  const fits=await evaluate('(()=>{const c=document.getElementById("screen").getBoundingClientRect(),j=document.getElementById("joystick").getBoundingClientRect();return c.left>=0&&c.right<=innerWidth&&c.bottom<j.top;})()');
+  const fits=await evaluate('(()=>{const t=document.getElementById("touch"),m=t.dataset.mode;t.dataset.mode="play";const c=document.getElementById("screen").getBoundingClientRect(),j=document.getElementById("joystick").getBoundingClientRect(),p=document.querySelector("#pad .dash").getBoundingClientRect();t.dataset.mode=m;return c.left>=0&&c.right<=innerWidth&&c.bottom<j.top&&c.bottom<p.top;})()');
   if(!fits)throw Error('Portrait rotation overlaps controls');
   const shot=await send('Page.captureScreenshot',{format:'png'});writeFileSync(join(out,'mobile-portrait.png'),Buffer.from(shot.data,'base64'));
   console.log('PASS mobile portrait rotation refits the playfield');

@@ -4,6 +4,7 @@
 // The globe is drawn by an inverse orthographic projection into a small canvas each frame, lit from
 // the upper left, with a thin atmosphere round its rim.
 import { W, H, C } from '../config.js';
+import { tk } from '../engine/touch-controls.js';
 import { X, rect, text } from '../engine/gfx.js';
 import { REGIONS, MAP_W, MAP_H, SLOT_W, SLOT_H, slotX, slotY } from '../data/overworld.js';
 import { regionArt, painted } from './owart.js';
@@ -104,7 +105,7 @@ export function drawGlobe(a, lon, p, t, isOpen) {
   const q = proj(p.x, p.y);
   if (q.front > 0 && Math.floor(t * 4) % 2) { rect(q.x - 2, q.y - 2, 5, 5, C.ink); rect(q.x - 1, q.y - 1, 3, 3, C.red); }
   text('PLANET ' + PLANET, W / 2, 4, C.gold, { align: 'center', k: 2 });
-  text('ARROWS: TURN THE GLOBE    SHIFT: BACK TO THE MAP', W / 2, 196, C.mist, { align: 'center' });
+  text(tk('ARROWS: TURN THE GLOBE    SHIFT: BACK TO THE MAP', 'STICK: TURN THE GLOBE    BACK: TO THE MAP'), W / 2, 196, C.mist, { align: 'center' });
   X.globalAlpha = 1;
 }
 // the longitude (radians) a point of the map sits at

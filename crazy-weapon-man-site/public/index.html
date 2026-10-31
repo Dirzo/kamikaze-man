@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1a1428">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Weapon Man">
+<link rel="manifest" href="/manifest.webmanifest">
 <meta name="description" content="A pixel-art combat roguelike. Start with rusty steel. Finish with a weapon the moon should worry about.">
 <title>Crazy Weapon Man</title>
 <style>
@@ -19,32 +24,39 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch
 #start{position:absolute;left:50%;top:59%;transform:translateX(-50%);color:#1a1428;background:#ffc15a;border-color:#f8e08e;font-size:24px;padding:10px 24px 8px;white-space:nowrap}
 #start.results{left:auto;right:2.5%;top:auto;bottom:2%;transform:none;font-size:13px;padding:5px 12px 4px}
 #status{position:absolute;inset:40% 5% auto;text-align:center;font:16px Noobscrub,monospace;color:#f06a52;line-height:1.5;pointer-events:none}
-#touch{display:none;position:fixed;inset:0;pointer-events:none;z-index:5;user-select:none;-webkit-user-select:none;touch-action:none}
-#joystick{position:absolute;left:max(12px,env(safe-area-inset-left));bottom:max(28px,env(safe-area-inset-bottom));width:116px;height:116px;border:2px solid #8a89a6;border-radius:50%;background:#2b2442c9;pointer-events:auto;touch-action:none;box-shadow:inset 0 0 0 14px #1a14284d}
-#joystick:before{content:'+';position:absolute;inset:0;display:grid;place-items:center;color:#8a89a6;font:42px monospace;opacity:.6}
-#stick-knob{position:absolute;left:50%;top:50%;width:48px;height:48px;border:3px solid #f8e08e;border-radius:50%;background:#5d5a7a;transform:translate(calc(-50% + var(--stick-x,0px)),calc(-50% + var(--stick-y,0px)));pointer-events:none;box-shadow:0 4px 0 #1a1428}
-#joystick[data-held=true] #stick-knob{background:#9c713d}
-#touch-actions{position:absolute;right:max(10px,env(safe-area-inset-right));bottom:max(26px,env(safe-area-inset-bottom));width:134px;height:178px}
-#touch button{position:absolute;pointer-events:auto;border-radius:50%;width:52px;height:52px;padding:0;font-size:14px;background:#2b2442e8;box-shadow:0 4px 0 #100d1c}
-#touch button[data-held=true]{background:#705233;border-color:#f8e08e;transform:translateY(3px);box-shadow:none}
-#touch .attack{right:0;bottom:44px;width:76px;height:76px;font-size:24px;color:#ffc15a;border:3px solid #ffc15a;background:#4b312de8}
-#touch .jump{left:0;bottom:0;border-color:#a8dcfd;color:#a8dcfd}
-#touch .dash{left:0;top:0}
-#touch .special{right:0;top:0;color:#ff6fb5;border-color:#ff6fb5}
-#rotate-hint{display:none;position:fixed;bottom:164px;left:10px;right:10px;text-align:center;color:#ffc15a;font-size:14px;pointer-events:none}
+/* ---- phone controls (engine/touch-controls.js): html.touch is set on touch devices only ---- */
+#touch{display:none;position:fixed;inset:0;pointer-events:none;z-index:5;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+#stick-zone{position:absolute;left:0;top:0;bottom:0;width:44%;pointer-events:auto;touch-action:none}
+#joystick{position:absolute;left:max(26px,env(safe-area-inset-left));bottom:max(30px,env(safe-area-inset-bottom));width:124px;height:124px;border-radius:50%;border:3px solid #f4f1e855;background:radial-gradient(circle,#1a142855 0 55%,#1a142899 56%);opacity:.5;transition:opacity .15s;pointer-events:none}
+#joystick[data-held=true]{opacity:.95;transition:none}
+#stick-knob{position:absolute;left:50%;top:50%;width:54px;height:54px;border:3px solid #f8e08e;border-radius:50%;background:#5d5a7add;transform:translate(calc(-50% + var(--stick-x,0px)),calc(-50% + var(--stick-y,0px)));box-shadow:0 3px 0 #1a1428aa}
+#joystick[data-held=true] #stick-knob{background:#c4501fdd}
+#pad{position:absolute;right:0;bottom:0;width:min(46%,290px);height:min(100%,300px);pointer-events:auto;touch-action:none}
+#pad button{position:absolute;pointer-events:none;border-radius:50%;padding:0;font:15px Noobscrub,monospace;letter-spacing:1px;color:#f4f1e8;border:3px solid;background:#1a14288c;box-shadow:0 4px 0 #0d0a16aa;opacity:.72;transition:transform .06s,opacity .1s}
+#pad button[data-held=true]{opacity:1;transform:translateY(3px) scale(.94);box-shadow:none;background:#f4f1e83a}
+#pad .attack{right:max(16px,env(safe-area-inset-right));bottom:max(58px,env(safe-area-inset-bottom));width:92px;height:92px;font-size:22px;color:#ffc15a;border-color:#ffc15a;background:#7a1f2b8c}
+#pad .jump{right:calc(max(16px,env(safe-area-inset-right)) + 100px);bottom:max(12px,env(safe-area-inset-bottom));width:78px;height:78px;color:#a8dcfd;border-color:#a8dcfd}
+#pad .dash{right:calc(max(16px,env(safe-area-inset-right)) + 10px);bottom:calc(max(58px,env(safe-area-inset-bottom)) + 102px);width:74px;height:74px;color:#b7e27a;border-color:#b7e27a}
+#pad .special{right:calc(max(16px,env(safe-area-inset-right)) + 106px);bottom:calc(max(12px,env(safe-area-inset-bottom)) + 94px);width:58px;height:58px;font-size:12px;color:#ff6fb5;border-color:#ff6fb555}
+#pad .special:before{content:'';position:absolute;inset:-6px;border-radius:50%;background:conic-gradient(#ff6fb5 calc(var(--cool,1)*1turn),#ff6fb533 0);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px))}
+#pad .special[data-ready=false]{color:#ff6fb588}
+#pad .special.ping{animation:ping .5s ease-out}
+@keyframes ping{0%{box-shadow:0 0 0 0 #ff6fb5}100%{box-shadow:0 0 0 18px #ff6fb500}}
+#softkeys{position:absolute;top:max(4px,env(safe-area-inset-top));right:max(6px,env(safe-area-inset-right));display:flex;gap:5px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:70%}
+#softkeys button{font-size:12px;padding:7px 9px 5px;min-width:44px;min-height:30px;background:#1a1428b8;border-color:#8a89a6aa;color:#f4f1e8;opacity:.88}
+@media(orientation:landscape){#touch[data-mode=play] #softkeys{top:calc(50dvh - min(56.25vw,100dvh) * .2)}} /* in a level: under the minimap, clear of the HUD */
+#touch[data-mode=menu] #softkeys{top:auto;bottom:max(3px,env(safe-area-inset-bottom))} /* over a window: its tabs and X are up top, so the extra keys sit on its hint line */
+@media(orientation:landscape){#touch[data-mode=den] #softkeys{top:calc(50dvh - min(56.25vw,100dvh) * .14)}}
+#touch[data-mode=play] #softkeys button{min-width:40px;padding:6px 8px 4px;opacity:.7}
+#softkeys button.on{border-color:#ffc15a;color:#ffc15a}
+#touch[data-mode=off] #stick-zone,#touch[data-mode=off] #pad,#touch[data-mode=menu] #stick-zone,#touch[data-mode=menu] #pad,#touch[data-mode=pause] #stick-zone,#touch[data-mode=pause] #pad{display:none}
+#rotate-hint{display:none;position:fixed;bottom:250px;left:10px;right:10px;text-align:center;color:#ffc15a;font-size:14px;pointer-events:none}
 #hint{font-size:16px;color:#8a89a6;text-align:center;height:16px}
-@media(any-pointer:coarse){
-  html,body{height:100%;height:100dvh;overscroll-behavior:none}body{gap:4px;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
-  #touch{display:block}#hint,#brand{display:none}
-  #bar{min-height:30px;padding-left:max(6px,env(safe-area-inset-left));padding-right:max(6px,env(safe-area-inset-right))}
-  #tools{width:100%;justify-content:center}#tools button{padding:5px 7px;font-size:12px}
-  #stage{box-shadow:0 0 0 2px #3e3a5c}#start{font-size:18px;padding:10px 18px}
-}
-@media(any-pointer:coarse) and (orientation:portrait){body{padding-bottom:168px}#rotate-hint{display:block}}
-@media(any-pointer:coarse) and (orientation:landscape) and (max-height:350px){
-  #joystick{width:98px;height:98px;left:max(8px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom))}
-  #touch-actions{transform:scale(.86);transform-origin:bottom right;bottom:max(12px,env(safe-area-inset-bottom))}
-}
+html.touch,html.touch body{height:100%;height:100dvh;overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html.touch body{gap:0;padding:0}
+html.touch #touch{display:block}html.touch #hint,html.touch #bar{display:none}
+html.touch #stage{box-shadow:none}html.touch #start{font-size:18px;padding:12px 22px 10px}
+@media(orientation:portrait){html.touch body{justify-content:flex-start;padding-top:max(44px,env(safe-area-inset-top))}html.touch #rotate-hint{display:block}html.touch #stick-zone{top:auto;height:250px;width:50%}}
 </style>
 </head>
 <body>
@@ -53,10 +65,11 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;touch
 </nav></header>
 <main id="stage"><canvas id="screen" width="480" height="270" aria-label="Crazy Weapon Man game. Arrows move, X jumps, Z attacks, C special, Shift dashes." tabindex="0">Your browser needs Canvas to play Crazy Weapon Man.</canvas><button id="start">START RUN</button><div id="status" role="status" aria-live="polite"></div></main>
 <div id="hint">MOVE ARROWS / AD &nbsp; UP/DOWN CLIMB &nbsp; JUMP X / ALT &nbsp; ATTACK Z / CTRL &nbsp; SPECIAL C / SPACE &nbsp; DASH SHIFT &nbsp; BAG 1 &nbsp; MASTERY 2 &nbsp; DEN 3 &nbsp; <a href="/privacy" style="color:inherit">PRIVACY</a></div>
-<div id="touch" aria-label="Touch controls">
-  <div id="joystick" role="group" aria-label="Movement joystick. Slide left or right to move, up or down to climb."><span id="stick-knob"></span></div>
-  <div id="touch-actions"><button class="dash" data-action="dash" aria-label="Dash">DASH</button><button class="special" data-action="special" aria-label="Special attack">SKILL</button><button class="jump" data-action="jump" aria-label="Jump">JUMP</button><button class="attack" data-action="attack" aria-label="Hold to attack">HIT</button></div>
+<div id="touch" data-mode="off" aria-label="Touch controls">
+  <div id="stick-zone" role="group" aria-label="Movement stick: put your thumb anywhere on the left and slide. Push up or down to climb or drop."><div id="joystick"><span id="stick-knob"></span></div></div>
+  <div id="pad"><button class="attack" data-action="attack" data-label="HIT" aria-label="Attack">HIT</button><button class="jump" data-action="jump" data-label="JUMP" aria-label="Jump">JUMP</button><button class="dash" data-action="dash" data-label="DASH" aria-label="Dash">DASH</button><button class="special" data-action="special" data-label="SKILL" aria-label="Special attack">SKILL</button></div>
+  <nav id="softkeys" aria-label="Menus"></nav>
 </div>
 <div id="rotate-hint">ROTATE YOUR PHONE FOR A WIDER FIGHT</div>
-<script type="module" src="/src/main.js?v=dc3ad56c6d"></script>
+<script type="module" src="/src/main.js?v=b9cea3aa23"></script>
 </body></html>
