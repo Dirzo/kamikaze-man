@@ -152,55 +152,53 @@ const name = z => REGIONS[z].name;
 const SHOTS = [
   // the world, from space
   {
-    dur: 5.2, song: ['title', TITLE_MUSIC], top: 'NOOBSCRUB GAMES PRESENTS', cap: 'ON THE PLANET HOPLON',
+    dur: 4.0, song: ['title', TITLE_MUSIC], top: 'NOOBSCRUB GAMES PRESENTS', cap: 'ON THE PLANET HOPLON',
     enter() { map('1-1'); G.ow.zoomOn = true; G.ow.zoom = 1; G.ow.spin = 2.2; },
     tick(t) {
       // hold the globe, then fall to the map (eased: update() adds the step back on, so subtract it)
-      const k = Math.max(0, Math.min(1, (t - 2.6) / 2.4)), z = 1 - k * k * (3 - 2 * k);
+      const k = Math.max(0, Math.min(1, (t - 1.5) / 2.2)), z = 1 - k * k * (3 - 2 * k);
       G.ow.zoomOn = true;
       G.ow.zoom = Math.max(0, z - STEP * 2.2);
       if (z <= 0.02) (G.ow.zoomOn = false), (G.ow.zoom = 0);
     }
   },
-  { dur: 3.4, title: true, flash: true, enter() { map('1-1'); } },
+  { dur: 2.6, title: true, flash: true, enter() { map('1-1'); } },
   {
-    dur: 4.2, cap: 'TEN WORLDS TO CONQUER', sub: 'ONE FOR EVERY WEAPON FAMILY',
+    dur: 2.8, cap: 'TEN WORLDS TO CONQUER', sub: 'ONE FOR EVERY WEAPON FAMILY',
     enter() { map('5-1', false); G.ow.fly.t = 0.4; }
   },
   // beauty
-  { dur: 2.6, song: ['map', MAP_MUSIC], top: name(1), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('2-2', 0.3) },
-  { dur: 2.4, top: name(5), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('6-2', 0.3) },
-  { dur: 2.4, top: name(4), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('5-2', 0.3) },
-  { dur: 2.4, top: name(7), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('8-2', 0.3) },
-  { dur: 2.6, top: name(9), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('10-2', 0.3) },
+  { dur: 2.0, song: ['map', MAP_MUSIC], top: name(1), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('2-2', 0.3) },
+  { dur: 2.0, top: name(5), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('6-2', 0.3) },
+  { dur: 2.0, top: name(4), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('5-2', 0.3) },
+  { dur: 2.0, top: name(9), cap: 'EXPLORE A LIVING WORLD', enter: () => scenic('10-2', 0.3) },
   // combat
-  { dur: 1.3, card: 'SLICE THROUGH', card2: 'THE HORDES' },
-  { dur: 3.4, cap: 'THIRTEEN WEAPON TYPES', sub: 'A THOUSAND WEAPON NAMES', enter: () => fight('1-3', 'katana') },
-  { dur: 3.2, cap: 'CRUSH', sub: 'WITH HAMMERS THE SIZE OF A DOOR', enter: () => fight('7-2', 'hammer') },
-  { dur: 3.2, cap: 'SHRED', sub: 'WITH SCYTHES, SPEARS AND SHURIKEN', enter: () => fight('3-2', 'scythe') },
+  { dur: 1.0, card: 'SLICE THROUGH', card2: 'THE HORDES' },
+  { dur: 2.8, cap: 'THIRTEEN WEAPON TYPES', sub: 'A THOUSAND WEAPON NAMES', enter: () => fight('1-3', 'katana') },
+  { dur: 2.6, cap: 'CRUSH', sub: 'WITH HAMMERS THE SIZE OF A DOOR', enter: () => fight('7-2', 'hammer') },
+  { dur: 2.6, cap: 'SHRED', sub: 'WITH SCYTHES, SPEARS AND SHURIKEN', enter: () => fight('3-2', 'scythe') },
   // speed
-  { dur: 1.1, card: 'GO FAST' },
-  { dur: 3.0, cap: 'BUILD MOMENTUM', sub: 'RUSH HITS HARDER THE FASTER YOU RUN', enter: () => (scenic('1-2', 0.1), (world.hero.mom = 1), runner(0.9)) },
-  { dur: 3.0, cap: 'SPRINGS, BOOSTERS AND ZIPLINES', enter: () => gadgetRun('2-3') },
-  { dur: 4.4, bars: [0, 14], cap: 'SPEEDRUN FOR THE S RANK', enter() { captureScene(G, 'clear'); world.run.t = 64; world.run.residentKills = world.map.spawns.length; } },
+  { dur: 0.9, card: 'GO FAST' },
+  { dur: 2.4, cap: 'BUILD MOMENTUM', sub: 'RUSH HITS HARDER THE FASTER YOU RUN', enter: () => (scenic('1-2', 0.1), (world.hero.mom = 1), runner(0.9)) },
+  { dur: 3.0, bars: [0, 14], cap: 'SPEEDRUN FOR THE S RANK', enter() { captureScene(G, 'clear'); world.run.t = 64; world.run.residentKills = world.map.spawns.length; }, tick(t) { if (t > 0.1 && world.hero?.cheer) world.cheerT = 9; if (G.scene === 'levelEnd' && !this.skipped) (this.skipped = true), G.skipTo(1.4); } },
   // upgrades
-  { dur: 1.2, card: 'FORGE YOUR', card2: 'ARSENAL' },
-  { dur: 3.0, bars: [0, 14], cap: 'STRIKE LEGENDARY WEAPONS ON THE ANVIL', enter() { captureScene(G, 'anvil'); for (const n of LEVELS) keepRelics(G.ow.save, n.id, 31); }, tick(t) { if (world.inv && [0.7, 1.5, 2.1].some(k => Math.abs(t - k) < STEP / 2)) (world.inv.anvilAsk = t < 1 || t > 2), anvil(); } },
-  { dur: 3.0, bars: [0, 14], cap: 'GROW THE SHARD TREE', enter() { captureScene(G, 'powers4'); } },
-  { dur: 3.2, bars: [0, 14], cap: 'MASTER EVERY WEAPON TO 100', enter() { captureScene(G, 'powers5'); } },
+  { dur: 1.0, card: 'FORGE YOUR', card2: 'ARSENAL' },
+  { dur: 2.4, bars: [0, 14], cap: 'STRIKE LEGENDARY WEAPONS ON THE ANVIL', enter() { captureScene(G, 'anvil'); for (const n of LEVELS) keepRelics(G.ow.save, n.id, 31); }, tick(t) { if (world.inv && [0.4, 1.0, 1.5].some(k => Math.abs(t - k) < STEP / 2)) (world.inv.anvilAsk = t < 0.7 || t > 1.2), anvil(); } },
+  { dur: 2.2, bars: [0, 14], cap: 'GROW THE SHARD TREE', enter() { captureScene(G, 'powers4'); } },
+  { dur: 2.4, bars: [0, 14], cap: 'MASTER EVERY WEAPON TO 100', enter() { captureScene(G, 'powers5'); } },
   // the Beast Den
-  { dur: 1.2, card: 'RAISE A', card2: 'BEAST DEN', song: ['den', ZONES[7].music] },
-  { dur: 5.2, cap: 'PET YOUR BEASTS', sub: 'EVERY FAMILY LOVES YOU IN ITS OWN WAY', enter() { captureScene(G, 'den'); return petter(); } },
-  { dur: 4.0, bars: [0, 14], cap: 'RACE THEM FOR MEDALS', enter() { captureScene(G, 'denrace'); den.menu.t = 0.2; } },
+  { dur: 1.0, card: 'RAISE A', card2: 'BEAST DEN', song: ['den', ZONES[7].music] },
+  { dur: 3.6, cap: 'PET YOUR BEASTS', sub: 'EVERY FAMILY LOVES YOU IN ITS OWN WAY', enter() { captureScene(G, 'den'); return petter(); } },
+  { dur: 2.8, bars: [0, 14], cap: 'RACE THEM FOR MEDALS', enter() { captureScene(G, 'denrace'); den.menu.t = 0.2; } },
   // bosses
-  { dur: 1.3, card: 'TOPPLE THE', card2: 'FAMILY HEADS', song: [null] },
-  { dur: 3.6, cap: () => world.boss?.name || 'MOTHER GOOSE', sub: 'HEAD OF THE SWORD GRAVEYARD', enter: () => boss('1-C', 'katana', 7) },
-  { dur: 3.6, cap: () => world.boss?.name || 'THE PETAL SHOGUN', sub: 'HEAD OF THE SAKURA KATANA SHRINE', enter: () => boss('5-C', 'spear', 8) },
-  { dur: 3.8, cap: () => world.boss?.name || 'THE SENTIENT ARMORY', sub: 'HEAD OF THE DRAGON\'S GOLD VAULT', enter: () => boss('10-C', 'hammer', 10) },
+  { dur: 1.0, card: 'TOPPLE THE', card2: 'FAMILY HEADS', song: [null] },
+  { dur: 2.8, cap: () => world.boss?.name || 'MOTHER GOOSE', sub: 'HEAD OF THE SWORD GRAVEYARD', enter: () => boss('1-C', 'katana', 7) },
+  { dur: 2.8, cap: () => world.boss?.name || 'THE PETAL SHOGUN', sub: 'HEAD OF THE SAKURA KATANA SHRINE', enter: () => boss('5-C', 'spear', 8) },
+  { dur: 2.8, cap: () => world.boss?.name || 'THE SENTIENT ARMORY', sub: 'HEAD OF THE DRAGON\'S GOLD VAULT', enter: () => boss('10-C', 'hammer', 10) },
   // and the hero, being the hero
   { dur: 2.4, song: ['map', MAP_MUSIC], cap: t => (t < 1.15 ? 'FEARLESS.' : t > 1.5 ? 'MOSTLY.' : ''), enter: () => doomed('1-2') },
   // end card
-  { dur: RECORD ? 7 : 1e9, end: true, song: ['title', TITLE_MUSIC], enter() { map('5-2'); G.ow.zoomOn = true; G.ow.zoom = 1; G.ow.spin = 0.4; } }
+  { dur: RECORD ? 4.5 : 1e9, end: true, song: ['title', TITLE_MUSIC], enter() { map('5-2'); G.ow.zoomOn = true; G.ow.zoom = 1; G.ow.spin = 0.4; } }
 ];
 
 // a run-up at the stage's first gadget (a spring, a booster, a zipline...)

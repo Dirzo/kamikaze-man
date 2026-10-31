@@ -628,6 +628,7 @@ const debug = {
   sceneT: () => sceneT,
   hooks,
   setScene(s) { scene = s; sceneT = 0; capture = false; },
+  skipTo(t) { sceneT = t; },
   hideStart() { document.getElementById('start').hidden = true; },
   updateShots,
   update,
