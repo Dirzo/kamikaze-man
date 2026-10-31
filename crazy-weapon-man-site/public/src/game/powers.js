@@ -284,7 +284,7 @@ export function drawPowers(t) {
   else drawSheet(12, 30, W - 24, H - 66, P.sheetWeapon);
   if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
   const hint = P.tab === TAB.TREE ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
-    : P.tab === TAB.MASTERY ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
+    : P.tab === TAB.MASTERY ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   2: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   2: CLOSE')
     : P.tab === TAB.TROPHIES ? 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE'
     : P.tab === TAB.STABLE ? (stableOpen() ? 'ARROWS: PICK   ENTER: SADDLE UP   SHIFT: NEXT TAB   E: CLOSE' : 'BEAT THREE FAMILY HEADS TO OPEN THE STABLE   SHIFT: NEXT TAB   E: CLOSE')
     : P.tab === TAB.BOOK ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`

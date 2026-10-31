@@ -125,6 +125,19 @@ function closeMapBag() {
   world.shards = 0;
   writeSave(ow.save);
 }
+// the clear keys (config.js hotBag / hotMastery / hotDen): 1 BAG, 2 MASTERY, 3 DEN. Each opens its
+// window from anywhere on the map or in the Den, closes it when it is already open, and jumps straight
+// across when another one is up.
+function hotKey(which) {
+  const was = scene === 'den' ? 'den' : world.inv ? 'bag' : powers.open && powers.tab === TAB.MASTERY ? 'mastery' : null;
+  if (world.inv) closeInventory(), closeMapBag();
+  if (powers.open) closePowers();
+  if (scene === 'den') openMap();
+  if (which === was) return sfx.ui();
+  if (which === 'bag') return openMapBag(), (powers.tab = TAB.BAG);
+  if (which === 'mastery') return openPowers(TAB.MASTERY);
+  return openBeastDen();
+}
 // the Beast Den (H on the map): the saved hero walks the garden with their weapon in hand
 function openBeastDen() {
   closeInventory();
@@ -205,6 +218,10 @@ function update(dt) {
     }
     return;
   }
+  if (scene === 'map' || scene === 'den') {
+    const hot = input.take('hotBag') ? 'bag' : input.take('hotMastery') ? 'mastery' : input.take('hotDen') ? 'den' : null;
+    if (hot) return hotKey(hot);
+  }
   if (scene === 'map') {
     if (world.inv) {
       updateInventory(dt);
@@ -241,9 +258,11 @@ function update(dt) {
   // ---- play ----
   if (world.phase !== 'cleared') tickRun(dt); // the speedrun clock only stops for the pause menu (and the clear cheer)
   if (world.inv) {
+    if (input.take('hotBag')) return closeInventory();
     updateInventory(dt); // the weapon log pauses the fight
     return;
   }
+  if (input.take('hotBag') && world.phase === 'play') return openInventory(), undefined;
   if (input.take('pause')) {
     scene = 'pause';
     return;
@@ -387,7 +406,7 @@ function drawTitle(t) {
 
 // the Beast Den's door on the map: a small chip above the map's bottom panel
 function denChip() {
-  const s = 'H: BEAST DEN', w = textWidth(s) + 8;
+  const s = '3: BEAST DEN', w = textWidth(s) + 8;
   rect(W - w - 6, 204, w, 11, C.ink);
   text(s, W - 10, 206, C.pink, { align: 'right' });
 }

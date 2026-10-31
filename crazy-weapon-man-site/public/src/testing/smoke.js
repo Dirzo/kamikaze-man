@@ -38,6 +38,7 @@ import { attackBox, canAttack } from '../game/attack-rules.js';
 import { resetMeta, bankShards, buyRank, setLock, winTrophy, chooseMount, CLASSES, HOME_TURF } from '../data/meta.js';
 import { heroStats } from '../game/perks.js';
 import { resetDen, den } from '../data/den.js';
+import { P as powersWin, TAB as POWERS_TAB } from '../game/powers.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
@@ -663,6 +664,20 @@ export function runSmoke(game) {
     for(let i=0;i<4;i++)game.update(STEP);
     key('Escape','keydown');game.update(STEP);key('Escape','keyup');game.update(STEP);
     ok(game.scene==='map','ESC did not leave the den: '+game.scene);
+    resetDen();
+  });
+  check('the clear keys: 1 BAG, 2 MASTERY, 3 DEN open, close and jump across',()=>{
+    resetDen();
+    const press=code=>{window.dispatchEvent(new KeyboardEvent('keydown',{code}));game.update(STEP);window.dispatchEvent(new KeyboardEvent('keyup',{code}));game.update(STEP);};
+    game.openMap();
+    press('Digit2');ok(powersWin.open && powersWin.tab===POWERS_TAB.MASTERY,'2 did not open the mastery sky');
+    press('Digit2');ok(!powersWin.open,'2 did not close the mastery sky');
+    press('Digit1');ok(!!world.inv && game.scene==='map','1 did not open the bag');
+    press('Digit2');ok(!world.inv && powersWin.open && powersWin.tab===POWERS_TAB.MASTERY,'2 did not jump from the bag to mastery');
+    press('Digit3');ok(game.scene==='den' && !powersWin.open,'3 did not jump to the den: '+game.scene);
+    press('Digit3');ok(game.scene==='map','3 did not leave the den: '+game.scene);
+    press('Digit3');press('Digit1');ok(game.scene==='map' && !!world.inv,'1 did not jump from the den to the bag');
+    press('Digit1');ok(!world.inv,'1 did not close the bag');
     resetDen();
   });
   check('specialized: an off-class weapon still equips and swings, just without the cluster',()=>{

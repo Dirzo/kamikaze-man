@@ -649,6 +649,7 @@ function drawHudBar() {
   text(`SHARDS ${meta().shards}`, 92, 3, C.sky);
   text(`PETS ${d.pets.length}/${MAX_PETS}   EGGS ${d.eggs.length}/${MAX_EGGS}   BASKET ${d.basket.length}`, 186, 3, C.mist);
   text('ESC: MAP', W - 6, 3, C.fog, { align: 'right' });
+  text('1 BAG  2 MASTERY  3 MAP', 6, H - 12, C.mist); // the clear keys (main.js hotKey)
   if (D.near?.kind === 'pet' && !D.menu) text('Z: PAT   C: CARD AND FEED', W / 2, H - 12, C.lime, { align: 'center' });
 }
 function drawBanner(b) {

@@ -54,6 +54,11 @@ export const KEYS = {
   sheet: ['KeyR'],
   temper: ['KeyT'],
   den: ['KeyH'], // the Beast Den, from the map
+  // one clear key each, the same everywhere on the map (main.js hotKey): press it again to close,
+  // or press another to jump straight across. 1 also opens the weapon log in a level.
+  hotBag: ['Digit1', 'Numpad1'],
+  hotMastery: ['Digit2', 'Numpad2'],
+  hotDen: ['Digit3', 'Numpad3'],
   anvil: ['KeyG'], // the Legendary Anvil, in the bag on the map
   confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ', 'ControlLeft']
 };

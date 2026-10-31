@@ -344,7 +344,21 @@ function drawOverworldHud(t) {
   const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK  JUMP: FIRE THE CANNON  SHIFT: WORLD' : isLevel(n) ? 'ARROWS: WALK  JUMP: PLAY  SHIFT: WORLD VIEW' : 'ARROWS: WALK    SHIFT: WORLD VIEW';
   if (hint) text(hint, 12, y + 26, C.mist);
   // the POWERS window: blinks when there is a mastery perk to pick or a rank you can afford
-  text('B: BAG', W - 70, y + 26, C.gold, { align: 'right' });
-  text('ESC: SAVE FILES', W - 112, y + 26, C.fog, { align: 'right' });
-  text('E: POWERS', W - 12, y + 26, powersWaiting() && Math.floor(t * 3) % 2 ? C.lime : C.gold, { align: 'right' });
+  // the clear keys: 1 BAG  2 MASTERY  3 DEN (main.js hotKey), drawn as key caps
+  let kx = W - 12;
+  for (const [k, label, col] of [['3', 'DEN', C.gold], ['2', 'MASTERY', powersWaiting() && Math.floor(t * 3) % 2 ? C.lime : C.gold], ['1', 'BAG', C.gold]]) {
+    const lw = textWidth(label);
+    text(label, kx, y + 26, col, { align: 'right' });
+    kx -= lw + 4;
+    keyCap(k, kx - 10, y + 24);
+    kx -= 16;
+  }
+  text('E: POWERS  ESC: FILES', kx - 2, y + 26, C.fog, { align: 'right' });
+}
+// a little keyboard key with its number on it (the clear keys in the map's footer)
+function keyCap(k, x, y) {
+  rect(x, y + 1, 10, 10, C.ink);
+  rect(x, y, 10, 10, C.cream);
+  rect(x + 1, y + 1, 8, 8, C.paper);
+  text(k, x + 5, y + 2, C.ink, { align: 'center', outline: false });
 }
