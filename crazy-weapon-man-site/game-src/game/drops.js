@@ -14,6 +14,7 @@ import { MUTATIONS } from '../data/progression.js';
 import { toast } from './progress.js';
 import { burst, emit, callout } from './fx.js';
 import { logWeapon, salvageValue } from './inventory.js';
+import { toBasket } from '../data/den.js';
 import { lustBoost } from './lust.js';
 import { dropWeapon, mend } from './combat.js';
 import { makeWeapon } from './loot.js';
@@ -41,7 +42,8 @@ export function equip(item) {
   return old;
 }
 
-// a weapon reached you: it goes straight into your hand, whole, and the old one melts into shards.
+// a weapon reached you: it goes straight into your hand, whole, and the old one melts into shards
+// (and the Beast Den's feed basket).
 // The anvil's edge on the old one passes on (data/anvil.js), a never-held weapon feeds Weapon
 // Lust, and the strongest finds go in the log (inventory.js).
 export function pickUp(w) {
@@ -50,7 +52,10 @@ export function pickUp(w) {
   const old = h.weapon, fresh = !w.used;
   inheritAnvil(w, old);
   equip(w);
-  if (old && !old.name.startsWith('Training ') && old !== w) world.shards += salvageValue(old);
+  if (old && !old.name.startsWith('Training ') && old !== w) {
+    world.shards += salvageValue(old);
+    toBasket(old); // the melted weapon drops into the Beast Den's feed basket
+  }
   if (h.cracked) callout('ARMOR UP!', 0, 0, C.lime, { follow: h, life: 55 });
   h.cracked = false;
   h.mendAcc = 0;

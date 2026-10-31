@@ -37,6 +37,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { attackBox, canAttack } from '../game/attack-rules.js';
 import { resetMeta, bankShards, buyRank, setLock, winTrophy, chooseMount, CLASSES, HOME_TURF } from '../data/meta.js';
 import { heroStats } from '../game/perks.js';
+import { resetDen, den } from '../data/den.js';
 import { TYPES, TYPE_LIST } from '../data/weapons.js';
 import { ABILITY_LIST } from '../data/abilities.js';
 import { fireTrait } from '../game/traits.js';
@@ -626,6 +627,19 @@ export function runSmoke(game) {
     chooseMount('griffin');h=level('1-2');mount(h);h.onGround=false;h.coyote=0;h.vy=50;
     ok(flap(h) && h.vy<0,'no sky flap');ok(!flap(h),'flapped twice');
     resetMeta();
+  });
+  check('the Beast Den: melted weapons fill its basket, H opens it from the map, ESC goes back',()=>{
+    resetDen();reset();world.bag.fill(null);
+    pickUp(makeWeapon(3,{type:'bow',q:0,standout:false}));
+    const before=den().basket.length;pickUp(makeWeapon(3,{type:'sword',q:6,standout:false}));
+    ok(den().basket.length===before+1 && den().basket.at(-1).type==='bow','the melted bow never reached the basket');
+    const key=(code,type)=>window.dispatchEvent(new KeyboardEvent(type,{code}));
+    game.openMap();key('KeyH','keydown');game.update(STEP);key('KeyH','keyup');
+    ok(game.scene==='den','H did not open the den: '+game.scene);ok(den().eggs.length===1 && den().eggs[0].zone===0,'no goose egg on the first visit');
+    for(let i=0;i<4;i++)game.update(STEP);
+    key('Escape','keydown');game.update(STEP);key('Escape','keyup');game.update(STEP);
+    ok(game.scene==='map','ESC did not leave the den: '+game.scene);
+    resetDen();
   });
   check('specialized: an off-class weapon still equips and swings, just without the cluster',()=>{
     resetMeta();setLock('ranged');reset();const h=world.hero;

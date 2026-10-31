@@ -53,6 +53,7 @@ export const KEYS = {
   lock: ['KeyG'],
   sheet: ['KeyR'],
   temper: ['KeyT'],
+  den: ['KeyH'], // the Beast Den, from the map
   anvil: ['KeyG'], // the Legendary Anvil, in the bag on the map
   confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ', 'ControlLeft']
 };
