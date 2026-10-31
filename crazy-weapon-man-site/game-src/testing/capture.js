@@ -53,7 +53,7 @@ function mapScene(game, all) {
 function mapView(game, fly) {
   mapScene(game, true);
   if (fly) { game.ow.save.at = '3-1'; game.ow.save.seen = [1, 2]; game.openMap(); game.ow.fly.t = 1.2; }
-  else { game.ow.zoomOn = true; game.ow.zoom = 1; }
+  else { game.ow.zoomOn = true; game.ow.zoom = 1; game.ow.spin = NODES[game.ow.save.at].x / 4032 * 2 * Math.PI; }
 }
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {

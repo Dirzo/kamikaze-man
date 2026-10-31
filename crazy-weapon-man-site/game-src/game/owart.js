@@ -234,6 +234,41 @@ function prop(k, kind, x, y, r) {
   }
 }
 
+// ---------------------------------------------------------------- the continents of Hoplon
+// Every world is its own continent with its own outline: the graveyard's boot, the snowy crescent,
+// the lagoon's atoll round its inner sea, the bazaar's ragged coast, the shrine's five petals, the
+// monastery's mountain spine, the forge's volcano with its crater lake, the cottage's soft teardrop,
+// the ninja castle's four-point star and the dragon's hoard with its scatter of islets. A shape is a
+// union of ellipses (minus a few bites), measured in pixels inland (negative out to sea).
+const ell = (u, v, ru, rv, sub = false) => ({ u, v, ru, rv, sub });
+const SHAPES = {
+  1: { parts: [ell(0.52, 0.5, 0.36, 0.33), ell(0.14, 0.72, 0.13, 0.14), ell(0.86, 0.28, 0.13, 0.22), ell(0.3, 0.22, 0.16, 0.12)], rough: 40 },
+  2: { parts: [ell(0.5, 0.56, 0.42, 0.37), ell(0.16, 0.28, 0.12, 0.2), ell(0.6, 0.06, 0.24, 0.2, true)], rough: 30 },
+  3: { parts: [ell(0.5, 0.5, 0.44, 0.42), ell(0.52, 0.47, 0.17, 0.12, true)], rough: 26 },
+  4: { parts: [ell(0.5, 0.5, 0.42, 0.4), ell(0.48, 1.0, 0.1, 0.2, true), ell(0.0, 0.42, 0.1, 0.1, true), ell(1, 0.75, 0.08, 0.14, true)], rough: 70 },
+  5: { parts: [ell(0.5, 0.5, 0.13, 0.16), ...[0, 1, 2, 3, 4].map(k => ell(0.5 + Math.cos(k * 1.2566 - 1.57) * 0.29, 0.5 + Math.sin(k * 1.2566 - 1.57) * 0.3, 0.15, 0.17))], rough: 10 },
+  6: { parts: [ell(0.5, 0.5, 0.44, 0.24), ell(0.28, 0.3, 0.16, 0.24), ell(0.72, 0.72, 0.16, 0.24), ell(0.88, 0.32, 0.1, 0.14)], rough: 34 },
+  7: { parts: [ell(0.5, 0.5, 0.38, 0.41), ell(0.12, 0.62, 0.12, 0.1), ell(0.88, 0.4, 0.12, 0.12), ell(0.56, 0.42, 0.07, 0.07, true)], rough: 22 },
+  8: { parts: [ell(0.44, 0.52, 0.4, 0.42), ell(0.74, 0.42, 0.2, 0.28)], rough: 14 },
+  9: { parts: [ell(0.5, 0.5, 0.47, 0.09), ell(0.5, 0.5, 0.08, 0.46), ell(0.5, 0.5, 0.19, 0.21), ell(0.24, 0.22, 0.07, 0.07), ell(0.76, 0.78, 0.07, 0.07)], rough: 8 },
+  10: { parts: [ell(0.46, 0.5, 0.36, 0.38), ell(0.85, 0.2, 0.08, 0.1), ell(0.88, 0.62, 0.07, 0.08), ell(0.12, 0.15, 0.07, 0.07), ell(0.7, 0.9, 0.06, 0.06), ell(0.1, 0.86, 0.08, 0.07), ell(0.9, 0.86, 0.05, 0.05)], rough: 24 }
+};
+function continent(R, w, h, F) {
+  const S = SHAPES[R.id] || SHAPES[1], add = S.parts.filter(p => !p.sub), sub = S.parts.filter(p => p.sub);
+  const sd = (p, x, y) => {
+    const rx = p.ru * w, ry = p.rv * h;
+    return (1 - Math.hypot((x - p.u * w) / rx, (y - p.v * h) / ry)) * Math.min(rx, ry);
+  };
+  return (x, y, n1, n3) => {
+    let d = -1e9;
+    for (const p of add) d = Math.max(d, sd(p, x, y));
+    for (const p of sub) d = Math.min(d, -sd(p, x, y));
+    d += (n1(x, y, 44) - 0.5) * S.rough * 2 + (n3(x, y, 13) - 0.5) * 12;
+    d = Math.min(d, Math.min(x, y, w - 1 - x, h - 1 - y) - 6);
+    return Math.max(d, 9 - F[y * w + x]);
+  };
+}
+
 // ---------------------------------------------------------------- one island
 const cache = new Map();
 // paint one island that hasn't been painted yet (the scene calls this every frame, so the whole map
@@ -259,13 +294,13 @@ export function regionArt(R) {
     const b = Math.floor(n4(x, y, 70) * 7);
     E[y * w + x] = E[y * w + x + 1] = E[(y + 1) * w + x] = E[(y + 1) * w + x + 1] = b;
   }
+  const depthAt = continent(R, w, h, F);
   const band = (x, y) => E[Math.max(0, Math.min(h - 1, y)) * w + Math.max(0, Math.min(w - 1, x))];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const i = (y * w + x) * 4, ex = Math.min(x, w - 1 - x), ey = Math.min(y, h - 1 - y);
-    // distance in from the slot's edge, its corners rounded off, and a ragged coast with bays and
-    // capes (the land always reaches the roads, which run out on piers to their bridges)
-    const edge = ex < 90 && ey < 90 ? 90 - Math.hypot(90 - ex, 90 - ey) : Math.min(ex, ey);
-    const coast = F[y * w + x] < 11 ? 8 : edge > 84 ? 0 : 12 + n1(x, y, 44) * 56 + n3(x, y, 13) * 8; // (the coast never reaches further in than 84)
+    const i = (y * w + x) * 4;
+    // how far inland this pixel is: the continent's own shape, a ragged coast, never past the slot's
+    // edge, and the land always reaches the roads (they run out on piers to their bridges)
+    const edge = depthAt(x, y, n1, n3), coast = 0;
     if (edge < coast) continue; // the sea
     L[y * w + x] = 1;
     let col = base;

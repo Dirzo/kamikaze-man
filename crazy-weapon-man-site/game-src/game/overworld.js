@@ -18,12 +18,13 @@ import { NODES, REGIONS, SLOT_W, SLOT_H, MAP_W, MAP_H, slotX, slotY, roadPath, a
 import { drawHeroPlain } from './anim.js';
 import { regionArt, landAt, paintAhead, painted } from './owart.js';
 import { updateLife, drawLifeGround, drawLifeSky } from './owlife.js';
+import { drawGlobe, lonOf } from './globe.js';
 
 const WALK = 150; // px/s along a road
 const FLY = 4.2; // seconds for the fly-over of a world you reach for the first time
 const DRAW = 0.7; // seconds for a new road to draw in
 const HUD_H = 52; // the info panel along the bottom of the screen
-export const ow = { save: null, walk: null, cam: { x: 0, y: 0 }, fresh: [], t: 0, face: 1, zoom: 0, zoomOn: false, fly: null };
+export const ow = { save: null, walk: null, cam: { x: 0, y: 0 }, fresh: [], t: 0, face: 1, zoom: 0, zoomOn: false, fly: null, spin: 0 };
 
 export function openOverworld(save, fresh = []) {
   ow.save = save;
@@ -48,7 +49,7 @@ const here = () => NODES[ow.save.at];
 
 function centre(snap) {
   const n = ow.walk ? walkPos() : here();
-  const tx = Math.max(0, Math.min(MAP_W - W, n.x - W / 2)), ty = Math.max(0, Math.min(MAP_H - H + HUD_H, n.y - H / 2)); // the sea below the map sits under the HUD
+  const tx = n.x - W / 2, ty = Math.max(0, Math.min(MAP_H - H + HUD_H, n.y - H / 2)); // the sea below the map sits under the HUD
   const k = snap ? 1 : 0.12;
   ow.cam.x += (tx - ow.cam.x) * k;
   ow.cam.y += (ty - ow.cam.y) * k;
@@ -59,7 +60,6 @@ function walkPos() {
 const ease = k => k * k * (3 - 2 * k);
 // what the camera looks at: the centre of the view in map pixels, the zoom, and where on the screen
 // that centre sits (the zoomed-out view centres the whole map above the HUD)
-const FIT = Math.min((W - 8) / MAP_W, (H - HUD_H - 8) / MAP_H);
 function view() {
   let cx = ow.cam.x + W / 2, cy = ow.cam.y + H / 2, z = 1, sy = H / 2;
   if (ow.fly) {
@@ -70,13 +70,8 @@ function view() {
     cx = sx + (cx - sx) * b; cy = syy + (cy - syy) * b;
     z = 0.42 + 0.58 * b;
   }
-  const zk = ease(ow.zoom);
-  if (zk > 0) {
-    cx += (MAP_W / 2 - cx) * zk;
-    cy += (MAP_H / 2 - cy) * zk;
-    z += (FIT - z) * zk;
-    sy += ((H - HUD_H) / 2 - sy) * zk;
-  }
+  const zk = ease(Math.min(1, ow.zoom * 1.6));
+  if (zk > 0) z += (0.3 - z) * zk; // pull up off the ground... then the globe takes over (drawGlobe)
   return { cx, cy, z, sy, x0: cx - W / 2 / z, x1: cx + W / 2 / z, y0: cy - sy / z, y1: cy + (H - sy) / z };
 }
 
@@ -99,8 +94,14 @@ export function updateOverworld(dt) {
     return null;
   }
   // the world view: pull right back to see the whole archipelago (SHIFT again, or any button, to come back)
-  if (input.take('dash')) return (ow.zoomOn = !ow.zoomOn), sfx.ui(ow.zoomOn), null;
+  if (input.take('dash')) {
+    ow.zoomOn = !ow.zoomOn;
+    if (ow.zoomOn) ow.spin = lonOf(here().x); // the globe turns up with you facing us
+    return sfx.ui(ow.zoomOn), null;
+  }
   if (ow.zoomOn) {
+    // the globe drifts round on its own; the arrows turn it
+    ow.spin += dt * (0.12 + ((input.held('right') ? 1 : 0) - (input.held('left') ? 1 : 0)) * 1.6);
     if (input.take('confirm') | input.take('jump') | input.take('pause')) ow.zoomOn = false, sfx.ui(false);
     return null;
   }
@@ -254,6 +255,25 @@ export function drawOverworld(t) {
   rect(0, 0, W, H, C.navy);
   if (z === 1) X.setTransform(1, 0, 0, 1, -Math.round(v.x0), -Math.round(v.y0));
   else X.setTransform(z, 0, 0, z, W / 2 - v.cx * z, v.sy - v.cy * z);
+  // Hoplon is round: the map repeats east and west, so draw each copy that is on screen
+  const p = ow.walk ? walkPos() : here();
+  for (const off of [-MAP_W, 0, MAP_W]) {
+    if (v.x1 < off || v.x0 > off + MAP_W) continue;
+    X.translate(off, 0);
+    drawSurface({ ...v, x0: v.x0 - off, x1: v.x1 - off, cx: v.cx - off }, t, z, off === 0 ? p : null);
+    X.translate(-off, 0);
+  }
+  screenLayer();
+  if (ow.zoom > 0) drawGlobe(Math.max(0, Math.min(1, (ow.zoom - 0.35) / 0.45)), ow.spin, p, t, regionOpen);
+  if (ow.fly) drawFlyBanner();
+  drawOverworldHud(t);
+  powers.sheetWeapon = s.hero?.weapon || null; // the STATS tab reads the weapon you carry
+  powers.save = s; // the COLLECTION tab counts this file's levels, exits and relics
+  drawPowers(t);
+}
+// one copy of the planet's surface: the sea, the continents, life, roads, nodes, the hero
+function drawSurface(v, t, z, p) {
+  const s = ow.save;
   // the sea: deep out in the channels, its swell rolling (only the part on screen)
   const wx0 = Math.max(0, Math.floor(v.x0 / 28) * 28 - 28), wy0 = Math.max(0, Math.floor(v.y0 / 14) * 14 - 14), stepY = z < 0.5 ? 28 : 14;
   for (let y = wy0; y < Math.min(MAP_H + 80, v.y1 + 14); y += stepY)
@@ -263,39 +283,16 @@ export function drawOverworld(t) {
   const fresh = new Map(ow.fresh.map(e => [e.from + '>' + e.to, e.t / DRAW]));
   for (const e of edges(s)) road(NODES[e.from], NODES[e.to], fresh.get(e.from + '>' + e.to) ?? 1, e.secret ? C.pink : C.cream, v);
   for (const n of Object.values(NODES)) if (n.x > v.x0 - 30 && n.x < v.x1 + 30 && n.y > v.y0 - 30 && n.y < v.y1 + 30) drawNode(n, t, z);
-  // the hero
-  const p = ow.walk ? walkPos() : here(), Hh = A.hero;
-  rect(Math.round(p.x) - 5, Math.round(p.y) + 1, 11, 2, 'rgba(26,20,40,0.4)'); // the hero's shadow
-  if (Hh) {
-    const f = ow.walk ? ['run1', 'run2', 'run3'][Math.floor(t * 10) % 3] : Math.floor(t * 2) % 2 ? 'idle' : 'idle2';
-    drawHeroPlain(f, Math.round(p.x - Hh.w / 2), Math.round(p.y - Hh.h + (ow.walk ? 4 : -2)), ow.face < 0 ? -1 : 1);
-  } else rect(p.x - 4, p.y - 14, 8, 12, C.gold);
+  if (p) {
+    // the hero
+    const Hh = A.hero;
+    rect(Math.round(p.x) - 5, Math.round(p.y) + 1, 11, 2, 'rgba(26,20,40,0.4)'); // the hero's shadow
+    if (Hh) {
+      const f = ow.walk ? ['run1', 'run2', 'run3'][Math.floor(t * 10) % 3] : Math.floor(t * 2) % 2 ? 'idle' : 'idle2';
+      drawHeroPlain(f, Math.round(p.x - Hh.w / 2), Math.round(p.y - Hh.h + (ow.walk ? 4 : -2)), ow.face < 0 ? -1 : 1);
+    } else rect(p.x - 4, p.y - 14, 8, 12, C.gold);
+  }
   drawLifeSky(v, t, z);
-  screenLayer();
-  if (ow.zoom > 0) drawWorldView(v, p, t);
-  if (ow.fly) drawFlyBanner();
-  drawOverworldHud(t);
-  powers.sheetWeapon = s.hero?.weapon || null; // the STATS tab reads the weapon you carry
-  powers.save = s; // the COLLECTION tab counts this file's levels, exits and relics
-  drawPowers(t);
-}
-// the world view's labels, in screen pixels over the shrunken map: every island's number and name,
-// and a blinking marker on you
-function drawWorldView(v, p, t) {
-  const a = ease(ow.zoom), sx = x => W / 2 + (x - v.cx) * v.z, sy = y => v.sy + (y - v.cy) * v.z;
-  X.globalAlpha = a;
-  for (const R of REGIONS) {
-    const x = sx(slotX(R) + SLOT_W / 2), y = sy(slotY(R) + SLOT_H / 2), open = regionOpen(R);
-    text(String(R.id), x, y - 10, open ? C.gold : C.fog, { align: 'center', k: 2 });
-    text(R.name.length > 16 ? R.name.split(' ').slice(-2).join(' ') : R.name, x, y + 8, open ? C.paper : C.fog, { align: 'center' });
-  }
-  if (Math.floor(t * 4) % 2) {
-    const x = Math.round(sx(p.x)), y = Math.round(sy(p.y));
-    rect(x - 3, y - 3, 7, 7, C.ink);
-    rect(x - 2, y - 2, 5, 5, C.gold);
-  }
-  text('WORLD VIEW   SHIFT: BACK', W / 2, 4, C.cream, { align: 'center' });
-  X.globalAlpha = 1;
 }
 // a world's name over its fly-over, fading in and out
 function drawFlyBanner() {
