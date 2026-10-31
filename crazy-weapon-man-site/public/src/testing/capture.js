@@ -25,7 +25,7 @@ import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { GROUND, W } from '../config.js';
 import { updateCamera } from '../game/camera.js';
-import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
+import { newSave, revealAll, clearLevel, writeSave, NODES, REGIONS } from '../data/overworld.js';
 import { bankShards, buyRank, winTrophy, choosePerk, setLock, chooseMount } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
 import { openPowers, TAB, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
@@ -44,8 +44,16 @@ function mapScene(game, all) {
   const s = all ? revealAll(newSave()) : newSave();
   if (!all) { clearLevel(s, '1-1'); clearLevel(s, '1-2'); }
   s.at = all ? '6-2' : '1-2';
+  s.seen = REGIONS.map(R => R.id); // (no fly-over, unless the scene asks for one)
   game.ow.save = s;
   game.openMap();
+}
+// ?capture=mapzoom: the world view, every island in sight; ?capture=mapfly: the fly-over of world 3,
+// part way along
+function mapView(game, fly) {
+  mapScene(game, true);
+  if (fly) { game.ow.save.at = '3-1'; game.ow.save.seen = [1, 2]; game.openMap(); game.ow.fly.t = 1.2; }
+  else { game.ow.zoomOn = true; game.ow.zoom = 1; game.ow.spin = NODES[game.ow.save.at].x / 4032 * 2 * Math.PI; }
 }
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
@@ -148,6 +156,7 @@ function polishScene(game, mode) {
 export function captureScene(game, mode) {
   if(['book','collection','anvil','maptemper','ghost','scroll','water','ice','room','goose','boar','griffin','stable','stableshut','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
+  if(mode==='mapzoom' || mode==='mapfly') return mapView(game, mode==='mapfly');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);
   if(/^clear/.test(mode)) return clearSheet(game, mode);
