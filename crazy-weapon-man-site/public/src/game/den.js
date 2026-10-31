@@ -639,7 +639,7 @@ function weaponIcon(w, x, y, bw, bh, t) {
 }
 function drawPrompt(n, t) {
   const h = D.hero, x = Math.round(h.x + h.w / 2), y = GY - 46 + Math.round(Math.sin(t * 4));
-  const s = n.kind === 'pet' ? 'Z: PAT   C: CARD AND FEED' : n.kind === 'nest' ? 'Z: TAP AN EGG' : n.kind === 'basket' ? 'Z: LOOK IN' : n.kind === 'market' ? 'Z: SHOP' : 'Z: ENTER THE CUP';
+  const s = n.kind === 'pet' ? 'Z: PAT   C: CARD AND FEED' : n.kind === 'nest' ? (den().eggs.length ? 'Z: TAP AN EGG' : 'THE NEST IS EMPTY') : n.kind === 'basket' ? 'Z: LOOK IN' : n.kind === 'market' ? 'Z: SHOP' : 'Z: ENTER THE CUP';
   if (n.kind === 'pet') return;
   text(s, x, y, C.lime, { align: 'center' });
 }
