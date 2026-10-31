@@ -20,6 +20,7 @@ import { dropWeapon, mend } from './combat.js';
 import { makeWeapon } from './loot.js';
 import { inheritAnvil } from '../data/anvil.js';
 import { ARMOR } from '../data/feel.js';
+import { emote } from './faces.js';
 
 export function equip(item) {
   const h = world.hero,
@@ -37,6 +38,7 @@ export function equip(item) {
     toast('power', { ...MUTATIONS[item.mutation] });
   }
   sfx.pickup();
+  emote(h, 'wow', 0.7); // a new weapon: held up for a look
   burst(cx(h), h.y + 6, 10, 'twinkle', [lookOf(item).light, 'paper']);
   if (!world.best || dps(item) > dps(world.best)) world.best = item;
   return old;
@@ -141,6 +143,7 @@ export function updateDrops(dt) {
         // a heart mends a cracked weapon outright (BANDAGES and the like no longer have more to give)
         mend(1);
         sfx.ui(true);
+        emote(h, 'joy', 0.4);
         burst(cx(h), h.y + 4, 6, 'twinkle', ['red', 'paper']);
       }
       world.pickups.splice(i, 1);

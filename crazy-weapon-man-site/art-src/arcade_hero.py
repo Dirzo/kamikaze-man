@@ -253,7 +253,7 @@ FRAMES = {
     'run3': None,  # mirrored legs of run1 (filled in below)
     'jump': body('jump'),
     'fall': body('fall'),
-    'hurt': body('fall', lean=-1, head=HURT_HEAD, torso=TWIST),
+    'hurt': body('fall', lean=-1, torso=TWIST),  # the face comes from arcade_faces.py ('ouch')
     'lean': body('run1', lean=2),
     'back': body('run2', lean=-1, torso=TWIST),
     'crouch': None,  # filled in below

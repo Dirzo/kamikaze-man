@@ -15,7 +15,7 @@ import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone, startSurvival } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
 import { updateSpecials, drawSpecials, drawSpecialScreen } from './game/specials.js';
-import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats } from './game/fx.js';
+import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats, burst } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
 import { updateInventory, drawInventory, toggleInventory, closeInventory, openInventory, newBag } from './game/inventory.js';
@@ -51,6 +51,7 @@ import { levelEgg, FAMILY } from './data/den.js';
 import { tally, openLevelEnd, updateLevelEnd, drawLevelEnd, LEVEL_END_DONE } from './game/levelend.js';
 
 let capture = false;
+const CHEER_TIME = 1.1, NO_CHEER = new URLSearchParams(location.search).has('capture'); // (captures of the sheet skip the cheer)
 let scene = 'loading',
   sceneT = 0,
   loadFrac = 0,
@@ -238,7 +239,7 @@ function update(dt) {
     return;
   }
   // ---- play ----
-  tickRun(dt); // the speedrun clock only stops for the pause menu
+  if (world.phase !== 'cleared') tickRun(dt); // the speedrun clock only stops for the pause menu (and the clear cheer)
   if (world.inv) {
     updateInventory(dt); // the weapon log pauses the fight
     return;
@@ -300,7 +301,13 @@ function update(dt) {
       music.stop();
     }
   }
-  if (world.phase === 'cleared') endLevel('clear');
+  if (world.phase === 'cleared') {
+    // a beat to celebrate before the stat sheet: he throws his weapon up and bounces (anim.js cheerPose)
+    const h = world.hero;
+    if (!h.cheer) (h.cheer = true), (h.attack = null), (h.special = null), (world.cheerT = 0), burst(h.x + h.w / 2, h.y, 12, 'twinkle', ['gold', 'paper']);
+    world.cheerT += dt;
+    if (world.cheerT > CHEER_TIME || NO_CHEER || (world.cheerT > 0.3 && (input.take('confirm') | input.take('jump')))) (h.cheer = false), endLevel('clear');
+  }
   if (world.phase === 'won') {
     scene = 'won';
     sceneT = 0;

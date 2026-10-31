@@ -43,6 +43,8 @@ export async function loadAssets(onProgress = () => {}) {
     })
   );
   add(img(NEXT_ASSETS + 'arms.png').then(im => (A.hero = { ...A.hero, arms: { im, list: next.hero.arms } })));
+  // expression patches (art-src/arcade_faces.py), drawn over the face by game/faces.js
+  if (next.hero.faces) add(img(NEXT_ASSETS + 'faces.png').then(im => (A.hero = { ...A.hero, faces: { im, ...next.hero.faces, index: Object.fromEntries(next.hero.faces.list.map((f, i) => [f, i])) } })));
   for (const [type, info] of Object.entries(man.enemies)) add(img(PX_ASSETS + `enemy-${type}.png`).then(im => (A.enemies[type] = { im, ...info })));
   for (const [kind, info] of Object.entries(man.bosses)) add(img(PX_ASSETS + `boss-${kind}.png`).then(im => (A.bosses[kind] = { im, ...info })));
   for (const [name, info] of Object.entries(man.mounts || {})) add(img(PX_ASSETS + `mount-${name}.png`).then(im => (A.mounts[name] = { im, ...info })));
