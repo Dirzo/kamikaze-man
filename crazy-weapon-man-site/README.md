@@ -61,7 +61,17 @@ nunchucks SPEED, staffs, spears and boomerangs REACH, bows, shuriken and wands A
 GUARD. At 12 total levels a hatchling grows into the family member of the stat it ate most (a
 POWER goose becomes a Black Swan Duelist, an AIM goose a Blade Tosser), using the existing beastkin
 sprites. At 60 it earns a crown and can be reborn as a sparkly egg that keeps a quarter of its
-levels. Patting a pet makes it happier, and happy pets learn faster. Nothing dies.
+levels. Nothing dies.
+
+Pats and meals have their own sounds (`denSfx` in `engine/audio.js`). Each weapon sounds different
+going down: blades crunch, quick weapons are nibbled, poles slurped, bows twang, shuriken crackle,
+wands fizz and a hammer is one big gulp, after the weapon's signature and before its element. A stat
+level-up plays a fanfare in that stat's key with a ring of sparks and a spin. Every family answers
+a pat its own way (`REACT` in `game/den.js`): geese honk and flap, fuzzballs purr and roll, frogs
+ribbit and leap in bubbles, cats rub your legs, dogs wag until they spin, monkeys backflip, bears
+hug, bunnies boing in a puff of magic, lizards vanish and pop up behind you, and dragons blow a
+smoke ring and sometimes cough up a medal. Three pats in a row gets the big version. Happy pets
+learn faster.
 
 The Den Cup runs three events (RACE: speed and reach, SPARRING: power and guard, TARGETS: aim and
 speed) in four cups; first place opens the next cup and pays medals. The Den Market spends medals

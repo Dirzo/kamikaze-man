@@ -10,7 +10,7 @@ import { W, H, C } from '../config.js';
 import { input } from '../engine/input.js';
 import { A } from '../engine/assets.js';
 import { X, rect, px, text, fitText, panel, frame, tinted, screenLayer } from '../engine/gfx.js';
-import { sfx, music } from '../engine/audio.js';
+import { sfx, music, denSfx } from '../engine/audio.js';
 import { ZONES } from '../data/zones.js';
 import { ENEMIES } from '../data/enemies.js';
 import { ELEMENTS } from '../data/weapons.js';
@@ -19,7 +19,7 @@ import { drawHeroAnimated } from './anim.js';
 import { createHero } from './hero.js';
 import { meta, hasTrophy, spendShards } from '../data/meta.js';
 import {
-  den, welcome, tapEgg, feed, pat, rebirth, canRebirth, total, favourite, auraOf, petSprite, FAMILY, STATS, STAT_INFO, FOOD, EVOLVE_AT, CROWN_AT, XP_PER_LEVEL,
+  den, saveDen, welcome, tapEgg, feed, pat, rebirth, canRebirth, total, favourite, auraOf, petSprite, FAMILY, STATS, STAT_INFO, FOOD, EVOLVE_AT, CROWN_AT, XP_PER_LEVEL,
   MAX_PETS, MAX_EGGS, EVENTS, rating as ratingOf, EVENT_LIST, CUPS, cupOpen, runCup, claimCup, marketRows, buy, TOY, feedXp
 } from '../data/den.js';
 
@@ -64,8 +64,11 @@ function agent(p, x) {
 // Z (attack) and ENTER (confirm) share a key: take both, so one press never counts twice
 const ok = () => !!(input.take('attack') | input.take('confirm'));
 const back = () => !!(input.take('pause') | input.take('den'));
+// a hop: dur seconds, h pixels high
+const jump = (a, dur = 0.35, h = 5) => ((a.hop = dur), (a.hopDur = dur), (a.hopH = h));
 const say = (head, sub = '', t = 3.2) => (D.banner = { head, sub, t });
-const pop = (x, y, s, col) => D.pops.push({ x, y, s, col, t: 1.4 });
+// a word floating up; a new one from the same pet replaces its last ones
+const pop = (x, y, s, col, who = null) => (who != null && (D.pops = D.pops.filter(q => q.who !== who)), D.pops.push({ x, y, s, col, t: 1.4, who }));
 const burst = (x, y, col, n = 10) => {
   for (let k = 0; k < n; k++) D.parts.push({ x, y, vx: (Math.random() - 0.5) * 120, vy: -40 - Math.random() * 90, t: 0.6 + Math.random() * 0.5, col });
 };
@@ -80,7 +83,7 @@ const biome = () => A.biome?.[THEME];
 export function updateDen(dt) {
   D.t += dt;
   if (D.banner && (D.banner.t -= dt) <= 0) D.banner = null;
-  for (const q of D.parts) (q.t -= dt), (q.x += q.vx * dt), (q.y += q.vy * dt), q.z || (q.vy += 260 * dt);
+  for (const q of D.parts) (q.t -= dt), (q.x += q.vx * dt), (q.y += q.vy * dt), q.z || q.z2 || (q.vy += 260 * dt);
   D.parts = D.parts.filter(q => q.t > 0);
   for (const q of D.pops) (q.t -= dt), (q.y -= 18 * dt);
   D.pops = D.pops.filter(q => q.t > 0);
@@ -117,15 +120,15 @@ function act(near, alt) {
     const a = D.pets.get(near.id), p = petData(near.id);
     if (alt) return openCard(near.id);
     pat(near.id);
-    sfx.ui(false);
-    a.emote = 'heart';
-    a.emT = 1.2;
-    a.hop = 0.3;
     a.state = 'idle';
-    a.st = 1.5;
+    a.st = 2;
     a.vx = 0;
     a.face = D.hero.x < a.x ? -1 : 1;
-    pop(a.x, GY - (art(petSprite(p))?.h || 20) - 6, 'JOY ' + p.joy, C.pink);
+    // three pats in a row is the big, happiest reaction
+    a.pats = (a.pats || []).filter(q => D.t - q < 2.5).concat(D.t);
+    const big = a.pats.length >= 3;
+    if (big) a.pats = [];
+    petReact(p, a, big);
   } else if (near.kind === 'nest') {
     if (!d.eggs.length) return say('THE NEST IS EMPTY', 'EGGS COME FROM CASTLE HEADS, LUCKY LEVELS AND THE MARKET');
     const r = tapEgg(0);
@@ -135,7 +138,7 @@ function act(near, alt) {
     if (r?.pet) {
       sfx.hatch();
       const a = agent(r.pet, NEST_X + 20);
-      a.hop = 0.5;
+      jump(a, 0.5, 8);
       a.emote = 'heart';
       a.emT = 2;
       burst(NEST_X, GY - 12, FAMILY[r.pet.zone].col, 16);
@@ -169,6 +172,12 @@ function updatePets(dt) {
     }
     a.anim += dt;
     a.flash = Math.max(0, a.flash - dt);
+    if (a.lvUp && (a.lvUp.t -= dt) <= 0) a.lvUp = null;
+    if (a.act) {
+      updateReact(a, p, dt);
+      if ((a.act.t -= dt) <= 0) (a.act = null), (a.rot = 0), (a.sx = 1), (a.alpha = 1);
+      continue;
+    }
     a.hop = Math.max(0, a.hop - dt);
     if ((a.emT -= dt) <= 0) a.emote = null;
     if (a.state === 'evolve') {
@@ -176,6 +185,7 @@ function updatePets(dt) {
       continue;
     }
     if (D.menu?.kind === 'card' && D.menu.id === id) {
+      if (D.menu.flash && (D.menu.flash.t -= dt) <= 0) D.menu.flash = null;
       a.vx = 0;
       a.face = D.hero.x < a.x ? -1 : 1;
       continue;
@@ -246,13 +256,13 @@ function updateMenu(dt) {
     if (ok() && n) {
       const w = d.basket[M.sel], a = D.pets.get(p.id), was = petSprite(p), r = feed(p.id, M.sel);
       if (!r) return null;
-      sfx.chomp();
-      a.hop = 0.35;
+      denSfx.feed(w.type, ELEMENTS[w.family]?.effect);
+      jump(a);
       burst(a.x, GY - 14, w.family ? C[ELEMENTS[w.family]?.col] || C.paper : rarityColour(w.q), 6);
       M.msg = `NOM! +${r.xp} ${STAT_INFO[r.stat].name}${r.ups ? `  ${STAT_INFO[r.stat].name} LV ${p.lv[r.stat]}!` : ''}`;
-      if (r.ups) sfx.levelUp();
+      if (r.ups) levelUp(p, a, r.stat), (M.flash = { stat: r.stat, t: 1.4 });
       if (r.evolved) (D.menu = null), evolve(p, a, was);
-      if (r.crowned) (D.menu = null), say(`${p.name} EARNED A CROWN!`, 'A CROWNED PET CAN BE REBORN AS A SPARKLY EGG (UP ON ITS CARD)');
+      if (r.crowned) (D.menu = null), denSfx.crown(), say(`${p.name} EARNED A CROWN!`, 'A CROWNED PET CAN BE REBORN AS A SPARKLY EGG (UP ON ITS CARD)');
     }
     return null;
   }
@@ -271,6 +281,7 @@ function updateMenu(dt) {
       const r = buy(row, p?.id, spendShards);
       if (r.err) return (M.msg = r.err), sfx.ui(false), null;
       sfx.card(1);
+      if (r.ups && p) levelUp(p, D.pets.get(p.id), row.stat);
       M.msg = `BOUGHT ${row.name}${row.pet ? ' FOR ' + p.name : ''}`;
       if (row.id === TOY.id) D.mace = { x: 480, y: GY - 40, vx: 30, vy: 0, spin: 0 };
       if (r.evolved) (D.menu = null), evolve(p, D.pets.get(p.id), was);
@@ -302,7 +313,7 @@ function evolve(p, a, was) {
   a.state = 'evolve';
   a.evoT = 2.4;
   a.old = was;
-  sfx.clear();
+  denSfx.grow();
   say(`${p.name} GREW UP!`, `IT ATE THE MOST ${STAT_INFO[p.form].name} AND BECAME A ${petName(p)}`, 4);
 }
 // how long each event's show runs before the results
@@ -460,6 +471,88 @@ function drawMace(m) {
   px(x + hx, y + hy - 4, C.pink);
   px(x + hx - 1, y + hy - 2, C.paper);
 }
+// ---------------------------------------------------------------- petting and levelling up
+// every family answers a pat its own way, in sound, motion and a word over its head; three pats in
+// a row get the big version
+const REACT = {
+  goose: { word: 'HONK!', col: 'paper', dur: 0.7 }, // flaps: little hops and loose feathers
+  fuzz: { word: 'PRRRR', col: 'ice', dur: 0.7 }, // rolls over in a ball
+  lagoon: { word: 'RIBBIT', col: 'lime', dur: 0.8 }, // a big frog hop and a stream of bubbles
+  bazaar: { word: 'MRRP', col: 'orange', dur: 1.0 }, // rubs back and forth against your legs
+  shrine: { word: 'ARF ARF!', col: 'pink', dur: 0.9 }, // wags so hard it spins
+  temple: { word: 'OOK OOK!', col: 'sand', dur: 0.8 }, // a backflip
+  forge: { word: 'GRUFF', col: 'orange', dur: 1.0 }, // a bear hug: a big squish and a big heart
+  cottage: { word: 'BOING!', col: 'violet', dur: 0.9 }, // two bunny hops and a puff of magic
+  castle: { word: 'THLIP', col: 'lime', dur: 0.9 }, // flicks its tongue, vanishes, pops up on your other side
+  hoard: { word: 'HUFF', col: 'gold', dur: 1.0 } // a smoke ring, and the odd coin from its hoard
+};
+function petReact(p, a, big) {
+  const fam = FAMILY[p.zone].fam, R = REACT[fam], S = art(petSprite(p)), top = GY - (S?.h || 20);
+  a.act = { fam, t: R.dur * (big ? 1.5 : 1), dur: R.dur * (big ? 1.5 : 1), big, k: 0 };
+  a.emote = 'heart';
+  a.emT = big ? 2 : 1.2;
+  denSfx.pet(fam, big);
+  pop(a.x, top - 8, big ? R.word + ' ' + R.word : R.word, C[R.col], a.id);
+  if (big) D.pops.push({ x: a.x, y: top - 18, s: `${p.name} LOVES YOU`, col: C.pink, t: 1.4, who: a.id });
+  if (fam === 'goose') jump(a, 0.25, 3);
+  if (fam === 'lagoon') jump(a, 0.6, big ? 22 : 14);
+  if (fam === 'temple') jump(a, 0.6, big ? 20 : 14);
+  if (fam === 'cottage') jump(a, 0.35, big ? 14 : 9);
+  if (fam === 'forge') a.x += Math.sign(D.hero.x + D.hero.w / 2 - a.x) * 6;
+  if (fam === 'hoard') {
+    for (let k = 0; k < 8; k++) D.parts.push({ x: a.x + a.face * 8, y: top + 10, vx: a.face * (20 + k * 6), vy: -10 - k * 3, t: 0.8, col: C.mist, z2: true });
+    if (big && Math.random() < 0.35) (den().medals += 1), saveDen(), pop(a.x, top - 28, '+1 MEDAL FROM THE HOARD', C.gold), burst(a.x, top + 8, C.gold, 6);
+  }
+  if (fam === 'castle') pop(a.x + a.face * 10, top + 6, '~', C.pink);
+}
+function updateReact(a, p, dt) {
+  const A2 = a.act, u = 1 - A2.t / A2.dur, fam = A2.fam, hx = D.hero.x + D.hero.w / 2, top = GY - (art(petSprite(p))?.h || 20);
+  A2.k += dt;
+  if (fam === 'goose') {
+    if (a.hop <= 0 && u < 0.85) jump(a, 0.25, A2.big ? 6 : 3);
+    if (Math.random() < dt * 14) D.parts.push({ x: a.x + (Math.random() - 0.5) * 14, y: top + 6, vx: (Math.random() - 0.5) * 40, vy: -30, t: 0.6, col: C.paper });
+  } else if (fam === 'fuzz') a.rot = u * Math.PI * 2 * (A2.big ? 2 : 1) * a.face;
+  else if (fam === 'lagoon') {
+    if (Math.random() < dt * 18) D.parts.push({ x: a.x + (Math.random() - 0.5) * 10, y: top + 4, vx: (Math.random() - 0.5) * 10, vy: -25 - Math.random() * 20, t: 0.9, col: C.sky, z2: true });
+  } else if (fam === 'bazaar') {
+    a.x += Math.sign(hx - a.x) * Math.min(Math.abs(hx - a.x), 30 * dt);
+    a.face = Math.floor(A2.k / 0.18) % 2 ? 1 : -1;
+    a.sx = 1 + Math.sin(A2.k * 18) * 0.06;
+  } else if (fam === 'shrine') {
+    a.face = Math.floor(A2.k / 0.06) % 2 ? 1 : -1;
+    if (A2.big) a.rot = Math.sin(A2.k * 30) * 0.2;
+    if (a.hop <= 0) jump(a, 0.2, 3);
+  } else if (fam === 'temple') a.rot = a.hop > 0 ? -a.face * Math.PI * 2 * (1 - a.hop / a.hopDur) * (A2.big ? 2 : 1) : 0;
+  else if (fam === 'forge') {
+    a.sx = 1 + Math.sin(u * Math.PI) * (A2.big ? 0.3 : 0.18);
+    if (u > 0.3 && u < 0.35) a.emote = 'heart', (a.emT = 1.5);
+  } else if (fam === 'cottage') {
+    if (a.hop <= 0 && u < 0.6) jump(a, 0.3, A2.big ? 14 : 8);
+    if (Math.random() < dt * 20) D.parts.push({ x: a.x + (Math.random() - 0.5) * 18, y: top + Math.random() * 16, vx: 0, vy: -12, t: 0.6, col: Math.random() < 0.5 ? C.violet : C.pink, z2: true });
+  } else if (fam === 'castle') {
+    a.alpha = u < 0.35 ? 1 - u / 0.35 : u < 0.5 ? 0 : (u - 0.5) * 2;
+    if (u >= 0.4 && !A2.moved) (A2.moved = true), (a.x = Math.max(ROAM[0] - 160, Math.min(ROAM[1] + 40, hx + (hx - a.x)))), (a.face = hx < a.x ? -1 : 1), burst(a.x, GY - 8, C.lime, 4);
+  } else if (fam === 'hoard') a.sx = 1 + Math.sin(A2.k * 10) * 0.05;
+}
+// a stat levelled up: a ring of sparks in the stat's colour, a spin and a fanfare in its key
+function levelUp(p, a, stat) {
+  denSfx.statUp(stat, p.lv[stat]);
+  if (!a) return;
+  a.lvUp = { stat, t: 1.4 };
+  jump(a, 0.6, 12);
+  const S = art(petSprite(p));
+  pop(a.x, GY - (S?.h || 20) - 14, `${STAT_INFO[stat].name} UP! LV ${p.lv[stat]}`, C[STAT_INFO[stat].col], a.id);
+  burst(a.x, GY - 10, C[STAT_INFO[stat].col], 12);
+}
+function ring(x, y, L, t) {
+  const col = C[STAT_INFO[L.stat].col], u = 1 - L.t / 1.4, r = 6 + u * 26;
+  for (let k = 0; k < 14; k++) {
+    if ((k + Math.floor(t * 20)) % 3 === 0) continue;
+    const ang = (k / 14) * Math.PI * 2 + t * 3;
+    rect(Math.round(x + Math.cos(ang) * r), Math.round(y + Math.sin(ang) * r * 0.6), 2, 2, col);
+  }
+  if (u < 0.5) for (let k = 0; k < 4; k++) rect(Math.round(x - 1 + (k - 1.5) * 6), Math.round(y - u * 50 - k * 3), 2, 4, C.paper); // rising streaks
+}
 function drawPet(a, t) {
   const p = petData(a.id);
   if (!p) return;
@@ -470,7 +563,7 @@ function drawPet(a, t) {
   let f = fi(S, Math.floor(a.anim * 1.8) % 2 ? 'idle1' : 'idle0');
   if (a.state === 'walk' && Math.abs(a.vx) > 2) f = fi(S, 'walk' + (Math.floor(a.anim * 9) % 4));
   if (a.state === 'nap') f = fi(S, 'idle0');
-  const hop = a.hop > 0 ? Math.round(Math.sin((a.hop / 0.35) * Math.PI) * 5) : 0;
+  const hop = a.hop > 0 ? Math.round(Math.sin((a.hop / (a.hopDur || 0.35)) * Math.PI) * (a.hopH || 5)) : 0;
   const x = Math.round(a.x - S.w / 2), y = GY - S.h + 1 - hop;
   // an elemental aura from what it ate
   const el = auraOf(p);
@@ -480,12 +573,15 @@ function drawPet(a, t) {
   }
   rect(x + 3, GY - 1, S.w - 6, 2, 'rgba(26,20,40,0.35)');
   const im = a.state === 'evolve' && Math.floor(t * 12) % 2 ? tinted(S.im, C.paper) : S.im;
-  if (a.state === 'nap') {
-    X.save();
-    X.translate(0, 2);
-    frame(im, f, S.w, S.h, x, y, (a.face || 1) < 0);
-    X.restore();
-  } else frame(im, f, S.w, S.h, x, y, (a.face || 1) < 0);
+  if (a.lvUp) ring(a.x, y + S.h / 2, a.lvUp, t);
+  // spins, squishes and fades from petting and levelling up turn about the pet's middle
+  X.save();
+  if (a.alpha != null && a.alpha < 1) X.globalAlpha = Math.max(0, a.alpha);
+  X.translate(Math.round(a.x), y + S.h / 2 + (a.state === 'nap' ? 2 : 0));
+  if (a.rot) X.rotate(a.rot);
+  if (a.sx && a.sx !== 1) X.scale(a.sx, 1 / a.sx);
+  frame(im, f, S.w, S.h, -Math.round(S.w / 2), -Math.round(S.h / 2), (a.face || 1) < 0);
+  X.restore();
   // a crown for the champions, on top of the head
   if (p.crowned) {
     const cx = Math.round(a.x) - 3, cy = y + topOf(S, f) - 6;
@@ -497,7 +593,7 @@ function drawPet(a, t) {
   }
   if (a.emote === 'heart') heart(Math.round(a.x), y - 10 - Math.round((1.2 - a.emT) * 6));
   if (a.emote === 'note') note(Math.round(a.x) + 4, y - 8 - Math.round(Math.sin(t * 6) * 2));
-  if (D.near?.kind === 'pet' && D.near.id === a.id && !D.menu) text(p.name, Math.round(a.x), y - 20, C.cream, { align: 'center' });
+  if (D.near?.kind === 'pet' && D.near.id === a.id && !D.menu && !a.act && !D.pops.some(q => q.who === a.id)) text(p.name, Math.round(a.x), y - 20, C.cream, { align: 'center' });
 }
 // the first row of a sprite frame with a painted pixel (sprites carry empty headroom)
 const tops = new Map();
@@ -581,7 +677,9 @@ function drawCard(M, t) {
   const x0 = 60, y0 = 26, w = 360, h = 222;
   panel('panel', x0, y0, w, h);
   const S = art(petSprite(p));
-  if (S) racer({ sprite: petSprite(p) }, x0 + 44, y0 + 72, t, false, false, false, S.w > 36 ? 1 : 2);
+  const F = M.flash, bounce = F ? Math.round(Math.abs(Math.sin(F.t * 9)) * 8 * Math.min(1, F.t)) : 0;
+  if (F) ring(x0 + 44, y0 + 50, F, t);
+  if (S) racer({ sprite: petSprite(p) }, x0 + 44, y0 + 72 - bounce, t, false, false, false, S.w > 36 ? 1 : 2);
   text(p.name + (p.gen ? ' ' + '*'.repeat(Math.min(5, p.gen)) : ''), x0 + 90, y0 + 12, C.gold, { k: 2 });
   text(`${petName(p)}  (${FAMILY[p.zone].name} FAMILY)`, x0 + 90, y0 + 32, C.cream);
   const tot = total(p);
@@ -590,6 +688,7 @@ function drawCard(M, t) {
   for (let k = 0; k < 5; k++) (k < Math.round(p.joy / 20) ? heart : (x, y) => rect(x - 3, y, 6, 4, C.slate))(x0 + 20 + k * 9, y0 + 78);
   STATS.forEach((s, i) => {
     const y = y0 + 92 + i * 14, col = C[STAT_INFO[s].col];
+    if (F?.stat === s && Math.floor(F.t * 10) % 2) rect(x0 + 10, y - 3, w - 20, 13, C.slate);
     text(STAT_INFO[s].name, x0 + 14, y, col);
     text('LV ' + p.lv[s], x0 + 70, y, C.paper);
     bar(x0 + 110, y + 2, 150, p.xp[s], XP_PER_LEVEL, col);
