@@ -38,6 +38,7 @@ import { LEVELS } from '../data/overworld.js';
 import { anvil as anvilStrike } from '../game/inventory.js';
 import { enterRoom } from '../game/hidden.js';
 import { mount } from '../game/mount.js';
+import { resetDen, den, addEgg, tapEgg, toBasket, runCup, saveDen } from '../data/den.js';
 import { updateGimmick } from '../game/gimmicks.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
 function mapScene(game, all) {
@@ -145,6 +146,7 @@ function polishScene(game, mode) {
   document.documentElement.dataset.capture = 'ready';
 }
 export function captureScene(game, mode) {
+  if (/^den/.test(mode)) return denScene(game, mode);
   if(['book','collection','anvil','maptemper','ghost','scroll','water','ice','room','goose','boar','griffin','stable','stableshut','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
@@ -328,4 +330,37 @@ function bossFight(game,n,node=null) {
     h.inv=0;
   });
   document.documentElement.dataset.capture='ready';
+}
+
+// the Beast Den (den, dencard, denmarket, dencup, denrace, denspar, dentargets): a garden of six
+// pets, two of them grown and one crowned, eggs in the nest and a basket of melted weapons
+function denScene(game, mode) {
+  let seed = 4242; Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  resetDen();
+  const st = a => ({ power: a[0], speed: a[1], reach: a[2], aim: a[3], guard: a[4] });
+  const pets = [[0, null, [5, 2, 2, 1, 1]], [0, 'power', [9, 2, 1, 1, 2]], [1, 'aim', [1, 3, 1, 10, 1]], [6, 'guard', [10, 8, 6, 6, 32]], [4, null, [1, 4, 0, 1, 0]], [8, 'speed', [2, 14, 3, 3, 1]]];
+  for (const [zone, form, lv] of pets) {
+    addEgg(zone);
+    let r; do r = tapEgg(den().eggs.length - 1); while (!r.pet);
+    Object.assign(r.pet, { form, lv: st(lv), fed: st(lv.map(v => v * 2)), joy: 80, crowned: lv.reduce((a, b) => a + b) >= 60 });
+    if (form === 'power') r.pet.el = { fire: 6 };
+  }
+  addEgg(2); addEgg(5, { gen: 1 });
+  den().medals = 140; den().starter = true; den().cups = { race: 1, spar: 2, targets: 0 };
+  Object.assign(den().owned, { decor0: 1, decor1: 1, decor4: 1, decor7: 1, decor9: 1, mace: 1 });
+  for (let i = 0; i < 16; i++) toBasket(makeWeapon(3 + (i % 5), { q: 2 + (i % 6), type: ['sword', 'bow', 'hammer', 'dagger', 'staff', 'axe', 'wand', 'katana'][i % 8] }));
+  saveDen();
+  game.openMap();
+  game.openBeastDen();
+  const D = game.den;
+  D.banner = null;
+  for (let i = 0; i < 90; i++) game.update(1 / 60);
+  const pet = den().pets[1];
+  if (mode === 'dencard') D.menu = { kind: 'card', id: pet.id, sel: 2, msg: 'NOM! +62 POWER  POWER LV 9!' };
+  if (mode === 'denmarket') (D.hero.x = 790), (D.menu = { kind: 'market', sel: 7, top: 0, pet: 1, msg: 'Z: BUY   LEFT/RIGHT: PICK A PET   ESC: CLOSE' });
+  if (mode === 'dencup') (D.hero.x = 900), (D.menu = { kind: 'cup', ev: 1, tier: 1, pet: 3 });
+  const show = { denrace: ['race', 2.4], denspar: ['spar', 4.2], dentargets: ['targets', 3.2] }[mode];
+  if (show) D.menu = { kind: 'show', res: runCup(show[0], 1, pet, 99), petId: pet.id, t: show[1], done: false, back: { kind: 'cup', ev: 0, tier: 1, pet: 1 } };
+  if (mode === 'den') D.hero.x = 420;
+  game.update(1 / 60);
 }

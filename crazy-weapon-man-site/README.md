@@ -38,6 +38,7 @@ browser regression suite. These are absent from normal runs.
 | `game-src/game/speedrun.js`, `data/speedrun.js` | Run clock, splits, damage log, results screen |
 | `game-src/data/proficiency.js`, `quirks.js`, `lust.js` | Weapon mastery (saved), quirk table and rates, Weapon Lust numbers |
 | `game-src/data/maps.js`, `game-src/game/camera.js`, `map-view.js` | Multi-screen routes, solid terrain, ladders, two-axis camera, minimap and exit portals |
+| `game-src/game/den.js`, `data/den.js` | The Beast Den (H on the map): pets, eggs, the feed basket, the Den Cup and the Den Market |
 | `game-src/game/ambience.js`, `data/biomes.js` | Living zone environments: parallax layers, weather, animated props, ice, belts, wind, dark |
 | `game-src/engine/` | Input, canvas, assets and chiptune audio |
 | `art-src/` | Editable pixel sources and reproducible PNG exporters |
@@ -46,6 +47,27 @@ browser regression suite. These are absent from normal runs.
 
 Do not wrap or monkey-patch gameplay functions. Change the owning module and update its meaningful
 regressions. New weapon powers belong in the mutation schedule, not a new script-injection layer.
+
+## The Beast Den
+
+A Chao Garden for beastkin, opened with H (or the Den button) on the overworld. Each world's family
+lays eggs: a castle head drops one the first time it falls, any cleared level has a 12% chance to
+turn one up, the first visit leaves a goose egg, and the Den Market sells the eggs of families
+whose head you have beaten. Three taps hatch an egg into that family's hatchling.
+
+Every weapon that melts in a run (salvaged, filtered or swapped out of a full bag) lands in the
+Feed Basket. Pets eat from it on their card (C by a pet): blades feed POWER, daggers, katanas and
+nunchucks SPEED, staffs, spears and boomerangs REACH, bows, shuriken and wands AIM, and hammers
+GUARD. At 12 total levels a hatchling grows into the family member of the stat it ate most (a
+POWER goose becomes a Black Swan Duelist, an AIM goose a Blade Tosser), using the existing beastkin
+sprites. At 60 it earns a crown and can be reborn as a sparkly egg that keeps a quarter of its
+levels. Patting a pet makes it happier, and happy pets learn faster. Nothing dies.
+
+The Den Cup runs three events (RACE: speed and reach, SPARRING: power and guard, TARGETS: aim and
+speed) in four cups; first place opens the next cup and pays medals. The Den Market spends medals
+on stat treats, eggs, a squeaky mace for the pets to chase and decorations from each world. The
+rules and numbers live in `data/den.js`; the den is saved per save file (`crazyWeaponMan.den.v1`).
+Captures: `?capture=den`, `dencard`, `denmarket`, `dencup`, `denrace`, `denspar`, `dentargets`.
 
 ## Zone environments
 

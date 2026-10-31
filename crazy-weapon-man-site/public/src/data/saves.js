@@ -8,11 +8,12 @@ import { OVERWORLD_KEY, NODES, newSave, progress } from './overworld.js';
 import { META_KEY, reloadMeta } from './meta.js';
 import { PROF_KEY, reloadProficiency } from './proficiency.js';
 import { BOOK_KEY, reloadBook } from './book.js';
+import { DEN_KEY, reloadDen } from './den.js';
 
 export const FILES_KEY = 'crazyWeaponMan.files.v1';
 export const FILE_COUNT = 3;
 // (the secrets key is game/secrets.js's SECRET_KEY, which can't be imported here: it draws)
-export const FILE_KEYS = [OVERWORLD_KEY, META_KEY, PROF_KEY, 'crazyWeaponMan.secrets.v1', BOOK_KEY];
+export const FILE_KEYS = [OVERWORLD_KEY, META_KEY, PROF_KEY, 'crazyWeaponMan.secrets.v1', BOOK_KEY, DEN_KEY];
 
 let storage = null;
 try {
@@ -53,7 +54,7 @@ function index() {
 }
 const writeIndex = ix => put(FILES_KEY, JSON.stringify(ix));
 const live = () => Object.fromEntries(FILE_KEYS.map(k => [k, get(k)]));
-const reload = () => (reloadMeta(), reloadProficiency(), reloadBook());
+const reload = () => (reloadMeta(), reloadProficiency(), reloadBook(), reloadDen());
 
 export const activeFile = () => index().active;
 const blobs = (ix, i) => (i === ix.active ? live() : ix.stash[i] || {});
