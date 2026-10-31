@@ -1,8 +1,9 @@
-// Inventory and equipment windows (E / B / Tab, gamepad Back, or the Bag button). Two framed
-// windows over a paused game: EQUIPMENT (hero, weapon slot, weapon mastery) and INVENTORY
-// (a 24-slot bag of weapons, item details, equip / lock / salvage). Keyboard, pad, mouse and touch.
-// Drops are looted automatically and kept until the bag is full; after that the weakest unlocked
-// weapons are swapped out for better ones. Locked weapons are never replaced or salvaged.
+// The weapon log and equipment windows (E / B / Tab, gamepad Back, or the Bag button). Two framed
+// windows over a paused game: EQUIPMENT (hero, the weapon in hand, weapon mastery) and WEAPON LOG
+// (the 24 highest-DPS weapons found this run, best first, with item details). Nothing here is
+// picked by hand: every pickup is equipped the moment it reaches you (drops.js pickUp), because
+// the weapon in hand is your armor (combat.js hurtHero). The log is a record, not a stash. On the
+// map the Legendary Anvil (G) strikes the weapon in hand.
 import { C, W, H } from '../config.js';
 import { X, canvas, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
@@ -10,9 +11,6 @@ import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
 import { dps, powerScore, rarityName, freshUid } from './loot.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
-import { equip } from './drops.js';
-import { toast } from './progress.js';
-import { lustBoost } from './lust.js';
 import { drawHeroAnimated } from './anim.js';
 import { TYPE_LIST } from '../data/weapons.js';
 import { ABILITIES } from '../data/abilities.js';
@@ -35,22 +33,11 @@ const COLS = 8,
 const EQ = { x: 6, y: 6, w: 196, h: 230 }; // equipment window
 const INV = { x: 208, y: 6, w: 266, h: 230 }; // inventory window
 const GRID = { x: INV.x + 13, y: INV.y + 30 };
-const BTNS = [
-  { id: 'equip', label: 'EQUIP', x: INV.x + 10, w: 66 },
-  { id: 'lock', label: 'LOCK', x: INV.x + 82, w: 60 },
-  { id: 'salvage', label: 'SALVAGE', x: INV.x + 148, w: 108 }
-];
-// on the map the bag has a fourth button: the Legendary Anvil (data/anvil.js)
-const BTNS_MAP = [
-  { id: 'equip', label: 'EQUIP', x: INV.x + 10, w: 52 },
-  { id: 'lock', label: 'LOCK', x: INV.x + 66, w: 46 },
-  { id: 'salvage', label: 'SALVAGE', x: INV.x + 116, w: 78 },
-  { id: 'anvil', label: 'ANVIL', x: INV.x + 198, w: 58 }
-];
-const btns = () => (world.inv?.tabs ? BTNS_MAP : BTNS);
+// on the map the log has one button: the Legendary Anvil (data/anvil.js), for the weapon in hand
+const BTNS_MAP = [{ id: 'anvil', label: 'G: ANVIL THE WEAPON IN HAND', x: INV.x + 10, w: INV.w - 20 }];
+const btns = () => (world.inv?.tabs ? BTNS_MAP : []);
 const BTN_Y = INV.y + 208;
 const CLOSE = { x: INV.x + INV.w - 18, y: INV.y + 5, w: 12, h: 11 };
-const FILTER_BTN = { x: INV.x + 74, y: INV.y + 5, w: 98, h: 11 };
 const SHEET_BTN = { x: EQ.x + EQ.w - 58, y: EQ.y + 5, w: 52, h: 11 };
 // on the overworld the bag is the POWERS window's first tab: its tab strip sits on top and the bag
 // is drawn this much lower (world.inv.tabs)
@@ -61,96 +48,30 @@ export const bagCount = () => world.bag.filter(Boolean).length;
 const typeName = t => t.toUpperCase();
 export const salvageValue = w => 2 + w.q * 2 + (w.standout ? 5 : 0);
 
-// the loot filter (MapleStory's pet filter, Slormancer's auto-salvage): drops below the chosen rarity
-// melt into shards the moment they are looted. Standouts are always kept. F (or the label) cycles it;
-// the choice is kept in this browser for every save file.
-export const FILTER_KEY = 'crazyWeaponMan.filter.v1';
-export const FILTER_STEPS = [0, 1, 2, 3, 4, 5]; // salvage everything below this rarity (0 = off)
-let filterQ = null;
-export function lootFilter() {
-  if (filterQ == null) {
-    try {
-      filterQ = Math.max(0, Math.min(5, +(globalThis.localStorage?.getItem(FILTER_KEY) || 0) || 0));
-    } catch (_) {
-      filterQ = 0;
-    }
-  }
-  return filterQ;
-}
-export function setLootFilter(q) {
-  filterQ = FILTER_STEPS.includes(q) ? q : 0;
-  try {
-    globalThis.localStorage?.setItem(FILTER_KEY, String(filterQ));
-  } catch (_) {
-    /* private mode: the filter lasts for this tab */
-  }
-  return filterQ;
-}
-export const filterText = () => (lootFilter() ? `FILTER: SALVAGE BELOW ${RARITY[lootFilter()].name.toUpperCase()}` : 'FILTER: OFF, KEEP EVERYTHING');
-export const filtered = w => !!w && !w.standout && w.q < lootFilter();
-
-// put a weapon in the first free slot; false when the bag is full
-export function stash(w) {
-  if (!w || w.name === 'Training Sword') return true;
-  const i = world.bag.indexOf(null);
-  if (i < 0) return false;
-  world.bag[i] = w;
-  world.bagNew = (world.bagNew || 0) + 1;
-  return true;
-}
-
-// auto-loot: every drop is kept until all 24 slots are full. Once full, a new weapon replaces the
-// weakest unlocked weapon of its type (or the weakest unlocked weapon overall if none share its
-// type) when it has more DPS; otherwise the new one is salvaged. Locked weapons are never touched.
-export function autoLoot(w) {
-  if (!w || w.name === 'Training Sword') return 'skip';
-  const col = w.standout ? C.gold : rarityColour(w.q);
-  if (filtered(w)) {
-    world.shards += salvageValue(w);
-    toast('bag', { head: `FILTERED  SALVAGED +${salvageValue(w)}`, name: w.name, col: C.fog });
-    return 'filtered';
-  }
-  const better = dps(w) > dps(world.hero.weapon);
-  let res;
-  if (stash(w)) res = 'bagged';
-  else {
-    const weakest = list => list.reduce((m, i) => (m < 0 || dps(world.bag[i]) < dps(world.bag[m]) ? i : m), -1);
-    const open = world.bag.map((b, i) => (b && !b.locked ? i : -1)).filter(i => i >= 0);
-    const same = open.filter(i => world.bag[i].type === w.type);
-    const i = weakest(same.length ? same : open);
-    if (i < 0 || dps(world.bag[i]) >= dps(w)) {
-      world.shards += salvageValue(w);
-      toast('bag', { head: `BAG FULL  SALVAGED +${salvageValue(w)}`, name: w.name, col: C.fog });
-      return 'salvaged';
-    }
-    const old = world.bag[i];
-    world.shards += salvageValue(old);
-    world.bag[i] = w;
+// the log: the strongest weapons found this run by DPS, best first. A new find goes in when it
+// beats the weakest entry (or there is room); the same weapon is never logged twice. Returns its
+// place (0 = the best yet) or -1.
+export function logWeapon(w) {
+  if (!w || w.name.startsWith('Training ')) return -1;
+  const L = world.bag.filter(Boolean);
+  if (!L.includes(w)) {
+    if (L.length >= BAG_SIZE && dps(w) <= dps(L[L.length - 1])) return -1;
+    L.push(w);
     world.bagNew = (world.bagNew || 0) + 1;
-    res = 'upgraded';
-    toast('bag', { head: better ? 'BETTER WEAPON!  DOWN: EQUIP' : `SWAPPED OUT ${typeName(old.type)} +${salvageValue(old)}`, name: w.name, col, hot: better });
   }
-  world.quick = better ? { item: w, t: 4 } : null;
-  if (res === 'bagged') toast('bag', { head: better ? 'BETTER WEAPON!  DOWN: EQUIP' : 'INTO THE BAG   E: OPEN', name: w.name, col, hot: better });
-  return res;
+  sortLog(L);
+  return world.bag.indexOf(w);
 }
-
-// equip a bag weapon (the old one takes its slot); a weapon you have never held feeds Weapon Lust
-export function equipFromBag(i) {
-  const w = world.bag[i];
-  if (!w) return false;
-  const fresh = !w.used,
-    old = equip(w);
-  world.bag[i] = old && old.name !== 'Training Sword' ? old : null;
-  if (world.quick && world.quick.item === w) world.quick = null;
-  if (fresh) lustBoost(world.hero);
-  return true;
+// mastery and the anvil move DPS about, so the order is checked again whenever it is shown
+function sortLog(L = world.bag.filter(Boolean)) {
+  L.sort((a, b) => dps(b) - dps(a));
+  world.bag = [...L.slice(0, BAG_SIZE), ...new Array(Math.max(0, BAG_SIZE - L.length)).fill(null)];
 }
 
 export function openInventory() {
   if (world.inv || !world.hero || world.hero.dead) return false;
-  const first = world.bag.findIndex(Boolean);
-  world.inv = { sel: Math.max(0, first), t: 0, msg: '', confirm: false, lastClick: -9, sheet: false };
+  sortLog();
+  world.inv = { sel: 0, t: 0, msg: '', lastClick: -9, sheet: false };
   world.bagNew = 0;
   sfx.ui(true);
   return true;
@@ -162,16 +83,15 @@ export function closeInventory() {
 }
 export const toggleInventory = () => (world.inv ? closeInventory() : openInventory());
 
-// the anvil strikes the picked bag weapon, or the one in your hand when the picked slot is empty;
-// relics are spent for good, so it asks twice
+// the anvil strikes the weapon in hand (and its edge passes on to every weapon you swap to after,
+// data/anvil.js inheritAnvil); relics are spent for good, so it asks twice
 export function anvil() {
-  const I = world.inv, save = powers.save, inBag = !!world.bag[I.sel], w = inBag ? world.bag[I.sel] : world.hero.weapon;
+  const I = world.inv, save = powers.save, w = world.hero.weapon;
   const no = save ? cantStrike(save, w) : 'THE ANVIL IS ON THE MAP';
-  I.confirm = false;
   if (no) return (I.anvilAsk = false), (I.msg = no), sfx.ui();
   if (!I.anvilAsk) {
     I.anvilAsk = true;
-    I.msg = `+${strikes(w) + 1} FOR ${strikeCost(strikes(w))} RELICS${inBag ? '' : ' (IN HAND)'}: G AGAIN`;
+    I.msg = `+${strikes(w) + 1} FOR ${strikeCost(strikes(w))} RELICS: G AGAIN`;
     return sfx.ui();
   }
   I.anvilAsk = false;
@@ -181,60 +101,14 @@ export function anvil() {
     w.name = w.name.replace(/ \+\d$/, `, ${ABILITIES[w.ability].clause[0]} +${ANVIL_MAX}`);
   }
   freshUid(w); // its look changed: draw it anew
+  logWeapon(w);
   I.msg = strikes(w) === ANVIL_MAX ? `+${ANVIL_MAX}! THE ANVIL AWAKENS IT` : `STRUCK! NOW +${strikes(w)}`;
   sfx.levelUp();
 }
 
-function act(id) {
-  const I = world.inv,
-    w = world.bag[I.sel];
-  if (id === 'anvil') return anvil();
-  I.anvilAsk = false;
-  if (!w) {
-    I.msg = 'EMPTY SLOT';
-    I.confirm = false;
-    return;
-  }
-  if (id === 'equip') {
-    I.msg = equipFromBag(I.sel) ? 'EQUIPPED' : 'NOT YOUR CLASS: SALVAGE IT FOR SHARDS';
-    I.confirm = false;
-  } else if (id === 'lock') {
-    w.locked = !w.locked;
-    I.msg = w.locked ? 'LOCKED: NEVER REPLACED OR SALVAGED' : 'UNLOCKED';
-    I.confirm = false;
-    sfx.ui(w.locked);
-  } else if (id === 'salvage') {
-    if (w.locked) {
-      I.msg = 'LOCKED - UNLOCK IT FIRST';
-      I.confirm = false;
-      sfx.ui();
-      return;
-    }
-    if (!I.confirm) {
-      I.confirm = true;
-      I.msg = 'SALVAGE AGAIN TO CONFIRM';
-      sfx.ui();
-      return;
-    }
-    world.bag[I.sel] = null;
-    world.shards += salvageValue(w);
-    I.msg = `SALVAGED FOR ${salvageValue(w)} SHARDS`;
-    I.confirm = false;
-    sfx.pickup();
-  }
-}
-
-function cycleFilter() {
-  const I = world.inv;
-  setLootFilter(FILTER_STEPS[(FILTER_STEPS.indexOf(lootFilter()) + 1) % FILTER_STEPS.length]);
-  I.msg = filterText();
-  I.confirm = false;
-  sfx.ui(lootFilter() > 0);
-}
 function moveSel(d) {
   const I = world.inv;
   I.sel = (I.sel + d + BAG_SIZE) % BAG_SIZE;
-  I.confirm = false;
   I.msg = '';
   sfx.ui();
 }
@@ -245,22 +119,17 @@ export function updateInventory(dt) {
   I.t += dt;
   // on the map, R and SHIFT go to the STATS tab (the next one along)
   if (I.tabs && (input.take('sheet') | input.take('dash'))) return showTab(TAB.STATS);
-  if (I.tabs && input.take('anvil')) return act('anvil');
+  if (I.tabs && input.take('anvil')) return anvil();
   if (input.take('sheet')) return (I.sheet = !I.sheet), sfx.ui(I.sheet);
   if (I.sheet) {
     if (input.take('inv') || input.take('pause') || input.take('leave')) (I.sheet = false), sfx.ui();
     return;
   }
   if (input.take('inv') || input.take('pause')) return closeInventory();
-  if (input.take('filter')) cycleFilter();
   if (input.take('left')) moveSel(-1);
   if (input.take('right')) moveSel(1);
   if (input.take('up')) moveSel(-COLS);
   if (input.take('down')) moveSel(COLS);
-  if (I.t < 0.15) return;
-  if (input.take('attack') | input.take('confirm')) act('equip');
-  else if (input.take('jump')) act('lock');
-  else if (input.take('special')) act('salvage');
   input.consume('dash');
 }
 
@@ -289,19 +158,13 @@ canvas.addEventListener('pointerdown', e => {
   }
   if (I.sheet) return (I.sheet = false), sfx.ui();
   if (inside(p, CLOSE)) return closeInventory();
-  if (inside(p, FILTER_BTN)) return cycleFilter();
   if (inside(p, SHEET_BTN)) return (I.sheet = true), sfx.ui(true);
-  for (const b of btns()) if (inside(p, { x: b.x, y: BTN_Y, w: b.w, h: 16 })) return act(b.id);
+  for (const b of btns()) if (inside(p, { x: b.x, y: BTN_Y, w: b.w, h: 16 })) return anvil();
   const i = cellAt(p);
-  if (i < 0) return;
-  if (i === I.sel && performance.now() - I.lastClick < 400) act('equip'); // double-click equips
-  else if (i !== I.sel) {
-    I.sel = i;
-    I.confirm = false;
-    I.msg = '';
-    sfx.ui();
-  }
-  I.lastClick = performance.now();
+  if (i < 0 || i === I.sel) return;
+  I.sel = i;
+  I.msg = '';
+  sfx.ui();
 });
 canvas.addEventListener('pointermove', e => {
   if (!world.inv || e.pointerType !== 'mouse') return;
@@ -327,16 +190,7 @@ function slot(x, y, s, w, on, t) {
   if (w) {
     rect(x + 2, y + 2, s - 4, 1, edge); // rarity stripe
     icon(w, x + 2, y + 3, s - 4, s - 5, t);
-    if (w.locked) padlock(x + s - 8, y + s - 9);
   }
-}
-function padlock(x, y) {
-  rect(x, y, 7, 8, C.ink);
-  rect(x + 2, y + 1, 3, 1, C.gold);
-  rect(x + 1, y + 2, 1, 2, C.gold);
-  rect(x + 5, y + 2, 1, 2, C.gold);
-  rect(x + 1, y + 4, 5, 3, C.gold);
-  rect(x + 3, y + 5, 1, 1, C.ink);
 }
 function titleBar(r, s) {
   panel('panel', r.x, r.y, r.w, r.h);
@@ -392,7 +246,7 @@ export function drawInventory(t) {
   rect(SHEET_BTN.x, SHEET_BTN.y, SHEET_BTN.w, SHEET_BTN.h, C.slate);
   text('R: STATS', SHEET_BTN.x + SHEET_BTN.w / 2, SHEET_BTN.y + 2, C.cream, { align: 'center' });
   const my = EQ.y + 138, sel = world.bag[I.sel];
-  if (sel) drawCompare(w, sel, my);
+  if (sel && sel !== w) drawCompare(w, sel, my);
   else {
   // weapon mastery (persists between runs), two columns so every type fits
   rect(EQ.x + 6, my - 3, EQ.w - 12, 1, C.slate);
@@ -414,16 +268,15 @@ export function drawInventory(t) {
   }
 
   // ---- INVENTORY ----
-  titleBar(INV, 'INVENTORY');
+  titleBar(INV, 'WEAPON LOG: BEST DPS FOUND');
   rect(CLOSE.x, CLOSE.y, CLOSE.w, CLOSE.h, C.wine);
   text('X', CLOSE.x + 4, CLOSE.y + 2, C.paper);
-  rect(FILTER_BTN.x, FILTER_BTN.y, FILTER_BTN.w, FILTER_BTN.h, lootFilter() ? C.wine : C.slate);
-  text(fitText(lootFilter() ? 'F: BELOW ' + RARITY[lootFilter()].name.toUpperCase() : 'F: FILTER OFF', FILTER_BTN.w - 4), FILTER_BTN.x + FILTER_BTN.w / 2, FILTER_BTN.y + 2, lootFilter() ? C.cream : C.fog, { align: 'center' });
-  text(`EQUIP  ${bagCount()}/${BAG_SIZE}`, INV.x + INV.w - 24, INV.y + 7, C.ice, { align: 'right' });
+  text(`${bagCount()}/${BAG_SIZE}`, INV.x + INV.w - 24, INV.y + 7, C.ice, { align: 'right' });
   for (let i = 0; i < BAG_SIZE; i++) {
     const x = GRID.x + (i % COLS) * CELL,
       y = GRID.y + Math.floor(i / COLS) * CELL;
     slot(x + 1, y + 1, CELL - 2, world.bag[i], i === I.sel, t);
+    if (world.bag[i] && world.bag[i] === w) text('E', x + 4, y + CELL - 10, C.lime); // the one in hand
     if (i === I.hover && i !== I.sel) rect(x + 1, y + CELL - 2, CELL - 2, 1, C.cream);
   }
   // item details
@@ -433,19 +286,20 @@ export function drawInventory(t) {
   rect(INV.x + 9, dy - 2, INV.w - 18, 72, C.night);
   const tx = INV.x + 14;
   if (!it) {
-    text('EMPTY SLOT', tx, dy + 2, C.fog);
-    text('DROPS ARE LOOTED AUTOMATICALLY.', tx, dy + 14, C.mist);
-    text('NOTHING IS SALVAGED UNTIL ALL 24 FILL;', tx, dy + 24, C.mist);
-    text('THEN THE WEAKEST GO. LOCK TO KEEP ONE.', tx, dy + 34, C.mist);
+    text('NOTHING LOGGED HERE YET', tx, dy + 2, C.fog);
+    text('EVERY WEAPON YOU PICK UP IS EQUIPPED AT ONCE:', tx, dy + 14, C.mist);
+    text('A NEW ONE IS FRESH ARMOR. ONE HIT CRACKS IT,', tx, dy + 24, C.mist);
+    text('TWO SHATTER IT. THE 24 STRONGEST YOU FIND', tx, dy + 34, C.mist);
+    text('THIS RUN ARE LOGGED HERE, BEST FIRST.', tx, dy + 44, C.mist);
   } else {
     const col = it.standout ? C.gold : rarityColour(it.q);
-    text(fitText(it.name, INV.w - (it.locked ? 44 : 30)), tx, dy + 2, col);
-    if (it.locked) padlock(INV.x + INV.w - 22, dy);
+    text(fitText(it.name, INV.w - 50), tx, dy + 2, col);
+    text(`#${I.sel + 1}`, INV.x + INV.w - 14, dy + 2, it === w ? C.lime : C.gold, { align: 'right' });
     text(`${it.standout ? 'STANDOUT ' : ''}${rarityName(it).toUpperCase()} ${typeName(it.type)}`, tx, dy + 12, C.mist);
     if (weaponLock() && !onClass(it.type)) text('OFF-CLASS', INV.x + INV.w - 12, dy + 12, C.coral, { align: 'right' }); // no specialization cluster for it
     const gain = Math.round((powerScore(it) / Math.max(1, powerScore(w)) - 1) * 100);
     text(fmt(dps(it)) + ' DPS', tx, dy + 22, C.paper);
-    text(`${gain >= 0 ? '+' : ''}${gain}% POWER VS EQUIPPED`, INV.x + INV.w - 14, dy + 22, gain >= 0 ? C.lime : C.coral, { align: 'right' });
+    text(it === w ? 'IN HAND' : `${gain >= 0 ? '+' : ''}${gain}% POWER VS IN HAND`, INV.x + INV.w - 14, dy + 22, it === w ? C.lime : gain >= 0 ? C.lime : C.coral, { align: 'right' });
     const extras = [];
     if (it.family) extras.push(ELEMENTS[it.family].word.toUpperCase());
     if (it.mutation) extras.push(MUTATIONS[it.mutation].label);
@@ -461,18 +315,16 @@ export function drawInventory(t) {
     const p = proficiency(it.type);
     text(`${typeName(it.type)} MASTERY LV ${p.lv} ${profRank(p.lv)}`, tx, dy + 61, C.sky);
   }
-  // buttons + shards
+  // the anvil (map only) + shards
   for (const b of btns()) {
-    const hot = (b.id === 'salvage' && I.confirm) || (b.id === 'anvil' && I.anvilAsk);
-    panel(hot ? 'btn-hot' : 'btn', b.x, BTN_Y, b.w, 16);
-    const label = b.id === 'salvage' && it ? `${b.label} +${salvageValue(it)}` : b.id === 'lock' && it && it.locked ? 'UNLOCK' : b.label;
-    text(label, b.x + b.w / 2, BTN_Y + 5, it ? C.paper : C.fog, { align: 'center' });
+    panel(I.anvilAsk ? 'btn-hot' : 'btn', b.x, BTN_Y, b.w, 16);
+    text(b.label, b.x + b.w / 2, BTN_Y + 5, C.paper, { align: 'center' });
   }
   if (I.msg) text(I.msg, INV.x + INV.w / 2, BTN_Y - 9, C.lime, { align: 'center' });
   rect(EQ.x + 6, EQ.y + EQ.h + 4, 4, 2, C.sky);
   text(`${fmt(world.shards)} SHARDS`, EQ.x + 14, EQ.y + EQ.h + 2, C.ice);
   if (I.tabs) text(`${relicsToSpend(powers.save)} RELICS`, EQ.x + 120, EQ.y + EQ.h + 2, C.gold, { align: 'right' });
-  text(I.tabs ? 'Z EQUIP  X LOCK  C SALVAGE  G ANVIL  F FILTER  SHIFT TAB' : 'Z EQUIP  X LOCK  C SALVAGE  F FILTER  R STATS  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
+  text(I.tabs ? 'ARROWS BROWSE  G ANVIL  SHIFT TAB' : 'ARROWS BROWSE  R STATS  E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
   if (I.sheet) drawSheetWindow(w);
   if (I.tabs) X.restore();
 }
@@ -491,7 +343,7 @@ function drawCompare(a, b, my) {
   text('COMPARE', EQ.x + 10, my, C.gold);
   const c1 = EQ.x + 118, c2 = EQ.x + EQ.w - 8;
   text('IN HAND', c1, my, C.fog, { align: 'right' });
-  text('PICKED', c2, my, C.fog, { align: 'right' });
+  text('LOGGED', c2, my, C.fog, { align: 'right' });
   const el = x => (x.family ? ELEMENTS[x.family].word.toUpperCase() : '-');
   const num = (label, va, vb, f = fmt) => [label, f(va), f(vb), Math.sign(vb - va)];
   const rows = [

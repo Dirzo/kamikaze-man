@@ -7,6 +7,7 @@ import { sfx } from '../engine/audio.js';
 import { burst } from './fx.js';
 import { addProficiency, PROF_KILL_XP, PROF_WORLD, profRank } from '../data/proficiency.js';
 import { temper } from '../data/temper.js';
+import { mend } from './combat.js';
 
 export function toast(kind, data) {
   world.toasts = world.toasts.filter(t => t.kind !== kind);
@@ -23,6 +24,7 @@ export function gainXp(n) {
     const before = h.maxHp;
     h.maxHp = heroMax(h.lv);
     h.hp = Math.min(h.maxHp, h.hp + (h.maxHp - before) + Math.round(h.maxHp * 0.25));
+    mend(1); // a level-up mends a cracked weapon
     sfx.levelUp();
     burst(h.x + h.w / 2, h.y + 4, 12, 'twinkle', ['gold', 'cream', 'paper']);
     toast('level', { lv: h.lv });

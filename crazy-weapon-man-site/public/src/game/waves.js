@@ -10,7 +10,7 @@ import { ENEMIES } from '../data/enemies.js';
 import { makeMap, CLEAR_BONUS } from '../data/maps.js';
 import { enemyPool, maxRarity } from '../data/progression.js';
 import { spawnEnemy } from './enemy.js';
-import { kill } from './combat.js';
+import { kill, mend } from './combat.js';
 import { overlap } from './physics.js';
 import { callout, shake } from './fx.js';
 import { music, sfx } from '../engine/audio.js';
@@ -58,7 +58,7 @@ export function startZone(z) {
   if(h) {
     h.x=world.map.startX;h.y=world.map.startY-HERO.h;h.vx=h.vy=0;h.onGround=true;h.platform=null;
     h.attack=h.special=h.ladder=null;h.climbLock=0;h.trail=null;h.dashT=h.dropT=0;h.inv=Math.max(h.inv,1);
-    if(z>0) h.hp=Math.min(h.maxHp,h.hp+Math.round(h.maxHp*0.6)); // a breather between maps
+    if(z>0) mend(1); // a breather between maps: a cracked weapon is mended
   }
   world.director={phase:'intro',t:2.6,toSpawn:0,initialCount:world.map.spawns.length,bossStarted:false};
   const elites=modOn(world.temper,'elites'); // TEMPER: ELITE PACKS

@@ -127,3 +127,13 @@ export const camLead = (v, top) => MOVE.lookAhead + (MOVE.lookAheadTop - MOVE.lo
 // fight goes best as a run in, a string of hits through the pack and a special to finish it.
 export const FIGHT = { window: 1.4, step: 0.06, max: 0.6, cut: 0.25, cash: 2 };
 export const fightMult = (n, special = false) => 1 + Math.min(FIGHT.max, n * FIGHT.step) * (special ? FIGHT.cash : 1);
+
+// WEAPON ARMOR (Sonic's rings, combat.js hurtHero): no health bar. The weapon in hand takes a hit
+// and cracks; a second hit before a new weapon shatters it and ends the run. Every pickup swaps in
+// whole (drops.js), so the way to stay alive is to keep swapping.
+//   crackInv   the safety after a crack, times the usual (Sonic's flicker after losing rings)
+//   mend       the share of a full heal that small trickles must add up to before they mend a crack
+//   glanceMax  the most that armor stats can raise the chance a hit glances off
+//   spare      seconds cracked before a spare weapon falls from the sky (drops.js updateSpare)
+//   every      kills between guaranteed weapon drops (at KILL_PAY 1; a cracked hero's next kill always drops)
+export const ARMOR = { crackInv: 2.5, mend: 0.5, glanceMax: 0.6, spare: 4, every: 3 };

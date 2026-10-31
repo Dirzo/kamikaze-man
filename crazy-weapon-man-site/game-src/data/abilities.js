@@ -3,7 +3,7 @@
 // Effects live in game/abilities.js; `clause` words are appended by names.js.
 export const ABILITIES = {
   meteor: { label: 'METEOR CALLER', desc: 'Combo finishers call a small meteor down on the foe.', col: 'orange', clause: ['Caller of Small Meteors', 'Who Asks the Sky for Help'] },
-  vampire: { label: 'THIRSTY', desc: 'Hits sip a little health back for you.', col: 'red', clause: ['the Thirsty', 'Who Drinks Ketchup', 'Sipper of Life'] },
+  vampire: { label: 'THIRSTY', desc: 'Hits slowly mend a cracked weapon.', col: 'red', clause: ['the Thirsty', 'Who Drinks Ketchup', 'Sipper of Life'] },
   thorns: { label: 'BITES BACK', desc: 'Getting hit lashes every foe nearby.', col: 'leaf', clause: ['Who Bites Back', 'the Prickly'] },
   hops: { label: 'DOUBLE JUMP', desc: 'Jump again in mid-air.', col: 'sky', clause: ['of Many Hops', 'Who Jumps on Air'] },
   dashcut: { label: 'DASH CUT', desc: 'Dashing through foes slices them twice as hard.', col: 'mist', clause: ['Who Cuts While Running', 'the Hasty'] },

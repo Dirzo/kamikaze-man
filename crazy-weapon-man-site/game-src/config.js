@@ -52,7 +52,6 @@ export const KEYS = {
   undo: ['KeyU', 'Backspace'],
   lock: ['KeyG'],
   sheet: ['KeyR'],
-  filter: ['KeyF'],
   temper: ['KeyT'],
   anvil: ['KeyG'], // the Legendary Anvil, in the bag on the map
   confirm: ['Enter', 'Space', 'KeyZ', 'KeyJ', 'ControlLeft']

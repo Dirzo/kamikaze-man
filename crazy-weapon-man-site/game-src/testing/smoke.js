@@ -6,15 +6,15 @@ import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
 import { spawnEnemy, updateEnemy, drawEnemy } from '../game/enemy.js';
 import { secretRoom } from '../data/maps.js';
-import { hitEnemy, hurtHero, dropWeapon } from '../game/combat.js';
+import { hitEnemy, hurtHero, dropWeapon, glanceChance } from '../game/combat.js';
 import { makeWeapon, dps, powerScore } from '../game/loot.js';
-import { updateDrops } from '../game/drops.js';
+import { updateDrops, pickUp } from '../game/drops.js';
 import { updateEvolution, attackMutation, impactMutation } from '../game/evolution.js';
 import { startBoss, updateBoss, updateHazards, drawHazards, bossDone, clearBoss, castMove, MOVES } from '../game/bosses.js';
 import { updateCamera } from '../game/camera.js';
 import { worldLayer, screenLayer, X } from '../engine/gfx.js';
 import { startZone, updateWaves, enemiesLeft } from '../game/waves.js';
-import { openInventory, updateInventory, stash, autoLoot, BAG_SIZE, equipFromBag } from '../game/inventory.js';
+import { openInventory, updateInventory, logWeapon, BAG_SIZE } from '../game/inventory.js';
 import { BOSS_OF, HEAD_KINDS, SIBLING_KINDS, SIBLING_DEFS, headOfZone } from '../data/families.js';
 import { LEVELS } from '../data/overworld.js';
 import { bossName } from '../game/bosses.js';
@@ -50,7 +50,6 @@ import { updateRelics } from '../game/relics.js';
 import { mount, updateMount, flap } from '../game/mount.js';
 import { heroPhysics, updateGimmick } from '../game/gimmicks.js';
 import { ambience, updateAmbience } from '../game/ambience.js';
-import { setLootFilter, lootFilter } from '../game/inventory.js';
 import { cardKills, resetBook } from '../data/book.js';
 import { RELIC_COUNT } from '../data/relics.js';
 
@@ -109,13 +108,13 @@ export function runSmoke(game) {
     for(let i=0;i<8;i++){poll();updateHero(h,STEP);} ok(e.hp===after,'swing multi-hit');
   });
   check('dash is immune to every hurt source; normal hurt cancels swing',()=>{
-    reset();const h=world.hero;h.dashT=0.1;const hp=h.hp;hurtHero(30);ok(h.hp===hp);
-    h.dashT=0;h.inv=0;h.attack={};hurtHero(10);ok(h.hp===hp-10 && !h.attack);
-  });
-  check('DOWN-equipping a looted upgrade never replaces an attack in progress',()=>{
-    reset();const h=world.hero,old=h.weapon,w=makeWeapon(5,{q:6,type:'sword'});stash(w);world.quick={item:w,t:4};
-    h.attack={};key('ArrowDown',true);poll();updateDrops(STEP);ok(h.weapon===old);
-    h.attack=null;updateDrops(STEP);key('ArrowDown',false);poll();ok(h.weapon===w);
+    reset();const h=world.hero;h.dashT=0.1;hurtHero(30);ok(!h.cracked && !h.hits,'a dash did not dodge');
+    const rnd=Math.random;Math.random=()=>0.99;try{
+      h.dashT=0;h.inv=0;h.attack={};hurtHero(10);ok(h.cracked && !h.dead && !h.attack,'the first hit did not crack the weapon');
+      h.inv=0;hurtHero(10);ok(h.dead && world.phase==='dead','a second hit on a cracked weapon did not end it');
+      reset();const g=world.hero;g.inv=0;hurtHero(10);ok(g.cracked,'no crack');pickUp(makeWeapon(0,{standout:false}));ok(!g.cracked,'a new weapon did not mend the armor');
+      g.inv=0;hurtHero(10);g.inv=0;g.oneUp=true;hurtHero(10);ok(!g.dead && !g.cracked,'the 1UP did not save a shattered weapon');
+    }finally{Math.random=rnd;}
   });
   check('all five mutations deal damage and terminate their pending effects',()=>{
     for(const mutation of Object.keys(MUTATIONS)) {
@@ -140,55 +139,48 @@ export function runSmoke(game) {
   check('every themed boss move and surprise telegraphs, plays out and cleans up',()=>{
     reset();startZone(9);const h=world.hero;h.x=world.map.bossLeft+40;h.y=world.map.bossFloor-h.h;h.inv=1e9;startBoss('bossweapon');const e=world.boss;
     for(const name of MOVES) {
-      const hp0=h.hp;castMove(e,name);
+      const hp0=h.hits|0;castMove(e,name);
       for(let i=0;i<600;i++){world.t+=STEP;updateHazards(STEP);if(i%60===0)drawHazards(i*STEP);h.inv=1e9;}
-      ok(Number.isFinite(e.x) && h.hp===hp0,'move '+name+' broke');
+      ok(Number.isFinite(e.x) && (h.hits|0)===hp0,'move '+name+' broke');
       world.bolts.length=0;
     }
     // with no i-frames, the slash hits a standing hero and a jump clears it
-    h.inv=0;h.hp=h.maxHp;castMove(e,'iai');for(let i=0;i<70;i++){world.t+=STEP;updateHazards(STEP);}
-    ok(h.hp<h.maxHp,'the iai slash missed a standing hero');
+    h.inv=0;h.hits=0;h.god=true;castMove(e,'iai');for(let i=0;i<70;i++){world.t+=STEP;updateHazards(STEP);}
+    ok(h.hits>0,'the iai slash missed a standing hero');
   });
   check('a new run starts clean',()=>{
     reset();game.startRun();ok(world.echoes.length===0 && !world.deadT && world.zone===0);
   });
-  check('drops hover, fly to you and auto-loot; DOWN equips a looted upgrade and feeds Weapon Lust',()=>{
-    reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});const old=h.weapon;
-    const better=makeWeapon(1,{type:'dagger',q:1,standout:true});dropWeapon(h.x+90,h.y,better);const d=world.drops.at(-1),y0=d.y;
+  check('drops hover, fly to you and are equipped on arrival, feeding Weapon Lust and the log',()=>{
+    reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});const old=h.weapon;h.cracked=true;
+    const better=makeWeapon(1,{type:'dagger',q:1,standout:true});const dmg0=game.hitDamage(better);dropWeapon(h.x+90,h.y,better);const d=world.drops.at(-1),y0=d.y;
     let low=-1e9;for(let i=0;i<20;i++){updateDrops(STEP);low=Math.max(low,d.y);}
     ok(low<=y0+4,'drop sank below where it spawned');
-    for(let i=0;i<180 && world.drops.includes(d);i++)updateDrops(STEP);
-    ok(!world.drops.includes(d) && world.bag.includes(better) && h.weapon===old,'drop was not auto-looted into the bag');
-    ok(world.quick && world.quick.item===better,'a better loot was not offered on DOWN');
-    const dmg0=game.hitDamage(better);key('ArrowDown',true);poll();updateDrops(STEP);key('ArrowDown',false);poll();
-    ok(h.weapon===better && world.bag.includes(old) && !world.bag.includes(better),'DOWN did not equip the looted weapon');
+    const sh=world.shards;for(let i=0;i<180 && world.drops.includes(d);i++)updateDrops(STEP);
+    ok(!world.drops.includes(d) && h.weapon===better && !h.cracked,'the drop was not equipped, armor whole');
+    ok(world.bag.includes(better) && !world.bag.includes(old) && world.shards>sh,'not logged, or the old weapon not melted');
     ok(h.lust>0 && h.newToyT>0 && game.hitDamage(better)>dmg0,'no Weapon Lust bonus for a new weapon');
   });
-  check('the bag keeps every drop until it is full, then swaps out the weakest unlocked weapon',()=>{
+  check('a cracked hero gets a spare weapon from the sky, and their next kill always drops one',()=>{
+    reset();const h=world.hero;world.enemies=[];world.drops=[];h.inv=0;const rnd=Math.random;Math.random=()=>0.99;try{hurtHero(10);}finally{Math.random=rnd;}
+    ok(h.cracked,'no crack');for(let i=0;i<60*7 && !world.drops.length;i++){world.t+=STEP;updateDrops(STEP);}
+    ok(world.drops.length===1,'no spare weapon fell');world.drops=[];world.killsSinceDrop=0;
+    const e=spawnEnemy('gosling',h.x+40,FLOOR());e.spawnT=0;hitEnemy(e,1e9,{dir:1});ok(e.dead && world.drops.length===1,'the kill paid no weapon');
+  });
+  check('the weapon log keeps the 24 highest-DPS finds, best first, never twice',()=>{
     reset();const h=world.hero;
     const a=makeWeapon(0,{type:'bow',q:0,standout:false}),b=makeWeapon(3,{type:'bow',q:4,standout:false}),c=makeWeapon(6,{type:'bow',q:8,standout:false});
     ok(dps(a)<dps(b) && dps(b)<dps(c),'test weapons out of order');
-    autoLoot(b);autoLoot(a);ok(world.bag.includes(a) && world.bag.includes(b),'a weaker bow was salvaged before the bag was full');
-    while(world.bag.includes(null)) autoLoot(makeWeapon(0,{type:'dagger',q:0,standout:false}));
-    ok(world.bag.filter(Boolean).length===BAG_SIZE,'bag did not fill');
-    a.locked=true;let sh=world.shards;
-    ok(autoLoot(c)==='upgraded' && world.bag.includes(c) && world.bag.includes(a) && !world.bag.includes(b) && world.shards>sh,'full bag did not swap the weakest unlocked bow');
-    const weakBow=makeWeapon(0,{type:'bow',q:0,standout:false});
-    if(dps(weakBow)<dps(c)) {sh=world.shards;ok(autoLoot(weakBow)==='salvaged' && world.shards>sh && world.bag.includes(a) && world.bag.includes(c),'weaker loot into a full bag was not salvaged');}
-    const big=makeWeapon(9,{type:'hammer',q:10,standout:true});ok(autoLoot(big)==='upgraded' && world.bag.includes(big),'a new type did not replace the weakest weapon in a full bag');
-    ok(world.bag.filter(Boolean).length===BAG_SIZE,'full bag overfilled on loot');
-    world.bag[world.bag.findIndex(w=>w&&w.type==='dagger')]=null;const d=makeWeapon(6,{type:'bow',q:9,standout:true});autoLoot(d);
-    ok(openInventory() && world.inv,'bag did not open');world.inv.t=1;world.inv.sel=world.bag.indexOf(d);
-    key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();ok(d.locked,'X did not lock');
-    sh=world.shards;key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();
-    ok(world.bag.includes(d) && world.shards===sh,'locked weapon was salvaged');
-    key('KeyX',true);poll();updateInventory(STEP);key('KeyX',false);poll();ok(!d.locked,'X did not unlock');
-    key('KeyZ',true);poll();updateInventory(STEP);key('KeyZ',false);poll();ok(h.weapon===d && !world.bag.includes(d),'equip from bag failed');
-    world.inv.sel=world.bag.indexOf(c);sh=world.shards;
-    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(world.bag.includes(c),'salvage did not ask to confirm');
-    key('KeyC',true);poll();updateInventory(STEP);key('KeyC',false);poll();ok(!world.bag.includes(c) && world.shards>sh,'salvage failed');
-    key('KeyE',true);poll();updateInventory(STEP);key('KeyE',false);poll();ok(!world.inv,'E did not close the bag');
-    game.startRun();ok(world.bag.every(x=>!x) && !world.inv,'new run kept the old bag');
+    logWeapon(a);logWeapon(c);logWeapon(b);logWeapon(c);ok(world.bag[0]===c && world.bag[1]===b && world.bag[2]===a && world.bag.filter(Boolean).length===3,'log out of order or doubled');
+    while(world.bag.includes(null)) logWeapon(makeWeapon(0,{type:'dagger',q:0,standout:false}));
+    ok(world.bag.filter(Boolean).length===BAG_SIZE,'log did not fill');
+    const weak=makeWeapon(0,{type:'sword',q:0,standout:false});weak.boost=1e-6;ok(logWeapon(weak)<0 && world.bag.length===BAG_SIZE,'a weak find pushed into a full log');
+    const big=makeWeapon(9,{type:'hammer',q:10,standout:true});ok(logWeapon(big)===0 && world.bag.length===BAG_SIZE,'the best find did not go first');
+    ok(openInventory() && world.inv,'the log did not open');const w0=h.weapon;
+    for(const k of ['KeyZ','KeyX','KeyC']){key(k,true);poll();updateInventory(STEP);key(k,false);poll();}
+    ok(h.weapon===w0 && world.bag.includes(big),'a key still equips or salvages from the log');
+    key('KeyE',true);poll();updateInventory(STEP);key('KeyE',false);poll();ok(!world.inv,'E did not close the log');
+    game.startRun();ok(world.bag.every(x=>!x) && !world.inv,'new run kept the old log');
   });
   check('speedrun clock, splits, per-weapon damage, mastery and an animated results screen',()=>{
     resetRecords();reset();const h=world.hero,R=world.run;ok(R && R.t===0 && R.weapons.size===0,'no fresh run record');
@@ -218,7 +210,7 @@ export function runSmoke(game) {
     ok(game.ow.save.at==='1-1','could not walk to 1-1');
     for(let i=0;i<5;i++){poll();game.update(STEP);}
     key('KeyX',true);poll();game.update(STEP);key('KeyX',false);
-    ok(game.scene==='play' && world.level?.id==='1-1' && world.zone===0 && world.hero.hp===world.hero.maxHp,'1-1 did not start');
+    ok(game.scene==='play' && world.level?.id==='1-1' && world.zone===0 && !world.hero.cracked,'1-1 did not start');
     const h=world.hero;h.lv=3;world.enemies.length=0;world.director.phase='exit';world.director.t=0;
     h.x=world.map.exitX-h.w/2;h.y=world.map.exitY-h.h;game.update(STEP);
     ok(game.scene==='levelEnd' && world.levelEnd.result==='clear','clearing 1-1 did not end the level');
@@ -278,12 +270,12 @@ export function runSmoke(game) {
     const fam=[0,1,2,3,4,5,6,7,8,9].flatMap(z=>ZONES[z].pool);
     for(const type of fam) {
       const art=A.enemies[type];ok(art && ['idle0','walk3','draw','loose','hit'].every(f=>art.frames.includes(f)),type+' frames missing');
-      reset();const h=world.hero;h.maxHp=h.hp=1e6;
+      reset();const h=world.hero;h.god=true;
       const B=ENEMIES[type].beh,near=ENEMIES[type].fam==='goose'?B!=='toss':ENEMIES[type].fam==='lagoon'?!['tongue','shellspin','bubble','bounce'].includes(B):ENEMIES[type].fam==='bazaar'?!['dashthru','juggle','fence','pounce','dark'].includes(B):ENEMIES[type].fam==='shrine'?!['iaido','crescent','kunai','twinspin','champion'].includes(B):ENEMIES[type].fam==='temple'?!['vault','gibbon','extend','ibex','yak','cloudape'].includes(B):ENEMIES[type].fam==='forge'?!['burrow','bellows','anvil','tornado'].includes(B):ENEMIES[type].fam==='cottage'?['curl','tea','owlet','broom'].includes(B):ENEMIES[type].fam==='castle'?false:ENEMIES[type].fam==='hoard'?['squire','bowl','dillo','wyrm','coinsmith'].includes(B):['kite','alpha','greatbow','roll'].includes(B);
       const e=spawnEnemy(type,h.x+(near?34:80),FLOOR());e.spawnT=0;e.calm=false;e.hp=e.max=1e7;
       let shots=0,seen=new Set();
       for(let i=0;i<60*9;i++){world.t+=STEP;h.inv=0;const n=world.bolts.length;updateEnemy(e,STEP);shots+=Math.max(0,world.bolts.length-n);updateBolts(STEP);seen.add(e.state);drawEnemy(e,world.t);}
-      ok(h.hp<h.maxHp||shots>0,type+' never attacked');ok(seen.has('wind')&&seen.has('attack'),type+' never wound up and attacked');
+      ok(h.hits>0||shots>0,type+' never attacked');ok(seen.has('wind')&&seen.has('attack'),type+' never wound up and attacked');
       for(let i=0;i<400;i++){world.t+=STEP;updateBolts(STEP);}
     }
     reset();let h=world.hero;const t=spawnEnemy('twintuft',h.x+80,FLOOR());t.spawnT=0;hitEnemy(t,t.hp+5,{dir:1});
@@ -329,24 +321,24 @@ export function runSmoke(game) {
     // the shrine: a Corgi's sweep stays low enough to jump, a Petal Kitsune leaves a decoy behind, a Husky on guard parries
     // and is open after its counter, the Tosa's charge dazes, the Akita's quick-draw carries it across
     reset();h=world.hero;const cg=spawnEnemy('corgi',h.x+20,FLOOR());cg.spawnT=0;cg.calm=false;cg.face=-1;cg.state='wind';cg.st=0;cg.move='sweep';h.y-=16;h.onGround=false;
-    const hp0=h.hp;for(let i=0;i<20;i++){world.t+=STEP;h.inv=0;h.y=FLOOR()-h.h-16;h.vy=0;updateEnemy(cg,STEP);}ok(h.hp===hp0,'the Corgi\'s sweep hit a hero in the air');
+    const hp0=h.hits|0;for(let i=0;i<20;i++){world.t+=STEP;h.inv=0;h.y=FLOOR()-h.h-16;h.vy=0;updateEnemy(cg,STEP);}ok((h.hits|0)===hp0,'the Corgi\'s sweep hit a hero in the air');
     reset();h=world.hero;const pf=spawnEnemy('petalfox',h.x+30,FLOOR());pf.spawnT=0;pf.calm=false;const x0=pf.x;
     ok(hitEnemy(pf,50,{dir:1})===0 && pf.hp===pf.max && world.bolts.some(b=>b.look==='decoy') && Math.abs(pf.x-x0)>20,'the Petal Kitsune left no decoy');
     reset();h=world.hero;const hk=spawnEnemy('husky',h.x+30,FLOOR());hk.spawnT=0;hk.calm=false;hk.face=-1;updateEnemy(hk,STEP);
     ok(hitEnemy(hk,50,{dir:1})===0 && hk.move==='slash','the Husky Sentry did not parry');
     for(let i=0;i<60*2&&!(hk.openT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(hk,STEP);}ok(hk.openT>0 && hitEnemy(hk,50,{dir:1})>0,'the Husky was not open after its counter');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const ts=spawnEnemy('tosa',h.x+100,FLOOR());ts.spawnT=0;ts.calm=false;
-    for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(ts,STEP);updateHero(h,STEP);}ok(h.hp<h.maxHp && h.hurtT>0.2,'the Tosa\'s charge did not daze');
+    reset();h=world.hero;h.god=true;const ts=spawnEnemy('tosa',h.x+100,FLOOR());ts.spawnT=0;ts.calm=false;
+    for(let i=0;i<60*3&&!h.hits;i++){world.t+=STEP;h.inv=0;updateEnemy(ts,STEP);updateHero(h,STEP);}ok(h.hits>0 && h.hurtT>0.2,'the Tosa\'s charge did not daze');
     // the monastery: a Snow Monkey Sage heals a hurt monk, a Spinning Gibbon sends a shot back, the Yak raises spikes,
     // the Baboon's staff reaches across the floor, the Cloud Ape's clones come at you
     reset();h=world.hero;const sg=spawnEnemy('snowsage',h.x+120,FLOOR());sg.spawnT=0;sg.calm=false;const mk=spawnEnemy('macaque',h.x+150,FLOOR());mk.spawnT=0;mk.hp=Math.round(mk.max*0.3);const mh=mk.hp;
     for(let i=0;i<60*3&&mk.hp===mh;i++){world.t+=STEP;updateEnemy(sg,STEP);}ok(mk.hp>mh,'the Snow Monkey Sage healed nobody');
     reset();h=world.hero;const gb=spawnEnemy('gibbon',h.x+60,FLOOR());gb.spawnT=0;gb.calm=false;gb.state='attack';gb.move='gibspin';gb.st=1;gb.hp=gb.max=1e6;
     ok(hitEnemy(gb,50,{dir:1,shot:true})===0 && world.bolts.length>0,'the Spinning Gibbon did not reflect a shot');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const yk=spawnEnemy('yak',h.x+70,FLOOR());yk.spawnT=0;yk.calm=false;yk.face=-1;
+    reset();h=world.hero;h.god=true;const yk=spawnEnemy('yak',h.x+70,FLOOR());yk.spawnT=0;yk.calm=false;yk.face=-1;
     for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='spike');i++){world.t+=STEP;updateEnemy(yk,STEP);}ok(world.bolts.some(b=>b.look==='spike'),'the Temple Yak raised no spikes');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const bb=spawnEnemy('baboon',h.x+110,FLOOR());bb.spawnT=0;bb.calm=false;
-    for(let i=0;i<60*3&&h.hp===h.maxHp;i++){world.t+=STEP;h.inv=0;updateEnemy(bb,STEP);}ok(h.hp<h.maxHp && Math.abs(cx(bb)-cx(h))>80,'the Baboon\'s staff did not reach across');
+    reset();h=world.hero;h.god=true;const bb=spawnEnemy('baboon',h.x+110,FLOOR());bb.spawnT=0;bb.calm=false;
+    for(let i=0;i<60*3&&!h.hits;i++){world.t+=STEP;h.inv=0;updateEnemy(bb,STEP);}ok(h.hits>0 && Math.abs(cx(bb)-cx(h))>80,'the Baboon\'s staff did not reach across');
     reset();h=world.hero;const ca=spawnEnemy('cloudape',h.x+150,FLOOR());ca.spawnT=0;ca.calm=false;
     for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='decoy');i++){world.t+=STEP;updateEnemy(ca,STEP);}ok(world.bolts.filter(b=>b.look==='decoy'&&!b.harmless).length===2,'the Cloud Ape sent no clones');
     // the forge: a Honey Badger gets faster with every hit, the Iron Polar Bear's plate halves a light hit, a Badger
@@ -357,9 +349,9 @@ export function runSmoke(game) {
     ok(hitEnemy(pb,100,{dir:1,chip:true})<hitEnemy(bdg,100,{dir:-1,chip:true})*0.7,'the Iron Polar Bear\'s plate did nothing');
     reset();h=world.hero;const bg=spawnEnemy('badger',h.x+120,FLOOR());bg.spawnT=0;bg.calm=false;bg.hp=bg.max=1e6;
     for(let i=0;i<30&&!bg.hidden;i++){world.t+=STEP;updateEnemy(bg,STEP);}ok(bg.hidden && hitEnemy(bg,50,{dir:1})===0,'the Badger did not dig in');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const mb=spawnEnemy('moltenboar',h.x+30,FLOOR());mb.spawnT=0;mb.calm=false;
+    reset();h=world.hero;h.god=true;const mb=spawnEnemy('moltenboar',h.x+30,FLOOR());mb.spawnT=0;mb.calm=false;
     for(let i=0;i<60*12&&!(mb.coolT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(mb,STEP);}ok(mb.coolT>0 && world.bolts.some(b=>b.look==='lava'),'the Molten Boar never overheated');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const gz=spawnEnemy('grizzly',h.x+80,FLOOR());gz.spawnT=0;gz.calm=false;gz.rallyCool=99;
+    reset();h=world.hero;h.god=true;const gz=spawnEnemy('grizzly',h.x+80,FLOOR());gz.spawnT=0;gz.calm=false;gz.rallyCool=99;
     let stunned=false;for(let i=0;i<60*4&&!stunned;i++){world.t+=STEP;h.inv=0;updateEnemy(gz,STEP);updateHero(h,STEP);stunned=gz.move==='pound'&&h.hurtT>0.3;}ok(stunned,'the Grizzly\'s pound did not stun');
     // the cottage: a curled Hedgehog is all spines, the Horned Owl's shield breaks only to a combo, a Polymorph Hare's
     // spell makes you a bunny that can't swing, the Mirror Owl sends back what hit it, teacups circle then fly
@@ -370,7 +362,7 @@ export function runSmoke(game) {
     reset();h=world.hero;const ph=spawnEnemy('polyhare',h.x+100,FLOOR());ph.spawnT=0;ph.calm=false;
     for(let i=0;i<60*4&&!(h.polyT>0);i++){world.t+=STEP;h.inv=0;updateEnemy(ph,STEP);updateBolts(STEP);}ok(h.polyT>0,'the Polymorph Hare never bunnified the hero');
     updateHero(h,STEP);ok(!canAttack(h),'a bunny could still swing');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const mo=spawnEnemy('mirrorowl',h.x+60,FLOOR());mo.spawnT=0;mo.calm=false;mo.hp=mo.max=1e6;hitEnemy(mo,10,{dir:1,shot:true});
+    reset();h=world.hero;h.god=true;const mo=spawnEnemy('mirrorowl',h.x+60,FLOOR());mo.spawnT=0;mo.calm=false;mo.hp=mo.max=1e6;hitEnemy(mo,10,{dir:1,shot:true});
     for(let i=0;i<60&&mo.move!=='mirrorback';i++){world.t+=STEP;updateEnemy(mo,STEP);}ok(mo.move==='mirrorback','the Mirror Owl did not mirror');
     reset();h=world.hero;const th=spawnEnemy('teahog',h.x+100,FLOOR());th.spawnT=0;th.calm=false;
     for(let i=0;i<60*3&&!world.bolts.some(b=>b.look==='teacup');i++){world.t+=STEP;updateEnemy(th,STEP);updateBolts(STEP);}const cup=world.bolts.find(b=>b.look==='teacup');
@@ -386,21 +378,21 @@ export function runSmoke(game) {
     reset();h=world.hero;h.y-=200;const ig=spawnEnemy('iguana',h.x+60,FLOOR());ig.spawnT=0;ig.face=-1;ig.state='attack';ig.move='bigstar';beastAttack(ig,-1);
     const bs=world.bolts.find(b=>b.big);let far=0;for(let i=0;i<60*3&&world.bolts.includes(bs);i++){world.t+=STEP;updateBolts(STEP);far=Math.max(far,Math.abs(cx(bs)-cx(ig)));}
     ok(far>80 && !world.bolts.includes(bs),'the Iguana\'s star did not come home');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const wg=spawnEnemy('wallgecko',h.x+80,FLOOR());wg.spawnT=0;wg.calm=false;const wy=wg.y;let up=0;
+    reset();h=world.hero;h.god=true;const wg=spawnEnemy('wallgecko',h.x+80,FLOOR());wg.spawnT=0;wg.calm=false;const wy=wg.y;let up=0;
     for(let i=0;i<60*3;i++){world.t+=STEP;h.inv=0;updateEnemy(wg,STEP);updateBolts(STEP);up=Math.max(up,wy-wg.y);}ok(up>40 && !wg.air,'the Wall Gecko never climbed (or never came down)');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const kj=spawnEnemy('komodo',h.x+120,FLOOR());kj.spawnT=0;kj.calm=false;
+    reset();h=world.hero;h.god=true;const kj=spawnEnemy('komodo',h.x+120,FLOOR());kj.spawnT=0;kj.calm=false;
     for(let i=0;i<60*3&&!world.bolts.some(b=>b.rain&&b.look==='shuriken');i++){world.t+=STEP;updateEnemy(kj,STEP);}ok(world.bolts.some(b=>b.rain&&b.look==='shuriken'),'the Komodo never called a star storm');
     // the hoard: a shelled Armadillo turns every hit, a Magpie steals shards and shoots them back, the Elder Dragon
     // works through its weapons in turn
     reset();h=world.hero;const ad=spawnEnemy('armadillo',h.x+30,FLOOR());ad.spawnT=0;ad.calm=false;ad.shellT=1;
     ok(hitEnemy(ad,50,{dir:1})===0 && ad.hp===ad.max,'a hit landed on a shelled Armadillo');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;world.shards=500;const mg=spawnEnemy('magpie',h.x+30,FLOOR());mg.spawnT=0;mg.calm=false;
+    reset();h=world.hero;h.god=true;world.shards=500;const mg=spawnEnemy('magpie',h.x+30,FLOOR());mg.spawnT=0;mg.calm=false;
     let coins=false;for(let i=0;i<60*8&&!coins;i++){world.t+=STEP;h.inv=0;updateEnemy(mg,STEP);updateBolts(STEP);coins=world.bolts.some(b=>b.look==='coin'&&b.owner===mg);}
     ok(world.shards<500 && coins,'the Magpie did not steal shards and shoot them back');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const el=spawnEnemy('elder',h.x+40,FLOOR());el.spawnT=0;el.calm=false;el.hp=el.max=1e7;
+    reset();h=world.hero;h.god=true;const el=spawnEnemy('elder',h.x+40,FLOOR());el.spawnT=0;el.calm=false;el.hp=el.max=1e7;
     for(let i=0;i<60*20;i++){world.t+=STEP;h.inv=0;h.x+=Math.sin(i/40)*1.5;updateEnemy(el,STEP);updateBolts(STEP);}ok(el.styleI>=4,'the Elder Dragon only used '+el.styleI+' weapons');
-    reset();h=world.hero;h.maxHp=h.hp=1e6;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
-    for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hp<h.maxHp,'the Akita\'s quick-draw did not cut across');
+    reset();h=world.hero;h.god=true;const ak=spawnEnemy('akita',h.x+90,FLOOR());ak.spawnT=0;ak.calm=false;const ax=ak.x;
+    for(let i=0;i<60*3&&!ak.flashLine;i++){world.t+=STEP;h.inv=0;updateEnemy(ak,STEP);}ok(ak.flashLine && Math.abs(ak.x-ax)>60 && h.hits>0,'the Akita\'s quick-draw did not cut across');
   });
   check('the four new weapon types swing, shoot and use their specials',()=>{
     for(const type of ['spear','axe','scythe','boomerang']) {
@@ -448,9 +440,9 @@ export function runSmoke(game) {
   });
   check('every weapon ability does its thing',()=>{
     const fresh=ab=>{reset();const h=world.hero;h.weapon=makeWeapon(3,{type:'sword',q:3});h.weapon.ability=ab;const e=spawnEnemy('brute',h.x+20,FLOOR());e.spawnT=0;e.hp=e.max=1e7;return [h,e];};
-    let [h,e]=fresh('vampire');h.hp=10;abilityHit(h,e,5,false);ok(h.hp>10,'thirsty did not heal');
+    let [h,e]=fresh('vampire');h.cracked=true;h.mendAcc=0;abilityHit(h,e,5,false);ok(h.mendAcc>0,'thirsty did not mend');
     [h,e]=fresh('meteor');abilityHit(h,e,5,true);for(let i=0;i<120;i++){world.t+=STEP;updateAbilities(STEP);}ok(e.hp<e.max,'no meteor landed');
-    [h,e]=fresh('bubble');let hp=h.hp;hurtHero(10,1);ok(h.hp===hp,'bubble did not block');h.inv=0;hurtHero(10,1);ok(h.hp<hp,'bubble blocked twice');
+    [h,e]=fresh('bubble');hurtHero(10,1);ok(!h.hits,'bubble did not block');h.inv=0;hurtHero(10,1);ok(h.hits===1,'bubble blocked twice');
     [h,e]=fresh('thorns');h.x=e.x-4;hurtHero(5,1);ok(e.hp<e.max,'thorns did not bite back');
     [h,e]=fresh('frenzy');e.hp=1;hitEnemy(e,5,{dir:1});ok(h.frenzyT>0,'no frenzy on kill');
     [h,e]=fresh('giantslayer');e.elite=true;const d1=hitEnemy(e,100,{dir:1});h.weapon.ability=null;const d2=hitEnemy(e,100,{dir:1});ok(d1>d2,'giant slayer did nothing');
@@ -474,7 +466,7 @@ export function runSmoke(game) {
   });
   check('every quirk fires on cheap weapons and never recurses',()=>{
     for(const id of QUIRK_LIST) {
-      reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});h.weapon.quirk=id;h.hp=h.maxHp-20;
+      reset();const h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});h.weapon.quirk=id;h.cracked=true;
       const e=spawnEnemy('crawler',h.x+20,FLOOR());e.spawnT=0;e.hp=e.max=1e6;const e2=spawnEnemy('stalker',h.x-20,FLOOR());e2.spawnT=0;e2.hp=e2.max=1e6;
       const rnd=Math.random;Math.random=()=>0;let fired;try{fired=quirkHit(h,e,50,1);}finally{Math.random=rnd;}
       ok(fired,'quirk '+id+' did not fire');
@@ -522,15 +514,15 @@ export function runSmoke(game) {
       ok(z===9?world.phase==='won':world.zone===z+1,'zone '+z+' stalled');
     }
   });
-  check('a pit costs 15% of your health and puts you back on the last safe ground; foes knocked in are gone',()=>{
+  check('a pit never cracks your weapon, just puts you back on the last safe ground; foes knocked in are gone',()=>{
     reset();startZone(1);world.enemies=[];const h=world.hero,m=world.map,q=m.pits.find(q=>!q.bridge&&m.platforms.some(p=>p.ground&&p.x+p.w===q.x));
     ok(q,'stage has no pit');
     const lip=m.platforms.find(p=>p.ground && p.x+p.w===q.x);
     h.x=lip.x+lip.w-h.w-20;h.y=lip.y-h.h;h.vx=0;h.vy=0;h.onGround=true;h.platform=lip;h.inv=0;
-    updateHero(h,STEP);const safe={...h.safe},hp=h.hp;ok(safe && safe.y===lip.y-h.h,'safe ground not remembered');
+    updateHero(h,STEP);const safe={...h.safe};ok(safe && safe.y===lip.y-h.h,'safe ground not remembered');
     h.x=q.x+q.w/2-h.w/2;h.y=lip.y-h.h+4;h.onGround=false;h.platform=null;
-    for(let i=0;i<120 && h.hp===hp;i++){poll();updateHero(h,STEP);}
-    ok(h.hp===hp-Math.ceil(h.maxHp*0.15),'the fall cost the wrong amount');
+    for(let i=0;i<120 && !h.hits;i++){poll();updateHero(h,STEP);}
+    ok(h.hits===1 && !h.cracked,'the fall did not count, or it cracked the weapon');
     ok(Math.abs(h.x-safe.x)<1 && Math.abs(h.y-safe.y)<1 && h.inv>0,'not put back on safe ground');
     const e=spawnEnemy('crawler',q.x+q.w/2,lip.y);e.spawnT=0;e.x=q.x+q.w/2-e.w/2;e.y=m.floorY-e.h;e.onGround=false;
     for(let i=0;i<30 && !e.dead;i++)updateEnemy(e,STEP);ok(e.dead,'a foe in the pit lived');
@@ -611,22 +603,22 @@ export function runSmoke(game) {
     resetMeta();let h=level('1-2');ok(!world.egg,'an egg before the stable opened');
     winTrophy(1);winTrophy(2);winTrophy(3);h=level('1-2');ok(!world.egg,'an egg before a mount was picked');
     chooseMount('wargoose');h=level('1-2');ok(world.egg,'no egg on 1-2');
-    mount(h);ok(h.mount && h.mount.kind==='wargoose' && !world.loose,'did not mount');let hp=h.hp;hurtHero(30,1);
-    ok(!h.mount && world.loose && world.loose.kind==='wargoose' && h.hp===hp,'the hit was not soaked by the goose');
+    mount(h);ok(h.mount && h.mount.kind==='wargoose' && !world.loose,'did not mount');hurtHero(30,1);
+    ok(!h.mount && world.loose && world.loose.kind==='wargoose' && !h.cracked,'the hit was not soaked by the goose');
     for(let i=0;i<60*6;i++){world.t+=STEP;updateMount(STEP);}ok(!world.loose,'the goose never flew off');
     // the Iron Boar's barding soaks the first hit, the second throws you
-    chooseMount('ironboar');h=level('1-2');mount(h);ok(h.mount.kind==='ironboar','the egg hatched the wrong mount');hp=h.hp;
-    hurtHero(30,1);ok(h.mount && h.hp===hp,'the barding did not take the first hit');h.inv=0;
-    hurtHero(30,1);ok(!h.mount && h.hp===hp,'the second hit did not throw you');
+    chooseMount('ironboar');h=level('1-2');mount(h);ok(h.mount.kind==='ironboar','the egg hatched the wrong mount');
+    hurtHero(30,1);ok(h.mount && !h.cracked,'the barding did not take the first hit');h.inv=0;
+    hurtHero(30,1);ok(!h.mount && !h.cracked,'the second hit did not throw you');
     // the War Griffin flaps once in mid-air
     chooseMount('griffin');h=level('1-2');mount(h);h.onGround=false;h.coyote=0;h.vy=50;
     ok(flap(h) && h.vy<0,'no sky flap');ok(!flap(h),'flapped twice');
     resetMeta();
   });
   check('specialized: an off-class weapon still equips and swings, just without the cluster',()=>{
-    resetMeta();setLock('ranged');reset();const h=world.hero;world.bag.fill(null);
-    const axe=makeWeapon(3,{type:'axe',q:4,standout:false});world.bag[2]=axe;
-    ok(equipFromBag(2)!==false && h.weapon===axe,'a ranged specialist could not equip an axe');
+    resetMeta();setLock('ranged');reset();const h=world.hero;
+    const axe=makeWeapon(3,{type:'axe',q:4,standout:false});pickUp(axe);
+    ok(h.weapon===axe,'a ranged specialist could not pick up an axe');
     resetMeta();
   });
   check('ghost houses, auto-scrollers, water and ice change how the level plays',()=>{
@@ -654,27 +646,22 @@ export function runSmoke(game) {
     reset();startZone(0);ambience();ok(!world.map.platforms.some(p=>p.ice||p.belt) && !ambience().wind,'the Sword Graveyard got terrain touches');
   });
   check('each trophy power counters the next world',()=>{
-    const hit=(src,dir=1)=>{const h=world.hero;h.inv=0;h.dashT=0;h.hp=h.maxHp=1e6;return hurtHero(1000,dir,src);};
-    resetMeta();reset();const shot0=hit('shot'),lava0=hit('lava'),spell0=hit('magic'),star0=hit('star');hit(null);const kb0=Math.abs(world.hero.vx);
+    const hit=(src,dir=1)=>{const h=world.hero;h.inv=0;h.dashT=0;h.god=true;return hurtHero(1000,dir,src);};
+    // armor perks are the odds a hit glances off (combat.js): 0 for a fresh account
+    const gl=src=>glanceChance(heroStats(),src);
+    resetMeta();reset();const shot0=gl('shot'),lava0=gl('lava');hit(null);const kb0=Math.abs(world.hero.vx);
     winTrophy(1);winTrophy(5);winTrophy(6);winTrophy(7);winTrophy(8);reset();
-    ok(hit('shot')<shot0,'the down coat did not soften shots');ok(hit('lava')<lava0,'the frost beads did not cool the lava');
-    ok(hit('magic')<hit('shot'),'cold iron did not soften spells');ok(hit('star')<shot0*0.75,'the spectacles did not soften shuriken');
+    ok(gl('shot')>shot0,'the down coat did not soften shots');ok(gl('lava')>lava0,'the frost beads did not cool the lava');
+    ok(gl('magic')>gl('shot'),'cold iron did not soften spells');ok(gl('star')>gl('shot'),'the spectacles did not soften shuriken');
     hit(null);ok(Math.abs(world.hero.vx)<kb0*0.5,'the geta did not root you');
     level('6-2');ok(heroPhysics()===null,'the down coat still slips on ice');
     winTrophy(2);level('3-3');ok(heroPhysics().speed>0.8,'the broadhead did not swim faster');
     reset();world.zone=0;const d0=heroStats().dmg;world.zone=1;ok(Math.abs(heroStats().dmg-d0-HOME_TURF.dmg)<1e-9,'no home turf in world 2 for the goose trophy');
     world.zone=0;resetMeta();
   });
-  check('the loot filter salvages drops below its rarity and always keeps standouts',()=>{
-    reset();const was=lootFilter();setLootFilter(3);world.bag=new Array(BAG_SIZE).fill(null);const s0=world.shards;
-    ok(autoLoot(makeWeapon(2,{q:1,standout:false}))==='filtered' && world.shards>s0,'a common weapon got through');
-    ok(autoLoot(makeWeapon(2,{q:1,standout:true}))!=='filtered','a standout was filtered');
-    ok(autoLoot(makeWeapon(2,{q:4,standout:false}))!=='filtered','a heroic weapon was filtered');
-    setLootFilter(was);
-  });
   check('the Monster Book counts kills, and TEMPER makes residents tougher',()=>{
-    resetBook();reset();const h=world.hero,e=spawnEnemy('stalker',h.x+20,FLOOR());e.spawnT=0;hitEnemy(e,e.hp*10,{dir:1});
-    ok(cardKills('stalker')===1,'kill not in the book');resetBook();
+    resetBook();reset();const h=world.hero,e=spawnEnemy('gosling',h.x+20,FLOOR());e.spawnT=0;hitEnemy(e,e.hp*10,{dir:1});
+    ok(cardKills('gosling')===1,'kill not in the book');resetBook();
     reset();const a=spawnEnemy('brute',h.x+40,FLOOR());world.temper=5;const b=spawnEnemy('brute',h.x+40,FLOOR());world.temper=0;
     ok(b.hp>a.hp*2 && b.dmg>a.dmg,'TEMPER 5 did not toughen them');
   });

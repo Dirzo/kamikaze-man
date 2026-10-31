@@ -15,6 +15,7 @@ import { proficiency, profRank } from '../data/proficiency.js';
 import { fmt } from '../data/curve.js';
 import { bookProgress } from '../data/book.js';
 import { temper } from '../data/temper.js';
+import { glanceChance } from './combat.js';
 
 const pct = v => {
   const p = v * 100;
@@ -75,8 +76,9 @@ export function sheetRows(w = null) {
   });
   groups.push({
     name: 'DEFENSE', col: C.lime, rows: [
-      ...(h && !h.dead ? [['MAX HEALTH', fmt(h.maxHp), true]] : []),
-      row('HEALTH', s.hp), row('ARMOR', s.armor), row('HEART HEALING', s.heal), row('REGEN /S', s.regen), row('SAFETY AFTER HIT', s.inv), row('HEART DROPS', s.hearts),
+      ...(h && !h.dead ? [['WEAPON ARMOR', h.cracked ? 'CRACKED' : 'WHOLE', true]] : []),
+      ['HITS THAT GLANCE OFF', Math.round(glanceChance(s, null) * 100) + '%', true],
+      row('STURDY', s.hp), row('ARMOR', s.armor), row('MENDING', s.heal), row('MEND /S', s.regen), row('SAFETY AFTER HIT', s.inv), row('HEART DROPS', s.hearts),
       ...some(row('SHOT ARMOR', s.shotArmor), row('SPELL ARMOR', s.magicArmor), row('SHURIKEN ARMOR', s.starArmor), row('LAVA ARMOR', s.lavaArmor), row('KNOCKBACK RESIST', s.knockRes))
     ]
   });
