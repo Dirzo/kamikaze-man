@@ -5,9 +5,8 @@
 //   haze       a veil of the sky's own colour between the bands, so each step back is paler
 //   near band  a second, larger row of set pieces and hills at 0.66, more saturated, closer
 //   rays       slow shafts of light through the day worlds
-//   front      silhouettes that pass IN FRONT of the hero at 1.3x: grass and reeds along the bottom
-//              of the screen, and now and then a tree trunk, pillar or chain sweeping past (they fade
-//              when they would hide you)
+//   front      grass, reeds and bushes along the bottom of the screen, passing IN FRONT of the hero
+//              at 1.3x
 // Set pieces are placed along the whole stage once per map (seeded), so a long stage never shows the
 // same skyline twice the way a tiled layer does. Everything is drawn into small canvases once.
 import { W, H, GROUND, C } from '../config.js';
@@ -192,16 +191,16 @@ const PIECES = {
 // each world's skyline: [piece, weight, options] for the far and near bands; hill: the bands' ground;
 // front: what passes in front of you; rays: shafts of light (day worlds)
 const KITS = {
-  graveyard: { hill: C.leaf, pieces: [['blade', 4], ['arch', 2], ['tree', 2, { leaf: [C.pine, C.leaf, C.lime] }]], front: { tuft: [C.pine, C.leaf], tall: 'trunk' }, rays: true },
-  'ranger-forest': { hill: C.paper, pieces: [['pine', 6, { snow: true }], ['house', 1, { wall: [C.wood, C.woodD], roof: [C.paper, C.mist], chimney: true }]], front: { tuft: [C.mist, C.paper], tall: 'pine' } },
-  'turtle-lagoon': { hill: C.grass, pieces: [['bamboo', 4], ['house', 2, { wall: [C.sand, C.wood], roof: [C.leaf, C.pine], curve: true }], ['tree', 2, { leaf: [C.pine, C.teal, C.lime] }]], front: { tuft: [C.pine, C.leaf], reeds: true, tall: 'bamboo' }, rays: true },
-  'thieves-bazaar': { hill: C.slate, pieces: [['house', 6, { wall: [C.stone, C.slate], roof: [C.wine, C.red], glow: C.gold }], ['house', 2, { wall: [C.slate, C.night], roof: [C.violet, C.indigo], flat: true, glow: C.orange }]], front: { tuft: [C.night, C.slate], tall: 'pillar' } },
-  'sakura-shrine': { hill: C.lime, pieces: [['pagoda', 2, { wall: [C.paper, C.mist], roof: [C.wine, C.red] }], ['tree', 4, { leaf: [C.coral, C.pink, '#ffd1e6'] }], ['torii', 2]], front: { tuft: [C.coral, C.pink], tall: 'trunk' }, rays: true },
-  'mountain-monastery': { hill: C.fog, pieces: [['spire', 4, { snow: true }], ['spire', 2, { temple: true }], ['pine', 2, { snow: true }]], front: { tuft: [C.stone, C.fog], tall: 'pillar' }, rays: true },
-  'storm-forge': { hill: C.night, pieces: [['stack', 4], ['house', 2, { wall: [C.slate, C.night], roof: [C.stone, C.slate], flat: true, glow: C.orange }], ['spire', 1, { rock: [C.ink, C.night, C.slate] }]], front: { tuft: [C.ink, C.night], tall: 'chain' } },
-  'witch-cottage': { hill: C.grass, pieces: [['tree', 4, { leaf: [C.leaf, C.grass, C.lime] }], ['house', 2, { wall: [C.cream, C.sand], roof: [C.wood, C.woodD], chimney: true, curve: true }], ['mushroom', 2]], front: { tuft: [C.leaf, C.grass], flowers: true, tall: 'trunk' }, rays: true },
-  'ninja-castle': { hill: C.night, pieces: [['pagoda', 2, { wall: [C.mist, C.fog], roof: [C.night, C.slate], tiers: 4, glow: C.gold }], ['bamboo', 3], ['house', 2, { wall: [C.mist, C.fog], roof: [C.night, C.ink], curve: true, glow: C.gold }]], front: { tuft: [C.ink, C.night], tall: 'bamboo' } },
-  'armory-vault': { hill: C.orange, pieces: [['hoard', 4], ['blade', 3, { kinds: ['sword', 'katana', 'spear'] }], ['pagoda', 1, { wall: [C.gold, C.orange], roof: [C.wine, C.red], tiers: 2 }]], front: { tuft: [C.woodD, C.wood], coins: true, tall: 'pillar' } }
+  graveyard: { hill: C.leaf, pieces: [['blade', 4], ['arch', 2], ['tree', 2, { leaf: [C.pine, C.leaf, C.lime] }]], front: { tuft: [C.pine, C.leaf] }, rays: true },
+  'ranger-forest': { hill: C.paper, pieces: [['pine', 6, { snow: true }], ['house', 1, { wall: [C.wood, C.woodD], roof: [C.paper, C.mist], chimney: true }]], front: { tuft: [C.mist, C.paper] } },
+  'turtle-lagoon': { hill: C.grass, pieces: [['bamboo', 4], ['house', 2, { wall: [C.sand, C.wood], roof: [C.leaf, C.pine], curve: true }], ['tree', 2, { leaf: [C.pine, C.teal, C.lime] }]], front: { tuft: [C.pine, C.leaf], reeds: true }, rays: true },
+  'thieves-bazaar': { hill: C.slate, pieces: [['house', 6, { wall: [C.stone, C.slate], roof: [C.wine, C.red], glow: C.gold }], ['house', 2, { wall: [C.slate, C.night], roof: [C.violet, C.indigo], flat: true, glow: C.orange }]], front: { tuft: [C.night, C.slate] } },
+  'sakura-shrine': { hill: C.lime, pieces: [['pagoda', 2, { wall: [C.paper, C.mist], roof: [C.wine, C.red] }], ['tree', 4, { leaf: [C.coral, C.pink, '#ffd1e6'] }], ['torii', 2]], front: { tuft: [C.coral, C.pink] }, rays: true },
+  'mountain-monastery': { hill: C.fog, pieces: [['spire', 4, { snow: true }], ['spire', 2, { temple: true }], ['pine', 2, { snow: true }]], front: { tuft: [C.stone, C.fog] }, rays: true },
+  'storm-forge': { hill: C.night, pieces: [['stack', 4], ['house', 2, { wall: [C.slate, C.night], roof: [C.stone, C.slate], flat: true, glow: C.orange }], ['spire', 1, { rock: [C.ink, C.night, C.slate] }]], front: { tuft: [C.ink, C.night] } },
+  'witch-cottage': { hill: C.grass, pieces: [['tree', 4, { leaf: [C.leaf, C.grass, C.lime] }], ['house', 2, { wall: [C.cream, C.sand], roof: [C.wood, C.woodD], chimney: true, curve: true }], ['mushroom', 2]], front: { tuft: [C.leaf, C.grass], flowers: true }, rays: true },
+  'ninja-castle': { hill: C.night, pieces: [['pagoda', 2, { wall: [C.mist, C.fog], roof: [C.night, C.slate], tiers: 4, glow: C.gold }], ['bamboo', 3], ['house', 2, { wall: [C.mist, C.fog], roof: [C.night, C.ink], curve: true, glow: C.gold }]], front: { tuft: [C.ink, C.night] } },
+  'armory-vault': { hill: C.orange, pieces: [['hoard', 4], ['blade', 3, { kinds: ['sword', 'katana', 'spear'] }], ['pagoda', 1, { wall: [C.gold, C.orange], roof: [C.wine, C.red], tiers: 2 }]], front: { tuft: [C.woodD, C.wood], coins: true } }
 };
 
 function seeded(seed) {
@@ -251,12 +250,12 @@ export function depthOf(amb, id, sky) {
     }
     return { k, items, hill, veil: css(haze) };
   });
-  // in front: a strip of tufts along the bottom of the screen, and the odd tall silhouette
-  const fw = Math.ceil(map.width * FRONT + W * 2), front = [];
-  for (let x = 120 + R() * 300; x < fw; x += W * (1.4 + R() * 1.6)) front.push({ x, kind: K.front.tall, w: 18 + R() * 16, ph: R() * 6 });
+  // in front: a strip of tufts along the bottom of the screen (the tall poles, trunks and chains that
+  // used to sweep past were cut at Cam's ask, 2026-10-31)
+  const fw = Math.ceil(map.width * FRONT + W * 2);
   const tufts = [];
   for (let x = 0; x < fw; x += 30 + R() * 110) tufts.push({ x, h: 14 + R() * 20, w: 16 + R() * 34, f: R() < 0.3 });
-  return (amb.depth = { K, bands, front, tufts, rays: K.rays && !map.dark, haze });
+  return (amb.depth = { K, bands, tufts, rays: K.rays && !map.dark, haze });
 }
 
 function baseLift() {
@@ -306,18 +305,11 @@ function hillBottom(cv) {
   return fills.get(cv);
 }
 
-// in front of everything: the tufts along the bottom and the tall silhouettes sweeping past
+// in front of everything: the tufts along the bottom
 export function drawDepthFront(D, t) {
   if (!D) return;
   screenLayer();
-  const cam = world.cameraX || 0, h = world.hero, hx = h ? h.x + h.w / 2 - cam : -999, ox = cam * FRONT;
-  for (const s of D.front) {
-    const x = Math.round(s.x - ox);
-    if (x > W + 40 || x + s.w < -40) continue;
-    X.globalAlpha = Math.abs(x + s.w / 2 - hx) < s.w / 2 + 30 ? 0.3 : 0.8; // never hide the hero for long
-    silhouette(s, x, t);
-    X.globalAlpha = 1;
-  }
+  const ox = (world.cameraX || 0) * FRONT;
   const bottom = H - 24; // (standing on the HUD's bottom bar)
   for (const u of D.tufts) {
     const x = Math.round(u.x - ox);
@@ -342,30 +334,4 @@ function tuftArt(D, u) {
     if (u.f && F.flowers) for (let i = 0; i < 3; i++) r(4 + (i * w) / 3, h * 0.4 + 6, 2, 2, C.pink);
   }
   return (u.im = cv);
-}
-function silhouette(s, x, t) {
-  const col = '#1a1428', edge = '#2b2442';
-  if (s.kind === 'trunk') {
-    rect(x, 0, s.w, H, col);
-    rect(x + s.w - 3, 0, 3, H, edge);
-    for (let y = 30; y < H; y += 46) rect(x + 4, y, s.w * 0.4, 2, edge);
-  } else if (s.kind === 'pine') {
-    rect(x + s.w / 2 - 4, 0, 8, H, col);
-    for (let y = -10; y < H - 60; y += 34) for (let i = 0; i < 24; i++) rect(x + s.w / 2 - i * 1.6, y + i, i * 3.2, 1, i % 4 ? col : edge);
-  } else if (s.kind === 'bamboo') {
-    for (let i = 0; i < 3; i++) {
-      const bx = x + i * 9 + Math.sin(t * 0.8 + s.ph + i) * 2;
-      rect(bx, 0, 5, H, col);
-      for (let y = 20 + i * 11; y < H; y += 38) rect(bx - 1, y, 7, 2, edge);
-    }
-  } else if (s.kind === 'pillar') {
-    rect(x, 0, s.w, H, col);
-    rect(x - 3, 0, s.w + 6, 8, edge);
-    rect(x - 3, H - 30, s.w + 6, 8, edge);
-    rect(x + 3, 8, 2, H - 38, edge);
-  } else if (s.kind === 'chain') {
-    const len = 90 + (s.ph * 20) | 0, sw = Math.sin(t * 0.9 + s.ph) * 3;
-    for (let y = 0; y < len; y += 6) rect(x + sw * (y / len) + (y / 6) % 2 * 2, y, 4, 5, (y / 6) % 2 ? edge : col);
-    rect(x - 6 + sw, len, 16, 12, col); // a hook
-  }
 }
