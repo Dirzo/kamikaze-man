@@ -43,7 +43,7 @@ export function createHero() {
 
 // ---------------------------------------------------------------- update
 export function updateHero(h, dt) {
-  if (h.dead) {
+  if (h.dead || h.cheer) { // (cheer: the level-clear celebration, main.js)
     h.vx *= 0.9;
     move(h, dt, world.platforms);
     return;

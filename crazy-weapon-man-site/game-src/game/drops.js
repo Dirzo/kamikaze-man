@@ -14,6 +14,7 @@ import { MUTATIONS } from '../data/progression.js';
 import { toast } from './progress.js';
 import { burst, emit } from './fx.js';
 import { autoLoot, equipFromBag } from './inventory.js';
+import { emote } from './faces.js';
 
 export function equip(item) {
   const h = world.hero,
@@ -31,6 +32,7 @@ export function equip(item) {
     toast('power', { ...MUTATIONS[item.mutation] });
   }
   sfx.pickup();
+  emote(h, 'wow', 0.7); // a new weapon: held up for a look
   burst(cx(h), h.y + 6, 10, 'twinkle', [lookOf(item).light, 'paper']);
   if (!world.best || dps(item) > dps(world.best)) world.best = item;
   return old;
@@ -65,6 +67,7 @@ export function updateDrops(dt) {
       world.drops.splice(i, 1);
       autoLoot(d.item);
       sfx.pickup();
+      emote(h, 'wow', 0.45);
       burst(cx(h), h.y + 6, 6, 'twinkle', [lookOf(d.item).light, 'paper']);
       continue;
     }
@@ -108,6 +111,7 @@ export function updateDrops(dt) {
         const heal = Math.round(h.maxHp * 0.15 * (1 + stats().heal));
         h.hp = Math.min(h.maxHp, h.hp + heal);
         sfx.ui(true);
+        emote(h, 'joy', 0.4);
         burst(cx(h), h.y + 4, 6, 'twinkle', ['red', 'paper']);
       }
       world.pickups.splice(i, 1);

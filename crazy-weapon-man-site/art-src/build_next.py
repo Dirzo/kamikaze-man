@@ -6,6 +6,7 @@ glyphs, palette) from the shared /assets/px/ export (build_assets.py).
   hero.png  the arcade-cut hero (arcade_hero.py): 22x30 frames facing right, feet on y = 29,
             including the two back-view ladder frames climb0/climb1
   arms.png  hand-drawn arms (arcade_arms.py): one strip, front arms then the darker far arms
+  faces.png expression patches (arcade_faces.py) laid over the face of any frame, one per mood
   next.json frame list, feet row, shoulder points per frame and the arm table
 
 The original 17x25 hero maps are kept in pixel.py (HERO) for the legacy build.
@@ -15,6 +16,7 @@ import os
 
 from arcade_hero import build
 from arcade_arms import build as build_arms
+from arcade_faces import build as build_faces
 
 OUT = os.path.join(os.path.dirname(__file__), '..', 'public', 'assets', 'hero')
 
@@ -25,6 +27,8 @@ def main():
     strip.save(os.path.join(OUT, 'hero.png'))
     arms, hero['arms'] = build_arms()
     arms.save(os.path.join(OUT, 'arms.png'))
+    faces, hero['faces'] = build_faces()
+    faces.save(os.path.join(OUT, 'faces.png'))
     with open(os.path.join(OUT, 'next.json'), 'w') as f:
         json.dump({'hero': hero}, f, indent=1)
     print('wrote', OUT)
