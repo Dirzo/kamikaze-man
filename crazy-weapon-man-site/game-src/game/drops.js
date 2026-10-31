@@ -1,10 +1,10 @@
-// Weapon drops (looted automatically into the bag; DOWN equips a just-looted upgrade),
-// and pickups (shards fly to you, hearts heal).
+// Weapon drops (each one flies to you and is equipped on arrival: a new weapon is fresh armor,
+// combat.js hurtHero), the spare weapon a cracked hero gets, and pickups (shards fly to you,
+// hearts mend a cracked weapon).
 import { C } from '../config.js';
 import { stats } from '../data/meta.js';
 import { temper } from '../data/temper.js';
 import { X, rect } from '../engine/gfx.js';
-import { input } from '../engine/input.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
 import { move, cx, cy, worldFloor } from './physics.js';
@@ -12,8 +12,15 @@ import { dps, powerScore } from './loot.js';
 import { lookOf, overlays, runEmitters, frameOfLook, rarityColour } from './looks.js';
 import { MUTATIONS } from '../data/progression.js';
 import { toast } from './progress.js';
-import { burst, emit } from './fx.js';
-import { autoLoot, equipFromBag } from './inventory.js';
+import { burst, emit, callout } from './fx.js';
+import { logWeapon, salvageValue } from './inventory.js';
+import { toBasket } from '../data/den.js';
+import { lustBoost } from './lust.js';
+import { dropWeapon, mend } from './combat.js';
+import { makeWeapon } from './loot.js';
+import { inheritAnvil } from '../data/anvil.js';
+import { ARMOR } from '../data/feel.js';
+import { emote } from './faces.js';
 
 export function equip(item) {
   const h = world.hero,
@@ -31,17 +38,52 @@ export function equip(item) {
     toast('power', { ...MUTATIONS[item.mutation] });
   }
   sfx.pickup();
+  emote(h, 'wow', 0.7); // a new weapon: held up for a look
   burst(cx(h), h.y + 6, 10, 'twinkle', [lookOf(item).light, 'paper']);
   if (!world.best || dps(item) > dps(world.best)) world.best = item;
   return old;
 }
 
+// a weapon reached you: it goes straight into your hand, whole, and the old one melts into shards
+// (and the Beast Den's feed basket).
+// The anvil's edge on the old one passes on (data/anvil.js), a never-held weapon feeds Weapon
+// Lust, and the strongest finds go in the log (inventory.js).
+export function pickUp(w) {
+  const h = world.hero;
+  if (!h || !w) return;
+  const old = h.weapon, fresh = !w.used;
+  inheritAnvil(w, old);
+  equip(w);
+  if (old && !old.name.startsWith('Training ') && old !== w) {
+    world.shards += salvageValue(old);
+    toBasket(old); // the melted weapon drops into the Beast Den's feed basket
+  }
+  if (h.cracked) callout('ARMOR UP!', 0, 0, C.lime, { follow: h, life: 55 });
+  h.cracked = false;
+  h.mendAcc = 0;
+  h.crackT = 0;
+  if (fresh) lustBoost(h);
+  logWeapon(w);
+}
+
+// a cracked hero with no weapon coming gets one from the sky after ARMOR.spare seconds
+function updateSpare(h, dt) {
+  if (!h.cracked || h.dead || world.phase === 'dead') return;
+  h.crackT = (h.crackT || 0) + dt;
+  if (world.drops.length) return;
+  if (h.crackT < ARMOR.spare) return;
+  h.crackT = 0;
+  dropWeapon(cx(h) + h.face * 16, h.y - 40, makeWeapon(world.zone));
+  callout('SPARE WEAPON!', 0, 0, C.gold, { follow: h, life: 50 });
+}
+
 // Weapon drops pop out, hover where they landed (no physics, so nothing slips through a floor or
-// off a ledge) and then fly to you and are looted into the bag.
-const POP = 0.35, HOME = 0.7;
+// off a ledge) and then fly to you and are equipped. A cracked hero's come sooner.
+const POP = 0.35, HOME = 0.7, HOME_CRACKED = 0.4;
 export function updateDrops(dt) {
   const h = world.hero;
   world.nearDrop = null;
+  updateSpare(h, dt);
   for (let i = world.drops.length - 1; i >= 0; i--) {
     const d = world.drops[i];
     d.t += dt;
@@ -52,7 +94,7 @@ export function updateDrops(dt) {
       continue;
     }
     if (d.hy == null) d.hy = d.y;
-    if (h.dead || d.t < HOME) {
+    if (h.dead || d.t < (h.cracked ? HOME_CRACKED : HOME)) {
       d.y += (d.hy - d.y) * Math.min(1, dt * 10);
       continue;
     }
@@ -63,20 +105,13 @@ export function updateDrops(dt) {
       sp = 120 + (d.t - HOME) * 520;
     if (dist < 12) {
       world.drops.splice(i, 1);
-      autoLoot(d.item);
-      sfx.pickup();
+      pickUp(d.item);
       burst(cx(h), h.y + 6, 6, 'twinkle', [lookOf(d.item).light, 'paper']);
       continue;
     }
     d.x += (dx / dist) * Math.min(dist, sp * dt);
     d.y += (dy / dist) * Math.min(dist, sp * dt);
     if (Math.random() < dt * 30) emit(cx(d), cy(d), 'twinkle', rarityColour(d.item.q));
-  }
-  if (world.quick) {
-    world.quick.t -= dt;
-    const i = world.bag.indexOf(world.quick.item);
-    if (world.quick.t <= 0 || i < 0) world.quick = null;
-    else if (!h.dead && !h.attack && !h.special && h.dashT <= 0 && input.take('down', 0.15)) equipFromBag(i);
   }
   // pickups
   for (let i = world.pickups.length - 1; i >= 0; i--) {
@@ -105,9 +140,10 @@ export function updateDrops(dt) {
         world.shards += n;
         sfx.shard();
       } else {
-        const heal = Math.round(h.maxHp * 0.15 * (1 + stats().heal));
-        h.hp = Math.min(h.maxHp, h.hp + heal);
+        // a heart mends a cracked weapon outright (BANDAGES and the like no longer have more to give)
+        mend(1);
         sfx.ui(true);
+        emote(h, 'joy', 0.4);
         burst(cx(h), h.y + 4, 6, 'twinkle', ['red', 'paper']);
       }
       world.pickups.splice(i, 1);

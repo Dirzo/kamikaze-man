@@ -1,7 +1,8 @@
 // The polish pass: Monster Book, TEMPER tiers, weapon relics, hidden portals, level gimmicks and eggs
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CARDS, CARD_LIST, CARD_GOALS, PAGES, tierOf, recordKill, recordBoss, cardTier, bookStats, bookProgress, resetBook, pageDone, BOOK_KEY } from '../game-src/data/book.js';
+import { CARDS, CARD_LIST, CARD_GOALS, PAGES, tierOf, recordKill, recordBoss, cardTier, bookStats, bookProgress, resetBook, pageDone, BOOK_KEY, cardZone } from '../game-src/data/book.js';
+import { ZONES } from '../game-src/data/zones.js';
 import { stats } from '../game-src/data/meta.js';
 import { FILE_KEYS } from '../game-src/data/saves.js';
 import { ENEMIES } from '../game-src/data/enemies.js';
@@ -18,24 +19,32 @@ test('the Monster Book has a card with a bonus for every resident type, and a pa
   for (const P of PAGES) assert.ok(P.kinds.includes(P.head), P.name + ' has its head');
 });
 
+test('the Monster Book only holds the beastkin families: ten cards a world, in world order', () => {
+  assert.equal(CARD_LIST.length, ZONES.length * 10);
+  assert.deepEqual(CARD_LIST, ZONES.flatMap(Z => Z.pool));
+  for (const t of CARD_LIST) assert.equal(ENEMIES[t].kind, 'beast', t);
+  assert.deepEqual(Object.keys(CARDS).sort(), [...CARD_LIST].sort(), 'no cards for the old residents');
+  CARD_LIST.forEach((t, i) => assert.equal(cardZone(t), Math.floor(i / 10), t));
+});
+
 test('cards climb FOUND, BRONZE, SILVER, GOLD and only GOLD cards and full pages add stats', () => {
   resetBook();
   assert.deepEqual([0, 1, 19, 20, 80, 249, 250].map(tierOf), [-1, 0, 0, 1, 2, 2, 3]);
   const before = stats().dmg;
-  assert.equal(recordKill('stalker'), 0);
-  assert.equal(recordKill('stalker', 18), -1);
-  assert.equal(recordKill('stalker'), 1);
+  assert.equal(recordKill('berserker'), 0);
+  assert.equal(recordKill('berserker', 18), -1);
+  assert.equal(recordKill('berserker'), 1);
   assert.equal(stats().dmg, before, 'a BRONZE card gives nothing yet');
-  assert.equal(recordKill('stalker', CARD_GOALS[3]), 3);
-  assert.equal(cardTier('stalker'), 3);
-  assert.ok(Math.abs(stats().dmg - before - CARDS.stalker.stats.dmg) < 1e-9, 'GOLD adds its bonus, and the stat cache notices');
+  assert.equal(recordKill('berserker', CARD_GOALS[3]), 3);
+  assert.equal(cardTier('berserker'), 3);
+  assert.ok(Math.abs(stats().dmg - before - CARDS.berserker.stats.dmg) < 1e-9, 'GOLD adds its bonus, and the stat cache notices');
   assert.equal(recordKill('notaresident'), -1);
   const P = PAGES[0], bossDmg = stats().bossDmg;
   P.kinds.slice(0, -1).forEach(k => assert.equal(recordBoss(k), 'new'));
   assert.equal(recordBoss(P.kinds[0]), null, 'a boss counts once');
   assert.equal(recordBoss(P.kinds.at(-1)), 'page');
   assert.ok(pageDone(P) && stats().bossDmg > bossDmg);
-  assert.deepEqual(bookStats(), { dmg: CARDS.stalker.stats.dmg, bossDmg: 0.02 });
+  assert.deepEqual(bookStats(), { dmg: CARDS.berserker.stats.dmg, bossDmg: 0.02 });
   assert.equal(bookProgress().pages, 1);
   resetBook();
   assert.equal(stats().dmg, before);
@@ -153,4 +162,18 @@ test('the Legendary Anvil spends relics to make a weapon a stronger version of i
   assert.match(cantStrike(s, w), /ALREADY \+5/);
   keepRelics(s, LEVELS.find(n => n.region === 4).id, 31);
   assert.equal(relicsToSpend(s), all - 75 + 5, 'new relics add to what you can spend');
+});
+
+test("the anvil's edge passes on to each weapon that replaces a struck one", async () => {
+  const { inheritAnvil, STRIKE_BOOST, strikes } = await import('../game-src/data/anvil.js');
+  const old = { name: 'Bonkreaver, the Thirsty +5', struck: 5, ability: 'vampire' };
+  const w = inheritAnvil({ name: 'Pointy Stick', boost: 2 }, old);
+  assert.equal(strikes(w), 5);
+  assert.ok(Math.abs(w.boost - 2 * STRIKE_BOOST ** 5) < 1e-9);
+  assert.equal(w.name, 'Pointy Stick +5');
+  assert.equal(w.ability, 'vampire', 'a +5 passes its awakened ability to one without');
+  const plain = inheritAnvil({ name: 'Spoon' }, { name: 'Fork' });
+  assert.ok(!strikes(plain) && plain.name === 'Spoon' && !plain.boost, 'an unstruck weapon passes nothing');
+  const two = inheritAnvil({ name: 'Ladle +2', struck: 2, boost: 1 }, { struck: 3 });
+  assert.ok(strikes(two) === 3 && Math.abs(two.boost - STRIKE_BOOST) < 1e-9, 'only the missing strikes are added');
 });

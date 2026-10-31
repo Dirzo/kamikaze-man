@@ -1,6 +1,6 @@
 // The POWERS window on the overworld (E / B / Tab, or the Bag button): its tabs over the map.
-//   BAG         the weapon bag (inventory.js), drawn under this window's tab strip; main.js opens
-//               and closes it through bagLink, since the map's bag loads and saves the hero
+//   BAG         the weapon log (inventory.js), drawn under this window's tab strip; main.js opens
+//               and closes it through bagLink, since the map's log loads and saves the hero
 //   STATS       the stat sheet (statsheet.js) for the weapon you carry on the map
 //   SHARD TREE  a web of linked nodes: invest banked shards in a rank (ENTER), take back the last
 //               step (U: a rank, or a change of class), refund everything and clear the class (Q),
@@ -27,7 +27,8 @@ import { FAMILIES } from '../data/families.js';
 import { bossName } from './bosses.js';
 import { A } from '../engine/assets.js';
 import { ENEMIES } from '../data/enemies.js';
-import { CARDS, CARD_LIST, CARD_GOALS, CARD_TIERS, TIER_COL, PAGES, PAGE_BONUS, cardKills, cardTier, toNext, bossBeaten, pageDone, bookProgress } from '../data/book.js';
+import { CARDS, CARD_LIST, CARD_GOALS, CARD_TIERS, TIER_COL, PAGES, PAGE_BONUS, cardKills, cardTier, toNext, bossBeaten, pageDone, bookProgress, cardZone } from '../data/book.js';
+import { ZONES } from '../data/zones.js';
 import { drawSheet } from './statsheet.js';
 import { SECRETS, foundSecrets } from './secrets.js';
 import { REGIONS } from '../data/overworld.js';
@@ -41,7 +42,7 @@ import {
 import { MOUNTS, MOUNT_LIST, STABLE_TROPHIES } from '../data/mounts.js';
 import { beast } from './mount.js';
 
-const TABS = ['BAG', 'STATS', 'SHARD TREE', 'MASTERY', 'TROPHIES', 'STABLE', 'BOOK', 'COLLECTION'];
+const TABS = ['LOG', 'STATS', 'SHARD TREE', 'MASTERY', 'TROPHIES', 'STABLE', 'BOOK', 'COLLECTION'];
 export const TAB = { BAG: 0, STATS: 1, TREE: 2, MASTERY: 3, TROPHIES: 4, STABLE: 5, BOOK: 6, COLL: 7 };
 // the map's bag: main.js fills these in (open loads the hero into the bag, close saves it back)
 export const bagLink = { open: null, close: null };
@@ -283,7 +284,7 @@ export function drawPowers(t) {
   else drawSheet(12, 30, W - 24, H - 66, P.sheetWeapon);
   if (P.msgT > 0) text(P.msg, W / 2, H - 29, C.cream, { align: 'center' });
   const hint = P.tab === TAB.TREE ? 'ARROWS: PICK  ENTER: INVEST  U: UNDO  Q: REFUND  G: SPECIALIZE  SHIFT: TAB  E: CLOSE'
-    : P.tab === TAB.MASTERY ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   E: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   E: CLOSE')
+    : P.tab === TAB.MASTERY ? (P.mast.open ? 'ARROWS: PICK A STAR   ENTER: CHOOSE THE PERK   Q: BACK TO THE SKY   2: CLOSE' : 'ARROWS: PICK A CONSTELLATION   ENTER: OPEN IT   SHIFT: NEXT TAB   2: CLOSE')
     : P.tab === TAB.TROPHIES ? 'BEAT A FAMILY HEAD IN ITS CASTLE FOR ITS TROPHY   SHIFT: NEXT TAB   E: CLOSE'
     : P.tab === TAB.STABLE ? (stableOpen() ? 'ARROWS: PICK   ENTER: SADDLE UP   SHIFT: NEXT TAB   E: CLOSE' : 'BEAT THREE FAMILY HEADS TO OPEN THE STABLE   SHIFT: NEXT TAB   E: CLOSE')
     : P.tab === TAB.BOOK ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`
@@ -759,7 +760,8 @@ function drawStable(t) {
 }
 
 // ---------------------------------------------------------------- the Monster Book
-const BOOK_COLS = 5, CW = 62, CH = 36;
+// a page per world: its family's ten cards in two rows (arrows walk on into the next world's page)
+const BOOK_COLS = 5, CW = 62, CH = 62, PER_PAGE = 10;
 // an unseen resident is a black silhouette; the cut-outs are made once per type
 const sil = new Map();
 function silhouette(art) {
@@ -790,13 +792,18 @@ function drawBook(t) {
   text(B.pages ? 'Q: RESIDENT CARDS' : 'Q: BOSS PAGES', flip.x + flip.w / 2, flip.y + 2, C.cream, { align: 'center' });
   box(flip.x, flip.y, flip.w, flip.h, () => { B.pages = !B.pages; sfx.ui(true); });
   if (B.pages) return drawPages(t);
-  CARD_LIST.forEach((type, i) => {
-    const x = MAP.x + 4 + (i % BOOK_COLS) * (CW + 2), y = 40 + Math.floor(i / BOOK_COLS) * (CH + 2), tier = cardTier(type), sel = B.sel === i;
+  const pg = Math.floor(B.sel / PER_PAGE), Z = ZONES[cardZone(CARD_LIST[pg * PER_PAGE])];
+  const got = CARD_LIST.slice(pg * PER_PAGE, pg * PER_PAGE + PER_PAGE).filter(k => cardTier(k) >= 0).length;
+  text(fitText(`WORLD ${pg + 1}  ${Z.name.toUpperCase()}`, MAP.w - 70), MAP.x + 4, 42, C.cream);
+  text(`${got}/${PER_PAGE}  < ${pg + 1}/${Math.ceil(CARD_LIST.length / PER_PAGE)} >`, MAP.x + MAP.w - 6, 42, C.fog, { align: 'right' });
+  CARD_LIST.slice(pg * PER_PAGE, pg * PER_PAGE + PER_PAGE).forEach((type, j) => {
+    const i = pg * PER_PAGE + j;
+    const x = MAP.x + 4 + (j % BOOK_COLS) * (CW + 2), y = 54 + Math.floor(j / BOOK_COLS) * (CH + 2), tier = cardTier(type), sel = B.sel === i;
     const col = tier >= 0 ? C[TIER_COL[tier]] : C.slate;
     rect(x, y, CW, CH, sel ? C.cream : col);
     rect(x + 1, y + 1, CW - 2, CH - 2, tier >= 0 ? C.night : C.ink);
     if (tier === 3) dither(x + 1, y + 1, CW - 2, CH - 2, C.gold, 2);
-    sprite(A.enemies[type], x + CW / 2, y + CH - 7, tier >= 0, CW - 8, CH - 10, t);
+    sprite(A.enemies[type], x + CW / 2, y + CH - 7, tier >= 0, CW - 8, CH - 10, t, 2);
     for (let k = 0; k < 4; k++) rect(x + 4 + k * 5, y + CH - 5, 4, 2, k <= tier ? C[TIER_COL[k]] : C.slate);
     if (tier === 3 && Math.floor(t * 3 + i) % 7 === 0) px(x + CW - 5, y + 4, C.paper);
     box(x, y, CW, CH, () => { B.sel = i; sfx.ui(); });

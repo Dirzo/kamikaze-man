@@ -44,7 +44,7 @@ export const BRANCHES = [
 // the shared ring: [id, x, y, depth, name, max ranks, stat, per rank, description ({v} = the total)]
 const SHARED = [
   ['sharp', -30, -8, 0, 'HEAVY IMPACT', 5, 'impact', 0.1, 'Hits land {v}% harder: a longer freeze-frame, a bigger shake and more knockback'],
-  ['band', -24, 16, 0, 'BANDAGES', 5, 'heal', 0.1, 'Hearts heal {v}% more'],
+  ['band', -24, 16, 0, 'BANDAGES', 5, 'heal', 0.1, 'Healing (lifesteal, regen, specials) mends cracks {v}% faster'],
   ['skin', 30, -8, 0, 'LONG REACH', 5, 'reach', 0.04, 'Every weapon is {v}% bigger and reaches further'],
   ['hearts', 24, 16, 0, 'HEARTFELT', 5, 'hearts', 0.02, '+{v}% heart drops'],
   ['magnet', -10, 28, 0, 'MAGNET', 5, 'shards', 0.06, '+{v}% shards'],
@@ -100,7 +100,7 @@ const CLUSTERS = {
       ['crush', 76, 0, 'small', 2, 'KNOCKOUT', 5, 'knock', 0.2, 'Foes fly {v}% further when you hit them'],
       ['shock', 94, 0, 'aoe', 2, 'SHOCKWAVE', 5, 'wave', 0.15, 'Blunt finishers slam a shockwave: {v}% damage to every foe around you'],
       ['boom', 109, 0, 'aoe', 3, 'BIG BOOMS', 5, 'aoeSize', 0.12, 'Shockwaves, splashes and novas reach {v}% wider'],
-      ['stone', 94, -24, 'small', 3, 'STONESKIN', 3, 'armor', 0.04, 'Shrug off {v}% of every hit with a blunt weapon'],
+      ['stone', 94, -24, 'small', 3, 'STONESKIN', 3, 'armor', 0.04, '{v}% of hits glance off with a blunt weapon'],
       ['quake', 109, -30, 'key', 3, 'QUAKE STRIKES', 5, 'infuse', 0.06, 'Blunt hits are infused with Earth: {v}% chance to quake', 'earth'],
       ['thorns', 124, -24, 'medium', 4, 'THORNS', 1, 'innate', 1, 'Getting hit lashes back at the foe', { innate: 'thorns' }],
       ['after', 94, 24, 'aoe', 3, 'AFTERSHOCK', 5, 'nova', 0.06, 'Blunt kills quake: {v}% of the fallen foe\'s health to foes nearby'],
@@ -167,18 +167,18 @@ const TREE_V = 3; // 3: the clusters trace their weapons, and upgrades are about
 // families' bosses (a bigger, spicier version of each zone's beasts) and each trophy is that head's
 // own keepsake, and its power is made for the NEXT world: it counters that world's residents, boss
 // moves or terrain (`for` names them). The power works everywhere; on top of it, the next world
-// (zone index = region) is your home turf: HOME_TURF more damage and less damage taken there.
+// (zone index = region) is your home turf: HOME_TURF more damage and more hits glancing off there.
 // The last trophy has no next world: it is for the post-game grind instead.
 export const HOME_TURF = { dmg: 0.2, armor: 0.2 };
 export const TROPHIES = {
-  1: { name: "MOTHER GOOSE'S DOWN COAT", perk: 'GOOSE-DOWN', for: 'ARCHERS AND SNOW', desc: 'Shots hit 25% softer and you never slip on ice', stats: { shotArmor: 0.25 }, innate: 'grip' },
+  1: { name: "MOTHER GOOSE'S DOWN COAT", perk: 'GOOSE-DOWN', for: 'ARCHERS AND SNOW', desc: '25% of shots glance off and you never slip on ice', stats: { shotArmor: 0.25 }, innate: 'grip' },
   2: { name: "THE YETI KING'S BROADHEAD", perk: 'SHELL SPLITTER', for: 'SHELLS AND THE LAGOON', desc: 'Your hits crack shields and shells, and you swim 30% faster', stats: {}, innate: 'broadhead' },
   3: { name: "THE GRAND SNAPPER'S GLOW-LILY", perk: 'LAGOON GLOW', for: 'THE DARK BAZAAR', desc: 'Your light reaches 70% farther in dark levels and haunted blades creep 40% slower', stats: {}, innate: 'torch' },
   4: { name: "THE FAT CAT'S MONOCLE", perk: 'SEEN EVERY TRICK', for: 'IAI SLASHES AND TRICKS', desc: 'Every boss tell and floor warning lasts 50% longer', stats: {}, innate: 'monocle' },
   5: { name: "THE TOSA SHOGUN'S GETA", perk: 'ROOTED BLOSSOM', for: 'THE WINDY PEAKS', desc: 'You take 70% less knockback, and your dash cuts slice twice as hard', stats: { knockRes: 0.7 }, innate: 'dashcut' },
-  6: { name: "THE YAK ABBOT'S FROST BEADS", perk: 'MOUNTAIN COLD', for: 'THE LAVA FORGE', desc: 'Lava burns 50% less, and 1 hit in 5 chills a foe to half speed', stats: { lavaArmor: 0.5, chillHit: 0.2 } },
-  7: { name: "THE BEAR SMITH'S COLD-IRON ANVIL", perk: 'COLD IRON', for: 'WANDS AND SPELLS', desc: 'Spells, sparkles and cookie rain hit 35% softer', stats: { magicArmor: 0.35 } },
-  8: { name: "THE OWL ARCHMAGE'S SPECTACLES", perk: 'NOTHING GETS PAST AN OWL', for: 'NINJAS AND SHURIKEN', desc: 'Foes that teleport behind you land in front of you, and shuriken hit 30% softer', stats: { starArmor: 0.3 }, innate: 'glasses' },
+  6: { name: "THE YAK ABBOT'S FROST BEADS", perk: 'MOUNTAIN COLD', for: 'THE LAVA FORGE', desc: 'Half of lava burns glance off, and 1 hit in 5 chills a foe to half speed', stats: { lavaArmor: 0.5, chillHit: 0.2 } },
+  7: { name: "THE BEAR SMITH'S COLD-IRON ANVIL", perk: 'COLD IRON', for: 'WANDS AND SPELLS', desc: '35% of spells, sparkles and cookie rain glance off', stats: { magicArmor: 0.35 } },
+  8: { name: "THE OWL ARCHMAGE'S SPECTACLES", perk: 'NOTHING GETS PAST AN OWL', for: 'NINJAS AND SHURIKEN', desc: 'Foes that teleport behind you land in front of you, and 30% of shuriken glance off', stats: { starArmor: 0.3 }, innate: 'glasses' },
   9: { name: "THE KOMODO LORD'S STOLEN CROWN", perk: "USURPER'S CLAIM", for: 'THE HOARD AND ITS GUARDS', desc: '+20% damage to bosses and elites, and your safety after a hit lasts 50% longer', stats: { bossDmg: 0.2, inv: 0.5 } },
   10: { name: "THE DRAGON'S FIRST WEAPON", perk: 'EVERY WEAPON EVER', for: 'THE POST-GAME', desc: '+15% damage with everything, +25% mastery and +25% shards', stats: { dmg: 0.15, mastery: 0.25, shards: 0.25 } }
 };
@@ -189,7 +189,7 @@ const pc = v => Math.round(v * 100) + '%';
 export function trophyTurf(r, short = false) {
   const z = trophyZone(r);
   if (z == null) return 'MADE FOR THE POST-GAME: EVERY WORLD, EVERY REPLAY';
-  return `${short ? 'HOME TURF IN WORLD ' + (z + 1) : `IN WORLD ${z + 1}, ${ZONES[z].name.toUpperCase()}`}: +${pc(HOME_TURF.dmg)} DAMAGE, ${pc(HOME_TURF.armor)} LESS DAMAGE TAKEN`;
+  return `${short ? 'HOME TURF IN WORLD ' + (z + 1) : `IN WORLD ${z + 1}, ${ZONES[z].name.toUpperCase()}`}: +${pc(HOME_TURF.dmg)} DAMAGE, ${pc(HOME_TURF.armor)} OF HITS GLANCE OFF`;
 }
 
 // ---------------------------------------------------------------- weapon mastery perks
@@ -207,17 +207,17 @@ export const SIGNATURE = {
 export const MASTERY_PERKS = [
   [{ name: 'EDGE', desc: '+6% damage', stats: { dmg: 0.06 } }, { name: 'KEEN', desc: '+4% critical chance', stats: { crit: 0.04 } }],
   [{ name: 'QUICK HANDS', desc: 'Attack 6% faster', stats: { attackSpeed: 0.06 } }, { name: 'SECOND WIND', desc: 'Special recharges 15% faster', stats: { specialCd: 0.15 } }],
-  [{ name: 'IRON GRIP', desc: 'Take 6% less damage', stats: { armor: 0.06 } }, { name: 'LONG STRIDE', desc: '+6% speed, momentum builds 25% faster', stats: { speed: 0.06, accel: 0.25 } }],
+  [{ name: 'IRON GRIP', desc: '6% of hits glance off', stats: { armor: 0.06 } }, { name: 'LONG STRIDE', desc: '+6% speed, momentum builds 25% faster', stats: { speed: 0.06, accel: 0.25 } }],
   [{ name: 'BRUISER', desc: '+12% damage to bosses and elites', stats: { bossDmg: 0.12 } }, { name: 'CROWD CONTROL', desc: '+15% damage in the swarm', stats: { swarmDmg: 0.15 } }],
   [{ name: 'HONED', desc: '+10% damage', stats: { dmg: 0.1 } }, { name: 'LUCKY STREAK', desc: '+6% critical chance', stats: { crit: 0.06 } }],
   [{ sig: 0 }, { sig: 1 }],
   [{ name: 'FOCUS', desc: 'Crits deal +30% more', stats: { critDmg: 0.3 } }, { name: 'FINISHER', desc: '+25% damage to foes under a third of their health', stats: { execute: 0.25 } }],
-  [{ name: 'TOUGH LOVE', desc: '+10% max health', stats: { hp: 0.1 } }, { name: 'SHARD SENSE', desc: '+15% shards', stats: { shards: 0.15 } }],
+  [{ name: 'TOUGH LOVE', desc: '10% sturdier: more hits glance off', stats: { hp: 0.1 } }, { name: 'SHARD SENSE', desc: '+15% shards', stats: { shards: 0.15 } }],
   [{ name: 'ARMS MASTER', desc: 'Attack 10% faster', stats: { attackSpeed: 0.1 } }, { name: 'QUICK RECOVERY', desc: 'Special recharges 25% faster', stats: { specialCd: 0.25 } }],
   [{ name: 'PERFECT FORM', desc: '+25% damage', stats: { dmg: 0.25 } }, { sig: 'other' }]
 ];
 const ABILITY_NAMES = { meteor: 'METEOR CALLER', vampire: 'THIRSTY', thorns: 'BITES BACK', hops: 'DOUBLE JUMP', dashcut: 'DASH CUT', frenzy: 'FRENZY', lucky: 'LUCKY', bubble: 'BUBBLE GUARD', giantslayer: 'GIANT SLAYER' };
-const ABILITY_DESC = { meteor: 'Finishers call a meteor', vampire: 'Hits heal you a little', thorns: 'Getting hit lashes back', hops: 'Jump again in mid-air', dashcut: 'Dash cuts hit twice as hard', frenzy: 'Kills speed up swings', lucky: '+15% critical chance', bubble: 'A bubble blocks a hit every 8s', giantslayer: '+25% damage to big foes' };
+const ABILITY_DESC = { meteor: 'Finishers call a meteor', vampire: 'Hits mend your weapon a little', thorns: 'Getting hit lashes back', hops: 'Jump again in mid-air', dashcut: 'Dash cuts hit twice as hard', frenzy: 'Kills speed up swings', lucky: '+15% critical chance', bubble: 'A bubble blocks a hit every 8s', giantslayer: '+25% damage to big foes' };
 // the perk at (type, tier, option) with its name and description filled in
 export function masteryPerk(type, tier, opt) {
   const p = MASTERY_PERKS[tier][opt];
@@ -292,6 +292,14 @@ export function bankShards(n) {
   m.earned += n;
   save();
   return n;
+}
+// spend banked shards outside the tree (the Beast Den's shard snack); false when there aren't enough
+export function spendShards(n) {
+  const m = meta();
+  if (m.shards < n) return false;
+  m.shards -= n;
+  save();
+  return true;
 }
 export const rank = id => meta().tree[id] || 0;
 // the invested nodes that can be walked to from CORE, only ever stepping on out of a gated node

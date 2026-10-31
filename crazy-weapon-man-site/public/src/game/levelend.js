@@ -154,6 +154,7 @@ export function drawLevelEnd(T, t) {
   else if (E.relics?.fresh) extra.push([`${E.relics.fresh} NEW RELIC${E.relics.fresh > 1 ? 'S' : ''} KEPT`, C.cream]);
   if (E.temperUp) extra.push([`TEMPER ${E.temperUp} UNLOCKED: ${MODS[E.temperUp - 1].name}  (T ON THE MAP)`, C.coral]);
   if (E.cards) extra.push([`MONSTER BOOK: ${E.cards} CARD${E.cards > 1 ? 'S' : ''} WENT UP A TIER`, C.sky]);
+  if (E.egg) extra.push([`A ${E.egg} EGG! IT'S WAITING IN THE BEAST DEN (H ON THE MAP)`, C.pink]);
   if (E.stable) extra.push(['THE STABLE IS OPEN! PICK A MOUNT: E (POWERS) > STABLE', C.lime]);
   rect(20, 188, W - 40, 1, C.slate);
   extra.slice(0, 4).forEach(([s, col], i) => text(fitText(s, W - 44), W / 2, 193 + i * 10, col, { align: 'center' }));

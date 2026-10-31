@@ -10,7 +10,7 @@ import { TYPES, MOVES, RECOVERY } from '../data/weapons.js';
 import { CRIT } from '../data/curve.js';
 import { heroMax, heroStats } from './perks.js';
 import { hitDamage, trainingSword } from './loot.js';
-import { hitEnemy, hurtHero } from './combat.js';
+import { hitEnemy, hurtHero, mend } from './combat.js';
 import { emit, burst, spark, shake, hitstop, callout } from './fx.js';
 import { lookOf } from './looks.js';
 import { attackBox, activeWindow, canAttack } from './attack-rules.js';
@@ -22,7 +22,7 @@ import { abilityHit, swingMult, critBonus, dashCut, hasAbility } from './abiliti
 import { heroPhysics } from './gimmicks.js';
 import { charge, drawMount, RIDE, flap, mountDef } from './mount.js';
 import { X } from '../engine/gfx.js';
-import { MOVE, windHang, plungeOf, momentumStep, momentumOf, runSpeed } from '../data/feel.js';
+import { MOVE, POLISH, windHang, plungeOf, momentumStep, momentumOf, runSpeed } from '../data/feel.js';
 import { beginRun, spHit, startCrazy, updateCrazy, impact, heroHidden } from './specials.js';
 import { specialId } from '../data/specials.js';
 import { updateGadgets, GADGET } from './gadgets.js';
@@ -43,7 +43,7 @@ export function createHero() {
 
 // ---------------------------------------------------------------- update
 export function updateHero(h, dt) {
-  if (h.dead) {
+  if (h.dead || h.cheer) { // (cheer: the level-clear celebration, main.js)
     h.vx *= 0.9;
     move(h, dt, world.platforms);
     return;
@@ -52,10 +52,10 @@ export function updateHero(h, dt) {
   h.inv = Math.max(0, h.inv - dt);
   // a Frost Cub's arrow (beastkin.js): slower for a moment, frost flaking off
   if (h.chillT > 0 && (h.chillT -= dt) > 0 && Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.ice);
-  // a Fat Cat Fence's poisoned dagger (beastkin.js): a little health ebbs away, never the last of it
+  // a Fat Cat Fence's poisoned dagger (beastkin.js): it stops a cracked weapon mending meanwhile
   if (h.poisonT > 0) {
     h.poisonT -= dt;
-    h.hp = Math.max(1, h.hp - h.poisonDps * dt);
+    h.mendAcc = 0;
     if (Math.random() < 0.3) emit(h.x + Math.random() * h.w, h.y + Math.random() * h.h, 'dot', C.lime);
   }
   // a Polymorph Hare's spell (beastkin.js): a bunny for a moment, and bunnies can't swing
@@ -82,18 +82,16 @@ export function updateHero(h, dt) {
   h.stretchT = Math.max(0, (h.stretchT || 0) - dt);
   h.lungeT = Math.max(0, (h.lungeT || 0) - dt);
   h.animT += dt;
+  afterimages(h, dt);
   const S = heroStats();
-  // low health: a heartbeat (the HUD pulses the screen edge with it)
-  if (h.hp / h.maxHp < 0.25 && (h.beatT = (h.beatT || 0) - dt) <= 0) {
+  // a cracked weapon: a heartbeat (the HUD pulses the screen edge with it), and the cracks spark
+  if (h.cracked && Math.random() < dt * 8) emit(cx(h) + h.face * 8, cy(h) - 2, 'dot', Math.random() < 0.5 ? C.red : C.paper);
+  if (h.cracked && (h.beatT = (h.beatT || 0) - dt) <= 0) {
     h.beatT = 0.8;
     sfx.heartbeat();
   }
-  if (S.regen && h.hp < h.maxHp) {
-    // REGENERATION / INNER PEACE: whole points only, the remainder carries over
-    h.regenAcc = (h.regenAcc || 0) + h.maxHp * S.regen * dt;
-    const n = Math.floor(h.regenAcc);
-    if (n) { h.regenAcc -= n; h.hp = Math.min(h.maxHp, h.hp + n); }
-  }
+  // REGENERATION / INNER PEACE: slowly mends a cracked weapon
+  if (S.regen && h.cracked) mend(S.regen * dt);
 
   // special moves take over movement while they run
   if (h.special) {
@@ -119,8 +117,10 @@ export function updateHero(h, dt) {
   if (h.rev) return updateRev(h, dt, ax, S);
   h.revT = Math.max(0, (h.revT || 0) - dt);
   if (h.revT > 0) dashCut(h); // the launch ploughs through residents like a dash
-  // dash (riding: a longer WAR CHARGE that bowls foes over)
-  if (input.take('dash') && h.dashCd <= 0 && h.hurtT <= 0) {
+  // dash (riding: a longer WAR CHARGE that bowls foes over). Once most of a hit's stagger is
+  // over (POLISH.tech) a dash breaks out of it
+  if (h.dashCd <= 0 && h.hurtT <= POLISH.tech && input.take('dash')) {
+    if (h.hurtT > 0) (h.hurtT = 0), (h.keepMom = false);
     h.dashT = HERO.dashTime * (ride ? ride.chargeTime : 1);
     h.chargeHit = null;
     h.dashCd = HERO.dashCooldown * (1 - S.dashCd);
@@ -129,11 +129,20 @@ export function updateHero(h, dt) {
     h.cd = 0;
     h.inv = Math.max(h.inv, HERO.dashTime);
     h.dashHit = null;
+    h.dashAt = world.t;
+    h.dodged = false;
     sfx.dash();
     burst(cx(h), h.y + h.h - 2, 5, 'dust', ['mist', 'fog']);
   }
+  // DASH ATTACK (Dead Cells): attack during a dash, or just after one, and it turns into a lunging
+  // stab that keeps the dash's speed
+  if (T.melee && !ride && (h.dashT > 0 || world.t - (h.dashEndAt ?? -9) < POLISH.stab.after) && input.pressed('attack', MOVE.attackBuffer) && !h.special && h.hurtT <= 0 && !(h.polyT > 0)) {
+    input.consume('attack');
+    dashStab(h, T);
+  }
   if (h.dashT > 0) {
     h.dashT -= dt;
+    if (h.dashT <= 0) h.dashEndAt = world.t;
     h.vx = h.face * HERO.dashSpeed;
     h.vy = Math.min(h.vy, 0) * 0.5;
     if (Math.random() < 0.6) emit(cx(h) - h.face * 6, h.y + 6 + Math.random() * 14, 'streak', C.mist);
@@ -163,7 +172,7 @@ export function updateHero(h, dt) {
   h.sprint = h.mom >= MOVE.sprintAt;
   if (h.hurtT <= 0 && !(h.heldT > 0)) {
     const slowBy = groundSwing ? (inActive(h, swing) ? MOVE.swingSlow : MOVE.swingSlowWind) : 1;
-    const target = ax * runSpeed(HERO.speed, S.speed, h.mom) * (G.speed || 1) * (ride ? ride.speed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1) * (h.boostT > 0 ? GADGET.boost.burst : 1) * (h.revT > 0 ? h.revBurst : 1);
+    const target = swing?.stab ? h.face * HERO.dashSpeed * POLISH.stab.speed * (1 - Math.min(1, swing.t / swing.dur) * 0.55) : ax * runSpeed(HERO.speed, S.speed, h.mom) * (G.speed || 1) * (ride ? ride.speed : 1) * slowBy * (h.chillT > 0 ? 0.6 : 1) * (h.boostT > 0 ? GADGET.boost.burst : 1) * (h.revT > 0 ? h.revBurst : 1);
     // turning round at speed on the ground skids (a puff of dust and a lean)
     if (ax && h.onGround && Math.sign(h.vx) === -ax && Math.abs(h.vx) > MOVE.skidSpeed && h.skidT <= 0 && !swing) {
       h.skidT = 0.16;
@@ -325,8 +334,8 @@ function updateRev(h, dt, ax, S) {
 
 // ---------------------------------------------------------------- pits
 // Standing on solid ground well clear of its edges remembers the spot; falling to the bottom of a
-// pit costs PIT_DMG of your health and puts you back there (Super Mario World would take a life).
-export const PIT_DMG = 0.15;
+// pit puts you back there. It never cracks your weapon (the bot's playtests: a crack per fall made
+// pits a quarter of all deaths); it costs your momentum, the mount, and counts as a hit for the grade.
 function pitCheck(h) {
   const m = world.map;
   if (!m?.pits?.length || h.dead) return;
@@ -339,8 +348,10 @@ function pitCheck(h) {
   h.inv = 0;
   h.dashT = 0;
   h.mount = null;
-  hurtHero(Math.ceil(h.maxHp * PIT_DMG), 1);
-  if (h.dead) return;
+  h.mom = 0;
+  h.hits = (h.hits || 0) + 1;
+  if (world.run) world.run.hits = (world.run.hits || 0) + 1; // (the level-clear grade, data/grade.js)
+  sfx.hurt();
   h.x = back.x;
   h.y = back.y;
   h.vx = h.vy = 0;
@@ -422,6 +433,25 @@ function startAttack(h, T) {
   h.comboT = h.attack.dur + 0.3;
 }
 
+// the dash attack: the dash ends in a stab that carries its speed (hero movement keeps it while
+// the stab runs), never slows you and counts as a running slash
+function dashStab(h, T) {
+  h.dashT = 0;
+  h.dashEndAt = -9;
+  h.attack = null;
+  h.cd = 0;
+  h.comboT = 0;
+  startAttack(h, T);
+  const a = h.attack;
+  a.stab = true;
+  a.run = true;
+  h.lungeT = 0;
+  h.mom = Math.max(h.mom || 0, MOVE.runSlashAt + 0.1);
+  h.vx = h.face * HERO.dashSpeed;
+  h.ghostT = a.dur;
+  emit(cx(h) + h.face * 8, cy(h), 'twinkle', C.paper);
+}
+
 function updateAttack(h, dt, T) {
   const a = h.attack;
   a.t += dt;
@@ -445,11 +475,12 @@ function updateAttack(h, dt, T) {
       if (e.dead || e.spawnT > 0 || a.hit.has(e) || !overlap(box, e)) continue;
       a.hit.add(e);
       const crit = rollCrit(h);
-      const dmg = hitDamage(h.weapon) * a.move.mult * (crit ? CRIT.mult + heroStats().critDmg : 1);
+      const dmg = hitDamage(h.weapon) * a.move.mult * (crit ? CRIT.mult + heroStats().critDmg : 1) * (a.stab ? POLISH.stab.mult : 1);
       hitEnemy(e, dmg, {
         crit,
         dir: h.face,
-        knock: T.knock * (a.move.big ? 1.3 : 1),
+        stab: a.stab,
+        knock: T.knock * (a.move.big ? 1.3 : 1) * (a.stab ? POLISH.stab.knock : 1),
         hop: T.hop && a.move.big,
         big: a.move.big,
         element: h.weapon.family,
@@ -698,7 +729,7 @@ function updateSpecial(h, dt) {
           spHit(s.run, e, 1.7, { dir: Math.sign(cx(e) - cx(h)) || h.face, knock: 18 });
           n++;
         }
-        if (n) h.hp = Math.min(h.maxHp, h.hp + Math.round(h.maxHp * 0.025 * Math.min(5, n)));
+        if (n) mend(0.025 * Math.min(5, n));
         ringBurst(cx(h), cy(h), 36, light);
         impact(cx(h), cy(h), 1.5, C.violet, s.run);
       }
@@ -756,8 +787,32 @@ function updateSpecial(h, dt) {
 }
 
 // ---------------------------------------------------------------- draw
+// dash afterimages: where the hero was a moment ago, a few pale copies fading out behind
+function afterimages(h, dt) {
+  h.ghostT = Math.max(0, (h.ghostT || 0) - dt);
+  const G = (h.ghosts ||= []);
+  for (const g of G) g.life -= dt;
+  while (G.length && G[0].life <= 0) G.shift();
+  if ((h.dashT > 0 || h.ghostT > 0 || h.revT > 0) && world.t - (h.ghostAt ?? -9) >= 0.03) {
+    h.ghostAt = world.t;
+    G.push({ x: h.x, y: h.y, life: 0.14 });
+    if (G.length > 5) G.shift();
+  }
+}
 export function drawHero(h, t) {
   if (heroHidden(h)) return; // THOUSAND CUTS: he is everywhere at once
+  if (h.ghosts?.length && !h.dead) {
+    for (const g of h.ghosts) {
+      X.save();
+      X.globalAlpha = Math.max(0, g.life / 0.14) * 0.4;
+      X.filter = 'brightness(2.4) saturate(0.4)';
+      X.translate(Math.round(g.x - h.x), Math.round(g.y - h.y));
+      h.ghostDraw = true;
+      drawHeroBody(h, t);
+      h.ghostDraw = false;
+      X.restore();
+    }
+  }
   // landing squash and take-off stretch, about the feet
   const k = h.squashT > 0 ? [1.14, 0.86] : h.stretchT > 0 ? [0.88, 1.12] : null;
   if (k) {

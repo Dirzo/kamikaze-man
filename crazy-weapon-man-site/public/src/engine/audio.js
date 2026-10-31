@@ -52,6 +52,15 @@ export function audioOn() {
   noise = { long: lfsr(false), short: lfsr(true) };
   return ctx;
 }
+// the material layers for sfx.mat: k scales pitch (lower for heavy weapons), v the volume
+const MAT = {
+  fur: (k, v) => hiss(3, { vol: v, rate: 0.55 * k, drop: 0.2 }),
+  feather: (k, v) => (hiss(4, { vol: v * 0.9, rate: 1.1 * k, drop: 0.12 }), chip([[N(76) * k, 1]], { wave: 'p12', vol: v * 0.4, decay: 0.01 })),
+  shell: (k, v) => (chip([[N(81) * k, 1], [N(74) * k, 2]], { wave: 'p12', vol: v * 1.1, decay: 0.012 }), hiss(2, { vol: v, rate: 1.8 * k, short: true })),
+  scale: (k, v) => (hiss(3, { vol: v, rate: 1.4 * k, drop: 0.3, short: true }), chip([[N(64) * k, 1], [N(58) * k, 1]], { wave: 'p25', vol: v * 0.5, decay: 0.01 })),
+  squish: (k, v) => chip([[N(52) * k, 1], [N(60) * k, 1], [N(45) * k, 2]], { wave: 'tri', vol: v * 1.6, decay: 0.015 }),
+  armor: (k, v) => (chip([[N(88) * k, 1], [N(95) * k, 1], [N(83) * k, 3]], { wave: 'p12', vol: v * 0.9, decay: 0.008 }), hiss(2, { vol: v * 0.8, rate: 2.2, short: true }))
+};
 export function toggleSound() {
   settings.sound = !settings.sound;
   if (bus) bus.gain.value = settings.sound ? 1.4 : 0;
@@ -536,6 +545,56 @@ export const sfx = {
   launch() {
     hiss(9, { vol: 0.06, rate: 0.5, drop: -0.25 });
   },
+  // the material layer under a hit (data/feel.js materialOf): w is the weapon's weight 0..3, so
+  // a hammer on a shell is a deep crack and a dagger on fur a soft thwip
+  mat(m, w = 1, crit = false) {
+    if (!gate('mat', 40)) return;
+    const k = 1 - w * 0.12, v = 0.035 + w * 0.008 + (crit ? 0.01 : 0);
+    (MAT[m] || MAT.fur)(k, v);
+    if (w >= 2) chip([[N(31 - w), 2], [N(26 - w), 3]], { wave: 'tri', vol: 0.06 + w * 0.01, decay: 0.012 }); // the heavy weapon's bass
+  },
+  // a kill: a short crunch under the death cry, deeper for heavy weapons
+  crunch(w = 1) {
+    if (!gate('crunch', 50)) return;
+    hiss(5, { vol: 0.05 + w * 0.01, rate: 0.5 - w * 0.06, drop: 0.2, short: true });
+    chip([[N(40 - w * 2), 1], [N(33 - w * 2), 3]], { wave: 'tri', vol: 0.08, decay: 0.02 });
+  },
+  // a foe knocked into a wall or into another foe
+  slam() {
+    if (!gate('slam', 70)) return;
+    chip([[N(38), 1], [N(30), 3]], { wave: 'tri', vol: 0.09, decay: 0.02 });
+    hiss(4, { vol: 0.05, rate: 0.3, drop: 0.2 });
+  },
+  // the enemy is about to strike: a sharp glint (deeper for heavies)
+  tell(heavy = false) {
+    if (!gate('tell', 120)) return;
+    chip([[N(heavy ? 86 : 93), 1], [N(heavy ? 98 : 105), 2]], { wave: 'p12', vol: 0.03, decay: 0.008 });
+  },
+  // a perfect dodge: a rising whoosh and a bright two-note sting
+  perfect() {
+    if (!gate('perfect', 200)) return;
+    hiss(12, { vol: 0.05, rate: 0.3, drop: -0.08 });
+    arp([84, 91, 96], 3, { wave: 'p25', vol: 0.05, decay: 0.002 });
+  },
+  // a foe's poise breaks: a crack and a falling chime
+  poiseBreak() {
+    if (!gate('poise', 120)) return;
+    hiss(6, { vol: 0.06, rate: 1.4, drop: 0.25, short: true });
+    arp([79, 74, 67], 2, { wave: 'p12', vol: 0.045, decay: 0.003 });
+  },
+  // an execution: a heavy boom with a high ring over it
+  execute() {
+    if (!gate('exec', 150)) return;
+    chip([[N(36), 2], [N(28), 4], [N(24), 6]], { wave: 'tri', vol: 0.12, decay: 0.01 });
+    hiss(10, { vol: 0.07, rate: 0.35, drop: 0.12 });
+    arp([96, 103], 4, { wave: 'p12', vol: 0.04, decay: 0.002, delay: 0.05 });
+  },
+  // the last foe of a fight down: a quick rising run (and the dash-panel whoosh after it)
+  clearFight() {
+    if (!gate('clearf', 300)) return;
+    arp([72, 76, 79, 84, 88], 2, { wave: 'p25', vol: 0.045, decay: 0.002 });
+    hiss(14, { vol: 0.045, rate: 0.35, drop: -0.05, delay: 0.12 });
+  },
   dash() {
     if (!gate('dash', 90)) return;
     hiss(7, { vol: 0.045, rate: 0.4, drop: -0.12 });
@@ -609,6 +668,63 @@ export const sfx = {
     if (!gate('swim', 120)) return;
     hiss(5, { vol: 0.025, rate: 0.35, drop: 0.05 });
     chip([[N(76), 1], [N(81), 1]], { wave: 'p12', vol: 0.02, decay: 0.004 });
+  }
+};
+
+// ---------------------------------------------------------------- the Beast Den
+// FEED: what each weapon sounds like going down. Blades crunch like a mouthful of tin, quick weapons
+// are nibbled, poles slurped like noodles, bows twang, shuriken crackle, wands fizz and a hammer is
+// one big gulp. The weapon's own signature rings first (softly), its element after, a happy chirp last.
+const FEED_SFX = {
+  crunch: () => { for (let k = 0; k < 3; k++) hiss(3, { vol: 0.045, rate: 1.4 - k * 0.2, short: true, delay: 0.08 + k * 0.11 }), chip([[N(96 - k * 3), 1]], { wave: 'p12', vol: 0.022, delay: 0.09 + k * 0.11 }); },
+  nibble: () => { for (let k = 0; k < 5; k++) chip([[N(88 + (k % 2) * 3), 1]], { wave: 'p25', vol: 0.025, delay: 0.06 + k * 0.06 }); },
+  slurp: () => (chip(Array.from({ length: 12 }, (_, i) => [N(58 + i * 2), 1]), { wave: 'p50', vol: 0.03, decay: 0.001, delay: 0.08 }), hiss(10, { vol: 0.03, rate: 0.6, drop: -0.08, delay: 0.08 })),
+  twang: () => (chip([[N(52), 3], [N(51), 3], [N(50), 3]], { wave: 'tri', vol: 0.08, decay: 0.006, delay: 0.06 }), chip(Array.from({ length: 8 }, (_, i) => [N(64 + i * 3), 1]), { wave: 'p50', vol: 0.022, delay: 0.22 })),
+  crackle: () => { for (let k = 0; k < 4; k++) chip([[N(100 - k), 1], [N(94), 1]], { wave: 'p12', vol: 0.028, delay: 0.05 + k * 0.07 }); },
+  fizz: () => (arp([84, 91, 88, 96, 93, 100], 2, { wave: 'p12', vol: 0.02, decay: 0.001, delay: 0.06 }), hiss(8, { vol: 0.02, rate: 2, delay: 0.06 })),
+  gulp: () => (chip([[N(43), 3], [N(38), 3], [N(33), 4]], { wave: 'tri', vol: 0.11, decay: 0.008, delay: 0.1 }), chip([[N(60), 1], [N(55), 1]], { wave: 'p50', vol: 0.04, delay: 0.42 }))
+};
+const FEED_BY_TYPE = { sword: 'crunch', axe: 'crunch', scythe: 'crunch', dagger: 'nibble', katana: 'nibble', nunchucks: 'nibble', staff: 'slurp', spear: 'slurp', boomerang: 'slurp', bow: 'twang', shuriken: 'crackle', wand: 'fizz', hammer: 'gulp' };
+// PET: each family's voice (big = the third pat in a row, the happiest one)
+const PET_SFX = {
+  goose: big => (chip([[700, 2], [600, 3]], { wave: 'p25', vol: 0.04, decay: 0.008 }), big && chip([[760, 2], [640, 3], [540, 4]], { wave: 'p25', vol: 0.045, decay: 0.008, delay: 0.16 }), hiss(4, { vol: 0.03, rate: 1.2, delay: 0.05 })),
+  fuzz: big => (chip(Array.from({ length: big ? 24 : 14 }, (_, i) => [N(i % 2 ? 41 : 39), 1]), { wave: 'p50', vol: 0.05, decay: 0.0015 }), chip([[N(96), 1], [N(99), 1]], { wave: 'p12', vol: 0.02, delay: big ? 0.42 : 0.26 })),
+  lagoon: big => (chip([[N(47), 2], [0, 1], [N(51), 3]], { wave: 'p12', vol: 0.05, decay: 0.004 }), arp(big ? [72, 79, 84, 88] : [76, 84], 1, { wave: 'p25', vol: 0.02, delay: 0.14 })),
+  bazaar: big => chip([[N(76), 2], [N(80), 2], [N(84), 3], [N(79), 3], [N(72), 4]].slice(0, big ? 5 : 4), { wave: 'p25', vol: 0.035, decay: 0.003 }),
+  shrine: big => { chip([[N(79), 1], [N(74), 2]], { wave: 'p50', vol: 0.04, decay: 0.008 }); chip([[N(81), 1], [N(76), 2]], { wave: 'p50', vol: 0.04, decay: 0.008, delay: 0.13 }); if (big) hiss(8, { vol: 0.025, rate: 1.5, delay: 0.2 }); },
+  temple: big => { for (let k = 0; k < (big ? 3 : 2); k++) chip([[N(67), 1], [N(74), 2]], { wave: 'p25', vol: 0.035, decay: 0.006, delay: k * 0.14 }); hiss(2, { vol: 0.04, rate: 1.8, short: true, delay: big ? 0.45 : 0.3 }); },
+  forge: big => (chip([[N(36), 3], [N(34), 4]], { wave: 'tri', vol: 0.09, decay: 0.01 }), big && chip([[N(40), 1], [0, 2], [N(40), 1]], { wave: 'tri', vol: 0.12, decay: 0.02, delay: 0.22 }), chip([[N(60), 2], [N(64), 2]], { wave: 'p50', vol: 0.025, delay: 0.14 })),
+  cottage: big => (chip(Array.from({ length: 8 }, (_, i) => [N(72 + Math.round(Math.sin(i) * 7)), 1]), { wave: 'p25', vol: 0.03, decay: 0.002 }), big && arp([88, 91, 96, 100], 2, { wave: 'p12', vol: 0.02, delay: 0.16 })),
+  castle: big => (hiss(2, { vol: 0.04, rate: 2.4, short: true }), chip([[N(98), 1], [0, 1], [N(98), 1]], { wave: 'p12', vol: 0.025, delay: 0.06 }), big && hiss(6, { vol: 0.03, rate: 0.5, drop: -0.1, delay: 0.16 })),
+  hoard: big => (chip([[N(38), 4], [N(36), 4]], { wave: 'tri', vol: 0.08, decay: 0.008 }), hiss(7, { vol: 0.04, rate: 0.4, drop: 0.05, delay: 0.12 }), big && arp([96, 100, 103, 108], 1, { wave: 'p12', vol: 0.025, delay: 0.25 }))
+};
+// a stat goes up: a fanfare in that stat's own key, climbing with its level
+const STAT_KEY = { power: [60, 'p50'], speed: [67, 'p12'], reach: [62, 'p25'], aim: [72, 'p12'], guard: [55, 'tri'] };
+export const denSfx = {
+  feed(type, effect = null) {
+    SIG[type]?.(0.45);
+    FEED_SFX[FEED_BY_TYPE[type] || 'crunch']();
+    if (effect && ELEMENT_SFX[effect]) setTimeout(() => ELEMENT_SFX[effect](), 300);
+    arp([79, 84], 2, { wave: 'p25', vol: 0.025, delay: 0.55 });
+  },
+  pet(fam, big = false) {
+    if (!gate('pet', 90)) return;
+    (PET_SFX[fam] || PET_SFX.goose)(big);
+  },
+  statUp(stat, lv = 1) {
+    const [b, wave] = STAT_KEY[stat] || STAT_KEY.power, up = Math.min(12, Math.floor(lv / 10) * 2);
+    arp([b, b + 4, b + 7, b + 12, b + 16].map(n => n + up), 2, { wave, vol: wave === 'tri' ? 0.07 : 0.04, decay: 0.0008, delay: 0.5 });
+    arp([b + 19 + up, b + 24 + up], 4, { wave: 'p12', vol: 0.025, decay: 0.001, delay: 0.72 });
+  },
+  grow() {
+    arp([60, 64, 67, 72, 76, 79, 84, 88, 91, 96], 3, { wave: 'p25', vol: 0.045, decay: 0.0006 });
+    arp([48, 52, 55, 60, 64, 67, 72, 76, 79, 84], 3, { wave: 'tri', vol: 0.06, decay: 0.0006 });
+    arp([84, 88, 91, 96], 8, { wave: 'p12', vol: 0.03, decay: 0.0005, delay: 0.55 });
+  },
+  crown() {
+    arp([67, 72, 76, 79, 84], 5, { wave: 'p50', vol: 0.045, decay: 0.0006 });
+    arp([55, 60, 64, 67, 72], 5, { wave: 'tri', vol: 0.06, decay: 0.0006 });
+    arp([88, 91, 96, 100, 103, 108], 2, { wave: 'p12', vol: 0.025, delay: 0.5 });
   }
 };
 

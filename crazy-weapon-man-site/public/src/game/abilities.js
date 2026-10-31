@@ -2,7 +2,7 @@
 // plus the meteors they call down. Ability hits are procs: they never roll quirks or mutations.
 import { C } from '../config.js';
 import { world } from './world.js';
-import { hitEnemy } from './combat.js';
+import { hitEnemy, mend } from './combat.js';
 import { hitDamage } from './loot.js';
 import { cx, cy, overlap } from './physics.js';
 import { rect, px } from '../engine/gfx.js';
@@ -19,7 +19,7 @@ const say1 = (s, col) => callout(s, 0, 0, col, { follow: world.hero, life: 34 })
 export function abilityHit(h, e, dmg, finisher) {
   if (hasAbility('vampire') && world.t >= (h.sipAt || 0)) {
     h.sipAt = world.t + 0.25;
-    h.hp = Math.min(h.maxHp, h.hp + Math.max(1, Math.round(h.maxHp * 0.012)));
+    mend(0.012);
     emit(cx(e), cy(e), 'drip', C.red);
   }
   if (hasAbility('meteor') && finisher && !e.dead) {

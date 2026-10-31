@@ -31,7 +31,7 @@ export const SPECIALS = {
   tomahawk: { type: 'axe', name: 'TOMAHAWK', desc: 'Hurl a big spinning axe that comes back.', cool: 5 },
   berserk: { type: 'axe', name: 'BERSERKER', desc: 'Spin forward like a buzzsaw.', cool: 5.5 },
   splitter: { type: 'axe', name: 'EARTH SPLITTER', desc: 'Chop the ground open: a fissure races ahead.', cool: 6 },
-  reap: { type: 'scythe', name: 'GRIM REAP', desc: 'One huge sweep; each foe cut gives health back.', cool: 6 },
+  reap: { type: 'scythe', name: 'GRIM REAP', desc: 'One huge sweep; each foe cut mends your weapon a little.', cool: 6 },
   harvest: { type: 'scythe', name: 'SOUL HARVEST', desc: 'Rip the souls from every foe nearby and drink them.', cool: 7 },
   deathmoon: { type: 'scythe', name: 'DEATH CRESCENT', desc: 'Two giant crescents fly out both ways.', cool: 6 },
   // ---- ranged
@@ -58,7 +58,7 @@ export const BOONS = {
   overcharge: { label: 'OVERCHARGED', desc: 'Special deals +60% damage.', col: 'orange' },
   quick: { label: 'HAIR TRIGGER', desc: 'Special cooldown -35%.', col: 'lime' },
   giant: { label: 'GIGANTIC', desc: 'Special reaches 40% further.', col: 'gold' },
-  vamp: { label: 'BLOODRUSH', desc: 'Special hits heal 1.5% health each.', col: 'red' },
+  vamp: { label: 'BLOODRUSH', desc: 'Special hits mend a cracked weapon a little.', col: 'red' },
   refund: { label: 'CHAIN REACTION', desc: 'Each special kill takes 0.8s off its cooldown.', col: 'sky' },
   aftershock: { label: 'AFTERSHOCK', desc: 'A shockwave follows every special.', col: 'sand' },
   guard: { label: 'UNTOUCHABLE', desc: 'No damage during a special and just after.', col: 'ice' },

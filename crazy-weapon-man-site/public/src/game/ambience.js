@@ -19,6 +19,7 @@ import { BIOMES, touchedGrounds } from '../data/biomes.js';
 import { cameraTargetY } from '../data/maps.js';
 import { overlap, worldWidth } from './physics.js';
 import { callout } from './fx.js';
+import { depthOf, drawDepthBack, drawDepthFront } from './depth.js';
 
 const art = () => A.biome?.[ZONES[world.zone]?.id];
 export const biome = () => BIOMES[ZONES[world.zone]?.id] || null;
@@ -450,6 +451,7 @@ export function drawBiomeBackdrop() {
     if (oy < 0 && a.under[i]) rect(0, H + oy, W, -oy, a.under[i]);
     drawSkyExtras(amb, i);
   }
+  drawDepthBack(depthOf(amb, ZONES[world.zone].id, a.layers[0]), amb.t); // MapleStory depth (depth.js)
   drawParts(amb, false);
   return true;
 }
@@ -645,6 +647,7 @@ export function drawAmbienceFront() {
   const sky = amb.B.sky || [], t = amb.t;
   for (const e of amb.sky) if (e.k === 'streak') rect(e.x, e.y, e.len, 1, Math.sin(e.y) > 0 ? '#ffffff' : '#e8f0fa');
   drawParts(amb, true);
+  drawDepthFront(amb.depth, amb.t);
   if (sky.includes('heat')) dither(0, H - 34, W, 34, C.orange, 2 + Math.round(Math.sin(t * 2.5) * 1.2));
   if (amb.B.dark && world.gimmick !== 'ghost') darkness(amb); // a ghost house brings its own dark
 }

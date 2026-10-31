@@ -15,7 +15,7 @@ import { updateDrops, drawDrops } from './game/drops.js';
 import { updateWaves, startZone, startSurvival } from './game/waves.js';
 import { updateBoss, drawBoss, updateHazards, drawHazards, clearBoss } from './game/bosses.js';
 import { updateSpecials, drawSpecials, drawSpecialScreen } from './game/specials.js';
-import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats } from './game/fx.js';
+import { updateFx, drawParticles, drawSparks, drawNumbers, feel, clearFx, drawSplats, burst } from './game/fx.js';
 import { drawBubbles } from './game/bubbles.js';
 import { drawHud } from './game/hud.js';
 import { updateInventory, drawInventory, toggleInventory, closeInventory, openInventory, newBag } from './game/inventory.js';
@@ -46,9 +46,12 @@ import { relicMask, keepRelics, allRelics, RELIC_COUNT } from './data/relics.js'
 import { drawGadgets } from './game/gadgets.js';
 import { drawCrumble } from './game/crumble.js';
 import { drawWalls } from './game/walls.js';
+import { openDen, updateDen, drawDen, D as denScene } from './game/den.js';
+import { levelEgg, FAMILY } from './data/den.js';
 import { tally, openLevelEnd, updateLevelEnd, drawLevelEnd, LEVEL_END_DONE } from './game/levelend.js';
 
 let capture = false;
+const CHEER_TIME = 1.1, NO_CHEER = new URLSearchParams(location.search).has('capture'); // (captures of the sheet skip the cheer)
 let scene = 'loading',
   sceneT = 0,
   loadFrac = 0,
@@ -69,7 +72,7 @@ function startRun() {
 }
 
 // ---------------------------------------------------------------- overworld + levels
-// The overworld run: the hero (level, weapon, bag) carries from level to level and is saved with
+// The overworld run: the hero (level, weapon, weapon log) carries from level to level and is saved with
 // the map. A level is played on its region's zone map. Dying or leaving only loses that attempt:
 // the hero goes back to how they walked in and the map keeps everything cleared.
 function showFiles() {
@@ -95,13 +98,15 @@ function loadHero() {
   const h = (world.hero = createHero()), snap = ow.save.hero;
   if (snap) {
     const copy = JSON.parse(JSON.stringify(snap));
+    const held = JSON.stringify(copy.weapon);
     Object.assign(h, { lv: copy.lv, xp: copy.xp, maxHp: heroMax(copy.lv), weapon: freshUid(copy.weapon) });
-    world.bag = copy.bag.map(w => w && freshUid(w));
+    // the weapon log (inventory.js); its entry for the weapon in hand stays that same weapon
+    world.bag = copy.bag.map(w => w && (JSON.stringify(w) === held ? h.weapon : freshUid(w)));
     if (copy.mount && chosenMount()) h.mount = saddle(chosenMount()); // your mount rides along (the stable's pick: swap it there)
   }
   return h;
 }
-// the bag on the map (B / Tab): the saved hero's kit, written back to the save when it closes
+// the weapon log on the map (B / Tab): the saved hero's kit, written back to the save when it closes
 function openMapBag() {
   world.bag = newBag();
   world.shards = 0;
@@ -116,9 +121,31 @@ bagLink.open = openMapBag;
 bagLink.close = () => world.inv && scene === 'map' && (closeInventory(), closeMapBag(), true);
 function closeMapBag() {
   ow.save.hero = heroSnapshot();
-  bankShards(world.shards); // salvaged on the map: straight into the shard tree
+  bankShards(world.shards);
   world.shards = 0;
   writeSave(ow.save);
+}
+// the clear keys (config.js hotBag / hotMastery / hotDen): 1 BAG, 2 MASTERY, 3 DEN. Each opens its
+// window from anywhere on the map or in the Den, closes it when it is already open, and jumps straight
+// across when another one is up.
+function hotKey(which) {
+  const was = scene === 'den' ? 'den' : world.inv ? 'bag' : powers.open && powers.tab === TAB.MASTERY ? 'mastery' : null;
+  if (world.inv) closeInventory(), closeMapBag();
+  if (powers.open) closePowers();
+  if (scene === 'den') openMap();
+  if (which === was) return sfx.ui();
+  if (which === 'bag') return openMapBag(), (powers.tab = TAB.BAG);
+  if (which === 'mastery') return openPowers(TAB.MASTERY);
+  return openBeastDen();
+}
+// the Beast Den (H on the map): the saved hero walks the garden with their weapon in hand
+function openBeastDen() {
+  closeInventory();
+  if (!ow.save) ow.save = loadSave();
+  const w = ow.save.hero?.weapon;
+  openDen(w ? freshUid(JSON.parse(JSON.stringify(w))) : null);
+  scene = 'den';
+  sceneT = 0;
 }
 function enterLevel(node) {
   closeInventory();
@@ -131,7 +158,9 @@ function enterLevel(node) {
   world.relicsOwned = relicMask(ow.save, node.id);
   newRun();
   startZone(node.zone);
-  h.hp = h.maxHp; // every level starts at full health
+  h.hp = h.maxHp; // every level starts with the weapon in hand whole
+  h.cracked = false;
+  h.mendAcc = h.crackT = 0;
   scene = 'play';
   sceneT = 0;
 }
@@ -143,19 +172,21 @@ function endLevel(result) {
   const shards = bankShards(world.shards);
   world.shards = 0;
   flushBook();
-  let relics = null, temperUp = 0;
+  let relics = null, temperUp = 0, eggFound = null;
   if (result === 'clear') {
     if (node.kind === 'castle' && winTrophy(node.region)) trophy = { ...TROPHIES[node.region], turf: trophyTurf(node.region, true) };
     fresh = clearLevel(ow.save, node.id, world.levelExit === 'secret' && node.secret.length ? 'secret' : 'next');
     const had = allRelics(ow.save, node.id);
     relics = { taken: relicsTaken(), fresh: keepRelics(ow.save, node.id, world.relicMask), set: !had && allRelics(ow.save, node.id) };
     temperUp = temperClear(ow.save, node.id);
+    const egg = levelEgg(node.zone, { castleFirst: !!trophy }); // a family head always leaves its egg behind
+    if (egg != null) eggFound = FAMILY[egg].name;
     ow.save.hero = heroSnapshot();
     writeSave(ow.save);
   }
   if (result === 'quit') return openMap();
   const stable = !!trophy && trophyCount() === STABLE_TROPHIES; // the third family head just fell
-  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable, tally: tally() };
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable, egg: eggFound, tally: tally() };
   openLevelEnd();
   scene = 'levelEnd';
   sceneT = 0;
@@ -187,6 +218,10 @@ function update(dt) {
     }
     return;
   }
+  if (scene === 'map' || scene === 'den') {
+    const hot = input.take('hotBag') ? 'bag' : input.take('hotMastery') ? 'mastery' : input.take('hotDen') ? 'den' : null;
+    if (hot) return hotKey(hot);
+  }
   if (scene === 'map') {
     if (world.inv) {
       updateInventory(dt);
@@ -195,8 +230,13 @@ function update(dt) {
     }
     if (!powers.open && input.take('bag')) return input.consume('inv'), openMapBag();
     if (!powers.open && input.take('pause')) return showFiles();
+    if (!powers.open && input.take('den')) return openBeastDen();
     const node = updateOverworld(dt);
     if (node) enterLevel(node);
+    return;
+  }
+  if (scene === 'den') {
+    if (updateDen(dt) === 'leave') openMap();
     return;
   }
   if (scene === 'levelEnd') {
@@ -216,11 +256,13 @@ function update(dt) {
     return;
   }
   // ---- play ----
-  tickRun(dt); // the speedrun clock only stops for the pause menu
+  if (world.phase !== 'cleared') tickRun(dt); // the speedrun clock only stops for the pause menu (and the clear cheer)
   if (world.inv) {
-    updateInventory(dt); // the bag pauses the fight
+    if (input.take('hotBag')) return closeInventory();
+    updateInventory(dt); // the weapon log pauses the fight
     return;
   }
+  if (input.take('hotBag') && world.phase === 'play') return openInventory(), undefined;
   if (input.take('pause')) {
     scene = 'pause';
     return;
@@ -231,7 +273,14 @@ function update(dt) {
   }
   if (feel.stop > 0) {
     feel.stop -= dt;
+    input.hold(dt); // a press made during the freeze still counts once it ends
     return; // hit-stop: the world holds its breath
+  }
+  // slow motion (a perfect dodge, the last kill of a fight): the whole world, the hero too
+  if (feel.slowT > 0) {
+    feel.slowT -= dt;
+    input.hold(dt * (1 - feel.slowK));
+    dt *= feel.slowK;
   }
   world.t += dt;
   updateHero(world.hero, dt);
@@ -271,7 +320,13 @@ function update(dt) {
       music.stop();
     }
   }
-  if (world.phase === 'cleared') endLevel('clear');
+  if (world.phase === 'cleared') {
+    // a beat to celebrate before the stat sheet: he throws his weapon up and bounces (anim.js cheerPose)
+    const h = world.hero;
+    if (!h.cheer) (h.cheer = true), (h.attack = null), (h.special = null), (world.cheerT = 0), burst(h.x + h.w / 2, h.y, 12, 'twinkle', ['gold', 'paper']);
+    world.cheerT += dt;
+    if (world.cheerT > CHEER_TIME || NO_CHEER || (world.cheerT > 0.3 && (input.take('confirm') | input.take('jump')))) (h.cheer = false), endLevel('clear');
+  }
   if (world.phase === 'won') {
     scene = 'won';
     sceneT = 0;
@@ -342,13 +397,19 @@ function drawTitle(t) {
   text('CLEAR THE MAP. CLAIM THE NEXT.', W / 2, 123, C.mist, { align: 'center' });
   const lines = [
     'MOVE  ARROWS / A D        JUMP  ALT / X        ATTACK  CTRL / Z',
-    'SPECIAL  SPACE / C    DASH  SHIFT / V    PICK UP  DOWN    BAG  E',
+    'SPECIAL  SPACE / C    DASH  SHIFT / V    BAG 1   MASTERY 2   DEN 3',
     'GAMEPAD: A JUMP  X ATTACK  Y SPECIAL  B DASH  START PAUSE'
   ];
   lines.forEach((l, i) => text(l, W / 2, 222 + i * 11, C.mist, { align: 'center' }));
   text('KILL EVERY ENEMY. OPEN THE EXIT PORTAL.', W / 2, 192, C.lime, { align: 'center' });
 }
 
+// the Beast Den's door on the map: a small chip above the map's bottom panel
+function denChip() {
+  const s = '3: BEAST DEN', w = textWidth(s) + 8;
+  rect(W - w - 6, 204, w, 11, C.ink);
+  text(s, W - 10, 206, C.pink, { align: 'right' });
+}
 function drawPause() {
   dither(0, 0, W, H, C.ink, 10);
   panel('panel', W / 2 - 120, 56, 240, 146);
@@ -359,8 +420,8 @@ function drawPause() {
     ['ATTACK', 'CTRL / Z'],
     ['SPECIAL', 'SPACE / C'],
     ['DASH', 'SHIFT / V'],
-    ['PICK UP WEAPON', 'DOWN ON A DROP'],
-    ['BAG / EQUIPMENT', 'E / B / TAB'],
+    ['NEW WEAPONS', 'EQUIPPED AS YOU GRAB THEM'],
+    ['WEAPON LOG', '1 / E / B / TAB'],
     ['MUSIC / SOUND', `M ${audioSettings.music ? 'ON' : 'OFF'} / N ${audioSettings.sound ? 'ON' : 'OFF'}`]
   ];
   rows.forEach(([a, b], i) => {
@@ -368,6 +429,18 @@ function drawPause() {
     text(b, W / 2 + 108, 96 + i * 12, C.paper, { align: 'right' });
   });
   text(world.level ? 'ESC TO RESUME    Q TO LEAVE THE LEVEL' : 'ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
+}
+
+// an impact frame (fx.js impactFrame): the scene flashes stark black and white for a frame or two,
+// inverted on the first, so a finisher or an execution lands like a camera flash
+function impactLayer() {
+  if (!(feel.impact > 0)) return;
+  X.save();
+  X.setTransform(1, 0, 0, 1, 0, 0);
+  X.filter = `grayscale(1) contrast(9)${feel.impact > 1 ? ' invert(1)' : ''}`;
+  X.drawImage(X.canvas, 0, 0);
+  X.restore();
+  feel.impact--;
 }
 
 function render() {
@@ -381,8 +454,10 @@ function render() {
   }
   if (scene === 'title') return drawTitle(t);
   if (scene === 'files') return drawTitle(t), drawFiles(t);
-  if (scene === 'map') return drawOverworld(t), drawInventory(t); // the bag (B) opens over the map
+  if (scene === 'map') return drawOverworld(t), powers.open || world.inv || denChip(), drawInventory(t); // the bag (B) opens over the map
+  if (scene === 'den') return drawDen(t);
   drawWorld(world.t);
+  impactLayer();
   drawHud(world.t);
   drawRouteHud();
   if (scene === 'play') drawSpecialScreen(); // the special's banner and flash go over the HUD too
@@ -440,6 +515,10 @@ click('b-powers', () => {
   if (world.inv) closeInventory(), closeMapBag();
   powers.open ? closePowers() : openPowers();
 });
+click('b-den', () => {
+  if (scene === 'den') openMap();
+  else if (scene === 'map') powers.open && closePowers(), world.inv && (closeInventory(), closeMapBag()), openBeastDen();
+});
 click('b-restart', () => {
   if (world.level && scene !== 'map') enterLevel(world.level); // retry this level, from the map's saved hero
   else if (scene !== 'map' && scene !== 'loading' && scene !== 'title') startRun();
@@ -482,7 +561,10 @@ loadAssets(f => (loadFrac = f))
     scene = 'title';
     music.play('title', TITLE_MUSIC);
     const captureName = new URLSearchParams(location.search).get('capture');
-    if (captureName) import('./testing/capture.js').then(m => m.captureScene(debug, captureName));
+    if (captureName) import('./testing/capture.js').then(m => {
+      m.captureScene(debug, captureName);
+      if (new URLSearchParams(location.search).has('cracked') && world.hero) (world.hero.cracked = true), (world.hero.crackT = 2); // &cracked: show the armor HUD cracked
+    });
     if (new URLSearchParams(location.search).has('smoke')) import('./testing/smoke.js').then(m => m.runSmoke(debug));
     if (new URLSearchParams(location.search).has('playtest')) import('./testing/playtest.js').then(m => m.runPlaytest(debug));
   })
@@ -573,6 +655,8 @@ const debug = {
   openMap,
   showFiles,
   enterLevel,
+  openBeastDen,
+  den: denScene,
   ow,
   powers,
   openPowers,

@@ -16,7 +16,7 @@ import { updateEnemy, updateBolts } from '../game/enemy.js';
 import { fireTrait } from '../game/traits.js';
 import { ENEMIES } from '../data/enemies.js';
 import { spawnEnemy } from '../game/enemy.js';
-import { openInventory, stash } from '../game/inventory.js';
+import { openInventory, logWeapon } from '../game/inventory.js';
 import { startBoss, updateBoss, updateHazards, castMove } from '../game/bosses.js';
 import { ZONES } from '../data/zones.js';
 import { updateAmbience } from '../game/ambience.js';
@@ -25,7 +25,7 @@ import { logDamage } from '../game/speedrun.js';
 import { addProficiency } from '../data/proficiency.js';
 import { GROUND, W } from '../config.js';
 import { updateCamera } from '../game/camera.js';
-import { newSave, revealAll, clearLevel, writeSave, NODES } from '../data/overworld.js';
+import { newSave, revealAll, clearLevel, writeSave, NODES, REGIONS } from '../data/overworld.js';
 import { bankShards, buyRank, winTrophy, choosePerk, setLock, chooseMount } from '../data/meta.js';
 import { useFile, eraseFile } from '../data/saves.js';
 import { openPowers, TAB, P as powers, buy as investNode, pick as pickPerk, updatePowers } from '../game/powers.js';
@@ -38,14 +38,23 @@ import { LEVELS } from '../data/overworld.js';
 import { anvil as anvilStrike } from '../game/inventory.js';
 import { enterRoom } from '../game/hidden.js';
 import { mount } from '../game/mount.js';
+import { resetDen, den, addEgg, tapEgg, toBasket, runCup, saveDen } from '../data/den.js';
 import { updateGimmick } from '../game/gimmicks.js';
 // ?capture=map: a first visit (two levels down, at the first fork); ?capture=mapall: every road open
 function mapScene(game, all) {
   const s = all ? revealAll(newSave()) : newSave();
   if (!all) { clearLevel(s, '1-1'); clearLevel(s, '1-2'); }
   s.at = all ? '6-2' : '1-2';
+  s.seen = REGIONS.map(R => R.id); // (no fly-over, unless the scene asks for one)
   game.ow.save = s;
   game.openMap();
+}
+// ?capture=mapzoom: the world view, every island in sight; ?capture=mapfly: the fly-over of world 3,
+// part way along
+function mapView(game, fly) {
+  mapScene(game, true);
+  if (fly) { game.ow.save.at = '3-1'; game.ow.save.seen = [1, 2]; game.openMap(); game.ow.fly.t = 1.2; }
+  else { game.ow.zoomOn = true; game.ow.zoom = 1; game.ow.spin = NODES[game.ow.save.at].x / 4032 * 2 * Math.PI; }
 }
 // a few hours in: some ranks bought, two trophies, a sword well on its way to mastery
 function powersScene(game, tab) {
@@ -77,7 +86,7 @@ function filesScene(game) {
 // the polish pass scenes
 function polishScene(game, mode) {
   if (mode === 'book') {
-    for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31], ['bombchicken', 12], ['brute', 4], ['wraith', 1], ['maw', 22], ['wizard', 81], ['eyeball', 3]]) recordKill(t, n);
+    for (const [t, n] of [['gosling', 260], ['honker', 95], ['gsquire', 31], ['fencer', 12], ['gtoss', 4], ['whirl', 1], ['ggrave', 22], ['berserker', 81], ['swan', 3]]) recordKill(t, n);
     PAGES[0].kinds.forEach(recordBoss); PAGES[1].kinds.slice(0, 3).forEach(recordBoss);
     mapScene(game, false);
     openPowers(TAB.BOOK);
@@ -101,14 +110,15 @@ function polishScene(game, mode) {
     s.at = '3-1';
     try { localStorage.setItem('crazyWeaponMan.secrets.v1', '[0]'); } catch (_) {}
     winTrophy(1); PAGES[0].kinds.forEach(recordBoss);
-    for (const [t, n] of [['stalker', 260], ['crawler', 95], ['goose', 31]]) recordKill(t, n);
+    for (const [t, n] of [['gosling', 260], ['honker', 95], ['gsquire', 31]]) recordKill(t, n);
     game.ow.save = s; game.openMap();
     openPowers(mode === 'anvil' ? TAB.BAG : TAB.COLL);
     powers.coll = 1;
     if (mode === 'anvil') {
-      // a katana struck to +3 in the bag, asking for its fourth strike
+      // the katana in hand struck to +3, asking for its fourth strike
       const w = makeWeapon(1, { type: 'katana', q: 3, standout: false });
-      stash(w); stash(makeWeapon(2, { type: 'bow', q: 2 })); stash(makeWeapon(0, { type: 'hammer', q: 1 }));
+      world.hero.weapon = w;
+      logWeapon(w); logWeapon(makeWeapon(2, { type: 'bow', q: 2 })); logWeapon(makeWeapon(0, { type: 'hammer', q: 1 }));
       world.inv.sel = world.bag.indexOf(w);
       for (let i = 0; i < 3; i++) { world.inv.anvilAsk = true; anvilStrike(); }
       world.inv.anvilAsk = false; anvilStrike();
@@ -145,8 +155,10 @@ function polishScene(game, mode) {
   document.documentElement.dataset.capture = 'ready';
 }
 export function captureScene(game, mode) {
+  if (/^den/.test(mode)) return denScene(game, mode);
   if(['book','collection','anvil','maptemper','ghost','scroll','water','ice','room','goose','boar','griffin','stable','stableshut','sheet'].includes(mode)) return polishScene(game, mode);
   if(mode==='map' || mode==='mapall') return mapScene(game, mode==='mapall');
+  if(mode==='mapzoom' || mode==='mapfly') return mapView(game, mode==='mapfly');
   if(/^powers\d$/.test(mode)) return powersScene(game, +mode.slice(6));
   if(mode==='files') return filesScene(game);
   if(/^clear/.test(mode)) return clearSheet(game, mode);
@@ -227,8 +239,8 @@ export function captureScene(game, mode) {
     }
     if(mode==='bag') {
       h.attack=null;h.weapon=makeWeapon(z,{type:'scythe',q:6,standout:true});
-      for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['spear',4,false],['axe',2,false],['boomerang',3,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) stash(makeWeapon(z,{type,q,standout}));
-      world.bag[1].locked=true;openInventory();world.inv.sel=1;
+      for(const [type,q,standout] of [['sword',0,false],['bow',1,false],['dagger',0,true],['spear',4,false],['axe',2,false],['boomerang',3,true],['hammer',2,false],['staff',1,false],['katana',2,false],['sword',1,false]]) logWeapon(makeWeapon(z,{type,q,standout}));
+      logWeapon(h.weapon);openInventory();world.inv.sel=1;
     }
   });
   document.documentElement.dataset.capture='ready';
@@ -274,7 +286,7 @@ function sprint(game,n) {
     // slope, downhill, uphill: a ramp; fight: a fight pad; nook: a nook's perch)
     const at=new URLSearchParams(location.search).get('at'),M=world.map,list=at==='fight'?M.platforms.filter(p=>p.fight):at==='nook'?M.platforms.filter(p=>p.nook):at==='wall'?M.walls:at==='bridge'?M.pits.filter(p=>p.bridge):at==='high'?M.platforms.filter(p=>p.tier===1):at==='sky'?M.platforms.filter(p=>p.tier===2):at==='slope'?M.slopes.filter(q=>q.w>=48):at==='downhill'?M.slopes.filter(q=>q.k>0&&q.w>=48):at==='uphill'?M.slopes.filter(q=>q.k<0&&q.w>=48):M.gadgets.filter(o=>o.kind===at),gd=at&&list[+(new URLSearchParams(location.search).get('n')||0)];
     if(gd){const gx=(gd.x??gd.x0)-(+new URLSearchParams(location.search).get('back')||170),p=new URLSearchParams(location.search).has('on')?gd:world.map.platforms.filter(p=>p.ground && gx>=p.x && gx<p.x+p.w)[0];if(p){h.x=p===gd?gd.x+8:gx;h.y=p.y-h.h;}}h.inv=0;h.lv=1+z*3;h.weapon=makeWeapon(z,{type,q:3,standout:false});h.face=1;
-    if(foes) {h.maxHp=h.hp=1e6;for(const e of world.enemies) e.spawnT=0;}
+    if(foes) {h.god=true;for(const e of world.enemies) e.spawnT=0;}
     updateCamera(0,true);
     window.cwmWorld=world;
   });
@@ -328,4 +340,37 @@ function bossFight(game,n,node=null) {
     h.inv=0;
   });
   document.documentElement.dataset.capture='ready';
+}
+
+// the Beast Den (den, dencard, denmarket, dencup, denrace, denspar, dentargets): a garden of six
+// pets, two of them grown and one crowned, eggs in the nest and a basket of melted weapons
+function denScene(game, mode) {
+  let seed = 4242; Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  resetDen();
+  const st = a => ({ power: a[0], speed: a[1], reach: a[2], aim: a[3], guard: a[4] });
+  const pets = [[0, null, [5, 2, 2, 1, 1]], [0, 'power', [9, 2, 1, 1, 2]], [1, 'aim', [1, 3, 1, 10, 1]], [6, 'guard', [10, 8, 6, 6, 32]], [4, null, [1, 4, 0, 1, 0]], [8, 'speed', [2, 14, 3, 3, 1]]];
+  for (const [zone, form, lv] of pets) {
+    addEgg(zone);
+    let r; do r = tapEgg(den().eggs.length - 1); while (!r.pet);
+    Object.assign(r.pet, { form, lv: st(lv), fed: st(lv.map(v => v * 2)), joy: 80, crowned: lv.reduce((a, b) => a + b) >= 60 });
+    if (form === 'power') r.pet.el = { fire: 6 };
+  }
+  addEgg(2); addEgg(5, { gen: 1 });
+  den().medals = 140; den().starter = true; den().cups = { race: 1, spar: 2, targets: 0 };
+  Object.assign(den().owned, { decor0: 1, decor1: 1, decor4: 1, decor7: 1, decor9: 1, mace: 1 });
+  for (let i = 0; i < 16; i++) toBasket(makeWeapon(3 + (i % 5), { q: 2 + (i % 6), type: ['sword', 'bow', 'hammer', 'dagger', 'staff', 'axe', 'wand', 'katana'][i % 8] }));
+  saveDen();
+  game.openMap();
+  game.openBeastDen();
+  const D = game.den;
+  D.banner = null;
+  for (let i = 0; i < 90; i++) game.update(1 / 60);
+  const pet = den().pets[1];
+  if (mode === 'dencard') D.menu = { kind: 'card', id: pet.id, sel: 2, msg: 'NOM! +62 POWER  POWER LV 9!' };
+  if (mode === 'denmarket') (D.hero.x = 790), (D.menu = { kind: 'market', sel: 7, top: 0, pet: 1, msg: 'Z: BUY   LEFT/RIGHT: PICK A PET   ESC: CLOSE' });
+  if (mode === 'dencup') (D.hero.x = 900), (D.menu = { kind: 'cup', ev: 1, tier: 1, pet: 3 });
+  const show = { denrace: ['race', 2.4], denspar: ['spar', 4.2], dentargets: ['targets', 3.2] }[mode];
+  if (show) D.menu = { kind: 'show', res: runCup(show[0], 1, pet, 99), petId: pet.id, t: show[1], done: false, back: { kind: 'cup', ev: 0, tier: 1, pet: 1 } };
+  if (mode === 'den') D.hero.x = 420;
+  game.update(1 / 60);
 }

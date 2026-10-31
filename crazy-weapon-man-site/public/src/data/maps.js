@@ -3,7 +3,7 @@
 // health and go back to the last ground you stood on), chasms with a stepping ledge in the middle,
 // floating ledge rows and staircases that make a richer high route (the relics sit up there), and a
 // flat arena at the end where the boss waits. No ladders: you never have to stop moving. Stages run
-// 13 to 24 screens, with long straightaways to build up speed on (hero.js momentum), and Sonic-style
+// 18 to 32 screens (STAGE_SCALE), with long straightaways to build up speed on (hero.js momentum), and Sonic-style
 // stacked routes: a high road of ledges two hops over the ground for a few screens, now and then a
 // sky road over that, and break-away terrain: bridges and ledges that crumble a moment after you
 // step on them (game/crumble.js), and cliffs whose cracked foot you can smash open for a low road
@@ -23,6 +23,11 @@ import { NODES, REGIONS, isLevel } from './overworld.js';
 // residents per map: groups along the route, fewer than the old MapleStory fields (50 + 4z), so
 // each kill pays KILL_PAY times as much (xp, shards, weapon drops) and the economy keeps its pace
 export const FOES = zone => 40 + zone * 4;
+// the stages were scaled up to feel big (2026-10-31): every recipe below runs STAGE_SCALE times as
+// many screens, with as many more residents to fill them (paid per kill as before, so a bigger
+// stage pays more), and a little more of it up on high and sky roads
+export const STAGE_SCALE = 1.35;
+const MAX_SCREENS = 32;
 export const KILL_PAY = zone => (50 + zone * 4) / FOES(zone);
 // shards for a full clear (every resident on the map) before you reach the arena
 export const CLEAR_BONUS = zone => 12 + zone * 4;
@@ -71,7 +76,7 @@ export function levelLayout(zone, id) {
   const seed = [...id].reduce((h, c) => h * 31 + c.charCodeAt(0), 7);
   return {
     ...lay, title, seed,
-    screens: Math.min(24, lay.screens + Math.round(tier * 3) + (big ? 1 : 0)),
+    screens: Math.min(MAX_SCREENS / STAGE_SCALE, lay.screens + Math.round(tier * 3) + (big ? 1 : 0)),
     pits: Math.min(0.55, lay.pits + tier * 0.1),
     cave: kind === 'fort' || (i % 4 === 3 ? !lay.cave : !!lay.cave),
     foes: Math.round(tier * 8) + (big ? 3 : 0),
@@ -151,7 +156,7 @@ function room(m, label, x, end, y0, y1, floor) {
 // sits near the top of the map.
 const STEPS = [[0], [-16, 0, 0, 16], [-24, -16, 0, 0, 16, 24], [-32, -24, -16, 0, 16, 24, 32]];
 function stage(m, lay) {
-  const width = lay.screens * W, end = width - W;
+  const width = Math.min(MAX_SCREENS, Math.round(lay.screens * STAGE_SCALE)) * W, end = width - W;
   m.width = width;
   const segs = [], floats = [], trend = lay.climb ? -1 : lay.descend ? 1 : 0;
   let x = 0, y = 0;
@@ -499,7 +504,7 @@ function finish(m, zone, lay) {
   }
   spans.sort((a, b) => a.left - b.left || a.p.y - b.p.y);
   const spawns = [];
-  let count = FOES(zone) + (lay.foes || 0), pack = 0;
+  let count = Math.round((FOES(zone) + (lay.foes || 0)) * STAGE_SCALE), pack = 0;
   const place = (q, n, at, gap) => {
     n = Math.min(n, 1 + Math.floor((q.right - q.left) / gap));
     const half = (n - 1) * gap / 2, mid = Math.max(q.left + half, Math.min(q.right - half, at));

@@ -1,9 +1,11 @@
 // The Legendary Anvil: what weapon relics are for. Every relic you have ever brought home is one to
-// spend here, from the bag on the overworld (G). A strike makes one weapon a more powerful version
+// spend here, from the weapon log on the overworld (G). A strike makes the weapon in hand a more powerful version
 // of itself: it catches up to the furthest world you have reached (a favourite from world 1 keeps
 // up), climbs one rarity, and hits 10% harder. A weapon takes five strikes; the fifth awakens it
 // (it learns an ability if it had none). Its name keeps a +1..+5. Strikes cost more each time, so a
 // whole +5 weapon is a real hunt. Kept in the overworld save. Pure data, safe to import from tests.
+// Weapons swap all the time now (every pickup is equipped: combat.js weapon armor), so the anvil's
+// edge passes on: each new weapon takes the strikes of the one it replaces (inheritAnvil).
 import { NODES } from './overworld.js';
 import { relicTotal } from './relics.js';
 
@@ -39,4 +41,16 @@ export function strike(save, w) {
   w.boost = (w.boost || 1) * STRIKE_BOOST;
   w.name = `${baseName(w.name)} +${w.struck}`;
   return w.struck === ANVIL_MAX;
+}
+
+// a new weapon replacing a struck one takes its strikes: the +N, the 10% a strike, and at +5 the
+// awakened ability if it has none of its own
+export function inheritAnvil(w, old) {
+  const n = strikes(old);
+  if (!w || !n || strikes(w) >= n) return w;
+  w.boost = (w.boost || 1) * Math.pow(STRIKE_BOOST, n - strikes(w));
+  w.struck = n;
+  if (n >= ANVIL_MAX && !w.ability && old.ability) w.ability = old.ability;
+  w.name = `${baseName(w.name)} +${n}`;
+  return w;
 }
