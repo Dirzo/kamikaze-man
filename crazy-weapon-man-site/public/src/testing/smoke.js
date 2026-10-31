@@ -63,24 +63,32 @@ export function runSmoke(game) {
   const key=(code,on)=>window.dispatchEvent(new KeyboardEvent(on?'keydown':'keyup',{code,bubbles:true}));
   const poll=()=>input.poll(clock+=STEP);
   const reset=()=>{key('ArrowUp',false);key('ArrowDown',false);key('KeyZ',false);key('ArrowRight',false);key('ArrowLeft',false);key('KeyX',false);key('KeyV',false);poll();game.startRun();world.enemies=[];world.director=null;world.hero.inv=0;clearFx();};
-  check('two thumbs move and attack independently, with safe cancellation',()=>{
-    reset();const touchPanel=document.getElementById('touch'),oldDisplay=touchPanel.style.display;touchPanel.style.display='block';const stick=document.getElementById('joystick'),hit=document.querySelector('[data-action="attack"]');
+  check('two thumbs move and attack independently, slide DASH into HIT, with safe cancellation',()=>{
+    reset();const panel=document.getElementById('touch'),was={display:panel.style.display,mode:panel.dataset.mode};panel.style.display='block';panel.dataset.mode='play';
+    const zone=document.getElementById('stick-zone'),pad=document.getElementById('pad'),at=sel=>{const r=pad.querySelector(sel).getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];};
     const send=(el,type,id,x=0,y=0)=>el.dispatchEvent(new PointerEvent(type,{pointerId:id,pointerType:'touch',clientX:x,clientY:y,bubbles:true,cancelable:true}));
-    const b=stick.getBoundingClientRect(),x=b.left+b.width/2,y=b.top+b.height/2;
-    send(stick,'pointerdown',101,x+50,y);send(hit,'pointerdown',102);poll();
+    const z=zone.getBoundingClientRect(),x=z.left+z.width/2,y=z.top+z.height/2,[hx,hy]=at('.attack'),[dx,dy]=at('.dash');
+    send(zone,'pointerdown',101,x,y);send(zone,'pointermove',101,x+50,y);send(pad,'pointerdown',102,hx,hy);poll();
     ok(input.held('right') && input.held('attack'),'two-thumb input dropped');
-    send(stick,'pointermove',101,x-100,y);poll();ok(input.held('left') && !input.held('right') && input.held('attack'));
-    send(stick,'pointercancel',101);poll();ok(!input.held('left') && input.held('attack'),'stick cancelled attack');
-    send(hit,'lostpointercapture',102);poll();ok(!input.held('attack'),'attack stuck after lost capture');
-    send(stick,'pointerdown',103,x,y-40);poll();ok(input.held('up'),'ladder direction missing');
-    window.dispatchEvent(new Event('blur'));poll();ok(!input.held('up') && !input.held('attack'),'blur left input stuck');touchPanel.style.display=oldDisplay;
+    send(zone,'pointermove',101,x-100,y);poll();ok(input.held('left') && !input.held('right') && input.held('attack'),'the floating stick did not follow the thumb');
+    send(zone,'pointermove',101,x-100,y+18);poll();ok(input.held('left') && !input.held('down'),'a thumb resting a little low pressed DOWN');
+    send(zone,'pointercancel',101);poll();ok(!input.held('left') && input.held('attack'),'stick cancelled attack');
+    send(pad,'lostpointercapture',102);poll();ok(!input.held('attack'),'attack stuck after lost capture');
+    send(pad,'pointerdown',104,dx,dy);poll();ok(input.held('dash') && input.pressed('dash'),'DASH missed');
+    send(pad,'pointermove',104,(dx+hx)/2,(dy+hy)/2);send(pad,'pointermove',104,hx,hy);poll();ok(input.held('attack') && !input.held('dash'),'a thumb sliding from DASH onto HIT did not attack');
+    send(pad,'pointerup',104,hx,hy);poll();ok(!input.held('attack'),'attack stuck after the slide');
+    send(zone,'pointerdown',103,x,y);send(zone,'pointermove',103,x,y-40);poll();ok(input.held('up'),'ladder direction missing');
+    window.dispatchEvent(new Event('blur'));poll();ok(!input.held('up') && !input.held('attack'),'blur left input stuck');panel.style.display=was.display;panel.dataset.mode=was.mode;
   });
-  if(new URLSearchParams(location.search).has('mobile')) check('landscape touch layout fits the viewport with clear thumb gutters',()=>{
-    const canvas=document.getElementById('screen').getBoundingClientRect(),stick=document.getElementById('joystick').getBoundingClientRect(),actions=document.getElementById('touch-actions').getBoundingClientRect();
-    ok(matchMedia('(any-pointer:coarse)').matches,'touch device was not emulated');
-    ok(canvas.left>=stick.right && canvas.right<=actions.left,'controls cover the playfield');
-    ok(canvas.top>=0 && canvas.bottom<=innerHeight && actions.bottom<=innerHeight,'mobile layout clipped');
-    ok(canvas.width>300 && canvas.height>170,'landscape canvas is too small');
+  if(new URLSearchParams(location.search).has('mobile')) check('landscape phone: the playfield fills the screen, big thumb buttons stay on screen and apart',()=>{
+    const canvas=document.getElementById('screen').getBoundingClientRect();
+    ok(document.documentElement.classList.contains('touch'),'touch controls were not switched on');
+    ok(canvas.top>=0 && canvas.bottom<=innerHeight+1 && canvas.left>=0 && canvas.right<=innerWidth+1,'mobile layout clipped');
+    ok(canvas.height>=innerHeight-2 || canvas.width>=innerWidth-2,'the playfield does not fill the phone screen');
+    const panel=document.getElementById('touch'),mode=panel.dataset.mode;panel.dataset.mode='play';
+    const btns=[...document.querySelectorAll('#pad button')].map(b=>({a:b.dataset.action,r:b.getBoundingClientRect()}));panel.dataset.mode=mode;
+    for(const {a,r} of btns){ok(r.left>=0 && r.right<=innerWidth && r.top>=0 && r.bottom<=innerHeight,a+' is off screen');if(a!=='special')ok(r.width>=64,a+' is too small for a thumb');}
+    for(const p of btns)for(const q of btns)if(p!==q)ok(Math.hypot(p.r.x+p.r.width/2-q.r.x-q.r.width/2,p.r.y+p.r.height/2-q.r.y-q.r.height/2)>=(p.r.width+q.r.width)/2,p.a+' overlaps '+q.a);
   });
   check('all nine weapons render with awakened silhouettes',()=>{
     for(const type of Object.keys(game.types)) {const w=makeWeapon(9,{type,q:8});w.mutation='orbit';ok(lookOf(w).cv.width>0);}

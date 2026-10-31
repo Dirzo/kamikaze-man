@@ -8,6 +8,7 @@
 // ESC or H goes back to the map. The rules live in data/den.js; this file only walks, draws and asks.
 import { W, H, C } from '../config.js';
 import { input } from '../engine/input.js';
+import { tk, touchUI } from '../engine/touch-controls.js';
 import { A } from '../engine/assets.js';
 import { X, rect, px, text, fitText, panel, frame, tinted, screenLayer } from '../engine/gfx.js';
 import { sfx, music, denSfx } from '../engine/audio.js';
@@ -49,7 +50,7 @@ export function openDen(weapon) {
   D.pets = new Map();
   for (const p of den().pets) agent(p, ROAM[0] + Math.random() * (ROAM[1] - ROAM[0]));
   D.mace = den().owned[TOY.id] ? { x: 480, y: GY - 6, vx: 0, vy: 0, spin: 0 } : null;
-  if (welcome()) say('WELCOME TO THE BEAST DEN!', 'A GOOSE EGG IS WAITING IN THE NEST. TAP IT WITH Z');
+  if (welcome()) say('WELCOME TO THE BEAST DEN!', tk('A GOOSE EGG IS WAITING IN THE NEST. TAP IT WITH Z', 'A GOOSE EGG IS WAITING IN THE NEST. WALK OVER AND TAP ACT'));
   else say('THE BEAST DEN', `${den().pets.length} PET${den().pets.length === 1 ? '' : 'S'}  ${den().eggs.length} EGG${den().eggs.length === 1 ? '' : 'S'}  ${den().basket.length} IN THE BASKET`, 2.5);
   music.play('den', ZONES[7].music);
 }
@@ -143,13 +144,13 @@ function act(near, alt) {
       a.emote = 'heart';
       a.emT = 2;
       burst(NEST_X, GY - 12, FAMILY[r.pet.zone].col, 16);
-      say(`A ${petName(r.pet)} HATCHED!`, `SAY HELLO TO ${r.pet.name}. PRESS C BY A PET TO SEE ITS CARD`);
+      say(`A ${petName(r.pet)} HATCHED!`, `SAY HELLO TO ${r.pet.name}. ${tk('PRESS C', 'TAP CARD')} BY A PET TO SEE ITS CARD`);
     }
   } else if (near.kind === 'basket') {
     const n = d.basket.length;
-    say(`THE FEED BASKET: ${n} WEAPON${n === 1 ? '' : 'S'}`, n ? 'STAND BY A PET AND PRESS C TO FEED IT' : 'WEAPONS YOU MELT IN A RUN LAND HERE');
+    say(`THE FEED BASKET: ${n} WEAPON${n === 1 ? '' : 'S'}`, n ? tk('STAND BY A PET AND PRESS C TO FEED IT', 'STAND BY A PET AND TAP CARD TO FEED IT') : 'WEAPONS YOU MELT IN A RUN LAND HERE');
   } else if (near.kind === 'market') {
-    D.menu = { kind: 'market', sel: 0, top: 0, pet: 0, msg: 'Z: BUY   LEFT/RIGHT: PICK A PET   ESC: CLOSE' };
+    D.menu = { kind: 'market', sel: 0, top: 0, pet: 0, msg: tk('Z: BUY   LEFT/RIGHT: PICK A PET   ESC: CLOSE', 'BUY: BUY IT   STICK LEFT / RIGHT: PICK A PET') };
     sfx.ui(true);
   } else if (near.kind === 'cup') {
     if (!d.pets.length) return say('NO ONE TO ENTER YET', 'HATCH AN EGG FIRST');
@@ -639,7 +640,7 @@ function weaponIcon(w, x, y, bw, bh, t) {
 }
 function drawPrompt(n, t) {
   const h = D.hero, x = Math.round(h.x + h.w / 2), y = GY - 46 + Math.round(Math.sin(t * 4));
-  const s = n.kind === 'pet' ? 'Z: PAT   C: CARD AND FEED' : n.kind === 'nest' ? (den().eggs.length ? 'Z: TAP AN EGG' : 'THE NEST IS EMPTY') : n.kind === 'basket' ? 'Z: LOOK IN' : n.kind === 'market' ? 'Z: SHOP' : 'Z: ENTER THE CUP';
+  const z = tk('Z: ', 'ACT: '), s = n.kind === 'pet' ? tk('Z: PAT   C: CARD AND FEED', 'ACT: PAT   CARD: CARD AND FEED') : n.kind === 'nest' ? (den().eggs.length ? z + 'TAP AN EGG' : 'THE NEST IS EMPTY') : n.kind === 'basket' ? z + 'LOOK IN' : n.kind === 'market' ? z + 'SHOP' : z + 'ENTER THE CUP';
   if (n.kind === 'pet') return;
   text(s, x, y, C.lime, { align: 'center' });
 }
@@ -649,9 +650,9 @@ function drawHudBar() {
   text(`MEDALS ${d.medals}`, 6, 3, C.gold);
   text(`SHARDS ${meta().shards}`, 92, 3, C.sky);
   text(`PETS ${d.pets.length}/${MAX_PETS}   EGGS ${d.eggs.length}/${MAX_EGGS}   BASKET ${d.basket.length}`, 186, 3, C.mist);
-  text('ESC: MAP', W - 6, 3, C.fog, { align: 'right' });
-  text('1 BAG  2 MASTERY  3 MAP', 6, H - 12, C.mist); // the clear keys (main.js hotKey)
-  if (D.near?.kind === 'pet' && !D.menu) text('Z: PAT   C: CARD AND FEED', W / 2, H - 12, C.lime, { align: 'center' });
+  text(tk('ESC: MAP', ''), W - 6, 3, C.fog, { align: 'right' });
+  if (!touchUI()) text('1 BAG  2 MASTERY  3 MAP', 6, H - 12, C.mist); // the clear keys (main.js hotKey)
+  if (D.near?.kind === 'pet' && !D.menu) text(tk('Z: PAT   C: CARD AND FEED', 'ACT: PAT   CARD: CARD AND FEED'), W / 2, H - 12, C.lime, { align: 'center' });
 }
 function drawBanner(b) {
   const a = Math.min(1, b.t * 3);
@@ -698,7 +699,7 @@ function drawCard(M, t) {
   });
   // the basket strip
   const by = y0 + 166;
-  text(d.basket.length ? 'FEED FROM THE BASKET   LEFT / RIGHT: PICK   Z: FEED' : 'THE BASKET IS EMPTY: MELT WEAPONS IN A RUN TO FILL IT', x0 + 14, by, C.lime);
+  text(d.basket.length ? tk('FEED FROM THE BASKET   LEFT / RIGHT: PICK   Z: FEED', 'FEED FROM THE BASKET   STICK: PICK   FEED: FEED') : 'THE BASKET IS EMPTY: MELT WEAPONS IN A RUN TO FILL IT', x0 + 14, by, C.lime);
   const per = 14, start = Math.max(0, Math.min(M.sel - 6, d.basket.length - per));
   for (let i = 0; i < per && start + i < d.basket.length; i++) {
     const w = d.basket[start + i], x = x0 + 14 + i * 24, y = by + 11, on = start + i === M.sel;
@@ -710,7 +711,7 @@ function drawCard(M, t) {
   const it = d.basket[M.sel];
   if (it) text(fitText(`${it.name}: +${feedXp(it, p)} ${STAT_INFO[FOOD[it.type]].name}`, 330), x0 + 14, by + 38, rarityColour(it.q));
   if (M.msg) text(M.msg, x0 + 90, y0 + 68, C.gold);
-  text('C / ESC: CLOSE', x0 + w - 10, y0 + 12, C.fog, { align: 'right' });
+  text(tk('C / ESC: CLOSE', ''), x0 + w - 10, y0 + 12, C.fog, { align: 'right' });
 }
 function drawMarket(M, t) {
   const rows = marketRows(hasTrophy), d = den();
@@ -754,7 +755,7 @@ function drawCupMenu(M, t) {
     });
     text(`${p.name}'S SCORE: ${Math.round(ratingOf(p, ev))}`, x0 + w - 14, y, C.fog, { align: 'right' });
   });
-  text('UP / DOWN: EVENT   LEFT / RIGHT: CUP   Z: COMPETE   ESC: CLOSE', x0 + 12, y0 + h - 28, C.lime);
+  text(tk('UP / DOWN: EVENT   LEFT / RIGHT: CUP   Z: COMPETE   ESC: CLOSE', 'STICK UP / DOWN: EVENT   LEFT / RIGHT: CUP   GO: COMPETE'), x0 + 12, y0 + h - 28, C.lime);
   text(M.msg || `1ST PLACE PAYS ${CUPS[M.tier].prize} MEDALS AND OPENS THE NEXT CUP`, x0 + 12, y0 + h - 16, C.mist);
 }
 

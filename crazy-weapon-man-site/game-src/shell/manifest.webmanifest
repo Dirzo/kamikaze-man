@@ -1,0 +1,9 @@
+{
+  "name": "Crazy Weapon Man",
+  "short_name": "Weapon Man",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#1a1428",
+  "theme_color": "#1a1428"
+}

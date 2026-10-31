@@ -3,6 +3,7 @@
 // New roads draw themselves in after a clear. Map data and the save rules live in data/overworld.js.
 import { W, H, C } from '../config.js';
 import { input } from '../engine/input.js';
+import { touchUI } from '../engine/touch-controls.js';
 import { A } from '../engine/assets.js';
 import { X, rect, text, textWidth, panel, dither, frame, screenLayer } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
@@ -340,9 +341,11 @@ function drawOverworldHud(t) {
     mods.forEach((m, i) => text(m.name, W - 206, py + 15 + i * 9, i === mods.length - 1 ? C.cream : C.mist));
   }
   if (ow.temperMsg > 0) text('BEAT THE DRAGON TO OPEN TEMPER', W - 12, y + 36, C.coral, { align: 'right' });
-  else if (T.max) text(`T: TEMPER ${T.on}/${T.max}` + (T.on ? '  ' + rewardText(T.on) : '  OFF'), W - 12, y + 36, tCol, { align: 'right' });
-  const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK  JUMP: FIRE  SHIFT: WORLD' : isLevel(n) ? 'ARROWS: WALK  JUMP: PLAY  SHIFT: WORLD' : 'ARROWS: WALK  SHIFT: WORLD';
+  else if (T.max) text(`${touchUI() ? '' : 'T: '}TEMPER ${T.on}/${T.max}` + (T.on ? '  ' + rewardText(T.on) : '  OFF'), W - 12, y + 36, tCol, { align: 'right' });
+  const hint = ow.walk ? '' : touchUI() ? (n.kind === 'warp' ? 'STICK: WALK  GO: FIRE  GLOBE: WORLD' : isLevel(n) ? 'STICK: WALK  GO: PLAY  GLOBE: WORLD' : 'STICK: WALK  GLOBE: WORLD')
+    : n.kind === 'warp' ? 'ARROWS: WALK  JUMP: FIRE  SHIFT: WORLD' : isLevel(n) ? 'ARROWS: WALK  JUMP: PLAY  SHIFT: WORLD' : 'ARROWS: WALK  SHIFT: WORLD';
   if (hint) text(hint, 12, y + 26, C.mist);
+  if (touchUI()) return; // (on a phone the menus are the soft keys, top right)
   // the POWERS window: blinks when there is a mastery perk to pick or a rank you can afford
   // the clear keys: 1 BAG  2 MASTERY  3 DEN (main.js hotKey), drawn as key caps
   let kx = W - 12;

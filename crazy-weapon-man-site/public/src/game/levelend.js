@@ -6,6 +6,7 @@ import { C, W, H } from '../config.js';
 import { X, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { sfx } from '../engine/audio.js';
 import { input } from '../engine/input.js';
+import { tk } from '../engine/touch-controls.js';
 import { world } from './world.js';
 import { lookOf, rarityColour, frameOfLook } from './looks.js';
 import { relicsTaken } from './relics.js';
@@ -166,5 +167,5 @@ export function drawLevelEnd(T, t) {
       rect(x + 1, y + 1, bw - 2, 12, on ? C.wine : C.night);
       text((on ? '> ' : '') + o, x + bw / 2, y + 4, on ? C.cream : C.fog, { align: 'center' });
     });
-  } else if (Math.floor(t * 3) % 2) text('JUMP / ENTER: SKIP', W / 2, H - 22, C.fog, { align: 'center' });
+  } else if (Math.floor(t * 3) % 2) text(tk('JUMP / ENTER: SKIP', 'OK: SKIP'), W / 2, H - 22, C.fog, { align: 'center' });
 }

@@ -19,6 +19,7 @@
 import { C, W, H } from '../config.js';
 import { X, canvas, rect, px, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
+import { touchUI } from '../engine/touch-controls.js';
 import { sfx } from '../engine/audio.js';
 import { TYPE_LIST, ELEMENTS } from '../data/weapons.js';
 import { proficiency, profRank } from '../data/proficiency.js';
@@ -290,7 +291,7 @@ export function drawPowers(t) {
     : P.tab === TAB.BOOK ? `ARROWS: PICK   Q: ${P.book.pages ? 'RESIDENT CARDS' : 'BOSS PAGES'}   SHIFT: NEXT TAB   E: CLOSE`
     : P.tab === TAB.COLL ? 'ARROWS: PICK A WORLD   SHIFT: NEXT TAB   E: CLOSE'
     : 'EVERYTHING YOUR POWERS ADD UP TO   SHIFT: NEXT TAB   E: CLOSE';
-  text(hint, W / 2, H - 18, C.fog, { align: 'center' });
+  if (!touchUI()) text(hint, W / 2, H - 18, C.fog, { align: 'center' }); // (a phone taps instead: its extra keys sit down here)
 }
 // the tab strip, shared with the map's bag (inventory.js draws it over the bag); each tab is as wide
 // as its name. Leaves where each tab sits in P.tabBoxes for clicks.

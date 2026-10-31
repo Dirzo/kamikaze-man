@@ -12,6 +12,7 @@ const walk = dir => fs.readdirSync(dir, { withFileTypes: true }).flatMap(f => f.
 for (const f of walk(src)) if (f.endsWith('.js')) files.set('src/' + path.relative(src, f), fs.readFileSync(f, 'utf8'));
 const version = crypto.createHash('sha256').update([...files.values()].join('')).digest('hex').slice(0, 10);
 files.set('index.html', fs.readFileSync(path.join(src, 'shell/index.html'), 'utf8').replace('/next/src/main.js', '/src/main.js?v=' + version));
+files.set('manifest.webmanifest', fs.readFileSync(path.join(src, 'shell/manifest.webmanifest'), 'utf8')); // add to home screen: fullscreen, landscape
 files.set('next/index.html', '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/"><title>Crazy Weapon Man</title><a href="/">Play Crazy Weapon Man</a>\n');
 files.set('_headers', [
   '/*',

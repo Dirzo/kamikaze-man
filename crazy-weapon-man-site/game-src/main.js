@@ -1,6 +1,7 @@
 // Crazy Weapon Man (next): boot, fixed-step loop, scenes (title, play, pause, over, won).
 import { W, H, STEP, C, GROUND } from './config.js';
-import { input } from './engine/input.js';
+import { input, touchPad } from './engine/input.js';
+import { touchUI, tk } from './engine/touch-controls.js';
 import { loadAssets, A } from './engine/assets.js';
 import { X, rect, text, textWidth, fitText, panel, dither, worldLayer, screenLayer, frame } from './engine/gfx.js';
 import { audioOn, music, sfx, toggleMusic, toggleSound, audioSettings } from './engine/audio.js';
@@ -395,7 +396,11 @@ function drawTitle(t) {
   const Hh = A.hero;
   frame(Hh.im, Hh.frames[Math.floor(t * 2) % 2 ? 'idle' : 'idle2'], Hh.w, Hh.h, W / 2 - Hh.w / 2, GROUND - Hh.feet, false);
   text('CLEAR THE MAP. CLAIM THE NEXT.', W / 2, 123, C.mist, { align: 'center' });
-  const lines = [
+  const lines = touchUI() ? [
+    'LEFT THUMB ANYWHERE: MOVE      RIGHT THUMB: HIT  JUMP  DASH',
+    'SKILL FIRES YOUR SPECIAL WHEN ITS RING IS FULL',
+    'SLIDE DASH INTO HIT TO STAB.  DOWN + JUMP DROPS THROUGH'
+  ] : [
     'MOVE  ARROWS / A D        JUMP  ALT / X        ATTACK  CTRL / Z',
     'SPECIAL  SPACE / C    DASH  SHIFT / V    BAG 1   MASTERY 2   DEN 3',
     'GAMEPAD: A JUMP  X ATTACK  Y SPECIAL  B DASH  START PAUSE'
@@ -414,7 +419,16 @@ function drawPause() {
   dither(0, 0, W, H, C.ink, 10);
   panel('panel', W / 2 - 120, 56, 240, 146);
   text('PAUSED', W / 2, 72, C.gold, { align: 'center', k: 2 });
-  const rows = [
+  const rows = touchUI() ? [
+    ['MOVE', 'LEFT THUMB, ANYWHERE'],
+    ['JUMP', 'JUMP  (STICK DOWN + JUMP: DROP)'],
+    ['ATTACK', 'HIT  (HOLD TO KEEP SWINGING)'],
+    ['SPECIAL', 'SKILL, WHEN ITS RING IS FULL'],
+    ['DASH', 'DASH  (SLIDE ONTO HIT: STAB)'],
+    ['PLUNGE', 'IN THE AIR: STICK DOWN + HIT'],
+    ['WEAPON LOG', 'LOG, TOP RIGHT'],
+    ['MUSIC / SOUND', `${audioSettings.music ? 'ON' : 'OFF'} / ${audioSettings.sound ? 'ON' : 'OFF'}`]
+  ] : [
     ['MOVE', 'ARROWS / A D'],
     ['JUMP', 'ALT / X  (DOWN+JUMP: DROP)'],
     ['ATTACK', 'CTRL / Z'],
@@ -428,7 +442,7 @@ function drawPause() {
     text(a, W / 2 - 108, 96 + i * 12, C.mist);
     text(b, W / 2 + 108, 96 + i * 12, C.paper, { align: 'right' });
   });
-  text(world.level ? 'ESC TO RESUME    Q TO LEAVE THE LEVEL' : 'ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
+  text(touchUI() ? 'TAP RESUME, TOP RIGHT' : world.level ? 'ESC TO RESUME    Q TO LEAVE THE LEVEL' : 'ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
 }
 
 // an impact frame (fx.js impactFrame): the scene flashes stark black and white for a frame or two,
@@ -454,7 +468,7 @@ function render() {
   }
   if (scene === 'title') return drawTitle(t);
   if (scene === 'files') return drawTitle(t), drawFiles(t);
-  if (scene === 'map') return drawOverworld(t), powers.open || world.inv || denChip(), drawInventory(t); // the bag (B) opens over the map
+  if (scene === 'map') return drawOverworld(t), powers.open || world.inv || touchUI() || denChip(), drawInventory(t); // the bag (B) opens over the map
   if (scene === 'den') return drawDen(t);
   drawWorld(world.t);
   impactLayer();
@@ -477,11 +491,15 @@ let last = performance.now(),
 function loop(now) {
   acc += Math.min(0.1, (now - last) / 1000);
   last = now;
+  let stepped = scene === 'loading';
   while (acc >= STEP) {
     if (scene !== 'loading') update(STEP);
     acc -= STEP;
+    stepped = true;
   }
-  render();
+  // a 90 or 120 Hz phone screen asks for frames faster than the 60 Hz simulation makes them: only
+  // draw when something moved, so the extra frames cost nothing (and the battery lasts)
+  if (stepped) render(), touchControls();
   requestAnimationFrame(loop);
 }
 // ---------------------------------------------------------------- buttons (mouse) + M/N keys
@@ -523,15 +541,16 @@ click('b-restart', () => {
   if (world.level && scene !== 'map') enterLevel(world.level); // retry this level, from the map's saved hero
   else if (scene !== 'map' && scene !== 'loading' && scene !== 'title') startRun();
 });
-click('b-full', async () => {
+async function fullscreen(on = !document.fullscreenElement) {
   try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else {
-      await document.documentElement.requestFullscreen?.();
-      try {await screen.orientation?.lock?.('landscape');} catch (_) { /* Browser rotation remains available. */ }
+    if (!on) await document.exitFullscreen?.();
+    else if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen?.({ navigationUI: 'hide' });
+      try { await screen.orientation?.lock?.('landscape'); } catch (_) { /* Browser rotation remains available. */ }
     }
-  } catch (_) { /* Fullscreen is optional on mobile browsers. */ }
-});
+  } catch (_) { /* Fullscreen is optional on mobile browsers (an iPhone plays it from the home screen instead). */ }
+}
+click('b-full', () => fullscreen());
 addEventListener('keydown', e => {
   if (e.code === 'KeyM') toggleMusic();
   if (e.code === 'KeyN') toggleSound();
@@ -541,6 +560,7 @@ setInterval(syncButtons, 250);
 
 document.getElementById('start').addEventListener('click', () => {
   if (scene === 'loading') return;
+  if (touchUI() && scene === 'title') fullscreen(true); // a phone goes edge to edge the moment you start
   audioOn(); scene === 'over' || scene === 'won' ? startRun() : scene === 'title' ? showFiles() : openMap(); document.getElementById('screen').focus();
 });
 document.getElementById('start').hidden = true;
@@ -548,6 +568,48 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && scene === 'play') scene = 'pause';
   last = performance.now(); acc = 0; syncButtons();
 });
+// ---------------------------------------------------------------- phone controls
+// what the floating controls (engine/touch-controls.js) show for the scene: the stick and pad, or only
+// the soft keys over a window you tap. A pad label of null hides that button; a soft key holds an
+// action for one tap (the same one a key sends) or runs a function.
+const act = (label, action, on) => ({ label, action, on });
+const PAD_PLAY = {};
+function touchControls() {
+  if (!touchUI()) return;
+  const T = touchPad;
+  const soundKeys = () => [{ label: 'SOUND ' + (audioSettings.sound ? 'ON' : 'OFF'), fn: () => (toggleSound(), syncButtons()) }, { label: 'MUSIC ' + (audioSettings.music ? 'ON' : 'OFF'), fn: () => (toggleMusic(), syncButtons()) }];
+  const full = { label: document.fullscreenElement ? 'WINDOW' : 'FULL', fn: () => fullscreen() };
+  if (scene === 'loading' || scene === 'title' || scene === 'over' || scene === 'won') return T.setMode('off', scene === 'title' ? [...soundKeys(), full] : []);
+  if (scene === 'files') return T.setMode('menu', [act('BACK', 'pause')]);
+  if (scene === 'pause') return T.setMode('pause', [act('RESUME', 'pause'), ...(world.level ? [act('LEAVE LEVEL', 'leave')] : []), ...soundKeys(), full]);
+  if (scene === 'levelEnd') return T.setMode('stick', [act('CONTINUE', 'leave')], { attack: 'OK', jump: null, dash: null, special: null });
+  const hubKeys = on => [act('BAG', 'hotBag', on === 'bag'), act('MASTERY', 'hotMastery', on === 'mastery'), act('DEN', 'hotDen', on === 'den')];
+  if (scene === 'map') {
+    if (world.inv) return T.setMode('menu', [act('DEN', 'hotDen'), act('CLOSE', 'hotBag')]); // (the window's own tabs switch BAG / MASTERY)
+    if (powers.open) {
+      const tab = powers.tab, M = powers.mast, extra =
+        tab === TAB.TREE ? [act('UNDO', 'undo'), act('REFUND ALL', 'leave'), act('SPECIALIZE', 'lock')]
+        : tab === TAB.MASTERY && M.open ? [act('BACK', 'leave')]
+        : tab === TAB.BOOK ? [act('PAGES', 'leave')] : [];
+      return T.setMode('menu', [...extra, act('DEN', 'hotDen'), act('CLOSE', 'inv')]);
+    }
+    if (ow.fly) return T.setMode('stick', [act('SKIP', 'dash')], { attack: 'SKIP', jump: null, dash: null, special: null });
+    if (ow.zoomOn) return T.setMode('stick', [], { attack: 'BACK', jump: null, dash: null, special: null });
+    const tier = temperOf(ow.save).max ? [act('TIER ' + temperOf(ow.save).on, 'temper')] : [];
+    return T.setMode('stick', [...hubKeys(), act('POWERS', 'inv'), ...tier, act('FILES', 'pause')], { attack: 'GO', jump: null, dash: 'GLOBE', special: null });
+  }
+  if (scene === 'den') {
+    const k = denScene.menu?.kind;
+    if (k) return T.setMode('stick', k === 'show' ? [act('SKIP', 'pause')] : [act('CLOSE', 'pause')], { attack: { card: 'FEED', market: 'BUY', cup: 'GO' }[k] || 'OK', jump: null, dash: null, special: k === 'cup' ? 'NEXT PET' : null });
+    return T.setMode('den', [act('MAP', 'pause'), ...hubKeys('den')], { attack: 'ACT', jump: null, dash: null, special: 'CARD' });
+  }
+  // a level
+  if (world.inv) return T.setMode('menu', [act('CLOSE', 'hotBag')]);
+  T.setMode('play', [act('LOG', 'hotBag'), act('II', 'pause')], PAD_PLAY);
+  const h = world.hero;
+  if (h) T.setSkill(h.specialCd <= 0 ? 1 : 1 - h.specialCd / (h.specialMax || 1));
+}
+
 function tickToasts(dt) {
   for (const t of world.toasts) t.t -= dt;
   world.toasts = world.toasts.filter(t => t.t > 0);

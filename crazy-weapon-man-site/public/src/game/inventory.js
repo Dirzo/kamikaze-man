@@ -7,6 +7,7 @@
 import { C, W, H } from '../config.js';
 import { X, canvas, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
+import { tk } from '../engine/touch-controls.js';
 import { sfx } from '../engine/audio.js';
 import { world } from './world.js';
 import { dps, powerScore, rarityName, freshUid } from './loot.js';
@@ -324,7 +325,7 @@ export function drawInventory(t) {
   rect(EQ.x + 6, EQ.y + EQ.h + 4, 4, 2, C.sky);
   text(`${fmt(world.shards)} SHARDS`, EQ.x + 14, EQ.y + EQ.h + 2, C.ice);
   if (I.tabs) text(`${relicsToSpend(powers.save)} RELICS`, EQ.x + 120, EQ.y + EQ.h + 2, C.gold, { align: 'right' });
-  text(I.tabs ? 'ARROWS BROWSE  G ANVIL  SHIFT TAB  1 CLOSE' : 'ARROWS BROWSE  R STATS  1 / E CLOSE', W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
+  text(tk(I.tabs ? 'ARROWS BROWSE  G ANVIL  SHIFT TAB  1 CLOSE' : 'ARROWS BROWSE  R STATS  1 / E CLOSE', ''), W - 6, INV.y + INV.h + 2, C.mist, { align: 'right' });
   if (I.sheet) drawSheetWindow(w);
   if (I.tabs) X.restore();
 }
