@@ -1,6 +1,6 @@
 // The original ten biome paintings and platform sprites, applied to cave-network geometry.
 import { W, H, GROUND, C } from '../config.js';
-import { world } from './world.js';
+import { world, cinema } from './world.js';
 import { A } from '../engine/assets.js';
 import { ZONES } from '../data/zones.js';
 import { roomAt } from '../data/maps.js';
@@ -81,7 +81,7 @@ function minimapOf(map,w,mh,k){
   return cv;
 }
 export function drawRouteHud() {
-  const map=world.map;if(!map)return;
+  const map=world.map;if(!map||cinema.on)return;
   const h=world.hero, room=roomAt(map,h.x+h.w/2,h.y+h.h)||world.lastRoom;
   if(room)world.lastRoom=room;
   const same=room?map.rooms.filter(r=>r.label===room.label):[];

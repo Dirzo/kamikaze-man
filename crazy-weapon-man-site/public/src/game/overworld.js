@@ -16,6 +16,7 @@ import { relicCount, allRelics, relicTotal, RELIC_COUNT } from '../data/relics.j
 import { temperOf, setTemper, modsOf, rewardText } from '../data/temper.js';
 import { NODES, REGIONS, SLOT_W, SLOT_H, MAP_W, MAP_H, slotX, slotY, roadPath, alongRoad, seenRegions, isLevel, isOpen, edges, step, visit, warp, progress, writeSave } from '../data/overworld.js';
 import { drawHeroPlain } from './anim.js';
+import { cinema } from './world.js';
 import { regionArt, landAt, paintAhead, painted } from './owart.js';
 import { updateLife, drawLifeGround, drawLifeSky } from './owlife.js';
 import { drawGlobe, lonOf } from './globe.js';
@@ -306,6 +307,7 @@ function drawFlyBanner() {
   text('JUMP: SKIP', W - 8, 4, C.fog, { align: 'right' });
 }
 function drawOverworldHud(t) {
+  if (cinema.on) return;
   const s = ow.save, n = here(), R = REGIONS[n.region - 1], P = progress(s);
   // along the bottom, so the region names along the top of each painting stay readable
   const y = H - HUD_H;

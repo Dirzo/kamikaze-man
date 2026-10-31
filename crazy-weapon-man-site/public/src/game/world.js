@@ -1,4 +1,6 @@
 // The one shared game state. Modules import `world` and read/write it; nothing else is global.
+// the trailer's clean frame (game/trailer.js): the HUDs stay hidden while it is on
+export const cinema = { on: false };
 export const world = {
   t: 0, // seconds of game time (stops during hit-stop and pause)
   zone: 0,

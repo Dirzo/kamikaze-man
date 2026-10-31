@@ -113,6 +113,13 @@ function steps(bot) {
   }
 }
 
+// the bot as a pilot for the trailer (game/trailer.js): think() presses the keys for this step and
+// leaves the stepping to the game's own loop; release() lets go of everything
+export function pilot(game, skill = 'skilled') {
+  const bot = newRun(game, skill, 0, world.level || {});
+  return { think: bot.think, release: () => press(new Set()) };
+}
+
 function newRun(game, skill, from, level = null) {
   const skilled = skill === 'skilled';
   if (!level) from ? game.jump(from) : game.startRun();
@@ -130,8 +137,14 @@ function newRun(game, skill, from, level = null) {
     S.zone = world.zone;
     equipBest();
   };
+  const think = () => {
+    S.t += STEP;
+    const want = new Set(), h = world.hero;
+    if (!world.inv && h && !h.dead) play(want, h, world.director);
+    press(want);
+  };
   const phaseKey = () => { const D = world.director; return D?.phase === 'survive' ? (D.sboss ? 'boss' : 'swarm') : 'fight'; };
-  const bot = { report, done: false };
+  const bot = { report, done: false, think };
   bot.step = () => {
     const h = world.hero, D = world.director;
     // an overworld level: let a death play out until the level-end screen (it banks the shards)

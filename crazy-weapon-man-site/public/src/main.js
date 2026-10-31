@@ -1,10 +1,11 @@
 // Crazy Weapon Man (next): boot, fixed-step loop, scenes (title, play, pause, over, won).
+import './engine/sandbox.js'; // (first: ?trailer swaps in a throwaway save before anything reads one)
 import { W, H, STEP, C, GROUND } from './config.js';
 import { input } from './engine/input.js';
 import { loadAssets, A } from './engine/assets.js';
 import { X, rect, text, textWidth, fitText, panel, dither, worldLayer, screenLayer, frame } from './engine/gfx.js';
 import { audioOn, music, sfx, toggleMusic, toggleSound, audioSettings } from './engine/audio.js';
-import { world, resetWorld } from './game/world.js';
+import { world, resetWorld, cinema } from './game/world.js';
 import { createHero, updateHero, drawHero } from './game/hero.js';
 import { updateEnemy, drawEnemy, updateBolts, drawBolts } from './game/enemy.js';
 import { updateShots, drawShots } from './game/shots.js';
@@ -51,6 +52,9 @@ import { levelEgg, FAMILY } from './data/den.js';
 import { tally, openLevelEnd, updateLevelEnd, drawLevelEnd, LEVEL_END_DONE } from './game/levelend.js';
 
 let capture = false;
+// the trailer (game/trailer.js) drives the game through these: step runs before every fixed update,
+// draw after every frame is rendered
+const hooks = { step: null, draw: null };
 const CHEER_TIME = 1.1, NO_CHEER = new URLSearchParams(location.search).has('capture'); // (captures of the sheet skip the cheer)
 let scene = 'loading',
   sceneT = 0,
@@ -383,6 +387,7 @@ function drawTitle(t) {
 
 // the Beast Den's door on the map: a small chip above the map's bottom panel
 function denChip() {
+  if (cinema.on) return;
   const s = 'H: BEAST DEN', w = textWidth(s) + 8;
   rect(W - w - 6, 204, w, 11, C.ink);
   text(s, W - 10, 206, C.pink, { align: 'right' });
@@ -455,10 +460,11 @@ function loop(now) {
   acc += Math.min(0.1, (now - last) / 1000);
   last = now;
   while (acc >= STEP) {
-    if (scene !== 'loading') update(STEP);
+    if (scene !== 'loading') hooks.step?.(), update(STEP);
     acc -= STEP;
   }
   render();
+  hooks.draw?.(clock);
   requestAnimationFrame(loop);
 }
 // ---------------------------------------------------------------- buttons (mouse) + M/N keys
@@ -500,6 +506,7 @@ click('b-restart', () => {
   if (world.level && scene !== 'map') enterLevel(world.level); // retry this level, from the map's saved hero
   else if (scene !== 'map' && scene !== 'loading' && scene !== 'title') startRun();
 });
+click('b-trailer', () => (location.href = '/?trailer'));
 click('b-full', async () => {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
@@ -541,6 +548,7 @@ loadAssets(f => (loadFrac = f))
     if (captureName) import('./testing/capture.js').then(m => m.captureScene(debug, captureName));
     if (new URLSearchParams(location.search).has('smoke')) import('./testing/smoke.js').then(m => m.runSmoke(debug));
     if (new URLSearchParams(location.search).has('playtest')) import('./testing/playtest.js').then(m => m.runPlaytest(debug));
+    if (new URLSearchParams(location.search).has('trailer')) import('./game/trailer.js').then(m => m.runTrailer(debug));
   })
   .catch(err => {
     console.error(err);
@@ -618,6 +626,9 @@ const debug = {
   // show the end-of-run results screen, `T` seconds into its animation
   results(won, T = RESULTS_TIME) { endRun(won); scene = won ? 'won' : 'over'; sceneT = T; },
   sceneT: () => sceneT,
+  hooks,
+  setScene(s) { scene = s; sceneT = 0; capture = false; },
+  hideStart() { document.getElementById('start').hidden = true; },
   updateShots,
   update,
   render,

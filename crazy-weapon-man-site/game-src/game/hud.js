@@ -2,7 +2,7 @@
 // toasts. Drawn in screen space (no screenshake).
 import { C, W, H } from '../config.js';
 import { X, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
-import { world } from './world.js';
+import { world, cinema } from './world.js';
 import { ZONES } from '../data/zones.js';
 import { TYPES } from '../data/weapons.js';
 import { xpToLevel, fmt } from '../data/curve.js';
@@ -55,7 +55,7 @@ function lowHealth(h, t) {
 }
 export function drawHud(t) {
   const h = world.hero;
-  if (!h) return;
+  if (!h || cinema.on) return;
   lowHealth(h, t);
   // ---- bottom bar ----
   panel('panel', 0, BAR_Y, W, 28);

@@ -2,6 +2,7 @@
 // at 60 Hz like an old sound driver. sfx.* plays effects; music.play(id) runs a 4-channel song.
 const FR = 1 / 60;
 let ctx = null,
+  comp = null,
   bus = null,
   musicBus = null,
   waves = null,
@@ -19,7 +20,7 @@ export function audioOn() {
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return null;
   ctx = new AC();
-  const comp = ctx.createDynamicsCompressor();
+  comp = ctx.createDynamicsCompressor();
   comp.threshold.value = -14;
   comp.ratio.value = 4;
   comp.connect(ctx.destination);
@@ -74,6 +75,13 @@ export function toggleMusic() {
   return settings.music;
 }
 export const audioSettings = settings;
+// the whole mix (music and effects) as a MediaStream, for recording the trailer (game/trailer.js)
+export function audioTap() {
+  if (!audioOn()) return null;
+  const dest = ctx.createMediaStreamDestination();
+  comp.connect(dest);
+  return { ctx, dest };
+}
 function save() {
   try {
     localStorage.setItem('cwm-next-audio', JSON.stringify(settings));
@@ -909,20 +917,28 @@ function drum(kind, t) {
 }
 // the combo layer: Yoshi-style bongos that join whatever is playing while a swarm combo is alive
 const BONGOS = 'W.wW.wW.W.wWw.W.';
-const mus = { id: '', spec: null, pos: 0, next: 0, layer: false };
+const mus = { id: '', spec: null, pos: 0, next: 0, layer: false, only: null };
 export const music = {
   play(id, spec) {
-    if (mus.id === id) return;
+    if (mus.id === id || (mus.only && id !== mus.only)) return;
     mus.id = id;
     mus.spec = spec;
     mus.pos = 0;
     mus.next = ctx ? ctx.currentTime + 0.1 : 0;
+  },
+  // the trailer holds one song across its cuts: only(id, spec) plays it and ignores every other
+  // play() until only(null)
+  only(id, spec) {
+    mus.only = null;
+    if (id) this.play(id, spec);
+    mus.only = id || null;
   },
   // the combo bongos on or off (set every frame, cheap)
   layer(on) {
     mus.layer = !!on;
   },
   stop() {
+    if (mus.only) return; // (the trailer's song plays on through a death)
     mus.layer = false;
     mus.id = '';
     mus.spec = null;
