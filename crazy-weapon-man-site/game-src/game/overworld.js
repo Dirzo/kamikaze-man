@@ -341,7 +341,7 @@ function drawOverworldHud(t) {
   }
   if (ow.temperMsg > 0) text('BEAT THE DRAGON TO OPEN TEMPER', W - 12, y + 36, C.coral, { align: 'right' });
   else if (T.max) text(`T: TEMPER ${T.on}/${T.max}` + (T.on ? '  ' + rewardText(T.on) : '  OFF'), W - 12, y + 36, tCol, { align: 'right' });
-  const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK  JUMP: FIRE THE CANNON  SHIFT: WORLD' : isLevel(n) ? 'ARROWS: WALK  JUMP: PLAY  SHIFT: WORLD VIEW' : 'ARROWS: WALK    SHIFT: WORLD VIEW';
+  const hint = ow.walk ? '' : n.kind === 'warp' ? 'ARROWS: WALK  JUMP: FIRE  SHIFT: WORLD' : isLevel(n) ? 'ARROWS: WALK  JUMP: PLAY  SHIFT: WORLD' : 'ARROWS: WALK  SHIFT: WORLD';
   if (hint) text(hint, 12, y + 26, C.mist);
   // the POWERS window: blinks when there is a mastery perk to pick or a rank you can afford
   // the clear keys: 1 BAG  2 MASTERY  3 DEN (main.js hotKey), drawn as key caps

@@ -151,7 +151,7 @@ export function drawHud(t) {
   if (world.run) text(clockOf(world.run.t), W / 2, 5, C.cream, { align: 'center' });
   const kills = `${world.kills} KILLS`;
   text(kills, W - 6, 5, C.paper, { align: 'right' });
-  text(`E LOG${world.bagNew ? ' NEW BEST!' : ''}`, W - 14 - textWidth(kills), 5, world.bagNew ? C.lime : C.ice, { align: 'right' });
+  text(`1 LOG${world.bagNew ? ' NEW BEST!' : ''}`, W - 14 - textWidth(kills), 5, world.bagNew ? C.lime : C.ice, { align: 'right' });
   const qk = QUIRKS[h.weapon.quirk];
   if (qk) text(qk.label, W - 12 - textWidth(mutationLabel(h.weapon)), 16, C.fog, { align: 'right' });
 
