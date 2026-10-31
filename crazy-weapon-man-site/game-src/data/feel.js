@@ -127,3 +127,43 @@ export const camLead = (v, top) => MOVE.lookAhead + (MOVE.lookAheadTop - MOVE.lo
 // fight goes best as a run in, a string of hits through the pack and a special to finish it.
 export const FIGHT = { window: 1.4, step: 0.06, max: 0.6, cut: 0.25, cash: 2 };
 export const fightMult = (n, special = false) => 1 + Math.min(FIGHT.max, n * FIGHT.step) * (special ? FIGHT.cash : 1);
+
+// The Dead Cells / Blasphemous pass (2026-10-31): the moves around the swing that keep a fight fast.
+//   dodge     a dash through a real attack (not a body bump): slow-mo, a free dash, a burst of speed
+//   stab      attacking out of a dash (or just after one): a lunging stab that keeps the dash's speed
+//   tech      a dash breaks out of being hit once this much of the stagger is left
+//   slam      knocked or launched foes that hit a wall (or bowl into each other) take a share of a hit
+//   clear     the last foe of a real fight (`minHits` in the field combo) dies in slow-mo, then a
+//             speed burst throws you back into the run
+//   speedKill a kill from this much momentum on gives your dash back
+export const POLISH = {
+  dodge: { slow: 0.32, slowK: 0.35, mom: 0.35, specialCut: 0.6, window: 0.05 },
+  stab: { mult: 1.25, speed: 0.92, after: 0.12, knock: 1.4 },
+  tech: 0.12,
+  slam: { wall: 0.5, bowl: 0.35, minV: 90, every: 0.35 },
+  clear: { slow: 0.38, slowK: 0.3, minHits: 5, near: 220, zoom: 0.035 },
+  speedKill: 0.5
+};
+
+// POISE (Blasphemous): elites and heavy beastkin stand up to a beating, then break. A broken foe
+// reels for `broken` seconds and your next real hit is an EXECUTION for `exec` times the damage.
+// Each hit takes `hit[weight]` poise (finishers x1.5, crits +1). Poise comes back after `regenAfter`
+// seconds without a hit.
+export const POISE = { max: 7, hit: [1, 1.5, 2, 3], big: 1.5, crit: 1, broken: 1.8, exec: 3, regenAfter: 2.5, execStop: 0.16, shards: 3 };
+export const hasPoise = e => !!e && !e.boss && !e.swarmBoss && !e.swarm && (e.elite || !!e.d?.heavy || (e.d?.hp || 0) >= 1.6);
+export function poiseHit(w, { big = false, crit = false, plunge = false } = {}) {
+  return (POISE.hit[w] ?? 1.5) * (big || plunge ? POISE.big : 1) + (crit ? POISE.crit : 0);
+}
+
+// what a foe is made of, for the hit sound's material layer (audio.js MAT)
+const MAT_RX = [
+  ['shell', /turtle|snapper|shellback|dillo|pango|maw|roller|anvil/],
+  ['squish', /frog|toad|newt|tadpole|lurker|moss|eyeball|wraith/],
+  ['feather', /goose|gander|swan|honk|gosling|gsquire|fencer|gtoss|whirl|ggrave|berserk|owl|magpie|chicken|flyer|broombat|moth/],
+  ['scale', /gecko|anole|skink|komodo|iguana|basilisk|chameleon|frilled|draco|wyrm|whelp|kobold|ember|elder|ninetail/],
+  ['armor', /shieldbro|samurai|shogun|kingpin|monk|ninja|bearsmith|anviltoss|moltenboar|houndguard/]
+];
+export function materialOf(type = '') {
+  for (const [m, rx] of MAT_RX) if (rx.test(type)) return m;
+  return 'fur';
+}

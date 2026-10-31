@@ -1,12 +1,12 @@
 // Hit resolution: every hit on an enemy goes through hitEnemy(), every hit on the hero through
 // hurtHero(). Knockback is a fixed push (arcade style): a short free slide then friction.
-import { C } from '../config.js';
+import { C, HERO } from '../config.js';
 import { world, newId } from './world.js';
-import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch } from './fx.js';
-import { hitFeel, reaction, killLaunch, rushMult, MOVE, FIGHT, fightMult } from '../data/feel.js';
+import { spark, damageNumber, heroDamageNumber, shake, hitstop, burst, emit, callout, feel, bleed, kick, zoomPunch, slowmo, impactFrame } from './fx.js';
+import { hitFeel, reaction, killLaunch, rushMult, MOVE, FIGHT, fightMult, POLISH, POISE, hasPoise, poiseHit, materialOf } from '../data/feel.js';
 import { sfx, duck } from '../engine/audio.js';
-import { makeWeapon, noWeaker } from './loot.js';
-import { cx, cy } from './physics.js';
+import { makeWeapon, noWeaker, hitDamage } from './loot.js';
+import { cx, cy, overlap } from './physics.js';
 import { ELEMENTS } from '../data/weapons.js';
 import { LINES } from '../data/enemies.js';
 import { gainXp, gainProficiency } from './progress.js';
@@ -100,6 +100,9 @@ export function hitEnemy(e, dmg, o = {}) {
   // the field combo (data/feel.js FIGHT): hits strung together land harder, a special cashes it in
   const fc = fieldCombo();
   if (fc) dmg *= fightMult(fc.n, !!o.special);
+  // EXECUTION: a foe whose poise broke takes the next real hit many times over
+  const exec = e.broken > 0 && !o.chip && !o.chain && !o.aoe && !o.echo && hasPoise(e);
+  if (exec) dmg *= POISE.exec;
   // bosses shrug off any single hit bigger than a sliver of their health (see BOSS_TOUGH)
   if (e.boss || e.swarmBoss) dmg = Math.min(dmg, e.max * BOSS_TOUGH.hitCap);
   dmg = Math.max(1, Math.round(dmg));
@@ -125,6 +128,7 @@ export function hitEnemy(e, dmg, o = {}) {
     e.funnyFace = ((e.funnyFace || 0) + 1) % 3;
     sfx.hit(o.crit, o.chain ? null : hero.weapon?.type, o.chain ? 0 : streak()); // the weapon's signature sound
     sfx.thud(o.crit, e.type === 'goose');
+    if (!o.chain) sfx.mat(materialOf(e.type), F.w, o.crit); // what it's made of: fur, shell, scale...
     if (!e.boss && world.t > (e.nextBonk || 0)) {
       callout(['BONK!', 'OOF!', 'PLOP!'][e.funnyFace], 0, 0, C.cream, {follow:e, life:22});
       e.nextBonk = world.t + 0.65;
@@ -147,6 +151,8 @@ export function hitEnemy(e, dmg, o = {}) {
     }
   }
   if (!o.chip) comboHit(), fightHit(o);
+  if (exec) execute(e, dir);
+  else if (!o.chip && hasPoise(e) && e.hp > 0) wearPoise(e, F.w, o);
   // knockback + reaction (not bosses): light hits flinch, heavy weapons and finishers launch the
   // foe so you can juggle it (data/feel.js reaction)
   if (!e.boss && !e.swarmBoss) {
@@ -199,6 +205,71 @@ export function hitEnemy(e, dmg, o = {}) {
   }
   if (e.hp <= 0) kill(e, o);
   return dmg;
+}
+
+// ---------------------------------------------------------------- poise and executions (data/feel.js POISE)
+function wearPoise(e, w, o) {
+  if (e.broken > 0) return;
+  e.poise = (e.poise ?? POISE.max) - poiseHit(w, { big: o.big, crit: o.crit, plunge: o.plunge }) * (o.chain || o.aoe || o.echo ? 0.4 : 1);
+  if (e.poise > 0) return;
+  // BROKEN: it reels, open for an execution
+  e.broken = POISE.broken;
+  e.stun = Math.max(e.stun || 0, POISE.broken);
+  if (e.state === 'wind' || e.state === 'attack') e.state = 'idle';
+  callout('BROKEN!', 0, 0, C.gold, { follow: e, life: 45 });
+  sfx.poiseBreak();
+  burst(cx(e), cy(e), 10, 'twinkle', ['gold', 'paper', 'orange']);
+  hitstop(0.07);
+  shake(0.3);
+}
+function execute(e, dir) {
+  e.broken = 0;
+  e.poise = POISE.max;
+  e.stun = Math.min(e.stun, 0.3);
+  hitstop(POISE.execStop);
+  impactFrame(2);
+  zoomPunch(0.04);
+  shake(0.5);
+  duck(0.6, 0.45);
+  sfx.execute();
+  callout('EXECUTED!', 0, 0, C.red, { follow: e, life: 50 });
+  for (let x = -26; x <= 26; x += 2) emit(cx(e) + x, cy(e) - x * 0.4 * dir, 'streak', x % 4 ? C.paper : C.red);
+  dropShards(cx(e), cy(e), POISE.shards);
+  if (world.run) world.run.execs = (world.run.execs || 0) + 1;
+}
+// poise comes back once a foe has gone a while without being hit; a broken foe recovers
+export function tickPoise(e, dt) {
+  if (e.broken > 0) e.broken = Math.max(0, e.broken - dt);
+  if (e.poise != null && e.poise < POISE.max && !(e.broken > 0) && world.t - (e.lastHitAt ?? -9) > POISE.regenAfter) e.poise = Math.min(POISE.max, e.poise + dt * 4);
+}
+
+// ---------------------------------------------------------------- wall slams and bowling
+// a foe knocked (or a body thrown) fast enough into a wall slams off it, and into another foe
+// bowls it over; each takes a share of a hit (POLISH.slam). vx0: its speed before this step
+export function knockCollide(e, vx0, dead = false) {
+  const S = POLISH.slam, h = world.hero;
+  if (Math.abs(vx0) < S.minV || !h?.weapon || world.t < (e.slamAt ?? -9) + S.every) return;
+  const base = hitDamage(h.weapon), dir = Math.sign(vx0);
+  if (!dead && e.hitWall && !e.boss) {
+    e.slamAt = world.t;
+    hitEnemy(e, base * S.wall, { dir: -dir, chain: true, slam: true });
+    if (!e.dead) (e.vx = -vx0 * 0.35), (e.kbT = 0.08);
+    callout('SLAM!', 0, 0, C.orange, { follow: e, life: 30 });
+    sfx.slam();
+    burst(cx(e) + dir * e.w * 0.5, cy(e), 6, 'dust', ['mist', 'fog', 'stone']);
+    shake(0.3);
+    return;
+  }
+  for (const o of world.enemies) {
+    if (o === e || o.dead || o.boss || o.swarmBoss || o.spawnT > 0 || o.calm || world.t < (o.slamAt ?? -9) + S.every || !overlap(e, o)) continue;
+    o.slamAt = e.slamAt = world.t;
+    hitEnemy(o, base * S.bowl, { dir, knock: 22, chain: true, slam: true });
+    if (!dead) e.vx = vx0 * 0.5;
+    callout('BOWLED!', 0, 0, C.orange, { follow: o, life: 28 });
+    sfx.slam();
+    burst(cx(o), cy(o), 4, 'chip', ['paper', 'mist']);
+    break;
+  }
 }
 
 // ---------------------------------------------------------------- area augments (shard tree)
@@ -345,6 +416,22 @@ function reveal(e) {
   sfx.enemyMelee();
 }
 
+// the last foe of a real fight: slow motion and a zoom as it falls, then a burst of speed out of
+// the fight and back into the run (Sonic)
+function lastKill(e) {
+  const h = world.hero, P = POLISH.clear;
+  if (!h || world.director?.phase === 'survive' || !(world.fight?.n >= P.minHits)) return;
+  if (world.enemies.some(o => o !== e && !o.dead && !o.calm && !o.boss && o.spawnT <= 0 && Math.abs(cx(o) - cx(h)) < P.near && Math.abs(cy(o) - cy(h)) < 110)) return;
+  slowmo(P.slow, P.slowK);
+  zoomPunch(P.zoom);
+  sfx.clearFight();
+  callout('CLEAR!', 0, 0, C.sky, { follow: h, life: 40 });
+  h.boostT = Math.max(h.boostT || 0, 0.7);
+  h.mom = Math.max(h.mom || 0, MOVE.sprintAt);
+  h.ghostT = Math.max(h.ghostT || 0, 0.5);
+  if (world.run) world.run.clears = (world.run.clears || 0) + 1;
+}
+
 // a defeated resident falls over (its DEATHS style, drawn in enemy.js) for DEATH_T seconds, and
 // with SHATTER_T left its body bursts into the shards it was carrying
 export const DEATH_T = 0.8, SHATTER_T = 0.22;
@@ -362,6 +449,7 @@ export function kill(e, o = {}) {
   if (!e.d?.bloodless) bleed(cx(e), cy(e), e.fallDir, e.elite ? 16 : 10, floorY);
   world.kills++;
   sfx.die(e.type, e.elite);
+  sfx.crunch(o.weight ?? 1);
   burst(cx(e), cy(e), e.elite ? 14 : 8, 'chip', ['paper', 'mist', 'fog']);
   if (e.elite) {
     hitstop(0.08);
@@ -371,6 +459,9 @@ export function kill(e, o = {}) {
   if (e.sleeper) say(e, pickLine(LINES.last), 1.4, true);
   if (world.run && !e.swarm && !e.boss && !e.swarmBoss) world.run.residentKills++; // the level-clear tally
   if (world.hero && world.hero.mom > 0.3) world.hero.mom = Math.min(1, world.hero.mom + MOVE.killMomentum); // a kill at speed feeds the run
+  // a kill at speed gives the dash back
+  if (world.hero && world.hero.mom >= POLISH.speedKill && world.hero.dashCd > 0) (world.hero.dashCd = 0), emit(cx(world.hero), world.hero.y + 4, 'twinkle', C.sky);
+  if (!e.swarm) lastKill(e);
   const pay = e.swarm ? 1 : KILL_PAY(world.zone); // stages hold fewer residents than they used to, each pays more
   gainXp(Math.round(e.xp * pay));
   gainProficiency(e.elite ? 'elite' : 'normal');
@@ -447,6 +538,25 @@ export function explode(x, y, dmg, friendly = false, radius = 34) {
       if (!e.dead && Math.abs(cx(e) - x) < radius && Math.abs(cy(e) - y) < radius) hitEnemy(e, dmg * 2, { dir: Math.sign(cx(e) - x) || 1, knock: 30, hop: true });
 }
 
+// PERFECT DODGE: a dash (or the moment after one) that a real attack passes through. Once per dash:
+// slow motion, a free dash, a burst of momentum and a chunk off the special's cooldown
+const dodging = h => h.dashT > 0 || (h.inv > 0 && world.t - (h.dashAt ?? -9) < HERO.dashTime + POLISH.dodge.window);
+function perfectDodge(h) {
+  if (h.dodged) return;
+  const P = POLISH.dodge;
+  h.dodged = true;
+  slowmo(P.slow, P.slowK);
+  h.dashCd = 0;
+  h.mom = Math.min(1, (h.mom || 0) + P.mom);
+  h.specialCd = Math.max(0, h.specialCd - P.specialCut);
+  h.ghostT = Math.max(h.ghostT || 0, 0.35);
+  zoomPunch(0.02);
+  sfx.perfect();
+  callout('PERFECT!', 0, 0, C.sky, { follow: h, life: 40 });
+  burst(cx(h), cy(h), 10, 'twinkle', ['sky', 'paper', 'ice']);
+  if (world.run) world.run.dodges = (world.run.dodges || 0) + 1;
+}
+
 // what a bolt counts as when nothing says otherwise: the wand cottage's are spells, the ninja
 // castle's are shuriken
 export const shotSrc = () => (world.zone === 7 ? 'magic' : world.zone === 8 ? 'star' : 'shot');
@@ -455,6 +565,7 @@ export const shotSrc = () => (world.zone === 7 ? 'magic' : world.zone === 8 ? 's
 // world.hitBy while they fly (enemy.js updateBolts) instead of passing it.
 export function hurtHero(dmg, dir = 1, src = world.hitBy) {
   const h = world.hero;
+  if (h && !h.dead && dodging(h)) return src !== 'touch' && src !== 'lava' && perfectDodge(h), 0;
   if (!h || h.dead || h.inv > 0 || h.dashT > 0) return 0;
   if (abilityBlock(h)) return 0;
   if (h.mount) return buck(h, dir), 0; // the War Goose takes the hit: you are thrown off instead

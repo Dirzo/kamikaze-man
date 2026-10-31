@@ -25,7 +25,7 @@ async function worker(w, count) {
   procs.push(spawn(CHROME, ['--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', '--mute-audio', '--enable-precise-memory-info', '--disable-background-timer-throttling',
     '--disable-renderer-backgrounding', `--remote-debugging-port=${debugPort}`, `--user-data-dir=${profile}`, 'about:blank'], { stdio: 'ignore' }));
   let tabs;
-  for (let i = 0; i < 100 && !tabs; i++) { try { tabs = await (await fetch(`http://127.0.0.1:${debugPort}/json`)).json(); } catch { await delay(100); } }
+  for (let i = 0; i < 200 && !tabs?.some(t => t.type === 'page'); i++) { try { tabs = await (await fetch(`http://127.0.0.1:${debugPort}/json`)).json(); } catch {} await delay(100); }
   const socket = new WebSocket(tabs.find(t => t.type === 'page').webSocketDebuggerUrl);
   await new Promise((res, rej) => { socket.onopen = res; socket.onerror = rej; });
   let id = 0; const pending = new Map();
