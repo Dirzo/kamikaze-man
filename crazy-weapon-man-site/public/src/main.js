@@ -231,7 +231,14 @@ function update(dt) {
   }
   if (feel.stop > 0) {
     feel.stop -= dt;
+    input.hold(dt); // a press made during the freeze still counts once it ends
     return; // hit-stop: the world holds its breath
+  }
+  // slow motion (a perfect dodge, the last kill of a fight): the whole world, the hero too
+  if (feel.slowT > 0) {
+    feel.slowT -= dt;
+    input.hold(dt * (1 - feel.slowK));
+    dt *= feel.slowK;
   }
   world.t += dt;
   updateHero(world.hero, dt);
@@ -370,6 +377,18 @@ function drawPause() {
   text(world.level ? 'ESC TO RESUME    Q TO LEAVE THE LEVEL' : 'ESC TO RESUME', W / 2, 190, C.lime, { align: 'center' });
 }
 
+// an impact frame (fx.js impactFrame): the scene flashes stark black and white for a frame or two,
+// inverted on the first, so a finisher or an execution lands like a camera flash
+function impactLayer() {
+  if (!(feel.impact > 0)) return;
+  X.save();
+  X.setTransform(1, 0, 0, 1, 0, 0);
+  X.filter = `grayscale(1) contrast(9)${feel.impact > 1 ? ' invert(1)' : ''}`;
+  X.drawImage(X.canvas, 0, 0);
+  X.restore();
+  feel.impact--;
+}
+
 function render() {
   screenLayer();
   const t = clock;
@@ -383,6 +402,7 @@ function render() {
   if (scene === 'files') return drawTitle(t), drawFiles(t);
   if (scene === 'map') return drawOverworld(t), drawInventory(t); // the bag (B) opens over the map
   drawWorld(world.t);
+  impactLayer();
   drawHud(world.t);
   drawRouteHud();
   if (scene === 'play') drawSpecialScreen(); // the special's banner and flash go over the HUD too

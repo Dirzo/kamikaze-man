@@ -8,7 +8,7 @@ import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { ENEMIES, ELITE_TITLES, LINES, deathOf, BEAST } from '../data/enemies.js';
 import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
-import { hurtHero, shotSrc, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T } from './combat.js';
+import { hurtHero, shotSrc, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T, tickPoise, knockCollide } from './combat.js';
 import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
 import { drawItem } from './drops.js';
@@ -17,7 +17,10 @@ import { innate } from './perks.js';
 import { fireTrait, traitBolt, drawTraitBolt } from './traits.js';
 import { callout } from './fx.js';
 import { temper, modOn } from '../data/temper.js';
-import { MOVE } from '../data/feel.js';
+import { MOVE, POISE } from '../data/feel.js';
+
+// the last moment of a wind-up: the attacker's weapon glints red and a cue sounds (Dead Cells)
+const TELL = 0.18;
 import { beastTick, beastThink, beastAttack, beastAttacking, beastFrame, arrowHit, drawTell, artOf } from './beastkin.js';
 
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
@@ -99,6 +102,7 @@ export function updateEnemy(e, dt) {
       const was = e.onGround, vx = e.vx;
       move(e, dt, world.platforms, { air: false });
       if (e.launched && e.hitWall) (e.vx = -vx * 0.6), burst(cx(e), cy(e), 4, 'dust', ['mist', 'fog']); // off the wall
+      else if (e.launched) knockCollide(e, vx, true); // a thrown body bowls over whoever it hits
       if (e.onGround && !was && !e.landed) (e.landed = true), burst(cx(e), e.y + e.h, 5, 'dust', ['mist', 'fog']);
     }
     if (e.deathT <= SHATTER_T) shatter(e);
@@ -113,6 +117,7 @@ export function updateEnemy(e, dt) {
     return;
   }
   tickStatus(e, dt);
+  tickPoise(e, dt);
   // TEMPER: REGENERATION: a resident left alone for a few seconds knits itself back together
   if (e.hp < e.max && !e.swarm && world.t - (e.lastHitAt ?? -9) > 3 && modOn(world.temper, 'regen')) e.hp = Math.min(e.max, e.hp + e.max * 0.04 * dt);
   if (e.dead) return;
@@ -129,7 +134,9 @@ export function updateEnemy(e, dt) {
   // knockback slide, then friction while staggered
   if (e.kbT > 0) {
     e.kbT -= dt;
+    const vx0 = e.vx;
     physics();
+    knockCollide(e, vx0); // into a wall: SLAM; into another foe: BOWLED
     return;
   }
   // launched into the air: helpless until it lands (follow-up hits keep it up)
@@ -141,7 +148,9 @@ export function updateEnemy(e, dt) {
     e.stun -= dt;
     e.vx *= Math.pow(0.84, dt * 60);
     if (e.air) e.vy *= 0.9;
+    const vx0 = e.vx;
     physics();
+    if (e.juggle) knockCollide(e, vx0);
     return;
   }
   if (e.wakeT > 0) {
@@ -201,6 +210,11 @@ export function updateEnemy(e, dt) {
   }
   e.st -= dt;
   e.cool -= dt;
+  if (e.state !== 'wind') e.telled = false;
+  else if (e.st <= TELL && !e.telled && !e.calm) {
+    e.telled = true;
+    if (dist < 220 && Math.abs(cy(hero) - cy(e)) < 120) sfx.tell(e.elite || !!e.d?.heavy);
+  }
   switch (e.state) {
     case 'idle':
       think(e, dt, dxh, dist, toward, slow);
@@ -224,7 +238,7 @@ export function updateEnemy(e, dt) {
   // never while you cut through at speed with a running slash (hero.js).
   if (!e.calm && !hero.attack?.run && !e.swarmBoss && e.state === 'idle' && Math.abs(e.vx) > 4 && e.stun <= 0 && e.kbT <= 0 && !(e.wakeT > 0) && world.t > (e.touchAt ?? -9) + 1) {
     const body = { x: e.x + 2, y: e.y + 2, w: e.w - 4, h: e.h - 3 };
-    if (overlap(body, hero) && hurtHero(e.dmg * MOVE.touchDmg, Math.sign(cx(hero) - cx(e)) || -hero.face)) e.touchAt = world.t;
+    if (overlap(body, hero) && hurtHero(e.dmg * MOVE.touchDmg, Math.sign(cx(hero) - cx(e)) || -hero.face, 'touch')) e.touchAt = world.t;
   }
   // Residents own their platform: they never walk (or get nudged) off its edge on their own,
   // so a sniper on a ledge stays a sniper on a ledge. Only knockback can throw them off.
@@ -641,6 +655,20 @@ function drawBody(e, t, sx, sy, art) {
       rect(mx - 1, top + 8, 3, 3, p > 0.6 ? C.paper : C.red);
     }
     if ((e.kind === 'sniper' || (e.d.beh === 'snipe' && e.move === 'shot')) && !e.scale) aimLine(e, t);
+    if (e.st <= TELL) glint(e, sy, t);
+  }
+  // poise: a thin gold bar under the health bar once it's been worn down; broken, stars circle it
+  if (e.poise != null && e.poise < POISE.max && !(e.broken > 0)) {
+    const bw = Math.max(16, Math.min(34, e.w + 6)), bx = Math.round(cx(e) - bw / 2), by = sy - (e.elite ? 10 : 6) + 4;
+    rect(bx - 1, by, bw + 2, 3, C.ink);
+    rect(bx, by + 1, Math.round(bw * Math.max(0, e.poise) / POISE.max), 1, C.gold);
+  }
+  if (e.broken > 0) {
+    for (let i = 0; i < 3; i++) {
+      const a = t * 7 + (i * Math.PI * 2) / 3;
+      px(Math.round(cx(e) + Math.cos(a) * (e.w / 2 + 3)), Math.round(sy - 4 + Math.sin(a) * 3), i ? C.gold : C.paper);
+    }
+    if (Math.floor(t * 8) % 2) text('EXECUTE', Math.round(cx(e)), Math.round(sy) - 22, C.red, { align: 'center' });
   }
   if (e.state === 'sleep') {
     for (let i = 0; i < 3; i++) {
@@ -648,6 +676,15 @@ function drawBody(e, t, sx, sy, art) {
       text('z', Math.round(e.x + e.w * 0.7 + p * 10 + i * 2), Math.round(e.y - 4 - p * 18), C.mist, { k: i === 2 ? 2 : 1 });
     }
   }
+}
+
+// the red glint on the attacker's weapon just before it strikes: a 4-point star at its leading edge
+function glint(e, sy, t) {
+  const x = Math.round(cx(e) + e.face * (e.w / 2 + 1)), y = Math.round(e.y + e.h * 0.35);
+  const r = 1 + (Math.floor(t * 30) % 3);
+  rect(x - r, y, r * 2 + 1, 1, C.red);
+  rect(x, y - r, 1, r * 2 + 1, C.red);
+  px(x, y, C.paper);
 }
 
 export function healthBar(e, sy, t) {

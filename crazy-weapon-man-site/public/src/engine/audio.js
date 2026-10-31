@@ -52,6 +52,15 @@ export function audioOn() {
   noise = { long: lfsr(false), short: lfsr(true) };
   return ctx;
 }
+// the material layers for sfx.mat: k scales pitch (lower for heavy weapons), v the volume
+const MAT = {
+  fur: (k, v) => hiss(3, { vol: v, rate: 0.55 * k, drop: 0.2 }),
+  feather: (k, v) => (hiss(4, { vol: v * 0.9, rate: 1.1 * k, drop: 0.12 }), chip([[N(76) * k, 1]], { wave: 'p12', vol: v * 0.4, decay: 0.01 })),
+  shell: (k, v) => (chip([[N(81) * k, 1], [N(74) * k, 2]], { wave: 'p12', vol: v * 1.1, decay: 0.012 }), hiss(2, { vol: v, rate: 1.8 * k, short: true })),
+  scale: (k, v) => (hiss(3, { vol: v, rate: 1.4 * k, drop: 0.3, short: true }), chip([[N(64) * k, 1], [N(58) * k, 1]], { wave: 'p25', vol: v * 0.5, decay: 0.01 })),
+  squish: (k, v) => chip([[N(52) * k, 1], [N(60) * k, 1], [N(45) * k, 2]], { wave: 'tri', vol: v * 1.6, decay: 0.015 }),
+  armor: (k, v) => (chip([[N(88) * k, 1], [N(95) * k, 1], [N(83) * k, 3]], { wave: 'p12', vol: v * 0.9, decay: 0.008 }), hiss(2, { vol: v * 0.8, rate: 2.2, short: true }))
+};
 export function toggleSound() {
   settings.sound = !settings.sound;
   if (bus) bus.gain.value = settings.sound ? 1.4 : 0;
@@ -535,6 +544,56 @@ export const sfx = {
   },
   launch() {
     hiss(9, { vol: 0.06, rate: 0.5, drop: -0.25 });
+  },
+  // the material layer under a hit (data/feel.js materialOf): w is the weapon's weight 0..3, so
+  // a hammer on a shell is a deep crack and a dagger on fur a soft thwip
+  mat(m, w = 1, crit = false) {
+    if (!gate('mat', 40)) return;
+    const k = 1 - w * 0.12, v = 0.035 + w * 0.008 + (crit ? 0.01 : 0);
+    (MAT[m] || MAT.fur)(k, v);
+    if (w >= 2) chip([[N(31 - w), 2], [N(26 - w), 3]], { wave: 'tri', vol: 0.06 + w * 0.01, decay: 0.012 }); // the heavy weapon's bass
+  },
+  // a kill: a short crunch under the death cry, deeper for heavy weapons
+  crunch(w = 1) {
+    if (!gate('crunch', 50)) return;
+    hiss(5, { vol: 0.05 + w * 0.01, rate: 0.5 - w * 0.06, drop: 0.2, short: true });
+    chip([[N(40 - w * 2), 1], [N(33 - w * 2), 3]], { wave: 'tri', vol: 0.08, decay: 0.02 });
+  },
+  // a foe knocked into a wall or into another foe
+  slam() {
+    if (!gate('slam', 70)) return;
+    chip([[N(38), 1], [N(30), 3]], { wave: 'tri', vol: 0.09, decay: 0.02 });
+    hiss(4, { vol: 0.05, rate: 0.3, drop: 0.2 });
+  },
+  // the enemy is about to strike: a sharp glint (deeper for heavies)
+  tell(heavy = false) {
+    if (!gate('tell', 120)) return;
+    chip([[N(heavy ? 86 : 93), 1], [N(heavy ? 98 : 105), 2]], { wave: 'p12', vol: 0.03, decay: 0.008 });
+  },
+  // a perfect dodge: a rising whoosh and a bright two-note sting
+  perfect() {
+    if (!gate('perfect', 200)) return;
+    hiss(12, { vol: 0.05, rate: 0.3, drop: -0.08 });
+    arp([84, 91, 96], 3, { wave: 'p25', vol: 0.05, decay: 0.002 });
+  },
+  // a foe's poise breaks: a crack and a falling chime
+  poiseBreak() {
+    if (!gate('poise', 120)) return;
+    hiss(6, { vol: 0.06, rate: 1.4, drop: 0.25, short: true });
+    arp([79, 74, 67], 2, { wave: 'p12', vol: 0.045, decay: 0.003 });
+  },
+  // an execution: a heavy boom with a high ring over it
+  execute() {
+    if (!gate('exec', 150)) return;
+    chip([[N(36), 2], [N(28), 4], [N(24), 6]], { wave: 'tri', vol: 0.12, decay: 0.01 });
+    hiss(10, { vol: 0.07, rate: 0.35, drop: 0.12 });
+    arp([96, 103], 4, { wave: 'p12', vol: 0.04, decay: 0.002, delay: 0.05 });
+  },
+  // the last foe of a fight down: a quick rising run (and the dash-panel whoosh after it)
+  clearFight() {
+    if (!gate('clearf', 300)) return;
+    arp([72, 76, 79, 84, 88], 2, { wave: 'p25', vol: 0.045, decay: 0.002 });
+    hiss(14, { vol: 0.045, rate: 0.35, drop: -0.05, delay: 0.12 });
   },
   dash() {
     if (!gate('dash', 90)) return;

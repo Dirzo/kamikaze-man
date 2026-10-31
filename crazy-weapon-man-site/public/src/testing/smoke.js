@@ -6,7 +6,7 @@ import { world, resetWorld } from '../game/world.js';
 import { createHero, updateHero } from '../game/hero.js';
 import { spawnEnemy, updateEnemy, drawEnemy } from '../game/enemy.js';
 import { secretRoom } from '../data/maps.js';
-import { hitEnemy, hurtHero, dropWeapon } from '../game/combat.js';
+import { hitEnemy, hurtHero, dropWeapon, knockCollide } from '../game/combat.js';
 import { makeWeapon, dps, powerScore } from '../game/loot.js';
 import { updateDrops } from '../game/drops.js';
 import { updateEvolution, attackMutation, impactMutation } from '../game/evolution.js';
@@ -111,6 +111,28 @@ export function runSmoke(game) {
   check('dash is immune to every hurt source; normal hurt cancels swing',()=>{
     reset();const h=world.hero;h.dashT=0.1;const hp=h.hp;hurtHero(30);ok(h.hp===hp);
     h.dashT=0;h.inv=0;h.attack={};hurtHero(10);ok(h.hp===hp-10 && !h.attack);
+  });
+  check('Dead Cells pass: perfect dodge, dash attack, poise break and execution, slams, last-kill clear',()=>{
+    // a real attack through a dash: PERFECT (slow-mo, dash back, momentum); a body bump never counts
+    reset();clearFx();let h=world.hero;h.dashT=0.1;h.dashAt=world.t;h.dashCd=0.5;h.specialCd=2;const hp=h.hp;
+    hurtHero(10,1,'touch');ok(!h.dodged && h.hp===hp,'a body bump is no perfect dodge');
+    hurtHero(10);ok(h.dodged && h.dashCd===0 && h.specialCd<2 && feel.slowT>0 && h.hp===hp,'perfect dodge');
+    // attack out of a dash: a stab that keeps the dash's speed
+    reset();clearFx();h=world.hero;h.weapon=makeWeapon(0,{type:'sword',q:0,standout:false});h.dashCd=0;
+    key('KeyV',true);poll();updateHero(h,STEP);key('KeyV',false);key('KeyZ',true);poll();updateHero(h,STEP);key('KeyZ',false);poll();
+    ok(h.attack?.stab && h.attack.run && Math.abs(h.vx)>HERO.speed*1.5,'dash attack');
+    // a beating breaks an elite's poise; the next real hit executes it
+    reset();clearFx();const e=spawnEnemy('brute',world.hero.x+40,FLOOR());e.spawnT=0;e.elite=true;e.hp=e.max=1e6;
+    for(let i=0;i<12 && !(e.broken>0);i++) hitEnemy(e,1,{dir:1});
+    ok(e.broken>0,'poise never broke');const before=e.hp;hitEnemy(e,10,{dir:1});ok(before-e.hp>=25 && !(e.broken>0) && feel.impact>0,'no execution');
+    // knocked into a wall: SLAM; into another foe: BOWLED
+    reset();clearFx();const a=spawnEnemy('crawler',world.hero.x+60,FLOOR()),b=spawnEnemy('crawler',world.hero.x+62,FLOOR());
+    for(const o of [a,b]) (o.spawnT=0),(o.hp=o.max=1e5),(o.calm=false);
+    knockCollide(a,220);ok(b.hp<1e5,'no bowling');a.hitWall=1;a.slamAt=-9;const ah=a.hp;knockCollide(a,220);ok(a.hp<ah,'no wall slam');
+    // the last foe of a real fight: slow motion and a burst of speed
+    reset();clearFx();h=world.hero;world.fight={n:6,t:1,best:6};const l=spawnEnemy('crawler',h.x+30,FLOOR());l.spawnT=0;l.calm=false;
+    hitEnemy(l,1e6,{dir:1});ok(l.dead && feel.slowT>0 && h.boostT>0,'no last-kill clear');
+    world.fight=null;clearFx();
   });
   check('DOWN-equipping a looted upgrade never replaces an attack in progress',()=>{
     reset();const h=world.hero,old=h.weapon,w=makeWeapon(5,{q:6,type:'sword'});stash(w);world.quick={item:w,t:4};

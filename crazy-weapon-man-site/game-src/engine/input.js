@@ -67,6 +67,10 @@ export const input = {
     const s = state[a];
     return !s.consumed && now - s.pressedAt <= buffer;
   },
+  // the world was frozen (hit-stop, slow motion) for dt: buffered presses don't age meanwhile
+  hold(dt) {
+    for (const a of ACTIONS) if (!state[a].consumed) state[a].pressedAt += dt;
+  },
   consume(a) {
     state[a].consumed = true;
   },

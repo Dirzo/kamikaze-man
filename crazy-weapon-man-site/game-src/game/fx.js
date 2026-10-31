@@ -9,7 +9,7 @@ const parts = [];
 const sparks = [];
 const numbers = [];
 const callouts = [];
-export const feel = { trauma: 0, stop: 0, frame: 0, kx: 0, ky: 0, zoom: 0 };
+export const feel = { trauma: 0, stop: 0, frame: 0, kx: 0, ky: 0, zoom: 0, slowT: 0, slowK: 1, impact: 0 };
 const splats = []; // blood on the floor: thin pixel streaks that fade after a few seconds
 
 // ---------------------------------------------------------------- particles
@@ -151,6 +151,15 @@ export function shake(amount) {
 export function hitstop(sec) {
   feel.stop = Math.max(feel.stop, sec);
 }
+// slow motion: the world runs at k speed for sec (real) seconds (main.js scales the step)
+export function slowmo(sec, k) {
+  feel.slowK = feel.slowT > 0 ? Math.min(feel.slowK, k) : k;
+  feel.slowT = Math.max(feel.slowT, sec);
+}
+// an impact frame (Blasphemous): n rendered frames of the scene in stark black and white
+export function impactFrame(n = 2) {
+  feel.impact = Math.max(feel.impact, n);
+}
 
 // ---------------------------------------------------------------- update / draw
 export function updateFx(dt) {
@@ -274,5 +283,6 @@ function critStar(x, y, r, age) {
 export const fxCounts = () => ({ parts: parts.length, sparks: sparks.length, numbers: numbers.length, callouts: callouts.length, splats: splats.length });
 export function clearFx() {
   parts.length = sparks.length = numbers.length = callouts.length = splats.length = 0;
-  feel.trauma = feel.stop = feel.kx = feel.ky = feel.zoom = 0;
+  feel.trauma = feel.stop = feel.kx = feel.ky = feel.zoom = feel.slowT = feel.impact = 0;
+  feel.slowK = 1;
 }
