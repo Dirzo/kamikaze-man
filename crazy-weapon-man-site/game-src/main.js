@@ -46,6 +46,8 @@ import { relicMask, keepRelics, allRelics, RELIC_COUNT } from './data/relics.js'
 import { drawGadgets } from './game/gadgets.js';
 import { drawCrumble } from './game/crumble.js';
 import { drawWalls } from './game/walls.js';
+import { openDen, updateDen, drawDen, D as denScene } from './game/den.js';
+import { levelEgg, FAMILY } from './data/den.js';
 import { tally, openLevelEnd, updateLevelEnd, drawLevelEnd, LEVEL_END_DONE } from './game/levelend.js';
 
 let capture = false;
@@ -120,6 +122,15 @@ function closeMapBag() {
   world.shards = 0;
   writeSave(ow.save);
 }
+// the Beast Den (H on the map): the saved hero walks the garden with their weapon in hand
+function openBeastDen() {
+  closeInventory();
+  if (!ow.save) ow.save = loadSave();
+  const w = ow.save.hero?.weapon;
+  openDen(w ? freshUid(JSON.parse(JSON.stringify(w))) : null);
+  scene = 'den';
+  sceneT = 0;
+}
 function enterLevel(node) {
   closeInventory();
   resetWorld();
@@ -143,19 +154,21 @@ function endLevel(result) {
   const shards = bankShards(world.shards);
   world.shards = 0;
   flushBook();
-  let relics = null, temperUp = 0;
+  let relics = null, temperUp = 0, eggFound = null;
   if (result === 'clear') {
     if (node.kind === 'castle' && winTrophy(node.region)) trophy = { ...TROPHIES[node.region], turf: trophyTurf(node.region, true) };
     fresh = clearLevel(ow.save, node.id, world.levelExit === 'secret' && node.secret.length ? 'secret' : 'next');
     const had = allRelics(ow.save, node.id);
     relics = { taken: relicsTaken(), fresh: keepRelics(ow.save, node.id, world.relicMask), set: !had && allRelics(ow.save, node.id) };
     temperUp = temperClear(ow.save, node.id);
+    const egg = levelEgg(node.zone, { castleFirst: !!trophy }); // a family head always leaves its egg behind
+    if (egg != null) eggFound = FAMILY[egg].name;
     ow.save.hero = heroSnapshot();
     writeSave(ow.save);
   }
   if (result === 'quit') return openMap();
   const stable = !!trophy && trophyCount() === STABLE_TROPHIES; // the third family head just fell
-  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable, tally: tally() };
+  world.levelEnd = { result, node, fresh, secret: fresh.some(e => e.secret), shards, trophy, relics, temperUp, cards: world.cardUps.length, stable, egg: eggFound, tally: tally() };
   openLevelEnd();
   scene = 'levelEnd';
   sceneT = 0;
@@ -195,8 +208,13 @@ function update(dt) {
     }
     if (!powers.open && input.take('bag')) return input.consume('inv'), openMapBag();
     if (!powers.open && input.take('pause')) return showFiles();
+    if (!powers.open && input.take('den')) return openBeastDen();
     const node = updateOverworld(dt);
     if (node) enterLevel(node);
+    return;
+  }
+  if (scene === 'den') {
+    if (updateDen(dt) === 'leave') openMap();
     return;
   }
   if (scene === 'levelEnd') {
@@ -349,6 +367,12 @@ function drawTitle(t) {
   text('KILL EVERY ENEMY. OPEN THE EXIT PORTAL.', W / 2, 192, C.lime, { align: 'center' });
 }
 
+// the Beast Den's door on the map: a small chip above the map's bottom panel
+function denChip() {
+  const s = 'H: BEAST DEN', w = textWidth(s) + 8;
+  rect(W - w - 6, 204, w, 11, C.ink);
+  text(s, W - 10, 206, C.pink, { align: 'right' });
+}
 function drawPause() {
   dither(0, 0, W, H, C.ink, 10);
   panel('panel', W / 2 - 120, 56, 240, 146);
@@ -381,7 +405,8 @@ function render() {
   }
   if (scene === 'title') return drawTitle(t);
   if (scene === 'files') return drawTitle(t), drawFiles(t);
-  if (scene === 'map') return drawOverworld(t), drawInventory(t); // the bag (B) opens over the map
+  if (scene === 'map') return drawOverworld(t), powers.open || world.inv || denChip(), drawInventory(t); // the bag (B) opens over the map
+  if (scene === 'den') return drawDen(t);
   drawWorld(world.t);
   drawHud(world.t);
   drawRouteHud();
@@ -439,6 +464,10 @@ click('b-powers', () => {
   if (scene !== 'map') return;
   if (world.inv) closeInventory(), closeMapBag();
   powers.open ? closePowers() : openPowers();
+});
+click('b-den', () => {
+  if (scene === 'den') openMap();
+  else if (scene === 'map') powers.open && closePowers(), world.inv && (closeInventory(), closeMapBag()), openBeastDen();
 });
 click('b-restart', () => {
   if (world.level && scene !== 'map') enterLevel(world.level); // retry this level, from the map's saved hero
@@ -573,6 +602,8 @@ const debug = {
   openMap,
   showFiles,
   enterLevel,
+  openBeastDen,
+  den: denScene,
   ow,
   powers,
   openPowers,

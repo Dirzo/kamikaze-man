@@ -293,6 +293,14 @@ export function bankShards(n) {
   save();
   return n;
 }
+// spend banked shards outside the tree (the Beast Den's shard snack); false when there aren't enough
+export function spendShards(n) {
+  const m = meta();
+  if (m.shards < n) return false;
+  m.shards -= n;
+  save();
+  return true;
+}
 export const rank = id => meta().tree[id] || 0;
 // the invested nodes that can be walked to from CORE, only ever stepping on out of a gated node
 function walk(tree) {

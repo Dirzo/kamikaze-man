@@ -3,6 +3,7 @@
 // (a 24-slot bag of weapons, item details, equip / lock / salvage). Keyboard, pad, mouse and touch.
 // Drops are looted automatically and kept until the bag is full; after that the weakest unlocked
 // weapons are swapped out for better ones. Locked weapons are never replaced or salvaged.
+import { toBasket } from '../data/den.js';
 import { C, W, H } from '../config.js';
 import { X, canvas, rect, text, textWidth, fitText, panel, dither } from '../engine/gfx.js';
 import { input } from '../engine/input.js';
@@ -60,6 +61,8 @@ export const newBag = () => new Array(BAG_SIZE).fill(null);
 export const bagCount = () => world.bag.filter(Boolean).length;
 const typeName = t => t.toUpperCase();
 export const salvageValue = w => 2 + w.q * 2 + (w.standout ? 5 : 0);
+// a weapon melts into shards, and drops into the Beast Den's feed basket (data/den.js)
+const melt = w => ((world.shards += salvageValue(w)), toBasket(w));
 
 // the loot filter (MapleStory's pet filter, Slormancer's auto-salvage): drops below the chosen rarity
 // melt into shards the moment they are looted. Standouts are always kept. F (or the label) cycles it;
@@ -106,7 +109,7 @@ export function autoLoot(w) {
   if (!w || w.name === 'Training Sword') return 'skip';
   const col = w.standout ? C.gold : rarityColour(w.q);
   if (filtered(w)) {
-    world.shards += salvageValue(w);
+    melt(w);
     toast('bag', { head: `FILTERED  SALVAGED +${salvageValue(w)}`, name: w.name, col: C.fog });
     return 'filtered';
   }
@@ -119,12 +122,12 @@ export function autoLoot(w) {
     const same = open.filter(i => world.bag[i].type === w.type);
     const i = weakest(same.length ? same : open);
     if (i < 0 || dps(world.bag[i]) >= dps(w)) {
-      world.shards += salvageValue(w);
+      melt(w);
       toast('bag', { head: `BAG FULL  SALVAGED +${salvageValue(w)}`, name: w.name, col: C.fog });
       return 'salvaged';
     }
     const old = world.bag[i];
-    world.shards += salvageValue(old);
+    melt(old);
     world.bag[i] = w;
     world.bagNew = (world.bagNew || 0) + 1;
     res = 'upgraded';
@@ -217,7 +220,7 @@ function act(id) {
       return;
     }
     world.bag[I.sel] = null;
-    world.shards += salvageValue(w);
+    melt(w);
     I.msg = `SALVAGED FOR ${salvageValue(w)} SHARDS`;
     I.confirm = false;
     sfx.pickup();
