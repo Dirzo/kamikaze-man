@@ -7,7 +7,7 @@ import { sfx } from '../engine/audio.js';
 import { world, newId } from './world.js';
 import { move, overlap, cx, cy, worldWidth, worldFloor } from './physics.js';
 import { ENEMIES, ELITE_TITLES, LINES, deathOf, BEAST } from '../data/enemies.js';
-import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP } from '../data/curve.js';
+import { refHP, refDmg, ELITE_HP, ELITE_DMG, ENEMY_HP, earlyHP } from '../data/curve.js';
 import { hurtHero, shotSrc, tickStatus, explode, kill, shatter, DEATH_T, SHATTER_T, tickPoise, knockCollide } from './combat.js';
 import { emit, burst } from './fx.js';
 import { say, updateBubble } from './bubbles.js';
@@ -34,7 +34,7 @@ export function spawnEnemy(type, x, y, { elite = false, asleep = false, wave = 1
   const z = world.zone;
   const F = world.foeScale || { hp: 1, dmg: 1 }; // later levels of a world are tougher (waves.js)
   const T = temper(world.temper); // and so is every level at a post-game TEMPER (data/temper.js)
-  const hp = Math.round(refHP(z) * ENEMY_HP * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)) * F.hp * T.hp * (beast ? BEAST.hp : 1));
+  const hp = Math.round(refHP(z) * ENEMY_HP * earlyHP(z) * d.hp * (elite ? ELITE_HP : 1) * (1 + 0.06 * (wave - 1)) * F.hp * T.hp * (beast ? BEAST.hp : 1));
   const e = {
     id: newId(),
     type,
