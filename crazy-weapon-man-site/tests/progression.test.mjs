@@ -143,3 +143,37 @@ test('the fuzzball family grows up along zone 2: fuzzlets on its first level, we
   for (let t = 0; t <= 1; t += 0.1) assert.ok(at(t).length >= 3 && at(t).length <= 6, String(t));
   assert.ok(enemyPool(1, 4, pool).includes('werewolf'), 'a classic run meets the whole family by the deep rooms');
 });
+
+test('world 1 is gentle on a fresh hero: the Training Sword fells its regulars in about 5-6 hits', async () => {
+  const { earlyHP } = await import('../game-src/data/curve.js');
+  const { BEAST } = await import('../game-src/data/enemies.js');
+  const { FOE_TIER } = await import('../game-src/data/families.js');
+  const { familyTop } = await import('../game-src/data/progression.js');
+  const { fightMult, POISE, hasPoise } = await import('../game-src/data/feel.js');
+  const sword = trainingSword(), T = TYPES.sword;
+  // swings of the sword's combo, with the field combo building and (for poised foes) one execution
+  const swings = (d, hp) => {
+    let n = 0, poise = POISE.max, broken = false;
+    while (hp > 0) {
+      const mv = MOVES[T.combo[n % 3]];
+      let dmg = hitDamage(sword) * mv.mult * (n ? fightMult(n) : 1);
+      if (broken) (dmg *= POISE.exec), (broken = false), (poise = POISE.max);
+      else if (hasPoise({ d }) && (poise -= mv.big ? 2.25 : 1.5) <= 0) broken = true;
+      hp -= dmg;
+      n++;
+    }
+    return n;
+  };
+  for (const tier of [0, 1 / 6, 1 / 3, 0.5, 2 / 3, 5 / 6, 1]) {
+    const top = familyTop(4, tier);
+    for (const k of ZONES[0].pool.filter(k => ENEMIES[k].evo <= top && ENEMIES[k].evo > top - 6)) {
+      const d = ENEMIES[k];
+      if (d.heavy) continue; // the War Gander is the castle road's heavy: poise break and execution
+      const hp = refHP(0) * ENEMY_HP * earlyHP(0) * d.hp * (1 + 0.06 * 3) * (1 + FOE_TIER.hp * tier) * BEAST.hp;
+      const hits = swings(d, hp);
+      assert.ok(hits <= (tier <= 1 / 3 ? 6 : 7), `${k} at tier ${tier.toFixed(2)}: ${hits} hits`);
+      if (k === 'gosling') assert.ok(hits <= 3, `gosling: ${hits} hits`);
+    }
+  }
+  assert.equal(earlyHP(5), 1); // the full curve from world 4 on
+});

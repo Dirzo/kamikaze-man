@@ -1,6 +1,6 @@
 // The numbers. One place, small values that grow ~1.9x per zone (so a weapon fades as you move on).
 //
-// Enemy health in zone z:    refHP(z) * ENEMY_HP * type.hp * (elite ? 2.2 : 1) * (1 + 0.06 * wave)
+// Enemy health in zone z:    refHP(z) * ENEMY_HP * earlyHP(z) * type.hp * (elite ? 2.2 : 1) * (1 + 0.06 * wave)
 // Weapon hit (normal):       refHP(home) * share(q) * type.hit * move multiplier
 // Weapon hit (standout):     refHP(home) * STANDOUT_SHARE * move multiplier -> one-shots a normal
 //                            enemy at home, 2 hits in the next zone (~1.9x health), ~4 after
@@ -12,6 +12,12 @@ export const share = q => 0.26 + 0.02 * q;
 // area moves): Rare, elemental and standout drops come from the first map and specials clear crowds,
 // so residents take a couple more hits.
 export const ENEMY_HP = 2.4;
+// The first worlds go easy on a fresh hero still swinging the training weapon: residents there
+// carry a fraction of the usual health, easing up to the full curve by world 4. With the Training
+// Sword a Gosling falls in 3 hits and the toughest regulars of world 1 in about 5-6 (a Berserker on
+// the castle road 7); the heavy War Gander takes ~12, its poise break and execution included. Bosses have their own health (bosses.js) and are not touched.
+export const EARLY_HP = [0.42, 0.55, 0.8];
+export const earlyHP = z => EARLY_HP[z] ?? 1;
 export const STANDOUT_SHARE = 2.5; // (2.0 at ENEMY_HP 1.9) a standout still one-shots residents at home
 // standouts get more common as you go: 1 in 8 at the start, 1 in 4 from zone 5
 export const standoutChance = z => Math.min(0.25, 0.12 + 0.03 * z);
